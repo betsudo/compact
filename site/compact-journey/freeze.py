@@ -56,11 +56,11 @@ assert checkpoint['version'] == 73
 assert checkpoint['head'] == local, 'Choose an explicit edition cutoff before refreshing.'
 
 phases = [
-    ('native', 'Native AST milestone', 'ea4cc006f973632c4c7b1fb4569af2b4c93ff38a'),
-    ('recording', 'Recorded contracts milestone', '03c03a39a2d39c43c91143b9526ca1c2ffae706c'),
-    ('qualified', 'Qualified consumers milestone', '0d7610b2792d60fee5d3713d4eb0ede3c98cc82a'),
+    ('native', 'Native Rust execution', 'ea4cc006f973632c4c7b1fb4569af2b4c93ff38a'),
+    ('recording', 'Recorded execution', '03c03a39a2d39c43c91143b9526ca1c2ffae706c'),
+    ('qualified', 'Consumer qualification', '0d7610b2792d60fee5d3713d4eb0ede3c98cc82a'),
     ('effects', 'Compositional recording', '0437c894cd069af475bd8d5b254c24cc73615a09'),
-    ('functional', 'Functional Ledger 8', 'c353907d8c323db16eedb35d5a7f0151aab859bb'),
+    ('functional', 'Shared execution', 'c353907d8c323db16eedb35d5a7f0151aab859bb'),
     ('semantics', 'Semantic delivery', ledger8),
     ('ledger9', 'Ledger 9 foundation', merged),
     ('compatibility', 'Upstream compatibility', local),
@@ -101,43 +101,11 @@ for line in lines:
 assert {c['sha'] for c in commits} == selected - omitted
 commits.sort(key=lambda c: (c['authored'], c['sha']))
 (ROOT/'commits.json').write_text(json.dumps(commits, ensure_ascii=False, separators=(',', ':'))+'\n')
-chapter_list = [c for c in json.loads((ROOT/'chapters.json').read_text()) if c['kind'] != 'archive']
-archives = [
-    ('02-architecture.md', 'The October architecture', 'Frontend, IR, renderer, generated crate and runtime.'),
-    ('03-comparison-and-evidence.md', 'Comparing the backend lines', 'The original comparison, with its historical cutoff.'),
-    ('06-generated-rust-examples.md', 'Read the generated Rust', 'Source, native path, typed slots and recording.'),
-    ('07-runtime-and-macros-domain-model.md', 'Runtime and macro ownership', 'Core types and mechanical derives.'),
-    ('08-gas-errors-and-fixes.md', 'Gas, errors and corrected boundaries', 'How the original target assigned errors and costs.'),
-    ('04-decisions-and-corrections.md', 'The original decision ledger', 'Corrections and choices as recorded in October.'),
-    ('glossary.md', 'A working glossary', 'Vocabulary used throughout the journey.'),
-]
-for filename, title, subtitle in archives:
-    slug='atlas-'+filename.removesuffix('.md')
-    raw=git('show', f'{historical}:doc/rust/journey/{filename}')
-    raw=raw.replace('github.com/MediaNoxLabs/compact', 'github.com/betsudo/compact')
-    def rewrite(match):
-        label, href=match.groups()
-        if href.startswith(('https:', 'http:', '#', 'mailto:')):
-            return match.group(0)
-        from posixpath import normpath, join
-        target=normpath(join('doc/rust/journey', href))
-        return f'[{label}](https://github.com/betsudo/compact/blob/{historical}/{target})'
-    raw=re.sub(r'\[([^\]]+)\]\(([^)]+)\)', rewrite, raw)
-    raw=re.sub(r'^# .*\n', '', raw, count=1)
-    prefix=('> Historical atlas. This chapter preserves the October 14 documentation cutoff. '
-            'The main narrative records subsequent deliveries and current limits.\n\n')
-    original=f'https://github.com/betsudo/compact/blob/{historical}/doc/rust/journey/{filename}'
-    prefix += f'> Source snapshot — [original chapter at 51a079bd]({original}). The implementation cutoff documented in the original is f3cef799 on October 14.\n\n'
-    corrections = {
-        '03-comparison-and-evidence.md': 'The historical 386-source shorthand refers to 386 proof-required exports. The M2 inventory covered 217 sources, 196 roots and 755 exports, including 369 non-proof exports.',
-        '04-decisions-and-corrections.md': 'ADR 0316 records owner-authorized ACC removal after an inventory found no unique witness, struct or ledger mechanism. Its exact application composition remained unqualified.'
-    }
-    if filename in corrections:
-        prefix = '> Editorial correction — '+corrections[filename]+'\n\n'+prefix
-    (ROOT/'chapters'/f'{slug}.md').write_text(prefix+raw+'\n')
-    chapter_list.append(dict(slug=slug,title=title,phase='Historical atlas',subtitle=subtitle,
-                             source=f'chapters/{slug}.md',kind='archive'))
-(ROOT/'chapters.json').write_text(json.dumps(chapter_list,indent=2)+'\n')
+# Chapters, including the technical reference, are editorial source files.
+# Preserve their reviewed prose, titles and stable URLs when refreshing evidence.
+chapter_list = json.loads((ROOT/'chapters.json').read_text())
+for chapter in chapter_list:
+    assert (ROOT/chapter['source']).is_file(), chapter['source']
 snapshots={}
 for name in ('ledger9-adoption.md','ledger9-upstream-compatibility.md'):
     source=subprocess.check_output(['git','-C',str(SOURCE),'show',f'{local}:doc/rust/plans/{name}'])

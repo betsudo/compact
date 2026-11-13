@@ -48,13 +48,13 @@ Many later slices concern a value that is valid in a wider expected context. The
 
 PR #703 reconciled an outer-Vector stack with the canonical backend. PR #704 added Linux proof coverage for eligible cases. PR #705 and its follow-ups qualified constructor Vector expressions and typed equality guards.
 
-## CI belongs to the slice
+## Integration requirements
 
 A logical slice includes its tests, documentation, review and integration result. Long and fragile CI motivated local work and measured job ownership. PR #716 split qualification into measured owners, while PR #723 reused an exact Nix compiler environment across consumers.
 
 The goal was to reduce repeated preparation while retaining complete required gates. It was not permission to replace semantic tests with a faster badge.
 
-## What was better
+## Result
 
 More ordinary Compact programs reached typed generated Rust without ad hoc source rewrites. Each slice retained source/API/refusal qualification and proof/application evidence for selected applicable statements.
 

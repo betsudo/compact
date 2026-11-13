@@ -149,15 +149,15 @@
     "phase": "qualified",
     "date": "2026-10-08",
     "publication": "published",
-    "explanation": "0.3 qualified implementation tree; last fix creates fresh DID relation key directories; tools/compact-rust-backend/did_relation_gate.py."
+    "explanation": "Qualified consumer implementation tree; last fix creates fresh DID relation key directories; tools/compact-rust-backend/did_relation_gate.py."
   },
   {
     "sha": "0d7610b2792d60fee5d3713d4eb0ede3c98cc82a",
-    "title": "docs(rust): close the 0.3.0 engineering milestone",
+    "title": "Publish the generated-consumer qualification report",
     "phase": "qualified",
     "date": "2026-10-09",
     "publication": "published",
-    "explanation": "0.3 closure and93-criterion evidence crosswalk; doc/rust/0.3.0-closure.md, doc/rust/evidence/0.3.0/closure/crosswalk.md."
+    "explanation": "Consumer qualification report and 93-criterion evidence crosswalk; doc/rust/0.3.0-closure.md, doc/rust/evidence/0.3.0/closure/crosswalk.md."
   },
   {
     "sha": "0437c894cd069af475bd8d5b254c24cc73615a09",
@@ -173,7 +173,7 @@
     "phase": "functional",
     "date": "2026-10-16",
     "publication": "published",
-    "explanation": "Publishes the scoped closure/accounting narrative. Retained exact 974-case historical acceptance belongs to frozen ab132650 authorities and its own epoch; original evidence is not all public or portable. Published derivative inventory is not a new historical run. Useful distinction between implementation closure, evidence availability and broad 0.4.0 milestone scope."
+    "explanation": "Publishes the scoped closure/accounting narrative. Retained exact 974-case historical acceptance belongs to frozen ab132650 authorities and its own epoch; original evidence is not all public or portable. Published derivative inventory is not a new historical run. Useful distinction between implementation closure, evidence availability and broader compositional recording scope."
   },
   {
     "sha": "5c16fcd35a2389af35d8e59ad752ecec4ee43395",

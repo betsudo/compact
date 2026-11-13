@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="What is delivered, what remains, and how to keep the story accurate.">
+<meta name="description" content="Delivered capabilities, remaining work and maintenance rules.">
 <meta name="theme-color" content="#ffffff">
-<title>The next reader inherits a map · The Compact journey</title>
+<title>Implementation scope and continuation · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
 <link rel="stylesheet" href="../assets/book.css?v=0c6613947ed8">
 <link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
@@ -19,58 +19,85 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <header class="masthead">
 <a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
-<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<nav aria-label="Primary"><a href="../index.html">Overview</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
 <div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to Dusk (dark) theme">Dusk</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="../index.html">From source to proof</a>
-<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">Overview</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
 <label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
 <p id="chapter-search-status" class="sr-only" role="status"></p>
-<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Shapes, operations and algebra</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="../chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map" aria-current="page">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">From Compact semantics to typed Rust</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">Establishing the Ledger 8 reference</a></li><li><a href="../chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native Rust execution</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">Typed IR and structured Rust emission</a></li></ul><h2>Recorded execution</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recorded execution and transaction preparation</a></li></ul><h2>Consumer qualification</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Qualifying generated APIs and applications</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Shapes, operations and algebra</a></li></ul><h2>Shared execution</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">Shared execution through immutable requests</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Completing source semantics and generated APIs</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="../chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Cross-contract composition</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract authentication and composition</a></li></ul><h2>Validation guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">Validation from compilation to ledger application</a></li></ul><h2>Continuation</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map" aria-current="page">Implementation scope and continuation</a></li></ul><h2>Technical reference</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">Compiler architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Implementation comparison and qualification</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Generated Rust reference</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro responsibilities</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, diagnostics and runtime checks</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">Architecture decisions and rationale</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">Glossary</a></li></ul></nav>
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Living milestone <span>· 2 min read</span></p>
-<h1>The next reader inherits a map</h1><p class="deck">What is delivered, what remains, and how to keep the story accurate.</p></header>
-<div class="prose"><h2 id="the-state-at-this-edition">The state at this edition</h2>
-<p>The Ledger 9 migration foundation is merged through PR #725. The later compatibility programme has local arm64 evidence for large portions of cryptography, hashing, serialization, collections, event semantics and generated Rust/TypeScript parity.</p>
-<p>The frozen local compatibility cutoff for this edition is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-7a4fab772ee34c19053ce293d08052b501ce4b50">test(ledger9): cover nested opaque byte equality</a> <button type="button" class="commit-details" data-commit="7a4fab772ee34c19053ce293d08052b501ce4b50" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): cover nested opaque byte equality">Details</button></span>. The signed isolated Jubjub identity-key assertion and Keccak opaque diagnostic commits are recorded separately at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-6eef58425bb53883c8f3b417b601246820c7d675">fix(stdlib): reject identity keys in Jubjub Schnorr verification</a> <button type="button" class="commit-details" data-commit="6eef58425bb53883c8f3b417b601246820c7d675" aria-haspopup="dialog" aria-label="Commit details for fix(stdlib): reject identity keys in Jubjub Schnorr verification">Details</button></span> and <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-30a2d76550beb7d920a92bab2be6b1180243f658">fix(compiler): reject opaque Keccak input</a> <button type="button" class="commit-details" data-commit="30a2d76550beb7d920a92bab2be6b1180243f658" aria-haspopup="dialog" aria-label="Commit details for fix(compiler): reject opaque Keccak input">Details</button></span>.</p>
-<p>Their local review follow-ups were resolved in checkpoint v73. They await canonical integration and final qualification.</p>
-<h2 id="the-remaining-milestone">The remaining milestone</h2>
-<p>The programme still needs complete applicable upstream corpus accounting, the semantics required for intact newer-language admission, remaining fixture-specific proof matrices, required native Linux qualification, and the held generated two-contract path.</p>
-<p>The local frontend's language gate remains 0.23.105 while the pinned main reference uses 0.28.0. Editing a version number would not establish the intervening semantics. The history inventory identifies the changes that must be ported and tested.</p>
-<h2 id="how-commits-become-iterations">How commits become iterations</h2>
-<p>Use the commit explorer to find the implementation and its follow-up repairs. A logical iteration usually includes a semantic gap, affected owners, positive and refusal tests, documentation, independent review and applicable proof/integration results.</p>
-<p>Several commits can therefore belong to one iteration. A milestone includes several accepted iterations and an explicit scope. Git merge commits identify integration points, while author dates describe the original work. The explorer labels its date field accordingly.</p>
-<h2 id="keep-local-history-durable">Keep local history durable</h2>
-<p>The book includes a frozen commit catalogue and public narrative snapshots for local work. Published commits link to GitHub. Commits known only from local refs retain their identities and metadata in the catalogue, with publication status shown explicitly.</p>
-<p>The source snapshots carry selected plan and qualification summaries. They provide a durable public account without embedding machine paths, private witness values, keys or complete internal notes.</p>
-<h2 id="the-maintainers-continuation-rule">The maintainers' continuation rule</h2>
-<p>Update the edition manifest when taking a new snapshot. Preserve accepted historical reports. Add a correction when new evidence changes an earlier interpretation. Keep the book's status vocabulary aligned with the actual evidence.</p>
-<p>A claim that was locally valid in October may remain useful in November. Its source, platform and scope let a future engineer decide whether it applies to the next change.</p>
-<h2 id="why-this-journey-is-worth-preserving">Why this journey is worth preserving</h2>
-<p>The strongest thread is the steady movement of hidden assumptions into explicit owners. Source semantics moved into checked IR. Rust syntax moved into syntax trees. Ledger operations moved into typed slots and effect programmes. Proof and application identities moved into retained receipts.</p>
-<p>That makes future work easier to reason about. The next engineer receives a map of decisions, tests and boundaries, with the unfinished work still visible.</p>
+<header class="chapter-heading"><p class="eyebrow">Continuation <span>· 2 min read</span></p>
+<h1>Implementation scope and continuation</h1><p class="deck">Delivered capabilities, remaining work and maintenance rules.</p></header>
+<div class="prose"><h2 id="delivered-capabilities-at-the-edition-cutoff">Delivered capabilities at the edition cutoff</h2>
+<p>PR #725 merged the Ledger 9 migration foundation. The subsequent compatibility work has local arm64 qualification for selected cryptography, hashing, serialization, collection operations, event semantics and generated Rust/TypeScript parity. Each capability retains its source and case-specific evidence.</p>
+<p>The frozen compatibility source is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-7a4fab772ee34c19053ce293d08052b501ce4b50">test(ledger9): cover nested opaque byte equality</a> <button type="button" class="commit-details" data-commit="7a4fab772ee34c19053ce293d08052b501ce4b50" aria-haspopup="dialog" aria-label="Commit details for test(ledger9): cover nested opaque byte equality">Details</button></span>. The isolated Jubjub identity-key assertion and Keccak opaque diagnostic follow-ups are retained at <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-6eef58425bb53883c8f3b417b601246820c7d675">fix(stdlib): reject identity keys in Jubjub Schnorr verification</a> <button type="button" class="commit-details" data-commit="6eef58425bb53883c8f3b417b601246820c7d675" aria-haspopup="dialog" aria-label="Commit details for fix(stdlib): reject identity keys in Jubjub Schnorr verification">Details</button></span> and <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-30a2d76550beb7d920a92bab2be6b1180243f658">fix(compiler): reject opaque Keccak input</a> <button type="button" class="commit-details" data-commit="30a2d76550beb7d920a92bab2be6b1180243f658" aria-haspopup="dialog" aria-label="Commit details for fix(compiler): reject opaque Keccak input">Details</button></span>. Their local review findings were resolved in checkpoint v73. Canonical integration and final qualification remained outstanding at this cutoff.</p>
+<h2 id="remaining-compatibility-work">Remaining compatibility work</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Remaining obligation</th>
+<th>Why existing evidence is insufficient</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Upstream source corpus</td>
+<td>Account for every applicable original fixture and its required semantics.</td>
+<td>Selected feature cases do not establish complete language admission or parity.</td>
+</tr>
+<tr>
+<td>Language admission</td>
+<td>Implement and test the semantics between the local 0.23.105 gate and the reference 0.28.0 language.</td>
+<td>Changing a version declaration does not implement the intervening language behavior.</td>
+</tr>
+<tr>
+<td>Proof and application coverage</td>
+<td>Complete fixture-specific proof, verification and application matrices.</td>
+<td>Native results and recording availability do not establish a valid applied transaction.</td>
+</tr>
+<tr>
+<td>Platform qualification</td>
+<td>Run required native Linux gates for the later local ports.</td>
+<td>Local arm64 receipts qualify their named platform only.</td>
+</tr>
+<tr>
+<td>Generated cross-contract calls</td>
+<td>Complete generated caller/callee execution and the funded joint transaction path.</td>
+<td>Runtime preparation of supplied recordings does not establish generated source-call behavior.</td>
+</tr>
+</tbody>
+</table>
+<p>These obligations are separate from the accepted Ledger 8 foundation and the merged Ledger 9 dependency migration. Their completion requires new evidence; it should not invalidate accepted earlier work without a concrete regression.</p>
+<h2 id="planning-the-next-implementation-step">Planning the next implementation step</h2>
+<p>Select one documented semantic or generated-API gap. Identify its frontend, checked-lowering, runtime and generated-consumer responsibilities. Define positive behavior, compile-fail or source-refusal controls, and applicable proof and ledger-application checks before implementation.</p>
+<p>Use focused local checks during iteration, then run the complete required integration gates for the affected scope. Several commits may form one coherent step. The iteration ledger explains those groupings, while the commit explorer retains the original messages and identities.</p>
+<h2 id="maintaining-an-accurate-guide">Maintaining an accurate guide</h2>
+<p>Update the edition manifest when selecting a new source snapshot. Preserve accepted reports and failed runs. Correct explanatory prose when evidence changes an interpretation, while retaining the original source records.</p>
+<p>Keep implementation, generated compilation, native execution, recording, proof verification and ledger application distinct. State the platform, source and fixture population for every quantitative claim. Internal planning labels and calendar dates belong in provenance; the narrative should explain the capability and its dependencies.</p>
+<p>The design sequence moves semantic decisions into explicit components: source admission into typed IR, syntax into Rust AST construction, ledger effects into checked operations, and proof/application identity into validated preparation and retained receipts. This division provides the basis for extending the backend without treating earlier coverage as a universal compatibility claim.</p>
 <h3 id="source-trail">Source trail</h3>
 <ul>
-<li><a href="https://github.com/betsudo/compact/issues/726">Milestone #726</a></li>
-<li><a href="https://github.com/betsudo/compact/issues/728">Compiler #728</a></li>
-<li><a href="https://github.com/betsudo/compact/issues/729">Cryptography #729</a></li>
-<li><a href="https://github.com/betsudo/compact/issues/732">Integration #732</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/726">Upstream compatibility programme #726</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/728">Compiler compatibility #728</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/729">Cryptographic compatibility #729</a></li>
+<li><a href="https://github.com/betsudo/compact/issues/732">Integration qualification #732</a></li>
 <li><a href="../sources/edition.json">Frozen source register</a></li>
 </ul></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/the-next-reader-inherits-a-map.md">Read the frozen Markdown source</a></div>
-<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="a-proof-is-one-stage.html"><small>Previous chapter</small>A proof is one stage</a><a class="next" href="atlas-02-architecture.html"><small>Next chapter</small>The October architecture <span aria-hidden="true">→</span></a></nav>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="a-proof-is-one-stage.html"><small>Previous chapter</small>Validation from compilation to ledger application</a><a class="next" href="atlas-02-architecture.html"><small>Next chapter</small>Compiler architecture <span aria-hidden="true">→</span></a></nav>
 </article></main>
 <aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
 <ul>
-<li><a href="#the-state-at-this-edition">The state at this edition</a></li>
-<li><a href="#the-remaining-milestone">The remaining milestone</a></li>
-<li><a href="#how-commits-become-iterations">How commits become iterations</a></li>
-<li><a href="#keep-local-history-durable">Keep local history durable</a></li>
-<li><a href="#the-maintainers-continuation-rule">The maintainers' continuation rule</a></li>
-<li><a href="#why-this-journey-is-worth-preserving">Why this journey is worth preserving</a><ul>
+<li><a href="#delivered-capabilities-at-the-edition-cutoff">Delivered capabilities at the edition cutoff</a></li>
+<li><a href="#remaining-compatibility-work">Remaining compatibility work</a></li>
+<li><a href="#planning-the-next-implementation-step">Planning the next implementation step</a></li>
+<li><a href="#maintaining-an-accurate-guide">Maintaining an accurate guide</a><ul>
 <li><a href="#source-trail">Source trail</a></li>
 </ul>
 </li>

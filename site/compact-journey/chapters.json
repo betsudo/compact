@@ -1,17 +1,17 @@
 [
   {
     "slug": "a-contract-crosses-a-boundary",
-    "title": "A contract crosses a boundary",
+    "title": "From Compact semantics to typed Rust",
     "phase": "Orientation",
-    "subtitle": "The question that connects the whole journey.",
+    "subtitle": "The design problem, implementation sequence and evidence boundaries.",
     "source": "chapters/a-contract-crosses-a-boundary.md",
     "kind": "narrative"
   },
   {
     "slug": "typescript-and-fixed-ground",
-    "title": "TypeScript and fixed ground",
+    "title": "Establishing the Ledger 8 reference",
     "phase": "Ledger 8 foundations",
-    "subtitle": "A shared semantic reference before a second target.",
+    "subtitle": "Pin shared semantics before introducing a second implementation.",
     "source": "chapters/typescript-and-fixed-ground.md",
     "kind": "narrative"
   },
@@ -33,25 +33,25 @@
   },
   {
     "slug": "a-closed-rust-boundary",
-    "title": "A closed Rust boundary",
-    "phase": "Native AST milestone",
-    "subtitle": "Milestone 1 turns supported Compact nodes into typed Rust syntax.",
+    "title": "Typed IR and structured Rust emission",
+    "phase": "Native Rust execution",
+    "subtitle": "Make supported source constructs explicit before rendering Rust syntax.",
     "source": "chapters/a-closed-rust-boundary.md",
     "kind": "narrative"
   },
   {
     "slug": "recording-is-an-execution",
-    "title": "Recording is an execution",
-    "phase": "Recorded contracts milestone",
-    "subtitle": "Milestone 2 makes ordered effects and installed state visible.",
+    "title": "Recorded execution and transaction preparation",
+    "phase": "Recorded execution",
+    "subtitle": "Retain the operations that connect a native result to a ledger statement.",
     "source": "chapters/recording-is-an-execution.md",
     "kind": "narrative"
   },
   {
     "slug": "closing-zero-three",
-    "title": "Closing 0.3.0",
-    "phase": "Qualified consumers milestone",
-    "subtitle": "What a milestone closeout actually promises.",
+    "title": "Qualifying generated APIs and applications",
+    "phase": "Consumer qualification",
+    "subtitle": "Validate generated consumers, application cohorts and source-bound proof gates.",
     "source": "chapters/closing-zero-three.md",
     "kind": "narrative"
   },
@@ -65,17 +65,17 @@
   },
   {
     "slug": "the-functional-ledger8-line",
-    "title": "The functional Ledger 8 line",
-    "phase": "Functional Ledger 8",
-    "subtitle": "One immutable request, shared execution, explicit target adapters.",
+    "title": "Shared execution through immutable requests",
+    "phase": "Shared execution",
+    "subtitle": "Relate native and recorded behavior through one admitted program.",
     "source": "chapters/the-functional-ledger8-line.md",
     "kind": "narrative"
   },
   {
     "slug": "ergonomics-one-semantic-gap-at-a-time",
-    "title": "Ergonomics, one semantic gap at a time",
+    "title": "Completing source semantics and generated APIs",
     "phase": "Semantic delivery",
-    "subtitle": "Why apparently small source features deserve complete slices.",
+    "subtitle": "Close specific language gaps with positive, refusal and proof coverage.",
     "source": "chapters/ergonomics-one-semantic-gap-at-a-time.md",
     "kind": "narrative"
   },
@@ -113,81 +113,81 @@
   },
   {
     "slug": "cross-contract-calls-and-the-held-boundary",
-    "title": "Cross-contract calls and the held boundary",
-    "phase": "Remaining milestone",
-    "subtitle": "Authenticate a call before making its syntax convenient.",
+    "title": "Cross-contract authentication and composition",
+    "phase": "Cross-contract composition",
+    "subtitle": "Separate qualified runtime preparation from unfinished generated joint execution.",
     "source": "chapters/cross-contract-calls-and-the-held-boundary.md",
     "kind": "narrative"
   },
   {
     "slug": "a-proof-is-one-stage",
-    "title": "A proof is one stage",
-    "phase": "Technical guide",
-    "subtitle": "An evidence ladder for contributors and reviewers.",
+    "title": "Validation from compilation to ledger application",
+    "phase": "Validation guide",
+    "subtitle": "What each stage establishes and which checks remain necessary.",
     "source": "chapters/a-proof-is-one-stage.md",
     "kind": "narrative"
   },
   {
     "slug": "the-next-reader-inherits-a-map",
-    "title": "The next reader inherits a map",
-    "phase": "Living milestone",
-    "subtitle": "What is delivered, what remains, and how to keep the story accurate.",
+    "title": "Implementation scope and continuation",
+    "phase": "Continuation",
+    "subtitle": "Delivered capabilities, remaining work and maintenance rules.",
     "source": "chapters/the-next-reader-inherits-a-map.md",
     "kind": "narrative"
   },
   {
     "slug": "atlas-02-architecture",
-    "title": "The October architecture",
-    "phase": "Historical atlas",
-    "subtitle": "Frontend, IR, renderer, generated crate and runtime.",
+    "title": "Compiler architecture",
+    "phase": "Technical reference",
+    "subtitle": "Frontend, typed IR, syntax emission and runtime responsibilities.",
     "source": "chapters/atlas-02-architecture.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-03-comparison-and-evidence",
-    "title": "Comparing the backend lines",
-    "phase": "Historical atlas",
-    "subtitle": "The original comparison, with its historical cutoff.",
+    "title": "Implementation comparison and qualification",
+    "phase": "Technical reference",
+    "subtitle": "Compare implementation stages without combining unrelated evidence.",
     "source": "chapters/atlas-03-comparison-and-evidence.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-06-generated-rust-examples",
-    "title": "Read the generated Rust",
-    "phase": "Historical atlas",
-    "subtitle": "Source, native path, typed slots and recording.",
+    "title": "Generated Rust reference",
+    "phase": "Technical reference",
+    "subtitle": "Native execution, typed ledger slots and recorded calls in the Ledger 8 API.",
     "source": "chapters/atlas-06-generated-rust-examples.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-07-runtime-and-macros-domain-model",
-    "title": "Runtime and macro ownership",
-    "phase": "Historical atlas",
-    "subtitle": "Core types and mechanical derives.",
+    "title": "Runtime and macro responsibilities",
+    "phase": "Technical reference",
+    "subtitle": "Domain types, representation derives and execution boundaries.",
     "source": "chapters/atlas-07-runtime-and-macros-domain-model.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-08-gas-errors-and-fixes",
-    "title": "Gas, errors and corrected boundaries",
-    "phase": "Historical atlas",
-    "subtitle": "How the original target assigned errors and costs.",
+    "title": "Gas, diagnostics and runtime checks",
+    "phase": "Technical reference",
+    "subtitle": "Assign costs and failures to the layer that can validate them.",
     "source": "chapters/atlas-08-gas-errors-and-fixes.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-04-decisions-and-corrections",
-    "title": "The original decision ledger",
-    "phase": "Historical atlas",
-    "subtitle": "Corrections and choices as recorded in October.",
+    "title": "Architecture decisions and rationale",
+    "phase": "Technical reference",
+    "subtitle": "Problems, decisions, alternatives and observed consequences.",
     "source": "chapters/atlas-04-decisions-and-corrections.md",
     "kind": "archive"
   },
   {
     "slug": "atlas-glossary",
-    "title": "A working glossary",
-    "phase": "Historical atlas",
-    "subtitle": "Vocabulary used throughout the journey.",
+    "title": "Glossary",
+    "phase": "Technical reference",
+    "subtitle": "Compiler, runtime and proof terminology used in this guide.",
     "source": "chapters/atlas-glossary.md",
     "kind": "archive"
   }

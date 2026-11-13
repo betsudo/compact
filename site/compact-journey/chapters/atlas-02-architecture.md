@@ -1,9 +1,8 @@
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+## Reference scope
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/02-architecture.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
+This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The [compositional recording chapter](operations-instead-of-shapes.html) explains the pilot's subsequent integration; the [migration chapter](ledger9-is-a-protocol-migration.html) explains the protocol changes.
 
-
-## The current conceptual pipeline
+## The Ledger 8 compiler pipeline
 
 ```text
 Compact source
@@ -32,7 +31,7 @@ native semantic fold         recording effect lowering
  official ledger-8 VM / state / FAB / crypto / ZK
 ```
 
-“IR schema 20” in the closed Rust-AST milestones means the twentieth revision
+“IR schema 20” at the recorded-target and consumer qualification stages means the twentieth revision
 of this private Chez-to-Rust interchange. It is not Compact language version
 20 and not a universally recognized specification level.
 
@@ -101,17 +100,17 @@ The plan owns compiler facts: types, source order, bindings, effects, result
 roles, admissibility and the precise reason a supported native operation is not
 recordable.
 
-## Source provenance: current truth
+## Source locations and authenticated inputs
 
 Published Rust-AST work carries source-owner file, line and column information
 through the private IR and uses structural paths in typed recording gaps. At
-the prototype cutoff, the accepted closure plan still describes these as
-declaration locations—not arbitrary nested expression ranges.
+the pilot revision, the qualification plan describes these as declaration
+locations rather than arbitrary nested expression ranges.
 
 Original occurrence tracking and authenticated source views prevent tests from
 quietly replacing genuine frontend artifacts with convenient hand-built JSON.
-The separate transient-value origin proposal remains a proposal unless a later
-qualified candidate demonstrates it. Publication must never expose absolute
+The pilot reference does not establish implementation of the separate
+transient-value origin proposal. Publication must never expose absolute
 checkout paths, secrets, witness values or private proof material.
 
 ## Generated API and runtime ownership
@@ -127,3 +126,7 @@ That ownership is a trade-off. Generated code becomes smaller and more regular;
 the runtime becomes a safety-critical compatibility layer. This is why runtime
 ABI, dependency graph and exact ledger/proof versions are tested independently
 from the compiler IR schema.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/02-architecture.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

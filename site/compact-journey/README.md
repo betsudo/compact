@@ -5,8 +5,8 @@ TypeScript reference path to a Ledger 9 Rust AST backend.
 
 The November 13, 2026 edition contains 24 chapters, a searchable commit
 catalogue, 36 curated iteration checkpoints, a pipeline explorer, local reading progress, light/dark themes,
-and a complete print view. The original October storybook stays available
-at the Pages root.
+and a complete print view. The retained Ledger 8 architecture overview stays available at the Pages root.
+The book’s capability-based chapter sequence is the main guide.
 
 ## Build
 
@@ -28,7 +28,7 @@ the pipeline controls. Storage failures leave reading available.
 ## Source and publication
 
 - chapters/ contains the book text.
-- chapters.json supplies reading order, phases and historical-atlas labels.
+- chapters.json supplies reading order, capability groupings and technical-reference labels.
 - commits.json is the curated Git catalogue of the backend journey.
 - sources/edition.json records source heads and classification rules.
 - sources/ retains public documentation and qualification summaries.
@@ -84,10 +84,20 @@ invented GitHub commit link.
 
 ## Historical scope
 
-The merged Ledger 9 foundation, subsequent local arm64 qualification, and
-remaining native Linux/full-corpus/two-contract work are explicitly dated.
-The atlas preserves the October text. The current chapters explain later
-progress and corrections. The milestone remains incomplete at this edition.
+The edition identifies the merged Ledger 9 foundation, subsequent local arm64
+qualification and remaining native Linux/full-corpus/two-contract work.
+The technical reference describes the Ledger 8 architecture at named revisions;
+the narrative explains subsequent checked-effect integration and Ledger 9 changes.
+Complete upstream compatibility remains unqualified at this edition’s cutoff.
+
+Chapters explain the problem, design choice, implementation result and validation
+boundary. Internal planning labels are not chapter names or package versions.
+Dates remain in provenance and the commit catalogue. Original Git subjects and
+frozen source reports remain unchanged. See sources/documentation-audit.md
+for the knowledge-base reconciliation.
+
+An evidence refresh preserves authored chapter prose, titles and URLs. Reconcile
+new facts editorially; do not regenerate reference chapters from older Markdown.
 
 Content and source remain under the repository's Apache-2.0 license.
 

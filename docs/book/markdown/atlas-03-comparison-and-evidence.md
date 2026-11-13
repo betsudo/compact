@@ -1,21 +1,18 @@
-> Editorial correction for this edition. The historical shorthand “386 source availability” means 386 proof-required exports. The Milestone 2 inventory covered 217 sources, 196 roots and 755 exports, including 369 non-proof exports.
+## Reference scope
 
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The [compositional recording chapter](operations-instead-of-shapes.html) explains the pilot's subsequent integration; the [migration chapter](ledger9-is-a-protocol-migration.html) explains the protocol changes.
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
+## Comparing implementation stages
 
-
-## Four generations on consistent dimensions
-
-| Dimension | TypeScript / JS path | Original Rust backend | Rust-AST 0.3 | Effect prototype at cutoff |
+| Dimension | TypeScript / JS path | Original Rust backend | Qualified typed Rust target | Checked-effect pilot |
 | --- | --- | --- | --- | --- |
 | Frontend boundary | Established TS preparation/runtime path | Reuses TypeScript-oriented IR | Starts before TS-specific lowering and emits private typed IR | Same private IR; adds shared checked semantic folds |
 | Rust construction | Not applicable | Scheme emits Rust text | `syn` + `quote` + `proc-macro2`, formatted by `prettyplease` | Same renderer, fed by checked effects/facts |
 | Runtime | JS/WASM providers and ledger APIs | Native runtime with generated VM-oriented code | Typed runtime over official ledger-8 primitives | Same authority; clearer execution/result roles |
 | Recording admission | Established TS semantics, different surface | Shape/walker-driven Rust path | Typed gaps plus many specialized recording profiles | Compositional effect plan; old selectors retained as test oracles |
-| Source diagnostics | Native frontend/source-map path | Coupled to compiler emission | Declaration locations + structural paths | Authenticated origins improved; nested ranges still a stated limit at cutoff |
-| Proof evidence | Existing reference ecosystem | Bounded historical cases | Selected exact-source prove/verify/application receipts | Per-family receipts; final frozen EA13 matrix pending |
-| Product maturity | Established integration | Useful oracle/prototype branch | Closed scoped milestones and generated consumer story | Local prototype, not pushed/merged/released |
+| Source diagnostics | Native frontend/source-map path | Coupled to compiler emission | Declaration locations + structural paths | Authenticated origins improved; nested ranges outside the pilot evidence |
+| Proof evidence | Existing reference ecosystem | Bounded historical cases | Selected exact-source prove/verify/application receipts | Per-family receipts; final integration qualification outside the pilot evidence |
+| Product maturity | Established integration | Useful oracle/prototype branch | Scoped consumer and application qualification | Local pilot; subsequent integration covered in the main narrative |
 
 ## Evidence is a ladder, not a number
 
@@ -30,45 +27,45 @@
 | Ledger application | Verified transaction applies under the pinned policy | Offline or local ledger receipt | Production network adoption |
 | Live observation | A named node/indexer/wallet observed a transaction | Historical network receipt | Universal finality or current release status |
 
-## Milestone evidence snapshots
+## Qualification by capability
 
-### Milestone 1 — local native baseline
+### Native Rust execution
 
 - Implementation cutoff: `ea4cc006`.
-- 128 generated sources current; 410 workspace test/doc-test groups passed.
+- 128 generated sources; 410 workspace test/doc-test groups passed.
 - All 37 top-level oracle sources ran through the new path, plus selected
   `tiny`, election, Zerocash and passport flows.
 - No first-class proof/deployment pipeline; the wrapper forced `--skip-zk`.
 
-### Milestone 2 — usable target and remote closure
+### Recorded target and transaction preparation
 
-- Closed at `03c03a39` on 2026-10-06.
-- 386/386 source availability.
+- Qualified at `03c03a39`.
+- 217 sources, 196 compiled roots and 755 exports: 386 proof-required and 369 non-proof exports. Availability is not proof execution.
 - Sampled 37-source / 203-row behavior.
 - Selected original four Coracle plus seven microDAO proof selectors, with
   three explicitly balancing-disabled smoke selectors.
 - Ten required remote workflows passed at the final revision.
 - No crates.io release, Windows certification or universal parity claim.
 
-### Milestone 0.3 — qualification and adoption
+### Generated consumers and application cohorts
 
 - Qualified implementation `f9a49666`; closure `0d7610b2`.
-- 19/19 required outcomes; 93 criteria; 121 milestone ADRs.
+- 19/19 required outcomes; 93 criteria; 121 supporting ADRs.
 - 198 roots, 232 inputs and 1,055 functions classified.
 - Runtime changed-line coverage 97.87%; mapped total 88.03%; testkit 97.62%;
   backend and macro cohorts retained separately at 95.11% and 100%.
 - DID v0.7.0: 12 stateful exports; 42 finite relation calls.
 - Passport cohort: 17 files, 75 pure exports, 202 behavior cases and four
-  codec vectors. Full Passport ACC adoption was removed.
+  codec vectors. Full Passport ACC adoption was excluded after the construct inventory found no additional unique qualification mechanism; its exact composition remained unqualified.
 - Remote core: 742 cases in 63 result blocks at the named revision.
 - RustSec: zero vulnerability matches, with four workspace / three standalone
   notices and strict nonzero exit retained.
 
 Counts overlap and must not be summed into one “tests passed” figure.
 
-### Effect prototype — active local program
+### Checked-effect pilot and measured validation
 
-At `f3cef799`, the saved story cutoff includes the historical-test process
+At `f3cef799`, the pilot source includes the historical-test process
 sharding change. The full installed validation kept 974 unique planned and
 executed IDs with no failures, errors, skips or unrun cases. Four independent
 process shards reduced the measured wall time from 10,270 seconds (about
@@ -88,24 +85,26 @@ It is a measured local optimization, not a universal CI speed claim.
 
 ## Parity findings that changed the design
 
-The TypeScript comparison was not a ceremonial check. It found genuine Rust
-divergences, including incorrect hash-to-curve representation, the wrong
+Comparison with TypeScript found Rust divergences, including incorrect hash-to-curve representation, the wrong
 Jubjub Schnorr predicate, permissive Boolean/bounded-unsigned decoding, and a
 validated-point alias that could panic for attacker-controlled coordinates.
 
-Rust also found genuine source/runtime defects: malformed native widths that
-JS silently sliced, and Merkle update underflow before a capacity check. The
-right conclusion is not “Rust won.” Independent implementations made hidden
+The Rust comparison also exposed source/runtime defects: malformed native widths that
+JS silently sliced, and Merkle update underflow before a capacity check. Independent implementations made previously implicit
 assumptions observable in both directions.
 
-## Current limitations
+## Limits of the reference evidence
 
 - No formal proof of complete Compact semantics or universal TS parity.
 - Proof support is per applicable export and exact artifact set.
-- The effect prototype is local and not yet EA13-closed.
-- Source locations at the cutoff are owner locations plus structural paths,
+- The pilot receipts do not establish final integration. The [checked-effect integration](operations-instead-of-shapes.html#from-a-pilot-to-integrated-checked-effects) records that subsequent stage.
+- Source locations at the pilot revision are owner locations plus structural paths,
   not complete nested ranges.
 - Aggregate decoded heap/object/CPU containment remains separate work.
 - Experimental WASM does not imply a production browser prover.
 - No Windows certification, package registry release or upstream adoption is
-  implied by the closed local/fork milestones.
+  implied by these scoped qualification results.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

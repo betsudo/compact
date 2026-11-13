@@ -1,8 +1,8 @@
-## The next experiment
+## Sharing admitted behavior across execution modes
 
-With checked effects available, the team explored an immutable Ledger 8 program request interpreted through shared execution logic. Native and recorded target adapters could consume the same admitted request while retaining their different output responsibilities.
+With checked effects available, the next design introduced an immutable Ledger 8 program request interpreted through shared execution logic. Native and recorded target adapters could consume the same admitted request while retaining their different output responsibilities.
 
-This aimed to reduce the amount of contract-specific generated control flow. It also made the programme's operation inventory available for review.
+This aimed to reduce the amount of contract-specific generated control flow. It also made the program's operation inventory available for review.
 
 An illustrative consumer shape is shown below. Constructing the immutable request performs no effects. Executing it against a context performs the admitted programme.
 
@@ -25,17 +25,17 @@ An immutable description does not make execution order irrelevant. Witness callb
 
 Later slices preserved ordered Unit initializers, terminal effects, tuple returns and named bind receivers. Each one corrected a boundary where a superficially small expression could lose behavior during lowering.
 
-## From the prototype to the working branch
+## Prototype qualification and working-line integration
 
-The October 18 local prototype checkpoint was documented at ec7262e49 with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.
+The local prototype checkpoint was documented at ec7262e49 with an explicit experimental flag and Ledger 8.1.3 scope. The historical note records 3,299 workspace passes, seven manual ignores, and generated scenarios across four routes.
 
-The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition on October 27. Earlier typed effects, witnesses and collection work from October 18–19 was included in the reviewed baseline. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.
+The working branch integration c353907d8c323db16eedb35d5a7f0151aab859bb records that transition. The reviewed baseline included the preceding typed effects, witnesses and collection work. Subsequent PRs added Fold, Map size, projections, DID and SDK consumers.
 
-## What was better
+## Result
 
 The programme model made native and recording behavior easier to relate. The generated API could express a request whose operations had already passed semantic checks, with review material outside its main execution text.
 
-## What remained
+## Scope and subsequent work
 
 The broader functional scope was a proposal with its own acceptance work. A narrow prototype result could not silently establish the entire roadmap. Source admission and proof coverage continued as independent deliveries.
 

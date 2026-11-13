@@ -4,7 +4,7 @@ The Rust AST backend lets a Rust application call generated Compact code through
 
 The compiler also gains a structured way to build Rust. It checks a typed internal program, lowers admitted operations and constructs Rust syntax trees. That gives contributors explicit places to implement a language feature and diagnose unsupported cases.
 
-The TypeScript backend supplies generated contract interfaces, witness callbacks, ledger access and proof data for JavaScript applications. It has typed declarations and runtime checks of its own. The comparison below follows the implementations and tests retained in the November 13, 2026 book edition.
+The TypeScript backend supplies generated contract interfaces, witness callbacks, ledger access and proof data for JavaScript applications. It has typed declarations and runtime checks of its own. The comparison below follows the implementations and tests retained at the source revisions listed for this edition.
 
 ## How the two paths work
 

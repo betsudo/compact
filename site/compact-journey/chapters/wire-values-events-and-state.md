@@ -55,7 +55,7 @@ SDK controls substitute a tag, byte field, domain separator, recipient or event 
 
 A historic Merkle tree default inside a Map begins with empty history. A top-level reset has its own blank-root behavior. Reusing the wrong constructor can produce a plausible tree with the wrong historic semantics.
 
-Both intact plain and historic upstream fixtures now generate typed Rust nested slots. Their eight original exports have selected fresh proof and funded application coverage on arm64.
+At the qualified source revisions, both intact plain and historic upstream fixtures generate typed Rust nested slots. Their eight original exports have selected fresh proof and funded application coverage on arm64.
 
 ## Later qualification receipts
 

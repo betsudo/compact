@@ -44,7 +44,7 @@ Nine child proof gates passed for 87 selected calls. Those counts overlap across
 
 ## Foundation publication
 
-PR #725 merged on November 12. The publication and CI repair history belongs to that PR. The extensive subsequent upstream ports remained a separate local compatibility milestone.
+PR #725 merged the dependency and toolchain migration. Its publication and CI repair records qualify that foundation. Subsequent upstream feature ports have separate local compatibility evidence and integration requirements.
 
 The book therefore marks the foundation as merged and the later corpus work as local qualification. It makes no new claim about every final-head CI result from a historical local receipt.
 

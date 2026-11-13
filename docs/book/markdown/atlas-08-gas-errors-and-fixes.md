@@ -1,7 +1,6 @@
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+## Reference scope
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/08-gas-errors-and-fixes.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
-
+This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The [compositional recording chapter](operations-instead-of-shapes.html) explains the pilot's subsequent integration; the [migration chapter](ledger9-is-a-protocol-migration.html) explains the protocol changes.
 
 The backend became more trustworthy by moving failures to the earliest layer
 that has enough information to explain them—without pretending every failure
@@ -124,3 +123,7 @@ Source recursion and name collisions belong before Rust publication. An
 assertion depending on current ledger state remains a runtime `Result`.
 Verifier identity cannot be authenticated until preparation. Proof and ledger
 rejection must not be simulated by compiler heuristics.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/08-gas-errors-and-fixes.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

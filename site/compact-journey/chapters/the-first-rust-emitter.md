@@ -1,6 +1,6 @@
-## The first useful proof of direction
+## Establishing a second compiler target
 
-The retained original Rust backend showed that Compact could produce useful Rust. Its Scheme passes operated on TypeScript-oriented compiler representations and assembled Rust source text. The original oracle's ancestry introduces the eight-file Ltypescript emitter in June 2026.
+The retained original Rust backend showed that Compact could produce useful Rust. Its Scheme passes operated on TypeScript-oriented compiler representations and assembled Rust source text. The reference implementation introduced an eight-file Ltypescript emitter before the AST rebuild.
 
 This was a practical implementation strategy. A compiler can reuse an already lowered representation and get a working target quickly. Generated crates and examples then make the missing operations visible.
 
@@ -47,7 +47,7 @@ Multiply(Add(a, b), c)
 
 With 2, 3 and 4, the intended result is 20. A string that comes out as 2 + 3 * 4 would give 14. This illustrates why the project tests source behavior in addition to compiling the emitted Rust.
 
-## A contributor's test
+## Identifying an implementation before comparison
 
 When investigating an old generated example, identify the source revision, backend line and runtime family first. Two files both called generated Rust can belong to different architectures and ABI generations. A bug fixed in the oracle is a clue for the AST line, with a separate port and test still required.
 

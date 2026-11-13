@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="The original comparison, with its historical cutoff.">
+<meta name="description" content="Compare implementation stages without combining unrelated evidence.">
 <meta name="theme-color" content="#ffffff">
-<title>Comparing the backend lines · The Compact journey</title>
+<title>Implementation comparison and qualification · The Compact journey</title>
 <link rel="stylesheet" href="../assets/fonts.css?v=0385bcb0fe43">
 <link rel="stylesheet" href="../assets/book.css?v=0c6613947ed8">
 <link rel="stylesheet" href="../assets/syntax.css?v=db5007986835">
@@ -19,34 +19,31 @@
 <a class="skip-link" href="#content">Skip to content</a>
 <header class="masthead">
 <a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
-<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<nav aria-label="Primary"><a href="../index.html">Overview</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
 <div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to Dusk (dark) theme">Dusk</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="../index.html">From source to proof</a>
-<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">Overview</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
 <label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
 <p id="chapter-search-status" class="sr-only" role="status"></p>
-<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Shapes, operations and algebra</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="../chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence" aria-current="page">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">From Compact semantics to typed Rust</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">Establishing the Ledger 8 reference</a></li><li><a href="../chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast">TypeScript and Rust AST</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native Rust execution</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">Typed IR and structured Rust emission</a></li></ul><h2>Recorded execution</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recorded execution and transaction preparation</a></li></ul><h2>Consumer qualification</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Qualifying generated APIs and applications</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Shapes, operations and algebra</a></li></ul><h2>Shared execution</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">Shared execution through immutable requests</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Completing source semantics and generated APIs</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="../chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Cross-contract composition</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract authentication and composition</a></li></ul><h2>Validation guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">Validation from compilation to ledger application</a></li></ul><h2>Continuation</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">Implementation scope and continuation</a></li></ul><h2>Technical reference</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">Compiler architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence" aria-current="page">Implementation comparison and qualification</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Generated Rust reference</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro responsibilities</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, diagnostics and runtime checks</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">Architecture decisions and rationale</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">Glossary</a></li></ul></nav>
 <div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
 </aside>
 <main id="content" tabindex="-1"><article class="reader">
-<header class="chapter-heading"><p class="eyebrow">Historical atlas <span>· 4 min read</span></p>
-<h1>Comparing the backend lines</h1><p class="deck">The original comparison, with its historical cutoff.</p></header>
-<div class="prose"><blockquote>
-<p>Editorial correction for this edition. The historical shorthand “386 source availability” means 386 proof-required exports. The Milestone 2 inventory covered 217 sources, 196 roots and 755 exports, including 369 non-proof exports.</p>
-<p>Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.</p>
-<p>Source snapshot — <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md">original chapter at docs(rust): visualize runtime primitive boundaries</a> <button type="button" class="commit-details" data-commit="51a079bd8598b9decb3df7de92ec10768ec9b8dc" aria-haspopup="dialog" aria-label="Commit details for docs(rust): visualize runtime primitive boundaries">Details</button>. The documented implementation cutoff is <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span> on October 14. The documentation snapshot and implementation revision are distinct.</p>
-</blockquote>
-<h2 id="four-generations-on-consistent-dimensions">Four generations on consistent dimensions</h2>
+<header class="chapter-heading"><p class="eyebrow">Technical reference <span>· 5 min read</span></p>
+<h1>Implementation comparison and qualification</h1><p class="deck">Compare implementation stages without combining unrelated evidence.</p></header>
+<div class="prose"><h2 id="reference-scope">Reference scope</h2>
+<p>This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The <a href="operations-instead-of-shapes.html">compositional recording chapter</a> explains the pilot's subsequent integration; the <a href="ledger9-is-a-protocol-migration.html">migration chapter</a> explains the protocol changes.</p>
+<h2 id="comparing-implementation-stages">Comparing implementation stages</h2>
 <table>
 <thead>
 <tr>
 <th>Dimension</th>
 <th>TypeScript / JS path</th>
 <th>Original Rust backend</th>
-<th>Rust-AST 0.3</th>
-<th>Effect prototype at cutoff</th>
+<th>Qualified typed Rust target</th>
+<th>Checked-effect pilot</th>
 </tr>
 </thead>
 <tbody>
@@ -83,21 +80,21 @@
 <td>Native frontend/source-map path</td>
 <td>Coupled to compiler emission</td>
 <td>Declaration locations + structural paths</td>
-<td>Authenticated origins improved; nested ranges still a stated limit at cutoff</td>
+<td>Authenticated origins improved; nested ranges outside the pilot evidence</td>
 </tr>
 <tr>
 <td>Proof evidence</td>
 <td>Existing reference ecosystem</td>
 <td>Bounded historical cases</td>
 <td>Selected exact-source prove/verify/application receipts</td>
-<td>Per-family receipts; final frozen EA13 matrix pending</td>
+<td>Per-family receipts; final integration qualification outside the pilot evidence</td>
 </tr>
 <tr>
 <td>Product maturity</td>
 <td>Established integration</td>
 <td>Useful oracle/prototype branch</td>
-<td>Closed scoped milestones and generated consumer story</td>
-<td>Local prototype, not pushed/merged/released</td>
+<td>Scoped consumer and application qualification</td>
+<td>Local pilot; subsequent integration covered in the main narrative</td>
 </tr>
 </tbody>
 </table>
@@ -162,42 +159,42 @@
 </tr>
 </tbody>
 </table>
-<h2 id="milestone-evidence-snapshots">Milestone evidence snapshots</h2>
-<h3 id="milestone-1-local-native-baseline">Milestone 1 — local native baseline</h3>
+<h2 id="qualification-by-capability">Qualification by capability</h2>
+<h3 id="native-rust-execution">Native Rust execution</h3>
 <ul>
 <li>Implementation cutoff: <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a">test(rust): gate rejected Rust constructs and witness secrecy</a> <button type="button" class="commit-details" data-commit="ea4cc006f973632c4c7b1fb4569af2b4c93ff38a" aria-haspopup="dialog" aria-label="Commit details for test(rust): gate rejected Rust constructs and witness secrecy">Details</button></span></code>.</li>
-<li>128 generated sources current; 410 workspace test/doc-test groups passed.</li>
+<li>128 generated sources; 410 workspace test/doc-test groups passed.</li>
 <li>All 37 top-level oracle sources ran through the new path, plus selected
   <code>tiny</code>, election, Zerocash and passport flows.</li>
 <li>No first-class proof/deployment pipeline; the wrapper forced <code>--skip-zk</code>.</li>
 </ul>
-<h3 id="milestone-2-usable-target-and-remote-closure">Milestone 2 — usable target and remote closure</h3>
+<h3 id="recorded-target-and-transaction-preparation">Recorded target and transaction preparation</h3>
 <ul>
-<li>Closed at <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c">ci(rust): bound Linux validation artifact storage</a> <button type="button" class="commit-details" data-commit="03c03a39a2d39c43c91143b9526ca1c2ffae706c" aria-haspopup="dialog" aria-label="Commit details for ci(rust): bound Linux validation artifact storage">Details</button></span></code> on 2026-10-06.</li>
-<li>386/386 source availability.</li>
+<li>Qualified at <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c">ci(rust): bound Linux validation artifact storage</a> <button type="button" class="commit-details" data-commit="03c03a39a2d39c43c91143b9526ca1c2ffae706c" aria-haspopup="dialog" aria-label="Commit details for ci(rust): bound Linux validation artifact storage">Details</button></span></code>.</li>
+<li>217 sources, 196 compiled roots and 755 exports: 386 proof-required and 369 non-proof exports. Availability is not proof execution.</li>
 <li>Sampled 37-source / 203-row behavior.</li>
 <li>Selected original four Coracle plus seven microDAO proof selectors, with
   three explicitly balancing-disabled smoke selectors.</li>
 <li>Ten required remote workflows passed at the final revision.</li>
 <li>No crates.io release, Windows certification or universal parity claim.</li>
 </ul>
-<h3 id="milestone-03-qualification-and-adoption">Milestone 0.3 — qualification and adoption</h3>
+<h3 id="generated-consumers-and-application-cohorts">Generated consumers and application cohorts</h3>
 <ul>
 <li>Qualified implementation <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2">test(rust): create fresh relation key directories</a> <button type="button" class="commit-details" data-commit="f9a496660a4a69f4dd7c7927111767ad5c0c12b2" aria-haspopup="dialog" aria-label="Commit details for test(rust): create fresh relation key directories">Details</button></span></code>; closure <code><span class="commit-reference"><a class="commit-title" href="https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a">docs(rust): close the 0.3.0 engineering milestone</a> <button type="button" class="commit-details" data-commit="0d7610b2792d60fee5d3713d4eb0ede3c98cc82a" aria-haspopup="dialog" aria-label="Commit details for docs(rust): close the 0.3.0 engineering milestone">Details</button></span></code>.</li>
-<li>19/19 required outcomes; 93 criteria; 121 milestone ADRs.</li>
+<li>19/19 required outcomes; 93 criteria; 121 supporting ADRs.</li>
 <li>198 roots, 232 inputs and 1,055 functions classified.</li>
 <li>Runtime changed-line coverage 97.87%; mapped total 88.03%; testkit 97.62%;
   backend and macro cohorts retained separately at 95.11% and 100%.</li>
 <li>DID v0.7.0: 12 stateful exports; 42 finite relation calls.</li>
 <li>Passport cohort: 17 files, 75 pure exports, 202 behavior cases and four
-  codec vectors. Full Passport ACC adoption was removed.</li>
+  codec vectors. Full Passport ACC adoption was excluded after the construct inventory found no additional unique qualification mechanism; its exact composition remained unqualified.</li>
 <li>Remote core: 742 cases in 63 result blocks at the named revision.</li>
 <li>RustSec: zero vulnerability matches, with four workspace / three standalone
   notices and strict nonzero exit retained.</li>
 </ul>
 <p>Counts overlap and must not be summed into one “tests passed” figure.</p>
-<h3 id="effect-prototype-active-local-program">Effect prototype — active local program</h3>
-<p>At <code><span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span></code>, the saved story cutoff includes the historical-test process
+<h3 id="checked-effect-pilot-and-measured-validation">Checked-effect pilot and measured validation</h3>
+<p>At <code><span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span></code>, the pilot source includes the historical-test process
 sharding change. The full installed validation kept 974 unique planned and
 executed IDs with no failures, errors, skips or unrun cases. Four independent
 process shards reduced the measured wall time from 10,270 seconds (about
@@ -214,42 +211,46 @@ frozen machine and source.</p>
 </ul>
 <p>It is a measured local optimization, not a universal CI speed claim.</p>
 <h2 id="parity-findings-that-changed-the-design">Parity findings that changed the design</h2>
-<p>The TypeScript comparison was not a ceremonial check. It found genuine Rust
-divergences, including incorrect hash-to-curve representation, the wrong
+<p>Comparison with TypeScript found Rust divergences, including incorrect hash-to-curve representation, the wrong
 Jubjub Schnorr predicate, permissive Boolean/bounded-unsigned decoding, and a
 validated-point alias that could panic for attacker-controlled coordinates.</p>
-<p>Rust also found genuine source/runtime defects: malformed native widths that
-JS silently sliced, and Merkle update underflow before a capacity check. The
-right conclusion is not “Rust won.” Independent implementations made hidden
+<p>The Rust comparison also exposed source/runtime defects: malformed native widths that
+JS silently sliced, and Merkle update underflow before a capacity check. Independent implementations made previously implicit
 assumptions observable in both directions.</p>
-<h2 id="current-limitations">Current limitations</h2>
+<h2 id="limits-of-the-reference-evidence">Limits of the reference evidence</h2>
 <ul>
 <li>No formal proof of complete Compact semantics or universal TS parity.</li>
 <li>Proof support is per applicable export and exact artifact set.</li>
-<li>The effect prototype is local and not yet EA13-closed.</li>
-<li>Source locations at the cutoff are owner locations plus structural paths,
+<li>The pilot receipts do not establish final integration. The <a href="operations-instead-of-shapes.html#from-a-pilot-to-integrated-checked-effects">checked-effect integration</a> records that subsequent stage.</li>
+<li>Source locations at the pilot revision are owner locations plus structural paths,
   not complete nested ranges.</li>
 <li>Aggregate decoded heap/object/CPU containment remains separate work.</li>
 <li>Experimental WASM does not imply a production browser prover.</li>
 <li>No Windows certification, package registry release or upstream adoption is
-  implied by the closed local/fork milestones.</li>
-</ul></div>
+  implied by these scoped qualification results.</li>
+</ul>
+<h3 id="source-provenance">Source provenance</h3>
+<p>Adapted from the <a href="https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/03-comparison-and-evidence.md">retained reference source</a>. That documentation records implementation <span class="commit-reference"><a class="commit-title" href="../revisions.html#commit-f3cef7992d2c837be7950e25e8f5f8065f7f7df0">perf(test): shard historical laws in isolated processes</a> <button type="button" class="commit-details" data-commit="f3cef7992d2c837be7950e25e8f5f8065f7f7df0" aria-haspopup="dialog" aria-label="Commit details for perf(test): shard historical laws in isolated processes">Details</button></span>; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.</p></div>
 <div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/atlas-03-comparison-and-evidence.md">Read the frozen Markdown source</a></div>
-<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-02-architecture.html"><small>Previous chapter</small>The October architecture</a><a class="next" href="atlas-06-generated-rust-examples.html"><small>Next chapter</small>Read the generated Rust <span aria-hidden="true">→</span></a></nav>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="atlas-02-architecture.html"><small>Previous chapter</small>Compiler architecture</a><a class="next" href="atlas-06-generated-rust-examples.html"><small>Next chapter</small>Generated Rust reference <span aria-hidden="true">→</span></a></nav>
 </article></main>
 <aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
 <ul>
-<li><a href="#four-generations-on-consistent-dimensions">Four generations on consistent dimensions</a></li>
+<li><a href="#reference-scope">Reference scope</a></li>
+<li><a href="#comparing-implementation-stages">Comparing implementation stages</a></li>
 <li><a href="#evidence-is-a-ladder-not-a-number">Evidence is a ladder, not a number</a></li>
-<li><a href="#milestone-evidence-snapshots">Milestone evidence snapshots</a><ul>
-<li><a href="#milestone-1-local-native-baseline">Milestone 1 — local native baseline</a></li>
-<li><a href="#milestone-2-usable-target-and-remote-closure">Milestone 2 — usable target and remote closure</a></li>
-<li><a href="#milestone-03-qualification-and-adoption">Milestone 0.3 — qualification and adoption</a></li>
-<li><a href="#effect-prototype-active-local-program">Effect prototype — active local program</a></li>
+<li><a href="#qualification-by-capability">Qualification by capability</a><ul>
+<li><a href="#native-rust-execution">Native Rust execution</a></li>
+<li><a href="#recorded-target-and-transaction-preparation">Recorded target and transaction preparation</a></li>
+<li><a href="#generated-consumers-and-application-cohorts">Generated consumers and application cohorts</a></li>
+<li><a href="#checked-effect-pilot-and-measured-validation">Checked-effect pilot and measured validation</a></li>
 </ul>
 </li>
 <li><a href="#parity-findings-that-changed-the-design">Parity findings that changed the design</a></li>
-<li><a href="#current-limitations">Current limitations</a></li>
+<li><a href="#limits-of-the-reference-evidence">Limits of the reference evidence</a><ul>
+<li><a href="#source-provenance">Source provenance</a></li>
+</ul>
+</li>
 </ul>
 </div>
 </aside>

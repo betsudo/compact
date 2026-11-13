@@ -6,7 +6,7 @@ A call that accidentally reaches a same-shaped sibling entrypoint could produce 
 
 ## Start from the mainstream implementation
 
-The owner directed the team to read and port mainstream's sequence carefully. Resolve the module and interface. Authenticate the operation and expected verifier. Enter the callee's context. Restore the caller. Propagate the result and commitment opening through the caller's witness.
+The mainstream implementation provides the reference sequence for preserving operation identity and call context. Resolve the module and interface. Authenticate the operation and expected verifier. Enter the callee's context. Restore the caller. Propagate the result and commitment opening through the caller's witness.
 
 This avoids inventing an independent interpretation of a cross-contract call.
 

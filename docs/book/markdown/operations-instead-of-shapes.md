@@ -191,17 +191,17 @@ A recognizer can be removed after the new composition covers its accepted family
 
 The retirement programme therefore worked through bounded operation families and explicit refusal controls. A capability book and shared registry made admission easier to inspect.
 
-## Local prototype to integrated change
+## From a pilot to integrated checked effects
 
-The October 14 storybook froze f3cef799 while final effect qualification was still open. The later integrated commit 0437c894cd069af475bd8d5b254c24cc73615a09 on October 16 records the checked-effect replacement through PR #641.
+The pilot at f3cef799 tested the compositional model while final effect qualification remained open. PR #641 subsequently integrated the checked-effect replacement at 0437c894cd069af475bd8d5b254c24cc73615a09.
 
-This is a good example of why a living book needs dated chapters. The old snapshot accurately described a prototype. The continuation records its later integration.
+Pilot results establish the cases tested at the pilot source. The integration record establishes the later replacement. Reference material describing the pilot must therefore be read alongside the integration result, rather than as the current status of checked effects.
 
-## What was solved
+## Result
 
 Operations became reusable components of larger contract behavior. Native and recorded execution could share semantic ownership, and retirement acquired a measurable obligation.
 
-## What remained
+## Scope and subsequent work
 
 A compositional foundation still needs specific source features, result conversions, public interfaces and proof gates. The following iterations show that work in concrete terms.
 

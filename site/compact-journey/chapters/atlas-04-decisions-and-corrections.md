@@ -1,12 +1,9 @@
-> Editorial correction for this edition. The ACC-removal rationale below is superseded by ADR 0316. The owner removed ACC after the construct inventory found no unique witness, struct or ledger mechanisms. Its exact application composition was unqualified. The later narrative uses that recorded reason.
+## Reference scope
 
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The [compositional recording chapter](operations-instead-of-shapes.html) explains the pilot's subsequent integration; the [migration chapter](ledger9-is-a-protocol-migration.html) explains the protocol changes.
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/04-decisions-and-corrections.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
-
-
-The useful history is not a straight line. These are representative moments
-where the evidence changed the architecture or narrowed a claim.
+The following decisions connect observed limitations to architectural changes.
+Each entry separates the problem, chosen approach, evidence, benefit and limit.
 
 ## 1. Preserve the old backend instead of deleting it
 
@@ -16,7 +13,7 @@ impossible.
 **Decision.** Keep `codegen-rust` as an oracle and compare exact sources,
 results, state, transcripts and refusals.
 
-**Evidence.** The first Rust-AST milestone ran all 37 exact top-level oracle
+**Evidence.** The native Rust qualification ran all 37 exact top-level oracle
 sources through the new path.
 
 **Benefit.** The project could change the architecture without rewriting its
@@ -91,15 +88,17 @@ source-bound proof/application cases and an explicit retirement ledger.
 **Limit.** A compositional IR can centralize bugs too; exhaustive variants,
 resource limits and old-first laws remain necessary.
 
-## 6. Full Passport ACC adoption was the wrong milestone goal
+## 6. Separate compiler qualification from full application adoption
 
-**Problem.** A large ledger9-era application risked turning unrelated foreign
-curve, WebAuthn and newer-ledger requirements into alleged ledger-8 support.
+**Problem.** Full application adoption adds a distinct integration obligation.
+A construct inventory was needed to determine whether ACC introduced a unique
+witness, struct or ledger mechanism beyond the retained compiler cohorts.
 
-**Decision.** Inventory constructs, retain generic Jubjub work, remove full ACC
-adoption and keep bounded passport/DID cohorts separately evidenced.
+**Decision.** After the inventory found no unique mechanism requiring another
+qualification family, remove full ACC adoption from the accepted scope. Retain
+generic Jubjub work and separately qualified Passport and DID cohorts.
 
-**Evidence.** The 0.3 closure records the removed outcome and the exact retained
+**Evidence.** ADR 0316 and the consumer qualification report record the removed outcome and the exact retained
 application cases.
 
 **Benefit.** Useful compiler work survived without a misleading product claim.
@@ -121,7 +120,7 @@ mutation controls passed; measured wall time fell to about 55 minutes.
 a snapshot replay.
 
 **Limit.** The result is machine/source specific and still needs the full gate
-at final freeze.
+for final qualification.
 
 ## 8. Source provenance must be honest
 
@@ -139,12 +138,16 @@ manifests preserve exact hashes and failure cases.
 **Benefit.** A passing fixture can be tied back to a real Compact source.
 
 **Limit.** Nested expression ranges and transient-value provenance are not
-claimed implemented at this cutoff.
+established by the pilot reference.
 
 ## Independent review boundary
 
 The project used independent coding-agent reviews for architecture, dependency,
 correctness and final-slice checks. They found actionable issues and provided a
 useful second model. They are not a human security audit, formal verification
-or production certification. The story uses the exact phrase “independent
+or production certification. This guide uses the phrase “independent
 coding-agent review” for that reason.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/04-decisions-and-corrections.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

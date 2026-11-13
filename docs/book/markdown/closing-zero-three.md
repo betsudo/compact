@@ -1,39 +1,44 @@
-## Why broaden the acceptance surface
+## Why native and recorded execution were insufficient
 
-A generated Counter is a useful vertical slice. Real users also need understandable generated APIs, compatibility checks, examples, diagnostics, package layout, application fixtures and proof consumers.
+A generated Counter establishes a useful execution path. Application developers also need understandable generated APIs, compatible packages, diagnostic errors, examples and proof consumers. The next stage therefore qualified the target through generated consumers and selected application cohorts.
 
-The 0.3.0 milestone brought those concerns into an explicit acceptance crosswalk. The team could then ask whether each promised outcome had code, tests, documentation and qualification evidence.
+An acceptance crosswalk connected each required outcome to its implementation, tests, documentation and retained qualification evidence. This made it possible to distinguish an implemented API from an exercised application path.
 
-## Real applications expose different pressure
+## Application cohorts and their purpose
 
-DID and Passport exercised different application cohorts. DID covered twelve stateful exports with bounded native/recorded scenarios and proof receipts. The accepted Passport cohort covered 75 pure exports and had zero proof applicability. Together they exposed API and representation assumptions that a tiny circuit never touches.
+| Cohort | Behavior exercised | Qualification boundary |
+| --- | --- | --- |
+| DID v0.7.0 | All twelve original stateful exports, with 42 finite relation calls | Scoped native, recorded and strict proof cases for the retained sources |
+| Passport dependency closure | Seventeen files, 75 pure exports, 202 sampled behavior cases and four codec vectors | Zero proof applicability; this cohort does not qualify the full application |
 
-Adoption was scoped. A proof-eligible selected export does not make every large contract cheap to prove. A partial contract exercise also needs to remain identified as such. Resource limits and the selected proof profile constrain what a local run establishes.
+These cohorts exposed representation and API assumptions absent from a small circuit. Their counts describe different populations and must not be added into a single coverage total.
 
-## The importance of preserving a failed run
+ContractLab provided native and replay scenarios. ProofLab used official resolver and proving-provider interfaces for the applicable proof cases. Generated consumers and package compatibility checks exercised the public interface independently of backend unit tests.
 
-The closeout retained the original failed full run at revision 551f065c. Its final qualification joined the 423 successful unchanged-prefix commands with three recovery commands at the named source.
+## Retaining failures and source continuity
 
-That is more informative than deleting failure evidence and showing a green badge. It explains which inputs and source remained valid, where repairs entered, and why the composite receipt was accepted.
+The original full run at revision 551f065c failed and remains part of the record. Final local acceptance combined 423 successful unchanged-prefix commands with three recovery commands at the qualified source. This is composite evidence, not a successful rerun of the original full command sequence.
 
-## Scope changes are engineering decisions
+Preserving that distinction identifies the accepted inputs, the point at which the repair entered, and the source continuity supporting reuse of the unchanged prefix.
 
-ACC was explicitly removed from the 0.3.0 accepted scope after the construct inventory found no unique witness, struct or ledger mechanism requiring another qualification family. Its exact application composition remained unqualified. Decoder resource containment also had an explicit boundary, with broader aggregate containment left for follow-up.
+## Explicit exclusions
 
-A milestone can close responsibly when its agreed outcomes are satisfied and its excluded work is documented. Reopening the same accepted work without a new defect would slow the next milestone while adding little confidence.
+Full Passport ACC adoption was removed from the accepted scope after a construct inventory found no unique witness, struct or ledger mechanism requiring another qualification family. Generic Jubjub work and the bounded DID and Passport cohorts were retained. The exact ACC application composition remained unqualified.
 
-## The October 9 closure
+The opt-in 64 MiB decoder preset bounded encoded input admission. It did not establish aggregate decoded heap or CPU containment. Broader resource containment, production client orchestration and distribution qualification remained separate work.
 
-The milestone label was 0.3.0, while the Rust packages remained version 0.2.0. The qualified compiler boundary used private IR 20 and runtime ABI 50. Qualified implementation f9a496660a4a69f4dd7c7927111767ad5c0c12b2 and closure 0d7610b2792d60fee5d3713d4eb0ede3c98cc82a define this checkpoint. The report records 19 required outcomes accepted, 136 issues closed and a 93-criterion crosswalk.
+## Qualified result
 
-The accepted delivery was a dedicated working line and matching evidence. A broader merge or distribution decision remained its own operation.
+The implementation at f9a496660a4a69f4dd7c7927111767ad5c0c12b2 and the report at 0d7610b2792d60fee5d3713d4eb0ede3c98cc82a define this stage. The compiler boundary used private IR 20 and runtime ABI 50. The report reconciled 19 required outcomes against 93 criteria.
 
-## What was better
+The result was a qualified compiler target with generated-consumer checks and named application evidence. It did not establish full Compact parity, every application path, or a package registry release. Internal project labels in the linked reports are separate from compiler, language, SDK and crate versions.
 
-The result was a usable, reviewed compiler target with a richer application corpus and an explicit compatibility story. Just as valuable was the discipline of retaining limitations beside the passing outcomes.
+## Why compositional recording followed
+
+Qualification demonstrated useful supported applications, but recording still depended on specialized whole-circuit profiles. A new arrangement of supported operations could require another profile. The next stage addressed this reuse limit by making checked operations compose into a complete recorded plan.
 
 ### Source trail
 
-- [Qualified 0.3.0 implementation](https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2)
-- [0.3.0 closeout](https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a)
-- [Closure report](https://github.com/betsudo/compact/blob/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a/doc/rust/0.3.0-closure.md)
+- [Qualified consumer implementation](https://github.com/betsudo/compact/commit/f9a496660a4a69f4dd7c7927111767ad5c0c12b2)
+- [Consumer qualification report](https://github.com/betsudo/compact/commit/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a)
+- [Accepted scope and limitations](https://github.com/betsudo/compact/blob/0d7610b2792d60fee5d3713d4eb0ede3c98cc82a/doc/rust/0.3.0-closure.md)

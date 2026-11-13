@@ -43,9 +43,9 @@ An observed call must bind the installed contract state and operation. The expec
 
 Wallet-facing work added deployment and subsequent-call handoff, state observations, typed reads, and the metadata needed to build later calls from confirmed state. That made the generated API useful beyond isolated examples. A historical ABI 28 Counter observation recorded round advancing from 1 to 2. Indexed actions were bound to the final merged transaction hash and checked through a trusted node/indexer. That observation did not provide authenticated consensus finality.
 
-## Milestone 2 closes a scoped target
+## Packaging the complete execution path
 
-By October 6 at 03c03a39a2d39c43c91143b9526ca1c2ffae706c, compactc --target rust emitted a crate, matching runtime material, proving artifacts and a manifest. The historical closeout records private IR 20, runtime ABI 49 and compiler 0.31.133.
+At 03c03a39a2d39c43c91143b9526ca1c2ffae706c, compactc --target rust emitted a crate, matching runtime material, proving artifacts and a manifest. The qualification report records private IR 20, runtime ABI 49 and compiler 0.31.133.
 
 The inventory covered 217 sources, 196 compiled roots and 755 exports. All 386 proof-required exports were available, alongside 369 non-proof exports. Sampled behavior covered 37 sources and 203 rows. Selected original proof/application cases and historical wallet observations supplied deeper evidence. Ten required remote workflows passed at the accepted head.
 
@@ -53,7 +53,7 @@ Availability, sampled behavior and selected proof coverage remain separate quant
 
 ### Source trail
 
-- [Milestone 2 accepted head](https://github.com/betsudo/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c)
+- [Recorded target qualification](https://github.com/betsudo/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c)
 - [Replayable execution ADR](https://github.com/betsudo/compact/blob/939b7aaaab7ff346149746dc8fce8bd29705b1d9/doc/rust/adr/0001-record-circuit-execution-as-a-replayable-ledger-trace.md)
 - [Typed ledger descriptors ADR](https://github.com/betsudo/compact/blob/939b7aaaab7ff346149746dc8fce8bd29705b1d9/doc/rust/adr/0002-generate-typed-ledger-field-descriptors.md)
 - [Subsequent calls from confirmed state #140](https://github.com/betsudo/compact/issues/140)

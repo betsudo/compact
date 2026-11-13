@@ -1,7 +1,6 @@
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+## Reference scope
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/07-runtime-and-macros-domain-model.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
-
+This reference describes the Ledger 8 typed target and checked-effect pilot. It is an architectural reference, not a status report for the later Ledger 9 implementation. The [compositional recording chapter](operations-instead-of-shapes.html) explains the pilot's subsequent integration; the [migration chapter](ledger9-is-a-protocol-migration.html) explains the protocol changes.
 
 The Rust backend is not one generated file. It is a set of ownership
 boundaries. The most useful mental model is a transition from a source-owned
@@ -164,3 +163,7 @@ Those numbers describe different internal contracts and must not be compared
 as one version line. The runtime reuses ledger-8.0.3 primitives; a matching ABI
 does not by itself establish proof keys, network compatibility or application
 adoption.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/07-runtime-and-macros-domain-model.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

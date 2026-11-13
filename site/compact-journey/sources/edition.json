@@ -23,17 +23,17 @@
     },
     {
       "id": "native",
-      "title": "Native AST milestone",
+      "title": "Native Rust execution",
       "head": "ea4cc006f973632c4c7b1fb4569af2b4c93ff38a"
     },
     {
       "id": "recording",
-      "title": "Recorded contracts milestone",
+      "title": "Recorded execution",
       "head": "03c03a39a2d39c43c91143b9526ca1c2ffae706c"
     },
     {
       "id": "qualified",
-      "title": "Qualified consumers milestone",
+      "title": "Consumer qualification",
       "head": "0d7610b2792d60fee5d3713d4eb0ede3c98cc82a"
     },
     {
@@ -43,7 +43,7 @@
     },
     {
       "id": "functional",
-      "title": "Functional Ledger 8",
+      "title": "Shared execution",
       "head": "c353907d8c323db16eedb35d5a7f0151aab859bb"
     },
     {

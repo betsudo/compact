@@ -1,7 +1,6 @@
-> Historical atlas. This chapter preserves the October 14 documentation cutoff. The main narrative records subsequent deliveries and current limits.
+## Reference scope
 
-> Source snapshot — [original chapter at 51a079bd](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/glossary.md). The documented implementation cutoff is f3cef799 on October 14. The documentation snapshot and implementation revision are distinct.
-
+The definitions below apply across the guide. API and representation details remain specific to the named compiler, runtime and ledger revisions.
 
 **Compact**
 Midnight's smart-contract language and compiler pipeline.
@@ -30,23 +29,29 @@ updated context. It does not imply recording or proof support.
 Producing the ordered public VM/effect program and private/public values needed
 for replay and later proof-oriented integration.
 
-**Replay**
+**Recording replay**
 Checking a recorded program against observed state and runtime invariants.
+
+**Repeated-transaction refusal**
+Checking that a transaction already applied to the ledger is rejected when
+submitted again under the tested policy. This is separate from recording replay.
 
 **Preparation**
 Constructing a ledger call/prototype from recorded execution, observed state,
 verifier material and caller-supplied policy.
 
-**Proof applicability**
-Whether a circuit and its exact artifacts have the required public/private
-inputs and policy to be proved. A generated recording API is not enough.
+**Proof requirement and qualification**
+The frontend identifies whether an export requires proving. Qualification
+separately checks that its exact source, artifacts, public/private inputs and
+policy produce a verified proof and, where required, an applied transaction.
+Recording availability alone establishes neither result.
 
 **Shape recognizer / recording profile**
 A specialized admission path that recognizes a known whole-circuit pattern.
 It was useful for early coverage but did not compose naturally.
 
 **Recording effect algebra**
-The prototype's typed vocabulary and composition rules for building a complete
+The typed vocabulary and composition rules for building a complete
 `RecordedPlan` from checked operations.
 
 **Typed refusal / `RecordingGap`**
@@ -68,3 +73,7 @@ pretending a local workaround is an upstream specification decision.
 **ADR**
 Architecture Decision Record: problem, decision, alternatives, ownership,
 evidence and limitations at a named point in history.
+
+### Source provenance
+
+Adapted from the [retained reference source](https://github.com/betsudo/compact/blob/51a079bd8598b9decb3df7de92ec10768ec9b8dc/doc/rust/journey/glossary.md). That documentation records implementation f3cef799; the documentation and implementation revisions are distinct. Later results are identified in the main chapters rather than inferred from this reference.

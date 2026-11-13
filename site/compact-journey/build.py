@@ -81,12 +81,12 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 <a class="skip-link" href="#content">Skip to content</a>
 <header class="masthead">
 <a class="wordmark" href="{prefix}index.html">COMPACT <span>ENGINEERING BOOK</span></a>
-<nav aria-label="Primary"><a href="{prefix}index.html">The story</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
+<nav aria-label="Primary"><a href="{prefix}index.html">Overview</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
 <div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to Dusk (dark) theme">Dusk</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="{prefix}index.html">From source to proof</a>
-<nav class="sidebar-tools" aria-label="Book tools"><a href="{prefix}index.html">The story</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="{prefix}index.html">Overview</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
 <label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
 <p id="chapter-search-status" class="sr-only" role="status"></p>
 {navigation(prefix, selected)}
@@ -128,7 +128,7 @@ def build():
         shutil.copyfile(diagram, OUTPUT/'assets'/'diagrams'/diagram.name)
     (OUTPUT/'sources').mkdir()
     for name in ('edition.json','ledger9-adoption.md','ledger9-upstream-compatibility.md',
-                 'ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','revisions.json'):
+                 'ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','revisions.json','documentation-audit.md'):
         shutil.copyfile(ROOT/'sources'/name, OUTPUT/'sources'/name)
     (OUTPUT/'markdown').mkdir()
     for chapter in CHAPTERS:
@@ -165,6 +165,7 @@ def build():
             lambda match: f'href="chapters/{match[1]}{match[2] or ""}"',
             printable,
         )
+        printable = printable.replace('href="../sources.html"', 'href="sources.html"')
         # Prefix each article's fragment identifiers in the combined print document.
         printable = re.sub(r'id="([^"]+)"', lambda m: f'id="{chapter["slug"]}-{m[1]}"', printable)
         printable = re.sub(r'href="#([^"]+)"', lambda m: f'href="#{chapter["slug"]}-{m[1]}"', printable)
@@ -176,7 +177,7 @@ def build():
         ('Ledger 8 reference','A stable protocol family and an independent behavioral reference.','typescript-and-fixed-ground'),
         ('Native Rust AST','Typed IR, checked lowering, structured syntax and ordinary Rust execution.','a-closed-rust-boundary'),
         ('Recorded contracts','Ordered effects, replay, installed operations and proof preparation.','recording-is-an-execution'),
-        ('0.3.0 closure','Scoped applications, consumer qualification and explicit acceptance.','closing-zero-three'),
+        ('Consumer qualification','Generated APIs, application cohorts and explicit acceptance.','closing-zero-three'),
         ('Compositional effects','Operations and ownership replace growing shape catalogues.','operations-instead-of-shapes'),
         ('Ledger 9 foundation','A new SDK graph, ABI 54, Rust 1.99 and funded transactions.','ledger9-is-a-protocol-migration'),
         ('Compatibility work','Cryptography, wire values, events and the remaining corpus.','porting-the-cryptographic-surface'),
@@ -185,17 +186,17 @@ def build():
     body = f'''<section class="book-hero">
 <p class="eyebrow">AN ENGINEERING HISTORY · LEDGER 8 → LEDGER 9</p>
 <h1>From source<br>to <em>proof.</em></h1>
-<p class="hero-deck">The story of making Compact a typed Rust target. The decisions, the failed assumptions, and the tests that turned a compiler experiment into a protocol migration.</p>
+<p class="hero-deck">The design and implementation of Compact’s typed Rust target: the limitations that motivated each change, the architecture selected, and the tests that establish its supported behavior.</p>
 <div class="hero-actions"><a class="button primary" href="{chapter_href(CHAPTERS[0])}">Start reading <span aria-hidden="true">→</span></a><a class="button" href="architecture.html">Follow a circuit</a><a class="text-link" href="chapters/typescript-and-rust-ast.html">Compare the backends →</a><a id="continue-reading" class="resume-link" hidden href="#">Continue reading</a></div>
 <div class="edition-strip"><span>{len(CHAPTERS)} chapters</span><span>{total_words:,} words</span><span>{EDITION["commit_count"]:,} indexed commits</span><span>13 November 2026 edition</span></div><p class="download"><a href="https://betsudo.github.io/compact/book/compact-journey.zip" download>Download the book and Markdown chapters</a></p>
 </section>
-<section class="home-section"><div class="section-heading"><p class="eyebrow">THE THROUGH LINE</p><h2>A new owner for every<br>hidden assumption.</h2><p>The chapters connect the reason for each change to its implementation and the evidence that followed.</p></div><ol class="timeline">{timeline}</ol></section>
-<section class="status-panel"><h2>Where the story stands</h2><div><p><strong>Ledger 9 foundation merged.</strong> PR #725 brought the SDK and toolchain migration into the working branch.</p><p><strong>Upstream compatibility continues locally.</strong> Recent cryptography, event, serialization and proof results have named arm64 source revisions. Full corpus, native Linux qualification and generated two-contract execution remain open.</p><a href="chapters/the-next-reader-inherits-a-map.html">Read the current boundary →</a></div></section>
-<section class="home-section"><div class="section-heading"><p class="eyebrow">CONTENTS</p><h2>The complete story</h2><p>Read in sequence or enter through the engineering problem that interests you.</p></div><div class="chapter-grid">{chapter_cards}</div></section>
-<section class="atlas-promo"><p class="eyebrow">THE HISTORICAL ATLAS</p><h2>The architecture as it was understood then.</h2><p>Seven preserved chapters explain generated Rust, runtime ownership, macros, gas and errors at the October 14 cutoff.</p><a class="button" href="{chapter_href(first_atlas_chapter)}">Open the atlas →</a><a class="text-link" href="https://betsudo.github.io/compact/">Visit the original interactive storybook</a></section>'''
+<section class="home-section"><div class="section-heading"><p class="eyebrow">IMPLEMENTATION SEQUENCE</p><h2>Capabilities and their<br>design rationale.</h2><p>The chapters connect the reason for each change to its implementation and the evidence that followed.</p></div><ol class="timeline">{timeline}</ol></section>
+<section class="status-panel"><h2>Implementation status at the edition cutoff</h2><div><p><strong>Ledger 9 foundation merged.</strong> PR #725 brought the SDK and toolchain migration into the working branch.</p><p><strong>Upstream compatibility continues locally.</strong> Selected cryptography, event, serialization and proof results have named arm64 source revisions. Full corpus, native Linux qualification and generated two-contract execution remain open.</p><a href="chapters/the-next-reader-inherits-a-map.html">Read the implementation scope →</a></div></section>
+<section class="home-section"><div class="section-heading"><p class="eyebrow">CONTENTS</p><h2>Chapters</h2><p>Read in sequence or enter through the engineering problem that interests you.</p></div><div class="chapter-grid">{chapter_cards}</div></section>
+<section class="atlas-promo"><p class="eyebrow">TECHNICAL REFERENCE</p><h2>Architecture, APIs and validation.</h2><p>Seven reference chapters explain the Ledger 8 architecture, generated Rust, runtime responsibilities, diagnostics and qualification. Source notes distinguish pilot behavior from subsequent integration.</p><a class="button" href="{chapter_href(first_atlas_chapter)}">Open the reference →</a><a class="text-link" href="https://betsudo.github.io/compact/">View the retained Ledger 8 overview</a></section>'''
     write('index.html', shell('From source to proof', body))
     options=''.join(f'<option value="{p["id"]}">{escape(p["title"])}</option>' for p in EDITION['phases'])
-    body=f'''<article class="wide-reader"><header class="chapter-heading"><p class="eyebrow">THE GRANULAR RECORD</p><h1>Commit explorer</h1><p class="deck">Find an iteration, trace a repair, or browse the steps inside a milestone.</p></header>
+    body=f'''<article class="wide-reader"><header class="chapter-heading"><p class="eyebrow">THE GRANULAR RECORD</p><h1>Commit explorer</h1><p class="deck">Find an iteration, trace a repair, or trace the implementation of a capability.</p></header>
 <div class="prose"><p>This frozen catalogue contains {EDITION["commit_count"]:,} unique commits across the selected AST, migration, follow-up and original-oracle histories. Phase grouping follows Git reachability. Topic tags use commit-subject matching. Author and committer dates are retained.</p><p>Published links are limited to commits reachable from the verified working-line, Pages or original-oracle public heads. Local records retain their full identity here.</p></div>
 <form class="commit-filters" id="commit-filters"><label>Search<input id="commit-query" type="search" placeholder="Hash, subject or topic" autocomplete="off"></label><label>Phase<select id="commit-phase"><option value="">All phases</option>{options}</select></label><label>Topic<select id="commit-topic"><option value="">All topics</option>{"".join(f'<option>{v}</option>' for v in ['proofs','types','recording','crypto','tooling','docs','state'])}</select></label><label>Publication<select id="commit-publication"><option value="">All records</option><option value="published">Published history</option><option value="local">Local at cutoff</option></select></label><label>Order<select id="commit-order"><option value="oldest">Oldest author date first</option><option value="newest">Newest author date first</option></select></label><button type="reset">Clear filters</button></form>
 <p id="commit-status" class="results-status" role="status">Loading commit catalogue…</p>
@@ -222,7 +223,7 @@ def build():
             label = 'View commit on GitHub' if record['url'] else 'View local revision'
             entries.append(f'<details class="iteration"><summary><span class="iteration-date">{row["date"]}</span>{escape(row["title"])}</summary><p>{escape(row["explanation"])}</p><p><a href="{url}">{label}</a></p></details>')
         sections.append(f'<section class="iteration-phase"><h2>{escape(phase["title"])}</h2>{"".join(entries)}</section>')
-    body=f'<article class="wide-reader"><header class="chapter-heading"><p class="eyebrow">MILESTONES TO IMPLEMENTATION STEPS</p><h1>The iteration ledger</h1><p class="deck">Open a step to read what changed, the problem it addressed, and the evidence boundary.</p></header><div class="prose"><p>These {len(iterations)} representative implementation and acceptance checkpoints connect the narrative to the commit graph. A checkpoint can summarize several commits. Its explanation records that distinction. The full catalogue remains available in the commit explorer.</p></div>{"".join(sections)}</article>'
+    body=f'<article class="wide-reader"><header class="chapter-heading"><p class="eyebrow">IMPLEMENTATION AND QUALIFICATION</p><h1>The iteration ledger</h1><p class="deck">Open a step to read what changed, the problem it addressed, and the evidence boundary.</p></header><div class="prose"><p>These {len(iterations)} representative implementation and acceptance checkpoints connect the narrative to the commit graph. A checkpoint can summarize several commits. Its explanation records that distinction. The full catalogue remains available in the commit explorer.</p></div>{"".join(sections)}</article>'
     write('iterations.html',shell('The iteration ledger',body))
     local_records = [record for record in REFERENCES.records.values() if not record['url']]
     local_cards = []
@@ -234,8 +235,8 @@ def build():
                            f'<code>{record["sha"]}</code></details></section>')
     local_body = '<article class="reader"><header class="chapter-heading"><h1>Local revisions</h1><p class="deck">Commits preserved in the edition’s local evidence.</p></header><div class="prose">' + ''.join(local_cards) + '</div></article>'
     write('revisions.html', shell('Local revisions', local_body))
-    public_sources=''.join(f'<li><a href="sources/{escape(name)}">{escape(name)}</a></li>' for name in ('ledger9-adoption.md','ledger9-upstream-compatibility.md','ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','edition.json'))
-    body=f'''<article class="reader"><header class="chapter-heading"><p class="eyebrow">HOW THIS EDITION WAS MADE</p><h1>Sources and boundaries</h1><p class="deck">A public, reproducible record of the material behind the story.</p></header>
+    public_sources=''.join(f'<li><a href="sources/{escape(name)}">{escape(name)}</a></li>' for name in ('ledger9-adoption.md','ledger9-upstream-compatibility.md','ledger9-delivery-register.json','pull-requests.json','issues.json','iterations.json','edition.json','documentation-audit.md'))
+    body=f'''<article class="reader"><header class="chapter-heading"><p class="eyebrow">HOW THIS EDITION WAS MADE</p><h1>Sources and boundaries</h1><p class="deck">Source revisions, qualification scope and editorial conventions.</p></header>
 <div class="prose"><h2>Primary sources</h2><p>The narrative combines verified Git history, repository ADRs, qualification plans and reports, public issue and pull-request metadata, and the owner's Obsidian engineering journal. Private notes are summarized. Complete witness data, keys and workstation paths are excluded from the public edition.</p>
 <h2>Frozen source identities</h2><table><thead><tr><th>Source</th><th>Revision</th></tr></thead><tbody>
 <tr><td>Existing storybook</td><td><code>{EDITION["historical_site"]}</code></td></tr>
@@ -244,9 +245,10 @@ def build():
 <tr><td>Local compatibility cutoff</td><td><code>{EDITION["compatibility_cutoff"]}</code></td></tr>
 <tr><td>Mainstream reference</td><td><code>{EDITION["upstream"]}</code></td></tr></tbody></table>
 <h2>Public source snapshots</h2><ul>{public_sources}</ul>
-<h2>Interpret the evidence</h2><p>Implemented means the code exists at a named revision. Local qualification records a passing local gate. Independent coding-agent review is a second implementation review. Milestone closure refers to an explicitly accepted scope. Publication status in the commit catalogue records reachability from the edition’s recorded public heads at this cutoff.</p><p>The older atlas is presented with its October cutoff. It contains then-open work that later chapters resolve. Current local arm64 receipts establish their named cases and source revisions. Required native Linux, intact newer-language admission and full-corpus compatibility remain open where identified.</p>
+<h2>Interpret the evidence</h2><p>Implemented means the code exists at a named revision. Local qualification records a passing local gate. Independent coding-agent review is a second implementation review. An accepted qualification report establishes only its stated scope. Publication status in the commit catalogue records reachability from the edition’s recorded public heads at this cutoff.</p><p>The technical reference describes the Ledger 8 typed target and checked-effect pilot at named revisions. The main chapters identify subsequent integration and Ledger 9 changes. Local arm64 receipts establish their named cases and source revisions. Required native Linux, intact newer-language admission and full-corpus compatibility remain open where identified.</p>
 <h2>Editorial grouping</h2><p>The public source snapshots and commit-message excerpts follow the scope of this edition. Commit links retain their original identities.</p><p>{escape(EDITION["classification"])}</p><p>Git dates can differ after rebasing or a signed history rewrite. The catalogue retains both author and committer dates. A phase is an explanatory grouping, not a release declaration.</p>
-<h2>Preserved corrections</h2><ul><li>The original oracle is another Ledger 8 line, with an earlier shared ancestor than the selected AST base.</li><li>The 0.3.0 closeout retains composite evidence and the failed full run.</li><li>A pragma-only derivative has a different source identity from the original fixture.</li></ul>
+<h2>Editorial conventions</h2><p>Chapters follow capability dependencies and explain the problem, decision, result and validation boundary. Calendar dates and original internal planning labels remain in source records. Compiler, Compact language, private IR, runtime ABI and SDK versions identify different interfaces; they do not form a single release sequence. Existing chapter URLs are retained when titles change.</p>
+<h2>Preserved corrections</h2><ul><li>The original oracle is another Ledger 8 line, with an earlier shared ancestor than the selected AST base.</li><li>Consumer qualification retains composite evidence and the original failed full run.</li><li>A pragma-only derivative has a different source identity from the original fixture.</li></ul>
 <h2>Maintain the book</h2><p>Markdown chapters, frozen records, static assets and a small Python builder live in <a href="https://github.com/betsudo/compact/tree/rust-ast-docs/site/compact-journey">site/compact-journey</a>. The site is pre-rendered and published through the existing Pages branch. Updating it requires no compiler, key generation or additional CI workflow.</p>
 </div></article>'''
     write('sources.html',shell('Sources and boundaries',body))

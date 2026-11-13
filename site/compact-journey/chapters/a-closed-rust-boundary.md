@@ -16,23 +16,23 @@ A Rust syntax tree gives the emitter a representation for expressions, statement
 
 That benefit has a boundary. Constructing an AST does not prove that the correct field operation or source conversion was chosen. The semantic checks still need to occur before rendering. The long-term architecture therefore pairs structured syntax with checked lowering.
 
-## The Milestone 1 result
+## Establishing native execution
 
-The broad local native baseline closed at ea4cc006f973632c4c7b1fb4569af2b4c93ff38a. Publication followed at a5ee30f171322f07c06e3846117f20c9e075ef95 on October 2. Historical notes record 128 generated sources and 410 workspace test/doc-test groups.
+The qualified local native baseline is recorded at ea4cc006f973632c4c7b1fb4569af2b4c93ff38a. Publication followed at a5ee30f171322f07c06e3846117f20c9e075ef95. The retained qualification records 128 generated sources and 410 workspace test/doc-test groups.
 
-The milestone used private IR schema 6 and runtime ABI 3. Its wrapper forced skip-zk. That is an essential scope boundary when reading the early success report.
+This native execution baseline used private IR schema 6 and runtime ABI 3. Its wrapper forced skip-zk. That is an essential scope boundary when reading the early success report.
 
-## What was solved
+## Result
 
 Compact could generate useful typed Rust that executed a supported contract subset natively through the ledger runtime. The compiler boundary became inspectable, and new source cases had named owners.
 
-## What was still open
+## Scope and subsequent work
 
 Recording a transcript, preparing a call, generating a proof and applying a funded transaction were later deliveries. Native execution established an important foundation for them.
 
 ### Source trail
 
 - [Start typed Rust from Ledger 8](https://github.com/betsudo/compact/commit/67064813977a9af901792e5cfb62e295e49bff43)
-- [Milestone 1 local baseline](https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a)
+- [Native execution baseline](https://github.com/betsudo/compact/commit/ea4cc006f973632c4c7b1fb4569af2b4c93ff38a)
 - [Published native baseline](https://github.com/betsudo/compact/commit/a5ee30f171322f07c06e3846117f20c9e075ef95)
 - [Native baseline issue #102](https://github.com/betsudo/compact/issues/102)
