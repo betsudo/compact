@@ -49,6 +49,7 @@ CASES = {
             'zkir/test.zkir': 'd6bdfd48ebb44f8dcd2e3372c5e9f16199e1a69a427ff0b8382ed88dbbcfbabd',
         },
         'preimage': '45a19e5339bd938b4cac58ad710acc9a98ca502d260281cc0bcbe99a7d846492',
+        'changed_key_preimage': '7f7d6562454a2933f041f5149d319c07e421eeff46c12ce8e55c42072ec54874',
     },
     'r1': {
         'source': '38a8cdaa58ec14761f253dae5acdd42ef436cf614a374f70fd82e2a44620114d',
@@ -61,6 +62,7 @@ CASES = {
             'zkir/test.zkir': 'c52e2adaee021294096f075a5ef0f4e7205831574f035d5648505decf2460165',
         },
         'preimage': 'a53380159a09943bf8bd56abc4045c3f21a027cf9b82f04b642ca674894baed2',
+        'changed_key_preimage': '5cd22aec025bbf0b2e374a91d83d1c0dc02a1885d8db272bf21bf520e3b3e561',
     },
 }
 
@@ -152,6 +154,8 @@ def main() -> None:
     require(json.loads((wasm / 'package.json').read_text())['version'] == '3.2.0',
             'ZKIR wasm package version changed')
     (output / 'package.json').write_text('{"type":"module"}\n')
+    node = Path(shutil.which('node')).resolve(strict=True)
+    node_version = run([str(node), '--version'], output / 'node-version.log').strip()
     module = output / 'node_modules/@midnight-ntwrk/compact-runtime'
     module.parent.mkdir(parents=True)
     module.symlink_to(runtime_package, target_is_directory=True)
@@ -179,12 +183,15 @@ def main() -> None:
                     f'{name} generated {relative} changed')
             artifacts[f'{name}/{relative}'] = digest
         capture = output / f'{name}-capture'
-        run(['node', str(CAPTURE), name,
+        run([str(node), str(CAPTURE), name,
              str(destination / 'contract/index.js'),
-             str(destination / 'zkir/test.zkir'), str(wasm), str(capture)],
+             str(destination / 'zkir/test.zkir'), str(wasm),
+             str(originals / f'{name}.callback.js'), str(capture)],
             output / f'{name}-capture.log')
         result = json.loads((capture / 'capture.json').read_text())
         require(result['honestPreimageSha256'] == pins['preimage'] and
+                result['changedKeyPreimageSha256'] == pins['changed_key_preimage'] and
+                result['callbackSha256'] == pins['callback'] and
                 result['rawZkirSha256'] == pins['artifacts']['zkir/test.zkir'] and
                 result['checks'] == ['all original callback assertions and nested Map point',
                                      'honest ZKIR accepted', 'changed nested Map key refused'],
@@ -196,6 +203,7 @@ def main() -> None:
                'compiler_receipt_sha256': sha(args.compiler_receipt),
                'compiler_sha256': sha(compiler),
                'runtime_store': str(runtime_store),
+               'node_path': str(node), 'node_version': node_version,
                'runtime_recipe_log_sha256': sha(runtime_log),
                'runtime_baseline_sha256': sha(runtime_base),
                'runtime_manifest_sha256': sha(runtime_package / 'package.json'),
@@ -205,7 +213,7 @@ def main() -> None:
                'gate_source_sha256': sha(Path(__file__)),
                'artifacts': artifacts, 'captures': captures,
                'limitations': ['Original k=17/k=18 fresh proofs and funded application are separate gates.',
-                               'Local Darwin arm64 result; native Linux qualification required.']}
+                               'Local platform result; native Linux qualification required.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(f'original mixed native preflight passed at {head}; {output}/receipt.json')
 

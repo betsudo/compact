@@ -21,12 +21,13 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const [caseName, entryArg, rawArg, wasmArg, outputArg] = process.argv.slice(2);
-assert.ok(['k1', 'r1'].includes(caseName) && entryArg && rawArg && wasmArg && outputArg);
+const [caseName, entryArg, rawArg, wasmArg, callbackArg, outputArg] = process.argv.slice(2);
+assert.ok(['k1', 'r1'].includes(caseName) && entryArg && rawArg && wasmArg && callbackArg && outputArg);
 const entry = resolve(entryArg);
 const rawPath = resolve(rawArg);
 const wasmPath = resolve(wasmArg);
 const output = resolve(outputArg);
+const callbackPath = resolve(callbackArg);
 const sha = (bytes) => createHash('sha256').update(bytes).digest('hex');
 
 const wasmManifest = JSON.parse(await readFile(join(wasmPath, 'package.json')));
@@ -46,20 +47,24 @@ const contract = new Contract({});
 const initial = contract.initialState(runtime.createConstructorContext(undefined, '0'.repeat(64)));
 const context = runtime.createCircuitContext(runtime.dummyContractAddress(), initial.currentZswapLocalState.coinPublicKey, initial.currentContractState, initial.currentPrivateState);
 const call = contract.circuits.test(context, 3n, 4n);
-assert.deepEqual(call.result, []);
 const state = ledger(call.context.currentQueryContext.state);
-const multiply = caseName === 'k1' ? runtime.secp256k1MulGenerator : runtime.secp256r1MulGenerator;
-const tuple = caseName === 'k1' ? state.secp256k1Tuple : state.secp256r1Tuple;
-assert.deepEqual(state.jubjubPoints.lookup(1n), runtime.ecMulGenerator(3n));
-assert.deepEqual(tuple, [
-  { x: 0n, y: 0n, identity: true }, multiply(4n), multiply(8n),
-]);
-assert.deepEqual(state.pointStruct, {
-  jp: runtime.ecMulGenerator(3n), color: [204n, 85n, 0n], sp: multiply(12n),
-});
-assert.deepEqual(state.jubjubTuples.lookup(0n), [
-  runtime.ecMulGenerator(0n), runtime.ecMulGenerator(3n), runtime.ecMulGenerator(3n),
-]);
+const callback = await readFile(callbackPath, 'utf8');
+const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+let callbackPromise;
+const originalContract = {
+  circuits: { test: async (_context, j, s) => {
+    assert.equal(j, 3n);
+    assert.equal(s, 4n);
+    return { ...call, context: { callContext: call.context } };
+  } },
+};
+const test = (_name, body) => { callbackPromise = body(); };
+const startContract = async () => [originalContract, context];
+const expect = actual => ({ toEqual: expected => assert.deepEqual(actual, expected) });
+await new AsyncFunction('test', 'startContract', 'contractCode', 'runtime', 'expect', callback)(
+  test, startContract, { ledger }, runtime, expect);
+assert.ok(callbackPromise, 'pinned original callback was not invoked');
+await callbackPromise;
 assert.deepEqual(state.jubjubMap.lookup(0n).lookup(1n), runtime.ecMulGenerator(3n));
 const proof = call.proofData;
 assert.ok(proof);
@@ -93,6 +98,7 @@ const receipt = {
   onchainRuntime: onchainManifest.version,
   zkirWasm: wasmManifest.version,
   sourceModuleSha256: sha(await readFile(entry)),
+  callbackSha256: sha(callback),
   rawZkirSha256: sha(raw),
   binaryZkirSha256: sha(ir),
   honestPreimageSha256: sha(honest),
