@@ -629,3 +629,9 @@ export struct ShieldedBurn {
   nullifier: Bytes<32>,
   amount: Maybe<Uint<128>>,
 }
+
+export struct ShieldedMint {
+  commitment: Bytes<32>,
+  domainSep: Bytes<32>,
+  amount: Maybe<Uint<128>>,
+}

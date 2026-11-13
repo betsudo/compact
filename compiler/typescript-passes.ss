@@ -3311,6 +3311,7 @@
        (make-Qconcat
          (case nat
            [(0) "__compactRuntime.emitShieldedSpend"]
+           [(2) "__compactRuntime.emitShieldedMint"]
            [(3) "__compactRuntime.emitShieldedBurn"]
            [else (assert cannot-happen)])
          "(context, partialProofData, " expr ")")]

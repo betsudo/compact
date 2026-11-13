@@ -29,6 +29,12 @@ pub(crate) fn shielded_burn_program<D: DB>(
     event_program(LogEventType::ShieldedBurn, payload)
 }
 
+pub(crate) fn shielded_mint_program<D: DB>(
+    payload: FixedBytes<81>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::ShieldedMint, payload)
+}
+
 fn event_program<D: DB, const LENGTH: usize>(
     tag: LogEventType,
     bytes: FixedBytes<LENGTH>,

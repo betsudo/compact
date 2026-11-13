@@ -188,7 +188,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins)?
         }
         Expr::KernelMintShielded { domain, amount } => {

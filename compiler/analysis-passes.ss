@@ -3308,10 +3308,13 @@
             `(emit-log ,src 0 32 (elt-ref ,src ,expr ,elt-name 0))
             (with-output-language (Ltypes Type) `(ttuple ,src)))]
          [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
-          (guard (stdlib-src? src^) (eq? struct-name 'ShieldedBurn))
-          (values
-            `(emit-log ,src 3 49 ,(serialize-product src type expr 49))
-            (with-output-language (Ltypes Type) `(ttuple ,src)))]
+          (guard (stdlib-src? src^) (memq struct-name '(ShieldedMint ShieldedBurn)))
+          (let-values ([(tag len) (case struct-name
+                                    [(ShieldedMint) (values 2 81)]
+                                    [(ShieldedBurn) (values 3 49)])])
+            (values
+              `(emit-log ,src ,tag ,len ,(serialize-product src type expr len))
+              (with-output-language (Ltypes Type) `(ttuple ,src))))]
          [else (source-errorf src "~a is not a declared event type" (format-type type))])]
       [(assert ,src ,[Care : expr type0] ,mesg)
        (unless (nanopass-case (Ltypes Type) (de-alias type0 #t)

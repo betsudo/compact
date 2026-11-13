@@ -45,3 +45,20 @@ node test-contracts/stdlib/events/check-shielded-burn.mjs \
 The runner checks event order, both conditional outcomes, and a
 substituted transcript with the two events swapped. The proof lane
 uses k=14 and is run explicitly.
+
+## ShieldedMint
+
+`ShieldedMint.compact` retains the seven original exports.
+`shielded-mint-upstream.ss.txt` preserves their upstream compiler test.
+The version 1, tag 2 payload contains a 32-byte commitment, a 32-byte
+domain separator, an optional amount flag and a little-endian 128-bit
+amount.
+
+```sh
+node test-contracts/stdlib/events/check-shielded-mint.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/shielded-mint-preimages"
+```
+
+The runner checks all event outcomes, preserves a structural inactive
+amount in codec roundtrips, and rejects an invalid flag, changed domain
+separator and swapped event order.

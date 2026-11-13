@@ -2736,6 +2736,7 @@
           [(emit-log ,src ,nat ,len ,expr)
            (object (cons "kind" (case nat
                                   [(0) "emit_shielded_spend"]
+                                  [(2) "emit_shielded_mint"]
                                   [(3) "emit_shielded_burn"]
                                   [else (assert cannot-happen)]))
                    (cons "value" (stateful-expression-ir expr src witness-ids)))]

@@ -263,10 +263,12 @@ error for those codecs.
 Broader aggregate proofs and native Linux qualification remain open.
 
 The [event fixtures](../../../test-contracts/stdlib/events) cover
-`ShieldedSpend` and `ShieldedBurn`. The intact Burn fixture exercises
-single, ordered, conditional and absent emissions plus the 49-byte wire
-codec. The SDK checks all four event statements and rejects swapped
-event order. The two-event circuit uses the explicit k=14 proof lane.
+`ShieldedSpend`, `ShieldedBurn` and `ShieldedMint`. The intact Burn and
+Mint fixtures exercise single, ordered, conditional and absent emissions
+plus their 49-byte and 81-byte wire codecs. The SDK checks both outcomes of
+conditional emission and rejects swapped event order and Mint domain
+separator substitution. These checks use the original upstream circuit
+exports.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is

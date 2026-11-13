@@ -117,6 +117,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::KernelClaim { .. }
         | Expr::EmitShieldedSpend { .. }
         | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

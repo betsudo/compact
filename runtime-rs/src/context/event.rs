@@ -14,10 +14,10 @@
 // limitations under the License.
 
 use super::{CircuitContext, CircuitResult};
-use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_spend_program};
-use midnight_onchain_vm::result_mode::ResultModeVerify;
+use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_mint_program, shielded_spend_program};
 use crate::{CompactError, FixedBytes};
 use midnight_onchain_vm::ops::{Op, VersionedLogItem};
+use midnight_onchain_vm::result_mode::ResultModeVerify;
 
 /// A VM-decoded contract event tagged with the emitting contract address.
 pub struct ContractEvent<D: DB = DefaultDB> {
@@ -69,6 +69,15 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         payload: FixedBytes<49>,
     ) -> Result<CircuitResult<Private, (), D>, CompactError> {
         self.emit_event(shielded_burn_program(payload)?)
+    }
+
+    /// Emit a public ShieldedMint event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_mint(
+        self,
+        payload: FixedBytes<81>,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        self.emit_event(shielded_mint_program(payload)?)
     }
 
     fn emit_event(

@@ -1,0 +1,60 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export circuit emit_one(n: Bytes<32>): Bytes<32> {
+  emit(ShieldedMint {
+    commitment: disclose(n),
+    domainSep: disclose(n),
+    amount: Maybe<Uint<128>> { is_some: true, value: 1000 as Uint<128> }
+  });
+  return n;
+}
+export circuit emit_two(n: Bytes<32>): Bytes<32> {
+  emit(ShieldedMint {
+    commitment: disclose(n),
+    domainSep: disclose(n),
+    amount: Maybe<Uint<128>> { is_some: true, value: 100 as Uint<128> }
+  });
+  emit(ShieldedMint {
+    commitment: disclose(n),
+    domainSep: disclose(n),
+    amount: Maybe<Uint<128>> { is_some: false, value: 0 as Uint<128> }
+  });
+  return n;
+}
+export circuit cond_emit(b: Boolean, n: Bytes<32>): Bytes<32> {
+  if (disclose(b)) {
+    emit(ShieldedMint {
+      commitment: disclose(n),
+      domainSep: disclose(n),
+      amount: Maybe<Uint<128>> { is_some: true, value: 42 as Uint<128> }
+    });
+  }
+  return n;
+}
+export circuit no_emit(n: Bytes<32>): Bytes<32> {
+  return n;
+}
+export circuit serialize_ShieldedMint(x: ShieldedMint): Bytes<81> {
+  return serialize<ShieldedMint, 81>(x);
+}
+export circuit deserialize_ShieldedMint(x: Bytes<81>): ShieldedMint {
+  return deserialize<ShieldedMint, 81>(x);
+}
+export circuit roundtrip_ShieldedMint(orig: ShieldedMint): ShieldedMint {
+  const bytes = serialize<ShieldedMint, 81>(orig);
+  return deserialize<ShieldedMint, 81>(bytes);
+}

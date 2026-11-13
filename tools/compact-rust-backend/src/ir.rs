@@ -997,6 +997,9 @@ pub enum Expr {
     EmitShieldedBurn {
         value: Box<Expr>,
     },
+    EmitShieldedMint {
+        value: Box<Expr>,
+    },
     KernelClaim {
         claim: KernelClaimKind,
         value: Box<Expr>,

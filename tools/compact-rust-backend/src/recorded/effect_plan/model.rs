@@ -171,6 +171,7 @@ pub(super) enum Operation {
     KernelSelf,
     EmitShieldedSpend(Value),
     EmitShieldedBurn(Value),
+    EmitShieldedMint(Value),
     KernelClaim {
         kind: crate::ir::KernelClaimKind,
         value: Value,
