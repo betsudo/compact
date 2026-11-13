@@ -69010,6 +69010,7 @@ groups than for single tests.
     '(
       "import CompactStandardLibrary;"
       "new type Element = Field;"
+      "new type Element = Secp256k1Base;"
       "export circuit encode(x: Element): Bytes<34> { return serialize<Element, 34>(x); }"
       "export circuit decode(x: Bytes<34>): Element { return deserialize<Element, 34>(x); }"
       )
@@ -69152,6 +69153,45 @@ groups than for single tests.
         "  expect(() => C.circuits.deserialize_enum(Ctxt, Uint8Array.of(3))).toThrow(runtime.CompactError);"
         "});"
         )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit encode(x: Element): Bytes<34> { return serialize<Element, 34>(x); }"
+      "export circuit decode(x: Bytes<34>): Element { return deserialize<Element, 34>(x); }"
+      "export circuit nested(x: [Boolean, Element]): Bytes<34> {"
+      "  return serialize<[Boolean, Element], 34>(x);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('Secp256k1Base wire codecs reduce input and preserve nominal product layout', () => {"
+        "  const { encode, decode, nested } = contractCode.pureCircuits;"
+        "  const modulusPlusOne = new Uint8Array(34).fill(255);"
+        "  modulusPlusOne.set([0x30, 0xfc, 0xff, 0xff, 0xfe]);"
+        "  expect(decode(modulusPlusOne)).toBe(1n);"
+        "  const encoded = new Uint8Array(34);"
+        "  encoded[0] = 1;"
+        "  expect(encode(1n)).toEqual(encoded);"
+        "  encoded[1] = 1;"
+        "  expect(nested([true, 1n])).toEqual(encoded);"
+        "});"
+        )))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Secp256k1Base): Bytes<31> { return serialize<Secp256k1Base, 31>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (32 31 "Secp256k1Base"))))
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit bad(x: Bytes<31>): Secp256k1Base { return deserialize<Secp256k1Base, 31>(x); }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "actual serialized size ~d exceeds specified length ~d for type ~a" (32 31 "Secp256k1Base"))))
   (test
     '(
       "import CompactStandardLibrary;"
