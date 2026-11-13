@@ -2762,6 +2762,11 @@
               (lambda ()
                 (let f ([type type] [i 0] [indent 4])
                   (nanopass-case (Ltypescript Type) (subst-tcontract (de-alias type))
+                    [(topaque ,src ,opaque-type) (guard (string=? opaque-type "Uint8Array"))
+                     (print-indent indent)
+                     (printf "if (x~s.length !== y~:*~s.length) { return false; }\n" i)
+                     (print-indent indent)
+                     (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
                     [(tbytes ,src ,len)
                      (print-indent indent)
                      (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
@@ -3031,7 +3036,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (or (string=? opaque-type "JubjubPoint") (foreign-point-base opaque-type)))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3054,7 +3060,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (or (string=? opaque-type "JubjubPoint") (foreign-point-base opaque-type)))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
