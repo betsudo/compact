@@ -16,6 +16,14 @@
     "kind": "narrative"
   },
   {
+    "slug": "typescript-and-rust-ast",
+    "title": "TypeScript and Rust AST",
+    "phase": "Ledger 8 foundations",
+    "subtitle": "How the backends work and what the Rust interface adds.",
+    "source": "chapters/typescript-and-rust-ast.md",
+    "kind": "narrative"
+  },
+  {
     "slug": "the-first-rust-emitter",
     "title": "The first Rust emitter",
     "phase": "Ledger 8 foundations",

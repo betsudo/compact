@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="How the backends work and what the Rust interface adds.">
+<meta name="theme-color" content="#f5f2eb">
+<title>TypeScript and Rust AST · The Compact journey</title>
+<link rel="stylesheet" href="../assets/fonts.css">
+<link rel="stylesheet" href="../assets/book.css?v=6174cc653363">
+<script defer src="../assets/book.js?v=1486d1371897"></script>
+<noscript><style>
+.header-tools,.chapter-actions button,.commit-filters,.table-pagination,#commit-status,#chapter-search,label[for="chapter-search"],#print-book,.commit-details {display:none}
+@media(max-width:740px){.sidebar{position:static;width:auto;transform:none;visibility:visible;pointer-events:auto;max-height:none}.sidebar-tools{display:grid}}
+</style></noscript>
+</head>
+<body data-book-root="../" data-chapter-id="typescript-and-rust-ast">
+<a class="skip-link" href="#content">Skip to content</a>
+<header class="masthead">
+<a class="wordmark" href="../index.html">COMPACT <span>ENGINEERING BOOK</span></a>
+<nav aria-label="Primary"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
+</header>
+<aside class="sidebar" id="book-sidebar">
+<a class="sidebar-title" href="../index.html">From source to proof</a>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="../index.html">The story</a><a href="../chapters/typescript-and-rust-ast.html">Backends</a><a href="../iterations.html">Iterations</a><a href="../architecture.html">The pipeline</a><a href="../commits.html">Commit explorer</a><a href="../sources.html">Sources</a></nav>
+<label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
+<p id="chapter-search-status" class="sr-only" role="status"></p>
+<nav class="chapter-nav" aria-label="Book chapters"><h2>Orientation</h2><ul><li><a href="../chapters/a-contract-crosses-a-boundary.html" data-chapter="a-contract-crosses-a-boundary">A contract crosses a boundary</a></li></ul><h2>Ledger 8 foundations</h2><ul><li><a href="../chapters/typescript-and-fixed-ground.html" data-chapter="typescript-and-fixed-ground">TypeScript and fixed ground</a></li><li><a href="../chapters/typescript-and-rust-ast.html" data-chapter="typescript-and-rust-ast" aria-current="page">TypeScript and Rust AST</a></li><li><a href="../chapters/the-first-rust-emitter.html" data-chapter="the-first-rust-emitter">The first Rust emitter</a></li></ul><h2>Native AST milestone</h2><ul><li><a href="../chapters/a-closed-rust-boundary.html" data-chapter="a-closed-rust-boundary">A closed Rust boundary</a></li></ul><h2>Recorded contracts milestone</h2><ul><li><a href="../chapters/recording-is-an-execution.html" data-chapter="recording-is-an-execution">Recording is an execution</a></li></ul><h2>Qualified consumers milestone</h2><ul><li><a href="../chapters/closing-zero-three.html" data-chapter="closing-zero-three">Closing 0.3.0</a></li></ul><h2>Compositional recording</h2><ul><li><a href="../chapters/operations-instead-of-shapes.html" data-chapter="operations-instead-of-shapes">Operations instead of shapes</a></li></ul><h2>Functional Ledger 8</h2><ul><li><a href="../chapters/the-functional-ledger8-line.html" data-chapter="the-functional-ledger8-line">The functional Ledger 8 line</a></li></ul><h2>Semantic delivery</h2><ul><li><a href="../chapters/ergonomics-one-semantic-gap-at-a-time.html" data-chapter="ergonomics-one-semantic-gap-at-a-time">Ergonomics, one semantic gap at a time</a></li></ul><h2>Ledger 9 foundation</h2><ul><li><a href="../chapters/ledger9-is-a-protocol-migration.html" data-chapter="ledger9-is-a-protocol-migration">Ledger 9 is a protocol migration</a></li><li><a href="../chapters/one-counter-two-backends.html" data-chapter="one-counter-two-backends">One Counter, two backends</a></li></ul><h2>Upstream compatibility</h2><ul><li><a href="../chapters/porting-the-cryptographic-surface.html" data-chapter="porting-the-cryptographic-surface">Porting the cryptographic surface</a></li><li><a href="../chapters/wire-values-events-and-state.html" data-chapter="wire-values-events-and-state">Wire values, events and state</a></li></ul><h2>Remaining milestone</h2><ul><li><a href="../chapters/cross-contract-calls-and-the-held-boundary.html" data-chapter="cross-contract-calls-and-the-held-boundary">Cross-contract calls and the held boundary</a></li></ul><h2>Technical guide</h2><ul><li><a href="../chapters/a-proof-is-one-stage.html" data-chapter="a-proof-is-one-stage">A proof is one stage</a></li></ul><h2>Living milestone</h2><ul><li><a href="../chapters/the-next-reader-inherits-a-map.html" data-chapter="the-next-reader-inherits-a-map">The next reader inherits a map</a></li></ul><h2>Historical atlas</h2><ul><li><a href="../chapters/atlas-02-architecture.html" data-chapter="atlas-02-architecture">The October architecture</a></li><li><a href="../chapters/atlas-03-comparison-and-evidence.html" data-chapter="atlas-03-comparison-and-evidence">Comparing the backend lines</a></li><li><a href="../chapters/atlas-06-generated-rust-examples.html" data-chapter="atlas-06-generated-rust-examples">Read the generated Rust</a></li><li><a href="../chapters/atlas-07-runtime-and-macros-domain-model.html" data-chapter="atlas-07-runtime-and-macros-domain-model">Runtime and macro ownership</a></li><li><a href="../chapters/atlas-08-gas-errors-and-fixes.html" data-chapter="atlas-08-gas-errors-and-fixes">Gas, errors and corrected boundaries</a></li><li><a href="../chapters/atlas-04-decisions-and-corrections.html" data-chapter="atlas-04-decisions-and-corrections">The original decision ledger</a></li><li><a href="../chapters/atlas-glossary.html" data-chapter="atlas-glossary">A working glossary</a></li></ul></nav>
+<div class="sidebar-footer"><a href="../print.html">Print / save the complete book</a><span id="reading-progress"></span><small>Edition · 13 November 2026</small></div>
+</aside>
+<main id="content" tabindex="-1"><article class="reader">
+<header class="chapter-heading"><p class="eyebrow">Ledger 8 foundations <span>· 6 min read</span></p>
+<h1>TypeScript and Rust AST</h1><p class="deck">How the backends work and what the Rust interface adds.</p></header>
+<div class="prose"><h2 id="why-add-a-rust-ast-backend">Why add a Rust AST backend?</h2>
+<p>The Rust AST backend lets a Rust application call generated Compact code through types that preserve more of the contract’s meaning. A bounded integer carries its limit. A fixed Vector carries its element type and length. A circuit call consumes a context and returns the next one. These choices make several host-side mistakes visible while compiling the application.</p>
+<p>The compiler also gains a structured way to build Rust. It checks a typed internal program, lowers admitted operations and constructs Rust syntax trees. That gives contributors explicit places to implement a language feature and diagnose unsupported cases.</p>
+<p>The TypeScript backend supplies generated contract interfaces, witness callbacks, ledger access and proof data for JavaScript applications. It has typed declarations and runtime checks of its own. The comparison below follows the implementations and tests retained in the November 13, 2026 book edition.</p>
+<h2 id="how-the-two-paths-work">How the two paths work</h2>
+<div class="backend-comparison">
+<section>
+<h3 id="typescript-backend">TypeScript backend</h3>
+<pre><code class="language-text">Compact source
+  → shared frontend checks
+  → TypeScript-oriented lowering
+  → JavaScript + TypeScript declarations
+  → Compact TypeScript runtime
+  → ledger operations and proof inputs
+</code></pre>
+<p>The application imports a generated Contract class and calls a method such as <code>contract.circuits.increment_by(context, 7n)</code>. The result contains the successor context, return value, gas and proof data.</p>
+<p>This path fits applications already using Node.js, TypeScript and the existing JavaScript SDK integration.</p>
+</section>
+<section>
+<h3 id="rust-ast-backend">Rust AST backend</h3>
+<pre><code class="language-text">Compact source
+  → shared frontend checks
+  → versioned typed IR
+  → checked semantic lowering
+  → structured Rust syntax
+  → generated crate + typed runtime
+  → ledger operations and proof inputs
+</code></pre>
+<p>The application imports generated Rust functions or contract wrappers. A call such as <code>increment_by(context, amount)</code> returns a <code>Result</code> containing the execution result and successor context.</p>
+<p>This path fits Rust services and tools that need generated Compact APIs in the same language as their application.</p>
+</section>
+</div>
+<p>Both paths begin with Compact’s frontend checks. Source typing and disclosure rules apply before host code is emitted. Rust’s generated interface adds checks at the application boundary, where developers supply arguments and connect calls.</p>
+<p><a href="a-closed-rust-boundary.html">Read the checked Rust pipeline</a> · <a href="typescript-and-fixed-ground.html">Read the TypeScript reference workflow</a></p>
+<h2 id="benefits-for-application-developers">Benefits for application developers</h2>
+<h3 id="keep-contract-meaning-in-the-argument-types">Keep contract meaning in the argument types</h3>
+<p>Consider the same Counter contract used in the walkthrough. Its amount parameter is Compact <code>Uint&lt;16&gt;</code>, which admits values from 0 through 65,535.</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Generated argument</th>
+<th>What the caller must supply</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><code>bigint</code></td>
+<td>A <code>bigint</code>. The generated runtime checks the value’s range.</td>
+</tr>
+<tr>
+<td>Rust AST</td>
+<td><code>BoundedUint&lt;65535&gt;</code></td>
+<td>A value constructed through the bounded carrier’s checked API. The function signature preserves that bound.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-rust">let amount = BoundedUint::&lt;65_535&gt;::new(7)?;
+let increment = increment_by(context, amount)?;
+</code></pre>
+<p>The Rust compiler refuses a plain <code>u16</code> in this position. It also distinguishes carriers with different declared bounds. The integer’s value is checked when the bounded value is constructed. For example, <code>new(65_536)</code> returns an error.</p>
+<p>TypeScript already rejects a <code>number</code> where the declaration expects <code>bigint</code>. Rust makes the contract’s bound part of the parameter type as well.</p>
+<h3 id="make-the-state-handoff-explicit">Make the state handoff explicit</h3>
+<p>A sequence of calls needs to continue from the returned context. The Rust call takes the context by value, so the compiler tracks which binding has been consumed.</p>
+<pre><code class="language-rust">let increment = increment_by(context, amount)?;
+let reset = reset_round(increment.context)?;
+</code></pre>
+<p>Trying <code>reset_round(context)</code> after the increment produces <code>E0382</code>, “use of moved value.” In the TypeScript interface, the original and returned contexts have the same type and the caller selects which one to pass. Rust’s ownership rule catches reuse of that consumed binding before the application runs.</p>
+<p><a href="one-counter-two-backends.html">Open the complete Counter example and the locally exercised diagnostics</a></p>
+<h3 id="preserve-values-with-useful-rust-types">Preserve values with useful Rust types</h3>
+<table>
+<thead>
+<tr>
+<th>Compact concept</th>
+<th>Rust interface benefit</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Field</code></td>
+<td>A field carrier gives field arithmetic and representation a named owner.</td>
+</tr>
+<tr>
+<td>Uint with a bounded range</td>
+<td><code>BoundedUint</code> carries the admitted maximum in its type and checks construction.</td>
+</tr>
+<tr>
+<td>Vector with a fixed length</td>
+<td><code>FixedVector</code> carries the element type and length. Consumers can use ordinary Rust type checking for both.</td>
+</tr>
+<tr>
+<td>Ledger declaration</td>
+<td>A generated typed slot connects a declaration to its ledger path and read/write operations.</td>
+</tr>
+<tr>
+<td>Fallible circuit or witness work</td>
+<td><code>Result</code> and the <code>?</code> operator make error propagation explicit in the generated call path.</td>
+</tr>
+</tbody>
+</table>
+<p>TypeScript declarations can also express fixed tuples, products and typed method names. The Rust benefit is the combination of domain carriers, Rust ownership and ordinary compiler checking throughout a Rust consumer.</p>
+<p>The Ledger 9 cryptography work extends the same approach to distinct base/scalar and point carriers. Runtime decoding validates external representations before they enter typed operations.</p>
+<p><a href="atlas-06-generated-rust-examples.html">Read the generated types and typed slots</a> · <a href="porting-the-cryptographic-surface.html">Read the cryptographic carriers</a></p>
+<h3 id="integrate-with-a-rust-application-directly">Integrate with a Rust application directly</h3>
+<p>The backend emits a Cargo crate, matching runtime material and generated entry points. A Rust service can call the contract, inspect typed state and handle errors through its existing Rust code.</p>
+<p>Native execution and recorded execution expose the outputs needed for different steps in the application. Recording retains the ordered public operations for replay and proof preparation. The Counter walkthrough shows the smallest local call, and the recording chapter follows the later transition to an installed operation.</p>
+<p><a href="recording-is-an-execution.html">Read recorded execution and application handoff</a></p>
+<h2 id="benefits-for-compiler-contributors">Benefits for compiler contributors</h2>
+<h3 id="build-syntax-as-a-tree">Build syntax as a tree</h3>
+<p>The Rust renderer constructs expressions, statements, blocks, paths and types using Rust syntax-tree libraries. The formatter renders those structures into readable source.</p>
+<p>For example, a multiplication whose left operand is an addition is represented as a nested expression. Parentheses follow from that structure. A contributor can inspect the checked operation and the syntax node that represents it.</p>
+<p><a href="the-first-rust-emitter.html#before-and-after-emitting-a-nested-calculation">See the nested calculation before and after</a></p>
+<h3 id="give-each-semantic-decision-an-owner">Give each semantic decision an owner</h3>
+<p>A feature crosses the source frontend, typed IR, validator, lowerer, renderer and runtime. Explicit boundaries make the responsibilities reviewable. Unsupported input can produce a diagnostic while its source and operation are still identifiable.</p>
+<p>The checked operation model also supports composition. A read, assertion or write can appear inside a branch or sequence. A shared semantic fold handles admitted behavior through native and recorded adapters, reducing duplicated decisions about ordering and results.</p>
+<p><a href="operations-instead-of-shapes.html">Explore the shapes and operations domain models</a></p>
+<h3 id="test-ordinary-use-and-misuse">Test ordinary use and misuse</h3>
+<p>Generated-crate tests exercise the same entry points an application imports. Compile-fail cases check wrong element types, wrong Vector lengths and consumed contexts. Behavioral comparisons check return values, ledger state, witness order and gas against an independent reference. Applicable proof lanes then check the statement, verifier, funded application and replay.</p>
+<p>These checks address different failure modes. A type-correct Rust expression can still select the wrong ledger slot or operand, so semantic and proof tests remain part of delivery.</p>
+<p><a href="a-proof-is-one-stage.html">Follow the verification stages</a></p>
+<h2 id="what-the-benefits-mean-for-this-migration">What the benefits mean for this migration</h2>
+<p>Rust AST is useful when the application is written in Rust and benefits from domain types, ownership, native library integration and explicit errors. TypeScript remains a direct fit for JavaScript applications and their SDK workflows.</p>
+<p>Ledger 9 is a protocol migration that changes package families, ABI, serialization and transaction behavior. The typed Rust interface existed on Ledger 8 too. The Counter comparison uses Ledger 8 TypeScript and Ledger 9 Rust to show the journey while retaining each runtime’s own protocol pairing.</p>
+<p>The current edition records a merged Ledger 9 foundation and selected local arm64 compatibility results. Full-corpus qualification, native Linux results for later local ports and generated joint two-contract execution have the open scopes described in their chapters. The benefits described here come from the generated APIs, compiler architecture and exercised controls. Performance depends on the workload and requires its own measurements.</p>
+<p><a href="ledger9-is-a-protocol-migration.html">Read the Ledger 9 migration</a> · <a href="the-next-reader-inherits-a-map.html">Read the current compatibility boundary</a></p>
+<h3 id="source-trail">Source trail</h3>
+<ul>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/tests-rust-backend/counter-parameter/lib.rs">Generated Ledger 9 Counter interface</a></li>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/runtime-rs/src/primitives.rs">Bounded integer carrier and checked construction</a></li>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/tools/compact-rust-backend/tests/vector_projection/wrong_type.rs">Generated Vector wrong-type control</a></li>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/tools/compact-rust-backend/tests/vector_projection/wrong_length.rs">Generated Vector wrong-length control</a></li>
+<li><a href="https://github.com/betsudo/compact/blob/05912594fa3c483cf4e7031de83c5f9a103ef95c/tools/compact-rust-backend/tests/vector_projection/double_context.rs">Generated context ownership control</a></li>
+</ul></div>
+<div class="chapter-actions"><button type="button" id="mark-read" aria-pressed="false">Mark chapter as read</button><a href="../markdown/typescript-and-rust-ast.md">Read the frozen Markdown source</a></div>
+<nav class="chapter-pagination" aria-label="Chapter navigation"><a class="previous" href="typescript-and-fixed-ground.html"><small>Previous chapter</small>TypeScript and fixed ground</a><a class="next" href="the-first-rust-emitter.html"><small>Next chapter</small>The first Rust emitter <span aria-hidden="true">→</span></a></nav>
+</article></main>
+<aside class="on-this-page"><h2>In this chapter</h2><div class="toc">
+<ul>
+<li><a href="#why-add-a-rust-ast-backend">Why add a Rust AST backend?</a></li>
+<li><a href="#how-the-two-paths-work">How the two paths work</a><ul>
+<li><a href="#typescript-backend">TypeScript backend</a></li>
+<li><a href="#rust-ast-backend">Rust AST backend</a></li>
+</ul>
+</li>
+<li><a href="#benefits-for-application-developers">Benefits for application developers</a><ul>
+<li><a href="#keep-contract-meaning-in-the-argument-types">Keep contract meaning in the argument types</a></li>
+<li><a href="#make-the-state-handoff-explicit">Make the state handoff explicit</a></li>
+<li><a href="#preserve-values-with-useful-rust-types">Preserve values with useful Rust types</a></li>
+<li><a href="#integrate-with-a-rust-application-directly">Integrate with a Rust application directly</a></li>
+</ul>
+</li>
+<li><a href="#benefits-for-compiler-contributors">Benefits for compiler contributors</a><ul>
+<li><a href="#build-syntax-as-a-tree">Build syntax as a tree</a></li>
+<li><a href="#give-each-semantic-decision-an-owner">Give each semantic decision an owner</a></li>
+<li><a href="#test-ordinary-use-and-misuse">Test ordinary use and misuse</a></li>
+</ul>
+</li>
+<li><a href="#what-the-benefits-mean-for-this-migration">What the benefits mean for this migration</a><ul>
+<li><a href="#source-trail">Source trail</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</aside>
+<dialog class="commit-panel" id="commit-panel" aria-labelledby="commit-panel-title">
+<form method="dialog"><button type="submit" autofocus aria-label="Close commit details">Close</button></form>
+<h2 id="commit-panel-title">Commit details</h2>
+<div id="commit-panel-content" aria-live="polite"></div>
+</dialog>
+<footer class="footer"><span>Compact · From source to proof</span><span>Ledger 8 → Ledger 9 · Evidence frozen on 13 November 2026</span><a href="../sources.html">Edition and sources</a></footer>
+</body></html>

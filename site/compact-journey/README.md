@@ -3,7 +3,7 @@
 A pre-rendered interactive book about Compact's journey from the Ledger 8
 TypeScript reference path to a Ledger 9 Rust AST backend.
 
-The November 13, 2026 edition contains 23 chapters, a searchable commit
+The November 13, 2026 edition contains 24 chapters, a searchable commit
 catalogue, 36 curated iteration checkpoints, a pipeline explorer, local reading progress, light/dark themes,
 and a complete print view. The original October storybook stays available
 at the Pages root.

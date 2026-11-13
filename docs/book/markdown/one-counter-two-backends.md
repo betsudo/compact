@@ -1,3 +1,5 @@
+[Compare the backend architecture and Rust benefits](typescript-and-rust-ast.html).
+
 ## One source file
 
 Start with a public counter at zero. Call `increment_by` with 7, read the counter, then reset it. The source also exports `decrement_by` so a caller can subtract from the counter. The file is byte-for-byte identical at the two source revisions linked below.

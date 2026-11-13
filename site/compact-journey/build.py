@@ -79,12 +79,12 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 <a class="skip-link" href="#content">Skip to content</a>
 <header class="masthead">
 <a class="wordmark" href="{prefix}index.html">COMPACT <span>ENGINEERING BOOK</span></a>
-<nav aria-label="Primary"><a href="{prefix}index.html">The story</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
+<nav aria-label="Primary"><a href="{prefix}index.html">The story</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
 <div class="header-tools"><button id="theme-toggle" type="button" aria-label="Switch to dark theme">Dark</button><button id="menu-toggle" type="button" aria-expanded="false" aria-controls="book-sidebar">Chapters</button></div>
 </header>
 <aside class="sidebar" id="book-sidebar">
 <a class="sidebar-title" href="{prefix}index.html">From source to proof</a>
-<nav class="sidebar-tools" aria-label="Book tools"><a href="{prefix}index.html">The story</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
+<nav class="sidebar-tools" aria-label="Book tools"><a href="{prefix}index.html">The story</a><a href="{prefix}chapters/typescript-and-rust-ast.html">Backends</a><a href="{prefix}iterations.html">Iterations</a><a href="{prefix}architecture.html">The pipeline</a><a href="{prefix}commits.html">Commit explorer</a><a href="{prefix}sources.html">Sources</a></nav>
 <label for="chapter-search">Find a chapter</label><input id="chapter-search" type="search" placeholder="Types, proofs, Ledger 9…" autocomplete="off">
 <p id="chapter-search-status" class="sr-only" role="status"></p>
 {navigation(prefix, selected)}
@@ -158,7 +158,11 @@ def build():
                            text=re.sub(r'<[^>]+>', ' ', content), words=words, kind=chapter['kind']))
         printable = re.sub(r'href="\.\./sources/', 'href="sources/', content)
         printable = re.sub(r'(src|href)="\.\./assets/diagrams/', r'\1="assets/diagrams/', printable)
-        printable = re.sub(r'href="(\./)?([a-z0-9-]+\.html)"', r'href="chapters/\2"', printable)
+        printable = re.sub(
+            r'href="(?:\./)?([a-z0-9-]+\.html)(#[^"]*)?"',
+            lambda match: f'href="chapters/{match[1]}{match[2] or ""}"',
+            printable,
+        )
         # Prefix each article's fragment identifiers in the combined print document.
         printable = re.sub(r'id="([^"]+)"', lambda m: f'id="{chapter["slug"]}-{m[1]}"', printable)
         printable = re.sub(r'href="#([^"]+)"', lambda m: f'href="#{chapter["slug"]}-{m[1]}"', printable)
@@ -180,7 +184,7 @@ def build():
 <p class="eyebrow">AN ENGINEERING HISTORY · LEDGER 8 → LEDGER 9</p>
 <h1>From source<br>to <em>proof.</em></h1>
 <p class="hero-deck">The story of making Compact a typed Rust target. The decisions, the failed assumptions, and the tests that turned a compiler experiment into a protocol migration.</p>
-<div class="hero-actions"><a class="button primary" href="{chapter_href(CHAPTERS[0])}">Start reading <span aria-hidden="true">→</span></a><a class="button" href="architecture.html">Follow a circuit</a><a id="continue-reading" class="resume-link" hidden href="#">Continue reading</a></div>
+<div class="hero-actions"><a class="button primary" href="{chapter_href(CHAPTERS[0])}">Start reading <span aria-hidden="true">→</span></a><a class="button" href="architecture.html">Follow a circuit</a><a class="text-link" href="chapters/typescript-and-rust-ast.html">Compare the backends →</a><a id="continue-reading" class="resume-link" hidden href="#">Continue reading</a></div>
 <div class="edition-strip"><span>{len(CHAPTERS)} chapters</span><span>{total_words:,} words</span><span>{EDITION["commit_count"]:,} indexed commits</span><span>13 November 2026 edition</span></div><p class="download"><a href="https://betsudo.github.io/compact/book/compact-journey.zip" download>Download the book and Markdown chapters</a></p>
 </section>
 <section class="home-section"><div class="section-heading"><p class="eyebrow">THE THROUGH LINE</p><h2>A new owner for every<br>hidden assumption.</h2><p>The chapters connect the reason for each change to its implementation and the evidence that followed.</p></div><ol class="timeline">{timeline}</ol></section>
