@@ -56,6 +56,20 @@ The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the offic
 
 The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. Draft PR #735 advances the local runtime source to `0.18.0`; the historical captures and exact version guards remain bound to `0.17.0`, and a separate regeneration path for the new pair remains open. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
 
+The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
+path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
+fresh output directory. It compiles the checked-in Counter itself, checks
+compiler 0.31.213, language 0.23.105 and runtime 0.18.0 in both generated
+metadata files, verifies the manifest hashes, and checks Onchain Runtime
+4.0.1 module identity. Its capture records the source, supplied compiler,
+generated JavaScript and declaration, runtime and official oracle hashes,
+the exact serialized before/after bytes, and four gas fields. The 0.17.0
+capture and its historical binding remain untouched. This is a local macOS
+arm64 TypeScript recapture for Counter; it does not regenerate the broader
+historical fixture matrix, qualify Rust parity or make a proof claim.
+The file hashes identify observed bytes and do not attest how a supplied
+compiler executable or runtime package was built.
+
 Build `.#compactc` and `.#runtime.package`. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
 
 The native macOS arm64 Nix runtime and compiler packages built, the runtime tests passed, and the compiler suite passed in both existing JavaScript check modes.
