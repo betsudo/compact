@@ -154,10 +154,16 @@ pub(crate) fn fixed_bytes_conversion_syntax(
             })
         }
         FixedBytesConversion::Slice { start, length } => {
-            let end = start + length;
-            syn::parse_quote!(runtime::FixedBytes::<#length>::new(
-                (#value).into_array()[#start..#end].try_into().expect("checked Bytes slice length")
-            ))
+            if length == 1 {
+                // Constant byte projection must not allocate and convert the
+                // complete Bytes value into a Vector of bounded integers.
+                syn::parse_quote!(runtime::FixedBytes::<1>::new([(#value).0[#start]]))
+            } else {
+                let end = start + length;
+                syn::parse_quote!(runtime::FixedBytes::<#length>::new(
+                    (#value).into_array()[#start..#end].try_into().expect("checked Bytes slice length")
+                ))
+            }
         }
     }
 }
