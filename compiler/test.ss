@@ -24914,6 +24914,17 @@ groups than for single tests.
       irritants: '("testfile.compact line 4 char 19" "~a cannot be applied to a first argument containing opaque JavaScript values, received ~a" (persistentCommit "Opaque<\"string\">")))
     )
     (test
+      '("import CompactStandardLibrary;"
+        "ledger hash: Bytes<32>;"
+        "export circuit test(s: Opaque<'string'>): [] {"
+        "  hash = disclose(keccak256<Opaque<'string'>>(s));"
+        "}"
+        )
+      (oops
+        message: "~a:\n  ~?"
+        irritants: '("testfile.compact line 4 char 19" "~a cannot be applied to a first argument containing opaque JavaScript values, received ~a" (keccak256 "Opaque<\"string\">"))))
+
+    (test
     '(
       "import CompactStandardLibrary;"
       "ledger mt: MerkleTree<10, Opaque<'string'>>;"
