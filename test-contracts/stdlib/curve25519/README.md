@@ -33,3 +33,18 @@ runner exercises the original values and verifies the three input limbs
 and their ordering. It also refuses the wrong width and field. The wide
 cast measures k=11 and 1,301 rows, so its original circuit uses the
 explicit slow proof lane.
+
+## Ed25519 verification
+
+The family runner executes the original stateful callback from
+`verify/stateful/upstream.ss.txt` on paired compiler output. It also runs
+the original Wycheproof driver for 151 vectors. The driver uses the
+upstream partition of 120 driven cases and 31 encoding exclusions.
+At language 0.23.105 the intact corpus source refuses its 0.25.0 pragma.
+The runner records that refusal and runs a derivative with only the
+pragma removed. The sequential source and declarations are retained
+intact and require the same language admission.
+
+The two stateful exports require k=17. The two and three signature
+sequential statements measure k=18. These statements belong in the
+explicit slow proof lane.

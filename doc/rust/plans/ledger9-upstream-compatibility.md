@@ -247,8 +247,20 @@ both original refusal sources fail during name resolution.
 
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is
-k=17. Ed25519 signature verification, the remaining original point
-fixtures and proof coverage for the group fixture remain open.
+k=17. The remaining original point fixtures and proof coverage for the
+group fixture remain open.
+
+[Ed25519 verification](../../../test-contracts/stdlib/curve25519/verify)
+uses the mainstream Compact implementation, with the original stateful
+callback covering sign-bit parity, changed messages, signatures and keys,
+and identity and mixed-order key refusals. Both original stateful exports
+compile for Rust and TypeScript with checked recording, and have fresh
+independently verified arm64 proofs at k=17. The RFC 8032 one-byte case
+passes a separate funded default-strict application and replay refusal.
+The 151-vector corpus and sequential witness fixtures are preserved.
+Their original 0.25.0 pragmas refuse on the current language version.
+Pragma-only derivatives exercise the corpus and the ordered two- and
+three-signature witnesses in both generated targets.
 
 The [P-256 byte cast fixtures](../../../test-contracts/stdlib/secp256r1/casts)
 cover modular little-endian conversion at the `Bytes<32>` boundary and

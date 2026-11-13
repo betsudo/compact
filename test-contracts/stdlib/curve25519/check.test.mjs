@@ -15,10 +15,12 @@
 
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { stripTypeScriptTypes } from 'node:module';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import * as runtime from '@midnight-ntwrk/compact-runtime';
+import { ed25519 } from '@noble/curves/ed25519.js';
 import { createTestContract } from '@test/compact-test';
 import { expect, test } from 'vitest';
 
@@ -28,6 +30,8 @@ import scalarCompile from './scalar/roundtrip/compile.pass.test.ts';
 import scalarRuntime from './scalar/roundtrip/runtime.pass.test.ts';
 import defaultCompile from './default/maybe_either/compile.pass.test.ts';
 import defaultRuntime from './default/maybe_either/runtime.pass.test.ts';
+import ed25519Compile from './verify/compile.pass.test.ts';
+import ed25519Runtime from './verify/runtime.pass.test.ts';
 
 const { MAX_CURVE25519_BASE, MAX_CURVE25519_SCALAR } = runtime;
 const root = fileURLToPath(new URL('.', import.meta.url));
@@ -284,3 +288,50 @@ for (const name of ['serialize', 'deserialize']) {
     });
   }
 }
+
+test('runs the original stateful Ed25519 callback on paired output', async () => {
+  const {build, result} = compile('verify/stateful', {
+    compilerArgs: ['--rust-require-recording'],
+  }, ['ts', 'rust']);
+  expect(result.status, result.stderr).toBe(0);
+  const capabilities = JSON.parse(readFileSync(join(build, 'contract/rust-capabilities.json'), 'utf8'));
+  expect(capabilities.circuits.map(({name, recorded, observed_call}) => [name, recorded, observed_call]))
+    .toEqual([['verify', true, true], ['verify1', true, true]]);
+  const original = readFileSync(join(root, 'verify/stateful/upstream.ss.txt'), 'utf8');
+  const callback = [...original.slice(original.indexOf('(stage-javascript'))
+    .matchAll(/^\s*(?:'\()?("(?:[^"\\]|\\.)*")$/gm)]
+    .map(match => JSON.parse(match[1])).join('\n');
+  expect(callback.match(/\bexpect\(/g)).toHaveLength(9);
+  const code = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  const startContract = async (_, witnesses, privateState) => {
+    const {contract, ctx} = await createTestContract(code.Contract, witnesses, privateState);
+    const circuits = Object.fromEntries(Object.entries(contract.circuits)
+      .map(([entry, call]) => [entry, async (...args) => call(...args)]));
+    return [{circuits}, ctx];
+  };
+  const run = new Function('test', 'expect', 'contractCode', 'startContract', 'runtime', 'ed25519',
+    `return ${stripTypeScriptTypes(callback)}`);
+  await run((_, check) => check(), expect, code, startContract, runtime, ed25519);
+});
+
+test('runs the original Ed25519 corpus driver after recording language admission', async () => {
+  expect(ed25519Compile.result).toBe('pass');
+  expect(ed25519Runtime.result).toBe('pass');
+  const intact = compile('verify', ed25519Compile.options, ['ts', 'rust']);
+  let build = intact.build;
+  if (intact.result.status !== 0) {
+    expect(intact.result.stderr).toMatch(/language version [\d.]+ mismatch/);
+    expect(existsSync(intact.build)).toBe(false);
+    const source = readFileSync(join(root, 'verify/curve25519_verify.compact'), 'utf8');
+    const pragma = 'pragma language_version >= 0.25.0;\n';
+    expect(source.split(pragma)).toHaveLength(2);
+    const derivative = join(output, 'curve25519_verify.compact');
+    writeFileSync(derivative, source.replace(pragma, ''), {flag: 'wx'});
+    const probe = compile('verify/pragma-probe', ed25519Compile.options, ['ts', 'rust'],
+      '--feature-zkir-v3', derivative);
+    expect(probe.result.status, probe.result.stderr).toBe(0);
+    build = probe.build;
+  }
+  const {Contract, pureCircuits} = await import(/* @vite-ignore */ pathToFileURL(join(build, 'contract/index.js')).href);
+  await ed25519Runtime.run(Contract, pureCircuits);
+});

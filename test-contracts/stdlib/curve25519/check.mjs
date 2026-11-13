@@ -47,6 +47,9 @@ writeFileSync(config, `export default ${JSON.stringify({
   resolve: {
     alias: {
       '@test/compact-test': join(root, '../secp256k1/test-bridge.mjs'),
+      '@test/crypto': join(root, '../../support/crypto/index.ts'),
+      '@noble/curves': dirname(requireFromRuntime.resolve('@noble/curves/ed25519.js')),
+      '@noble/hashes': dirname(requireFromRuntime.resolve('@noble/hashes/utils.js')),
       [runtimeName]: join(runtime, runtimePackage.main),
       vitest: join(vitestRoot, vitestPackage.exports['.'].import.default),
     },

@@ -77,3 +77,30 @@ fn prepared_equal_arms_keep_one_fallible_condition_and_single_selected_call() {
         quote::quote!(#(#expected)*).to_string()
     );
 }
+
+#[test]
+fn equality_groups_an_if_operand_in_a_lexical_block() {
+    use crate::pure_semantics::sink::ArithmeticSink;
+
+    let mut syntax = super::super::leaf::NativeLeafSink::new();
+    let equality = syntax.arithmetic(
+        crate::pure_semantics::arithmetic::ArithmeticFacts::Equality {
+            negated: false,
+            unit_result: None,
+        },
+        syn::parse_quote!(if flag { left } else { right }),
+        syn::parse_quote!(expected),
+    );
+    let fragment = fragment::lexical(
+        vec![syn::parse_quote!(let flag: bool = input;)],
+        NativeFragment::Value(equality),
+    );
+    let expected: syn::Expr = syn::parse_quote!({
+        let flag: bool = input;
+        (if flag { left } else { right }) == expected
+    });
+    assert_eq!(
+        fragment.into_expression().to_token_stream().to_string(),
+        expected.to_token_stream().to_string()
+    );
+}
