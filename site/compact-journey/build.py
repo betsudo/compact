@@ -102,7 +102,7 @@ def shell(title, body, *, prefix='./', selected='', toc='', description='The Com
 
 def parse(chapter):
     text = (ROOT / chapter['source']).read_text()
-    parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'toc', 'sane_lists'])
+    parser = markdown.Markdown(extensions=['fenced_code', 'tables', 'toc', 'sane_lists', 'md_in_html'])
     content = parser.convert(text)
     words = len(re.findall(r'\b\w+\b', text))
     return content, parser.toc, words
@@ -158,6 +158,7 @@ def build():
                            text=re.sub(r'<[^>]+>', ' ', content), words=words, kind=chapter['kind']))
         printable = re.sub(r'href="\.\./sources/', 'href="sources/', content)
         printable = re.sub(r'(src|href)="\.\./assets/diagrams/', r'\1="assets/diagrams/', printable)
+        printable = re.sub(r'href="(\./)?([a-z0-9-]+\.html)"', r'href="chapters/\2"', printable)
         # Prefix each article's fragment identifiers in the combined print document.
         printable = re.sub(r'id="([^"]+)"', lambda m: f'id="{chapter["slug"]}-{m[1]}"', printable)
         printable = re.sub(r'href="#([^"]+)"', lambda m: f'href="#{chapter["slug"]}-{m[1]}"', printable)

@@ -80,6 +80,14 @@
     "kind": "narrative"
   },
   {
+    "slug": "one-counter-two-backends",
+    "title": "One Counter, two backends",
+    "phase": "Ledger 9 foundation",
+    "subtitle": "The same Compact contract called from Ledger 8 TypeScript and Ledger 9 Rust.",
+    "source": "chapters/one-counter-two-backends.md",
+    "kind": "narrative"
+  },
+  {
     "slug": "porting-the-cryptographic-surface",
     "title": "Porting the cryptographic surface",
     "phase": "Upstream compatibility",

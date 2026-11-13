@@ -48,6 +48,8 @@ PR #725 merged on November 12. The publication and CI repair history belongs to 
 
 The book therefore marks the foundation as merged and the later corpus work as local qualification. It makes no new claim about every final-head CI result from a historical local receipt.
 
+[Compare the same Counter call in Ledger 8 TypeScript and Ledger 9 Rust](one-counter-two-backends.html).
+
 ### Source trail
 
 - [Migration PR #725](https://github.com/betsudo/compact/pull/725)
