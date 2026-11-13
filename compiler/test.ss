@@ -69585,6 +69585,160 @@ groups than for single tests.
 
   (test
     '(
+      "import CompactStandardLibrary prefix std_;"
+      "struct ShieldedReceive { commitment: Bytes<32>, ciphertext: std_Maybe<Bytes<512>>, contractAddress: std_Maybe<Bytes<32>> }"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(ShieldedReceive { commitment: disclose(n), ciphertext: std_none<Bytes<512>>(), contractAddress: std_none<Bytes<32>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "~a is not a declared event type" ("struct ShieldedReceive<commitment: Bytes<32>, ciphertext: struct Maybe<is_some: Boolean, value: Bytes<512>>, contractAddress: struct Maybe<is_some: Boolean, value: Bytes<32>>>")))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "witness secret(): Bytes<512>;"
+      "export circuit bad(n: Bytes<32>): [] {"
+      "  emit(ShieldedReceive { commitment: disclose(n), ciphertext: Maybe<Bytes<512>> { is_some: false, value: secret() }, contractAddress: none<Bytes<32>>() });"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "potential witness-value disclosure must be declared but is not:\n    witness value potentially disclosed:\n      ~a~{~a~}" ("the return value of witness secret at line 2 char 1" ("\n    nature of the disclosure:\n      emit payload might disclose the witness value"))))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 4 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit emit_one(n: Bytes<32>, c: Bytes<512>): Bytes<32> {"
+      "  emit(ShieldedReceive {"
+      "    commitment: disclose(n),"
+      "    ciphertext: Maybe<Bytes<512>> { is_some: true, value: disclose(c) },"
+      "    contractAddress: Maybe<Bytes<32>> { is_some: true, value: disclose(n) }"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit emit_two(n: Bytes<32>, c: Bytes<512>): Bytes<32> {"
+      "  emit(ShieldedReceive {"
+      "    commitment: disclose(n),"
+      "    ciphertext: Maybe<Bytes<512>> { is_some: true, value: disclose(c) },"
+      "    contractAddress: Maybe<Bytes<32>> { is_some: true, value: disclose(n) }"
+      "  });"
+      "  emit(ShieldedReceive {"
+      "    commitment: disclose(n),"
+      "    ciphertext: Maybe<Bytes<512>> { is_some: false, value: disclose(c) },"
+      "    contractAddress: Maybe<Bytes<32>> { is_some: false, value: disclose(n) }"
+      "  });"
+      "  return n;"
+      "}"
+      "export circuit cond_emit(b: Boolean, n: Bytes<32>, c: Bytes<512>): Bytes<32> {"
+      "  if (disclose(b)) {"
+      "    emit(ShieldedReceive {"
+      "      commitment: disclose(n),"
+      "      ciphertext: Maybe<Bytes<512>> { is_some: true, value: disclose(c) },"
+      "      contractAddress: Maybe<Bytes<32>> { is_some: true, value: disclose(n) }"
+      "    });"
+      "  }"
+      "  return n;"
+      "}"
+      "export circuit no_emit(n: Bytes<32>): Bytes<32> {"
+      "  return n;"
+      "}"
+      "export circuit serialize_ShieldedReceive(x: ShieldedReceive): Bytes<578> {"
+      "  return serialize<ShieldedReceive, 578>(x);"
+      "}"
+      "export circuit deserialize_ShieldedReceive(x: Bytes<578>): ShieldedReceive {"
+      "  return deserialize<ShieldedReceive, 578>(x);"
+      "}"
+      "export circuit roundtrip_ShieldedReceive(orig: ShieldedReceive): ShieldedReceive {"
+      "  const bytes = serialize<ShieldedReceive, 578>(orig);"
+      "  return deserialize<ShieldedReceive, 578>(bytes);"
+      "}"
+      )
+    (if (feature-zkir-v3)
+        (stage-javascript
+          '(
+            "const N32 = () => new Uint8Array(32).fill(0x42);"
+            "const N512 = () => new Uint8Array(512).fill(0x33);"
+            ""
+            "test('single emit produces exactly one event tagged emit', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_one(Ctxt, N32(), N512());"
+            "  expect(r.context.events?.length).toBe(1);"
+            "});"
+            ""
+            "test('emit event has decoded VersionedEmitItem fields', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_one(Ctxt, N32(), N512());"
+            "  const content = r.context.events?.[0];"
+            "  expect(content?.version).toBe(1);"
+            "  expect(content?.eventType).toBeDefined();"
+            "  expect(content?.data).toBeDefined();"
+            "});"
+            ""
+            "test('two emit statements produce two events', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.emit_two(Ctxt, N32(), N512());"
+            "  expect(r.context.events?.length).toBe(2);"
+            "});"
+            ""
+            "test('conditional emit emits when condition is true', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.cond_emit(Ctxt, true, N32(), N512());"
+            "  expect(r.context.events?.length).toBe(1);"
+            "});"
+            ""
+            "test('conditional emit emits nothing when condition is false', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.cond_emit(Ctxt, false, N32(), N512());"
+            "  expect(r.context.events?.length).toBe(0);"
+            "});"
+            ""
+            "test('pure circuit (no emit) has no events field', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const r = C.circuits.no_emit(Ctxt, N32());"
+            "  expect(r.context.events).toEqual([]);"
+            "});"
+            ""
+            "test('serialize_ShieldedReceive returns 578-byte payload', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const orig = {"
+            "    commitment: N32(),"
+            "    contractAddress: { is_some: true, value: N32() },"
+            "    ciphertext: { is_some: true, value: N512() }"
+            "  };"
+            "  const r = C.circuits.serialize_ShieldedReceive(Ctxt, orig);"
+            "  expect(r.result).toBeInstanceOf(Uint8Array);"
+            "  expect(r.result.length).toBe(578);"
+            "});"
+            ""
+            "test('serialize is structural: inactive-variant payload is preserved verbatim', async () => {"
+            "  const [C, Ctxt] = startContract(contractCode, {}, 0);"
+            "  const orig = {"
+            "    commitment: N32(),"
+            "    contractAddress: { is_some: true, value: N32() },"
+            "    ciphertext: { is_some: false, value: N512() }"
+            "  };"
+            "  const r = C.circuits.roundtrip_ShieldedReceive(Ctxt, orig);"
+            "  // serialize is purely structural."
+            "  expect(r.result).toEqual(orig);"
+            "});"
+            ))
+        (oops
+          message: "~a:\n  ~?"
+          irritants: '("testfile.compact line 3 char 3" "emit requires ZKIR v3; recompile with --feature-zkir-v3" ())))
+    )
+
+  (test
+    '(
       "import CompactStandardLibrary;"
       "export circuit hashBytes(value: Bytes<2>): Bytes<64> {"
       "  return disclose(sha512<Bytes<2>>(value));"

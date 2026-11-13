@@ -64,6 +64,7 @@ fn expression_with_calls(
         | Expr::EmitShieldedSpend { .. }
         | Expr::EmitShieldedBurn { .. }
         | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

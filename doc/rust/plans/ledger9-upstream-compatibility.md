@@ -270,6 +270,13 @@ conditional emission and rejects swapped event order and Mint domain
 separator substitution. These checks use the original upstream circuit
 exports.
 
+`ShieldedReceive` follows upstream `7489a7926` and preserves commitment,
+optional ciphertext, then optional contract address in its 578-byte
+payload. The original seven exports cover both conditional outcomes,
+single and ordered emissions, and structural preservation of inactive
+fields. Additional controls reject invalid optional flags, substituted
+addresses and swapped event order.
+
 The supplemental group fixture covers addition, scalar multiplication,
 generator multiplication and zero and identity behavior. Its model is
 k=17. The remaining original point fixtures and proof coverage for the

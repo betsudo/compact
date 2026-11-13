@@ -35,6 +35,12 @@ pub(crate) fn shielded_mint_program<D: DB>(
     event_program(LogEventType::ShieldedMint, payload)
 }
 
+pub(crate) fn shielded_receive_program<D: DB>(
+    payload: FixedBytes<578>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    event_program(LogEventType::ShieldedReceive, payload)
+}
+
 fn event_program<D: DB, const LENGTH: usize>(
     tag: LogEventType,
     bytes: FixedBytes<LENGTH>,

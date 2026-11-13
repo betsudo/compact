@@ -3308,8 +3308,9 @@
             `(emit-log ,src 0 32 (elt-ref ,src ,expr ,elt-name 0))
             (with-output-language (Ltypes Type) `(ttuple ,src)))]
          [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
-          (guard (stdlib-src? src^) (memq struct-name '(ShieldedMint ShieldedBurn)))
+          (guard (stdlib-src? src^) (memq struct-name '(ShieldedReceive ShieldedMint ShieldedBurn)))
           (let-values ([(tag len) (case struct-name
+                                    [(ShieldedReceive) (values 1 578)]
                                     [(ShieldedMint) (values 2 81)]
                                     [(ShieldedBurn) (values 3 49)])])
             (values

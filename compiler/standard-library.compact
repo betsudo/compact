@@ -635,3 +635,9 @@ export struct ShieldedMint {
   domainSep: Bytes<32>,
   amount: Maybe<Uint<128>>,
 }
+
+export struct ShieldedReceive {
+  commitment: Bytes<32>,
+  ciphertext: Maybe<Bytes<512>>,
+  contractAddress: Maybe<Bytes<32>>,
+}

@@ -35,7 +35,7 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                     blocks.push(otherwise);
                     blocks.push(then);
                 }
-                Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::KernelSelf | Operation::KernelClaim { .. } | Operation::KernelMintShielded { .. }
+                Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::KernelSelf | Operation::KernelClaim { .. } | Operation::KernelMintShielded { .. }
                 | Operation::List { .. } | Operation::Merkle { .. } | Operation::CellRead(_) | Operation::CellWrite { .. }
                 | Operation::CellWriteCoin { .. } | Operation::MapMember { .. } | Operation::MapLookup { .. } | Operation::NestedMapLookup { .. }
                 | Operation::NestedMapInsert { .. } | Operation::MapInitChild { .. } | Operation::MapInsert { .. } | Operation::MapRemove { .. }

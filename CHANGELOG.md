@@ -32,6 +32,8 @@ Unreleased Ledger 9 migration.
   has no wire codec.
 - Support standalone `ShieldedMint` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
+- Support standalone `ShieldedReceive` emission and its corrected
+  commitment, ciphertext and contract-address wire order.
 - Support standalone `ShieldedBurn` emission in ZKIR v3, TypeScript and
   ordinary and recorded Rust.
 - Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and

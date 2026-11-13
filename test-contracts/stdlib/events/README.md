@@ -62,3 +62,21 @@ node test-contracts/stdlib/events/check-shielded-mint.mjs \
 The runner checks all event outcomes, preserves a structural inactive
 amount in codec roundtrips, and rejects an invalid flag, changed domain
 separator and swapped event order.
+
+## ShieldedReceive
+
+`ShieldedReceive.compact` retains the seven original exports and
+`shielded-receive-upstream.ss.txt` preserves their compiler test. Upstream
+`7489a7926` corrected the version 1, tag 1 payload to put the commitment
+first, then the optional ciphertext, then the optional contract address.
+The payload is 578 bytes. Each optional field retains its value bytes
+when its presence flag is false.
+
+```sh
+node test-contracts/stdlib/events/check-shielded-receive.mjs \
+  "$CONTRACT_OUTPUT" "$ZKIR_WASM_PACKAGE" "$OUTPUT/shielded-receive-preimages"
+```
+
+The runner checks the exact wire order, both flag positions, unchanged
+input context, conditional emission and refusal of substituted or
+reordered logs.

@@ -28,6 +28,7 @@ impl Lowerer<'_> {
             Expr::EmitShieldedSpend { value } => (value, 32, Operation::EmitShieldedSpend),
             Expr::EmitShieldedBurn { value } => (value, 49, Operation::EmitShieldedBurn),
             Expr::EmitShieldedMint { value } => (value, 81, Operation::EmitShieldedMint),
+            Expr::EmitShieldedReceive { value } => (value, 578, Operation::EmitShieldedReceive),
             _ => return Err(invalid(path, "expected an event expression")),
         };
         let path = format!("{path}.value");

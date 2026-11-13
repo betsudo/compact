@@ -1000,6 +1000,9 @@ pub enum Expr {
     EmitShieldedMint {
         value: Box<Expr>,
     },
+    EmitShieldedReceive {
+        value: Box<Expr>,
+    },
     KernelClaim {
         claim: KernelClaimKind,
         value: Box<Expr>,

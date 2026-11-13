@@ -134,6 +134,7 @@ macro_rules! dispatch {
             | $crate::ir::Expr::EmitShieldedSpend { .. }
             | $crate::ir::Expr::EmitShieldedBurn { .. }
             | $crate::ir::Expr::EmitShieldedMint { .. }
+            | $crate::ir::Expr::EmitShieldedReceive { .. }
             | $crate::ir::Expr::KernelMintShielded { .. }
             | $crate::ir::Expr::CreateZswapInput { .. }
             | $crate::ir::Expr::CreateZswapOutput { .. }

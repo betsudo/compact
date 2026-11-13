@@ -336,8 +336,18 @@ fn shielded_mint_event_manifest() -> Result<Value, String> {
     serde_json::from_slice(SHIELDED_MINT_EVENT).map_err(|error| error.to_string())
 }
 
+const SHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("shielded-receive-event-expression.json");
+
+fn shielded_receive_event_manifest() -> Result<Value, String> {
+    if digest(SHIELDED_RECEIVE_EVENT) != "1849c79092890dffccb1789b33fadf1b452f762e94b2cda2a5bbc14a37c342a8" {
+        return Err("unreviewed ShieldedReceive event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
+}
+
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &shielded_mint_event_manifest()?)?;
+    let current = legacy_source(path, current, &shielded_receive_event_manifest()?)?;
+    let current = legacy_source(path, &current, &shielded_mint_event_manifest()?)?;
     let current = legacy_source(path, &current, &shielded_burn_event_manifest()?)?;
     let current = legacy_source(path, &current, &wide_uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &enum_cast_manifest()?)?;

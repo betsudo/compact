@@ -65,6 +65,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::EmitShieldedSpend { .. }
         | Expr::EmitShieldedBurn { .. }
         | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }

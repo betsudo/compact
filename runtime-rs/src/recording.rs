@@ -317,6 +317,15 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_verify_program(ledger::shielded_mint_program(payload)?)
     }
 
+    /// Record a public ShieldedReceive event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_receive(
+        self,
+        payload: crate::FixedBytes<578>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_receive_program(payload)?)
+    }
+
     pub(crate) fn apply_verify_program(
         mut self,
         program: Vec<Op<ResultModeVerify, D>>,
