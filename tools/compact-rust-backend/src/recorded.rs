@@ -81,10 +81,10 @@ use pure_calls::closed_pure_field_call;
 #[cfg(test)]
 mod admission_probe;
 mod effect_plan;
-pub(crate) use effect_plan::map_cell_type;
 pub(crate) use effect_plan::functional_items::{
     FunctionalSources, render_contract as render_functional_contract,
 };
+pub(crate) use effect_plan::map_cell_type;
 #[cfg(test)]
 mod effectful_migration_tests;
 #[cfg(test)]
@@ -296,7 +296,8 @@ fn recordable_cell_type(ty: &Type) -> bool {
         | Type::Secp256k1Point
         | Type::Secp256r1Point
         | Type::Curve25519Point
-        | Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => false,
+        | Type::LedgerMap { .. }
+        | Type::LedgerMerkle { .. } => false,
     }
 }
 

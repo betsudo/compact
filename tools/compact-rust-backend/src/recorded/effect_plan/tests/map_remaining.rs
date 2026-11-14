@@ -207,13 +207,25 @@ fn four_signatures_and_existing_query_forms_render_the_exact_runtime_method() {
 #[test]
 fn nested_merkle_defaults_use_the_declared_slot_and_refuse_invalid_shapes() {
     for historic in [false, true] {
-        let merkle = |depth, ty| Type::LedgerMerkle { historic, depth, ty: Box::new(ty) };
+        let merkle = |depth, ty| Type::LedgerMerkle {
+            historic,
+            depth,
+            ty: Box::new(ty),
+        };
         let source = contract(merkle(32, Type::Field), 0, false);
-        assert!(methods(&checked(&source).unwrap()).iter().any(|method| method == "record_insert_default"));
+        assert!(
+            methods(&checked(&source).unwrap())
+                .iter()
+                .any(|method| method == "record_insert_default")
+        );
         let rendered = crate::render_with_capabilities(&source).unwrap();
         assert!(rendered.source.contains("MerkleNode<runtime::Field, 32u8,"));
         assert!(!rendered.source.contains("MapView<'a, bool,"));
-        for invalid in [merkle(1, Type::Field), merkle(33, Type::Field), merkle(32, Type::Unit)] {
+        for invalid in [
+            merkle(1, Type::Field),
+            merkle(33, Type::Field),
+            merkle(32, Type::Unit),
+        ] {
             assert!(checked(&contract(invalid, 0, false)).is_err());
         }
         assert!(checked(&contract(merkle(32, Type::Field), 1, false)).is_err());

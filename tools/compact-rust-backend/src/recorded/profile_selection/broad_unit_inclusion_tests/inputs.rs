@@ -267,7 +267,8 @@ fn shielded_spend_event_manifest(bytes: &[u8]) -> Result<Value, String> {
 const BYTES_ZERO_PAD: &[u8] = include_bytes!("bytes-zero-pad-expression.json");
 
 fn bytes_zero_pad_manifest() -> Result<Value, String> {
-    if digest(BYTES_ZERO_PAD) != "83e0e815ae24786000f0a1d6f1dd16d6a831356700a9533d7003cbe91b7df965" {
+    if digest(BYTES_ZERO_PAD) != "83e0e815ae24786000f0a1d6f1dd16d6a831356700a9533d7003cbe91b7df965"
+    {
         return Err("unreviewed Bytes zero-padding compatibility checkpoint".into());
     }
     serde_json::from_slice(BYTES_ZERO_PAD).map_err(|error| error.to_string())
@@ -294,7 +295,9 @@ fn field_bytes_manifest() -> Result<Value, String> {
 const BYTES_FROM_CHUNKS: &[u8] = include_bytes!("bytes-from-chunks-expression.json");
 
 fn bytes_from_chunks_manifest() -> Result<Value, String> {
-    if digest(BYTES_FROM_CHUNKS) != "3de7907495cf58af98752fe9fca5a5818f73238537784bbd44daff6e8bb09c40" {
+    if digest(BYTES_FROM_CHUNKS)
+        != "3de7907495cf58af98752fe9fca5a5818f73238537784bbd44daff6e8bb09c40"
+    {
         return Err("unreviewed Bytes chunk compatibility checkpoint".into());
     }
     serde_json::from_slice(BYTES_FROM_CHUNKS).map_err(|error| error.to_string())
@@ -312,7 +315,8 @@ fn enum_cast_manifest() -> Result<Value, String> {
 const WIDE_UINT_BYTES: &[u8] = include_bytes!("wide-uint-bytes-expression.json");
 
 fn wide_uint_bytes_manifest() -> Result<Value, String> {
-    if digest(WIDE_UINT_BYTES) != "5f0bcd041ee2631eb97c9e0333fb469aac311b6d41944cc735983e1b911b8766" {
+    if digest(WIDE_UINT_BYTES) != "5f0bcd041ee2631eb97c9e0333fb469aac311b6d41944cc735983e1b911b8766"
+    {
         return Err("unreviewed wide Uint byte compatibility checkpoint".into());
     }
     serde_json::from_slice(WIDE_UINT_BYTES).map_err(|error| error.to_string())
@@ -321,7 +325,9 @@ fn wide_uint_bytes_manifest() -> Result<Value, String> {
 const SHIELDED_BURN_EVENT: &[u8] = include_bytes!("shielded-burn-event-expression.json");
 
 fn shielded_burn_event_manifest() -> Result<Value, String> {
-    if digest(SHIELDED_BURN_EVENT) != "cde729d3dd2a6ec2469c103b1b391742280ed743151336e6168b54764875a30b" {
+    if digest(SHIELDED_BURN_EVENT)
+        != "cde729d3dd2a6ec2469c103b1b391742280ed743151336e6168b54764875a30b"
+    {
         return Err("unreviewed ShieldedBurn event compatibility checkpoint".into());
     }
     serde_json::from_slice(SHIELDED_BURN_EVENT).map_err(|error| error.to_string())
@@ -330,7 +336,9 @@ fn shielded_burn_event_manifest() -> Result<Value, String> {
 const SHIELDED_MINT_EVENT: &[u8] = include_bytes!("shielded-mint-event-expression.json");
 
 fn shielded_mint_event_manifest() -> Result<Value, String> {
-    if digest(SHIELDED_MINT_EVENT) != "3e045104ec56f30a0eead62f7833f08c2ffc8b610385a212b0177006c32facae" {
+    if digest(SHIELDED_MINT_EVENT)
+        != "3e045104ec56f30a0eead62f7833f08c2ffc8b610385a212b0177006c32facae"
+    {
         return Err("unreviewed ShieldedMint event compatibility checkpoint".into());
     }
     serde_json::from_slice(SHIELDED_MINT_EVENT).map_err(|error| error.to_string())
@@ -339,7 +347,9 @@ fn shielded_mint_event_manifest() -> Result<Value, String> {
 const SHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("shielded-receive-event-expression.json");
 
 fn shielded_receive_event_manifest() -> Result<Value, String> {
-    if digest(SHIELDED_RECEIVE_EVENT) != "1849c79092890dffccb1789b33fadf1b452f762e94b2cda2a5bbc14a37c342a8" {
+    if digest(SHIELDED_RECEIVE_EVENT)
+        != "1849c79092890dffccb1789b33fadf1b452f762e94b2cda2a5bbc14a37c342a8"
+    {
         return Err("unreviewed ShieldedReceive event compatibility checkpoint".into());
     }
     serde_json::from_slice(SHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
@@ -348,7 +358,9 @@ fn shielded_receive_event_manifest() -> Result<Value, String> {
 const UNSHIELDED_SPEND_EVENT: &[u8] = include_bytes!("unshielded-spend-event-expression.json");
 
 fn unshielded_spend_event_manifest() -> Result<Value, String> {
-    if digest(UNSHIELDED_SPEND_EVENT) != "ce0658702126a8b8d4f987050eadcdd8d6a672c6f94713a76f9b6b1419a4787d" {
+    if digest(UNSHIELDED_SPEND_EVENT)
+        != "ce0658702126a8b8d4f987050eadcdd8d6a672c6f94713a76f9b6b1419a4787d"
+    {
         return Err("unreviewed UnshieldedSpend event compatibility checkpoint".into());
     }
     serde_json::from_slice(UNSHIELDED_SPEND_EVENT).map_err(|error| error.to_string())
@@ -357,7 +369,9 @@ fn unshielded_spend_event_manifest() -> Result<Value, String> {
 const UNSHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("unshielded-receive-event-expression.json");
 
 fn unshielded_receive_event_manifest() -> Result<Value, String> {
-    if digest(UNSHIELDED_RECEIVE_EVENT) != "3f6ae7f9c972cc30591c81e39bc5a731ef7846765cc6bf31ad4522a930d3e19c" {
+    if digest(UNSHIELDED_RECEIVE_EVENT)
+        != "3f6ae7f9c972cc30591c81e39bc5a731ef7846765cc6bf31ad4522a930d3e19c"
+    {
         return Err("unreviewed UnshieldedReceive event compatibility checkpoint".into());
     }
     serde_json::from_slice(UNSHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
@@ -366,7 +380,9 @@ fn unshielded_receive_event_manifest() -> Result<Value, String> {
 const UNSHIELDED_MINT_EVENT: &[u8] = include_bytes!("unshielded-mint-event-expression.json");
 
 fn unshielded_mint_event_manifest() -> Result<Value, String> {
-    if digest(UNSHIELDED_MINT_EVENT) != "cf516c725ba065c1b7216d9fc1fe2d9a75cf916712ad3bda55a903cc6bd6b664" {
+    if digest(UNSHIELDED_MINT_EVENT)
+        != "cf516c725ba065c1b7216d9fc1fe2d9a75cf916712ad3bda55a903cc6bd6b664"
+    {
         return Err("unreviewed UnshieldedMint event compatibility checkpoint".into());
     }
     serde_json::from_slice(UNSHIELDED_MINT_EVENT).map_err(|error| error.to_string())
@@ -375,7 +391,9 @@ fn unshielded_mint_event_manifest() -> Result<Value, String> {
 const UNSHIELDED_BURN_EVENT: &[u8] = include_bytes!("unshielded-burn-event-expression.json");
 
 fn unshielded_burn_event_manifest() -> Result<Value, String> {
-    if digest(UNSHIELDED_BURN_EVENT) != "4593d2d49d08f82329dce3bdb86faa21749f96d2f09f3281e8e40050566b1201" {
+    if digest(UNSHIELDED_BURN_EVENT)
+        != "4593d2d49d08f82329dce3bdb86faa21749f96d2f09f3281e8e40050566b1201"
+    {
         return Err("unreviewed UnshieldedBurn event compatibility checkpoint".into());
     }
     serde_json::from_slice(UNSHIELDED_BURN_EVENT).map_err(|error| error.to_string())
@@ -415,7 +433,11 @@ fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
     let current = legacy_source(path, &current, &field_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;
     let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;
-    let current = legacy_source(path, &current, &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?)?;
+    let current = legacy_source(
+        path,
+        &current,
+        &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?,
+    )?;
     legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)
 }
 

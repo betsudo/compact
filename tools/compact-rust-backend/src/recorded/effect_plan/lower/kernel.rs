@@ -41,7 +41,10 @@ impl Lowerer<'_> {
         let path = format!("{path}.value");
         let value = self.expression(value, scope, bindings, &path)?;
         if value.ty != (Type::Bytes { length }) {
-            return Err(invalid(&path, format!("event payload must have type Bytes<{length}>")));
+            return Err(invalid(
+                &path,
+                format!("event payload must have type Bytes<{length}>"),
+            ));
         }
         Ok((operation(value), Type::Unit))
     }

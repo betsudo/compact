@@ -39,10 +39,10 @@ impl VisitMut for AbsoluteRuntime {
         // Keep that boundary when qualification inserts a leading segment.
         let original_len = expression.path.segments.len();
         visit_mut::visit_expr_path_mut(self, expression);
-        if let Some(qself) = &mut expression.qself {
-            if qself.position != 0 {
-                qself.position += expression.path.segments.len() - original_len;
-            }
+        if let Some(qself) = &mut expression.qself
+            && qself.position != 0
+        {
+            qself.position += expression.path.segments.len() - original_len;
         }
     }
 

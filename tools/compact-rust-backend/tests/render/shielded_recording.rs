@@ -46,7 +46,11 @@ fn shielded_mint_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_shielded_mint("));
     assert!(rendered.source.contains("frame.emit_shielded_mint("));
-    for ty in [Type::Bytes { length: 80 }, Type::Bytes { length: 82 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 80 },
+        Type::Bytes { length: 82 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -80,7 +84,11 @@ fn shielded_receive_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_shielded_receive("));
     assert!(rendered.source.contains("frame.emit_shielded_receive("));
-    for ty in [Type::Bytes { length: 577 }, Type::Bytes { length: 579 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 577 },
+        Type::Bytes { length: 579 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -114,7 +122,11 @@ fn unshielded_spend_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_unshielded_spend("));
     assert!(rendered.source.contains("frame.emit_unshielded_spend("));
-    for ty in [Type::Bytes { length: 144 }, Type::Bytes { length: 146 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -182,7 +194,11 @@ fn misc_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_misc("));
     assert!(rendered.source.contains("frame.emit_misc("));
-    for ty in [Type::Bytes { length: 287 }, Type::Bytes { length: 289 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 287 },
+        Type::Bytes { length: 289 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -216,7 +232,11 @@ fn unshielded_burn_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_unshielded_burn("));
     assert!(rendered.source.contains("frame.emit_unshielded_burn("));
-    for ty in [Type::Bytes { length: 112 }, Type::Bytes { length: 114 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 112 },
+        Type::Bytes { length: 114 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -250,7 +270,11 @@ fn unshielded_receive_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_unshielded_receive("));
     assert!(rendered.source.contains("frame.emit_unshielded_receive("));
-    for ty in [Type::Bytes { length: 144 }, Type::Bytes { length: 146 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),
@@ -284,7 +308,11 @@ fn unshielded_mint_emission_requires_the_exact_byte_width() {
     let rendered = render_with_capabilities(&contract).unwrap();
     assert!(rendered.source.contains("context.emit_unshielded_mint("));
     assert!(rendered.source.contains("frame.emit_unshielded_mint("));
-    for ty in [Type::Bytes { length: 79 }, Type::Bytes { length: 81 }, Type::Field] {
+    for ty in [
+        Type::Bytes { length: 79 },
+        Type::Bytes { length: 81 },
+        Type::Field,
+    ] {
         contract.stateful_circuits[0].parameters[0].ty = ty.clone();
         assert!(matches!(
             render_with_capabilities(&contract),

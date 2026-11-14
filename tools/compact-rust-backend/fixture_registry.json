@@ -975,7 +975,7 @@
       "namespace": null,
       "consumer_input_sha256": {
         "tests-rust-backend/effect-plan-composite-source/Cargo.toml": "2e2d1dc29158ee6c94c0c14ec7f577bed70132cda211546a750daf3911be152f",
-        "tests-rust-backend/effect-plan-composite-source/fixture.rs": "26705c455665efa87226ed82f2800c74a4a18fcd48a6fe84a3bf07cd58f40ff2",
+        "tests-rust-backend/effect-plan-composite-source/fixture.rs": "3a5bfbb347e152a11fd0926935c1ccc1188858ea76a131f1121ba6fca6841b48",
         "tests-rust-backend/effect-plan-composite-source/build.rs": "dd25f546925fb42a9cf315e8d3022533949ff20cd2986cac5175989586ab92e2"
       },
       "qualification": "Positive whole retained-IR build-script consumer. OUT_DIR output included without rewriting the generated contract. Fresh genuine frontend/source binding, compilation and runtime/proof applicability remain final-gate obligations."

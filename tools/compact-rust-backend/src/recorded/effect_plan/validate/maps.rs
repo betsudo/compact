@@ -98,10 +98,15 @@ pub(in super::super) fn child_types(
 }
 
 pub(in super::super) fn has_merkle_value(declarations: &Declarations, slot: MapSlot) -> bool {
-    declarations.field(slot.declaration).is_some_and(|field| matches!(
-        &field.declaration,
-        LedgerFieldKind::Map { value: Type::LedgerMerkle { .. }, .. }
-    ))
+    declarations.field(slot.declaration).is_some_and(|field| {
+        matches!(
+            &field.declaration,
+            LedgerFieldKind::Map {
+                value: Type::LedgerMerkle { .. },
+                ..
+            }
+        )
+    })
 }
 
 pub(in super::super) fn default_insert_value(
@@ -160,9 +165,10 @@ pub(super) fn validate(
             let scalar = matches!(operation, Operation::MapLookup { .. })
                 || (is_default && !has_merkle_value(declarations, *slot));
             let (declared_key, declared_value) = types(declarations, *slot, scalar, path)?;
-            let default_valid = !is_default
-                || default_insert_value(declarations, declared_value, path)?;
-            key.ty == *declared_key && default_valid
+            let default_valid =
+                !is_default || default_insert_value(declarations, declared_value, path)?;
+            key.ty == *declared_key
+                && default_valid
                 && *result
                     == match operation {
                         Operation::MapMember { .. } => Type::Boolean,

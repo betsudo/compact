@@ -16,5 +16,6 @@
 //! Exact source-bound composite intent compositions; no synthetic exports.
 include!(concat!(env!("OUT_DIR"), "/contract.rs"));
 
-pub const RETAINED_IR: &str =
-    include_str!("../../tools/compact-rust-backend/tests/effect-plan-composite-register-output-schema20-ir.json");
+pub const RETAINED_IR: &str = include_str!(
+    "../../tools/compact-rust-backend/tests/effect-plan-composite-register-output-schema20-ir.json"
+);

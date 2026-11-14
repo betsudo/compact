@@ -144,8 +144,16 @@ pub(super) fn equivalent(
                     push(work, &mut pending, Comparison::Type(left_key, right_key))?;
                 }
                 (
-                    Type::LedgerMerkle { historic: left_historic, depth: left_depth, ty: left },
-                    Type::LedgerMerkle { historic: right_historic, depth: right_depth, ty: right },
+                    Type::LedgerMerkle {
+                        historic: left_historic,
+                        depth: left_depth,
+                        ty: left,
+                    },
+                    Type::LedgerMerkle {
+                        historic: right_historic,
+                        depth: right_depth,
+                        ty: right,
+                    },
                 ) => {
                     if left_historic != right_historic || left_depth != right_depth {
                         return Ok(false);
