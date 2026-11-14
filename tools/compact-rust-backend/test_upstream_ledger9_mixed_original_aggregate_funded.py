@@ -348,34 +348,62 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             gate.require_runtime_preview_consistent(preview, self.prior)
 
     def test_main_wires_early_snapshot_static_and_final_revalidation(self) -> None:
-        main = ast.parse(inspect.getsource(gate.main))
-        calls = [node for node in ast.walk(main) if isinstance(node, ast.Call) and
-                 isinstance(node.func, ast.Name)]
-        line = lambda name: min(node.lineno for node in calls if node.func.id == name)
-        self.assertLess(line('snapshot_inputs'), line('validate_aggregate_receipts'))
-        self.assertLess(line('validate_aggregate_receipts'),
-                        line('require_admission_stable'))
-        assignments = {
-            target.id: node.value for node in ast.walk(main)
-            if isinstance(node, ast.Assign) for target in node.targets
-            if isinstance(target, ast.Name)
-        }
-        for name in ('initial_directories', 'admitted_directories'):
-            self.assertIn('static', {node.id for node in ast.walk(assignments[name])
-                                     if isinstance(node, ast.Name)})
-        final = next(node for node in calls if node.func.id == 'require_final_binding')
-        self.assertTrue({'allowed_directory_links', 'revalidate'} <=
-                        {keyword.arg for keyword in final.keywords})
-        revalidator = next(node for node in ast.walk(main)
-                           if isinstance(node, ast.FunctionDef) and
-                           node.name == 'revalidate_admission')
-        self.assertTrue({'validate_aggregate_receipts',
-                         'require_runtime_preview_consistent'} <=
-                        {node.func.id for node in ast.walk(revalidator)
-                         if isinstance(node, ast.Call) and
-                         isinstance(node.func, ast.Name)})
-        self.assertLess(line('require_runtime_preview_consistent'),
-                        line('require_admission_stable'))
+        def assert_wiring(source: str) -> None:
+            main = ast.parse(source)
+            revalidator = next(node for node in ast.walk(main)
+                               if isinstance(node, ast.FunctionDef) and
+                               node.name == 'revalidate_admission')
+            calls = [node for node in ast.walk(main) if isinstance(node, ast.Call) and
+                     isinstance(node.func, ast.Name)]
+            def call(name: str, *, final: bool = False) -> ast.Call:
+                return next(node for node in calls if node.func.id == name and
+                            (node.lineno > revalidator.lineno) == final)
+
+            first_snapshot = call('snapshot_inputs')
+            first_validation = call('validate_aggregate_receipts')
+            first_preview = call('require_runtime_preview_consistent')
+            stable = call('require_admission_stable')
+            self.assertLess(first_snapshot.lineno, first_validation.lineno)
+            self.assertLess(first_validation.lineno, first_preview.lineno)
+            self.assertLess(first_preview.lineno, stable.lineno)
+            self.assertEqual([ast.unparse(arg) for arg in first_preview.args],
+                             ['preflight_preview', 'prior'])
+            final_validation = call('validate_aggregate_receipts', final=True)
+            final_preview = call('require_runtime_preview_consistent', final=True)
+            self.assertLess(final_validation.lineno, final_preview.lineno)
+            self.assertEqual([ast.unparse(arg) for arg in final_preview.args],
+                             ['preflight_preview', 'validated_prior'])
+            for validation, expected in ((first_validation, '(proof, prior)'),
+                                         (final_validation, '(_, validated_prior)')):
+                assignment = next(node for node in ast.walk(main)
+                                  if isinstance(node, ast.Assign) and
+                                  node.value is validation)
+                self.assertEqual([ast.unparse(target) for target in assignment.targets],
+                                 [expected])
+            assignments = {
+                target.id: node.value for node in ast.walk(main)
+                if isinstance(node, ast.Assign) for target in node.targets
+                if isinstance(target, ast.Name)
+            }
+            for name in ('initial_directories', 'admitted_directories'):
+                self.assertIn('static', {node.id for node in ast.walk(assignments[name])
+                                         if isinstance(node, ast.Name)})
+            final = call('require_final_binding', final=True)
+            self.assertTrue({'allowed_directory_links', 'revalidate'} <=
+                            {keyword.arg for keyword in final.keywords})
+
+        source = inspect.getsource(gate.main)
+        assert_wiring(source)
+        early = 'require_runtime_preview_consistent(preflight_preview, prior)'
+        late = 'require_runtime_preview_consistent(preflight_preview, validated_prior)'
+        self.assertEqual(source.count(early), 1)
+        self.assertEqual(source.count(late), 1)
+        with self.assertRaises(AssertionError):
+            assert_wiring(source.replace(early,
+                                         'require_runtime_preview_consistent(prior, prior)'))
+        with self.assertRaises(AssertionError):
+            assert_wiring(source.replace(late,
+                                         'require_runtime_preview_consistent(preflight_preview, prior)'))
 
     def test_refuses_generated_copy_mutated_after_admission(self) -> None:
         admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
