@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 //! Maintained full-source controls complement the separate authenticated corpus export.
 use super::*;
 use crate::recorded::{admission_probe::trace, profile_attempt::ProfileAttempt};
@@ -144,25 +155,36 @@ fn genuine_scalar_and_nested_map_sources_have_checked_operations() {
 
 #[test]
 fn calibrated_nested_map_lookup_has_terminal_recording_owner() {
-    let contract: Contract = serde_json::from_str(include_str!(
-        "../../../../resource_limits/test_inputs/native_map-32.json"
-    ))
-    .unwrap();
-    let (rendered, invocations) =
-        trace::capture_json(|| crate::render_with_capabilities(&contract));
-    let rendered = rendered.unwrap();
-    let capability = &rendered.capabilities.circuits[0];
-    assert_eq!(capability.name, "entry");
-    assert!(capability.recorded && capability.observed_call);
-    let rows: Vec<_> = invocations
-        .as_array()
-        .unwrap()
-        .iter()
-        .filter(|r| {
-            r["circuit"] == "entry" && r["phase"] == "public_emission" && r["helper"] == false
+    // The nested map fixture needs a larger test worker stack; the separate
+    // resource-limit tests still enforce their fixed 2 MiB budget.
+    std::thread::Builder::new()
+        .stack_size(16 * 1024 * 1024)
+        .spawn(|| {
+            let contract: Contract = serde_json::from_str(include_str!(
+                "../../../../resource_limits/test_inputs/native_map-32.json"
+            ))
+            .unwrap();
+            let (rendered, invocations) =
+                trace::capture_json(|| crate::render_with_capabilities(&contract));
+            let rendered = rendered.unwrap();
+            let capability = &rendered.capabilities.circuits[0];
+            assert_eq!(capability.name, "entry");
+            assert!(capability.recorded && capability.observed_call);
+            let rows: Vec<_> = invocations
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|r| {
+                    r["circuit"] == "entry"
+                        && r["phase"] == "public_emission"
+                        && r["helper"] == false
+                })
+                .collect();
+            assert_eq!(rows.len(), 1);
+            assert_eq!(rows[0]["body_owner"], "algebra.ordinary");
+            assert_eq!(rows[0]["outcome"]["status"], "supported");
         })
-        .collect();
-    assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0]["body_owner"], "algebra.ordinary");
-    assert_eq!(rows[0]["outcome"]["status"], "supported");
+        .unwrap()
+        .join()
+        .unwrap();
 }

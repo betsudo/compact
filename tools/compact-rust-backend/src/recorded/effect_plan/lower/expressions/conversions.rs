@@ -72,7 +72,13 @@ impl Lowerer<'_> {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;
                 crate::pure_semantics::conversion::EnumCast::check(&value.ty, ty)
                     .map_err(|error| invalid(path, error.to_string()))?;
-                (Operation::Convert { value, kind: Conversion::EnumCast }, ty.clone())
+                (
+                    Operation::Convert {
+                        value,
+                        kind: Conversion::EnumCast,
+                    },
+                    ty.clone(),
+                )
             }
             Expr::Secp256k1BytesCast { value, ty } => {
                 let value = self.expression(value, scope, bindings, &format!("{path}.value"))?;

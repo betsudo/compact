@@ -418,7 +418,10 @@ pub(super) fn lower_observed(
             };
             for ty in [outer_ty, inner_ty] {
                 if !crate::recorded::map_cell_type(ty) {
-                    refused(RefusalSite::node(Owner::Action(action)), environment.observer);
+                    refused(
+                        RefusalSite::node(Owner::Action(action)),
+                        environment.observer,
+                    );
                     return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
                 }
             }
@@ -437,8 +440,13 @@ pub(super) fn lower_observed(
             match action {
                 StateAction::NestedMapInsert { inner, value, .. } => {
                     if !crate::recorded::map_cell_type(leaf) {
-                        refused(RefusalSite::node(Owner::Action(action)), environment.observer);
-                        return Err(RenderError::UnsupportedLedgerValueType(leaf.as_ref().clone()));
+                        refused(
+                            RefusalSite::node(Owner::Action(action)),
+                            environment.observer,
+                        );
+                        return Err(RenderError::UnsupportedLedgerValueType(
+                            leaf.as_ref().clone(),
+                        ));
                     }
                     let inner = operand(inner, inner_ty)?;
                     let value = operand(value, leaf)?;

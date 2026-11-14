@@ -86,7 +86,11 @@ pub(crate) fn render(checked: CheckedCurve<syn::Expr>) -> syn::Expr {
         CheckedCurve::Multiply(Curve::Jubjub, point, scalar) => {
             syn::parse_quote!(runtime::ec_mul(#point, #scalar)?)
         }
-        CheckedCurve::Multiply(Curve::Secp256k1 | Curve::Secp256r1 | Curve::Curve25519, point, scalar) => {
+        CheckedCurve::Multiply(
+            Curve::Secp256k1 | Curve::Secp256r1 | Curve::Curve25519,
+            point,
+            scalar,
+        ) => {
             syn::parse_quote!((#point) * (#scalar))
         }
         CheckedCurve::Add(Curve::Jubjub, left, right) => {

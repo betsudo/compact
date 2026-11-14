@@ -151,7 +151,8 @@ impl Lowerer<'_> {
             StateAction::MapRemove { .. }
                 | StateAction::NestedMapInsert { .. }
                 | StateAction::MapInitChild { .. }
-        ) && !(insert_default && super::super::validate::maps::has_merkle_value(self.declarations, slot));
+        ) && !(insert_default
+            && super::super::validate::maps::has_merkle_value(self.declarations, slot));
         let (key_type, value_type) =
             super::super::validate::maps::types(self.declarations, slot, scalar, path)?;
         let key_type = key_type.clone();
@@ -201,8 +202,15 @@ impl Lowerer<'_> {
                 let key =
                     self.map_operand(key, &key_type, scope, bindings, &format!("{path}.key"))?;
                 if insert_default {
-                    if !super::super::validate::maps::default_insert_value(self.declarations, &value_type, path)? {
-                        return Err(invalid(path, "Map default insertion requires a defaultable value"));
+                    if !super::super::validate::maps::default_insert_value(
+                        self.declarations,
+                        &value_type,
+                        path,
+                    )? {
+                        return Err(invalid(
+                            path,
+                            "Map default insertion requires a defaultable value",
+                        ));
                     }
                     Operation::MapInsertDefault { slot, key }
                 } else {

@@ -17,7 +17,10 @@ use group::Group;
 use midnight_base_crypto::fab::{Aligned, Alignment, InvalidBuiltinDecode, Value, ValueSlice};
 use midnight_curves::curve25519::{Curve25519Affine, Curve25519Subgroup};
 
-use crate::{BinaryHashRepr, CompactError, Curve25519Base, Curve25519Scalar, FieldRepr, Fr, FromFieldRepr, MemWrite};
+use crate::{
+    BinaryHashRepr, CompactError, Curve25519Base, Curve25519Scalar, FieldRepr, Fr, FromFieldRepr,
+    MemWrite,
+};
 
 /// A point in the prime-order subgroup of the Curve25519 Edwards curve.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

@@ -398,7 +398,11 @@ mod counter;
 mod event;
 mod merkle;
 mod vm;
-pub(crate) use event::{shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program, unshielded_receive_program, unshielded_mint_program, unshielded_burn_program, paused_program, unpaused_program, misc_program};
+pub(crate) use event::{
+    misc_program, paused_program, shielded_burn_program, shielded_mint_program,
+    shielded_receive_program, shielded_spend_program, unpaused_program, unshielded_burn_program,
+    unshielded_mint_program, unshielded_receive_program, unshielded_spend_program,
+};
 
 pub(crate) use cell::{
     aligned_cell_value, cell_read_program, cell_write_program, decode_last_read,
@@ -421,9 +425,9 @@ pub(crate) use collections::{
     gather_map_lookup, list_head_program, list_is_empty_program, list_length_program,
     list_pop_front_program, list_push_front_program, list_reset_program, map_init_child_program,
     map_insert_child_program, map_insert_merkle_default_program, map_insert_program,
-    map_lookup_child_program, map_lookup_program,
-    qualified_coin_set_insert_program, set_insert_program, set_is_empty_program,
-    set_member_program, set_remove_program, set_reset_program, set_size_program,
+    map_lookup_child_program, map_lookup_program, qualified_coin_set_insert_program,
+    set_insert_program, set_is_empty_program, set_member_program, set_remove_program,
+    set_reset_program, set_size_program,
 };
 pub use counter::{constructor_counter, decrement_counter, increment_counter, read_counter};
 pub(crate) use counter::{

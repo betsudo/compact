@@ -662,7 +662,9 @@ pub(crate) fn map_insert_merkle_default_program<K: CellValue, D: DB>(
     historic: bool,
 ) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
     if !(2..=32).contains(&depth) {
-        return Err(CompactError::InvalidLedgerCell("invalid nested Merkle depth".into()));
+        return Err(CompactError::InvalidLedgerCell(
+            "invalid nested Merkle depth".into(),
+        ));
     }
     super::checked_path_operand::<D>(path.len(), 0).map_err(super::query_rejected)?;
     let value = if historic {
@@ -672,8 +674,12 @@ pub(crate) fn map_insert_merkle_default_program<K: CellValue, D: DB>(
     } else {
         super::merkle::constructor_merkle_tree(depth)
     };
-    map_insert_at(path_keys(path), super::vm::cell(key)?, super::vm::state(value)?)
-        .map_err(super::query_rejected)
+    map_insert_at(
+        path_keys(path),
+        super::vm::cell(key)?,
+        super::vm::state(value)?,
+    )
+    .map_err(super::query_rejected)
 }
 
 fn map_child_path<K: CellValue>(path: &[u8], outer: K) -> Result<Vec<Key>, CompactError> {

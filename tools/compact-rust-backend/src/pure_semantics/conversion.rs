@@ -89,16 +89,28 @@ impl FixedBytesConversion {
             Expr::VectorToBytes { value, length } => (value, Self::FromVector { length: *length }),
             Expr::BytesToVector { value, length } => (value, Self::ToVector { length: *length }),
             Expr::UintToBytes { value, length } => (value, Self::UintToBytes { length: *length }),
-            Expr::WideUintToBytes { value, length } => (value, Self::WideUintToBytes { length: *length }),
+            Expr::WideUintToBytes { value, length } => {
+                (value, Self::WideUintToBytes { length: *length })
+            }
             Expr::BytesToField { value } => (value, Self::BytesToField),
             Expr::BytesToUint { value, max } => {
-                let bound = unsigned_maximum(max).map(|bound| Self::BytesToUint { max: max.clone(), bound });
+                let bound = unsigned_maximum(max).map(|bound| Self::BytesToUint {
+                    max: max.clone(),
+                    bound,
+                });
                 return (value, bound);
             }
             Expr::BytesZeroPad { value, length } => (value, Self::ZeroPad { length: *length }),
-            Expr::BytesFromChunks { value, length, chunk_count } => (
+            Expr::BytesFromChunks {
                 value,
-                Self::FromChunks { length: *length, chunk_count: *chunk_count },
+                length,
+                chunk_count,
+            } => (
+                value,
+                Self::FromChunks {
+                    length: *length,
+                    chunk_count: *chunk_count,
+                },
             ),
             Expr::BytesSlice {
                 value,
@@ -106,7 +118,10 @@ impl FixedBytesConversion {
                 length,
             } => (
                 value,
-                Self::Slice { start: *start, length: *length },
+                Self::Slice {
+                    start: *start,
+                    length: *length,
+                },
             ),
             _ => unreachable!("dispatcher selected a fixed bytes conversion"),
         };
@@ -170,20 +185,33 @@ impl FixedBytesConversion {
                 Ok(Type::Unsigned { max: max.clone() })
             }
             Self::ZeroPad { length } => {
-                let Type::Bytes { length: input_length } = *source else {
+                let Type::Bytes {
+                    length: input_length,
+                } = *source
+                else {
                     return Err(RenderError::ExpectedBytes(source.clone()));
                 };
                 if input_length > length {
-                    return Err(RenderError::InvalidBytesPadding { length, input_length });
+                    return Err(RenderError::InvalidBytesPadding {
+                        length,
+                        input_length,
+                    });
                 }
                 Ok(Type::Bytes { length })
             }
-            Self::FromChunks { length, chunk_count } => {
-                let invalid = || RenderError::InvalidByteChunks { length, chunk_count };
+            Self::FromChunks {
+                length,
+                chunk_count,
+            } => {
+                let invalid = || RenderError::InvalidByteChunks {
+                    length,
+                    chunk_count,
+                };
                 let Type::Tuple { elements } = source else {
                     return Err(invalid());
                 };
-                if chunk_count == 0 || elements.len() != chunk_count
+                if chunk_count == 0
+                    || elements.len() != chunk_count
                     || length > crate::resource_limits::recording_byte_payload_limit()
                 {
                     return Err(invalid());
@@ -218,18 +246,18 @@ impl FixedBytesConversion {
 }
 
 pub(crate) enum JubjubCast {
-    ToScalar,
-    ToField,
-    ToUnsigned(UnsignedMaximum),
+    Scalar,
+    Field,
+    Unsigned(UnsignedMaximum),
 }
 
 impl JubjubCast {
     pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
         match (source, target) {
-            (Type::Field, Type::JubjubScalar) => Ok(Self::ToScalar),
-            (Type::JubjubScalar, Type::Field) => Ok(Self::ToField),
+            (Type::Field, Type::JubjubScalar) => Ok(Self::Scalar),
+            (Type::JubjubScalar, Type::Field) => Ok(Self::Field),
             (Type::JubjubScalar, Type::Unsigned { max }) => {
-                Ok(Self::ToUnsigned(unsigned_maximum(max)?))
+                Ok(Self::Unsigned(unsigned_maximum(max)?))
             }
             _ => Err(RenderError::TypeMismatch {
                 expected: if *target == Type::JubjubScalar {
@@ -245,7 +273,10 @@ impl JubjubCast {
 
 pub(crate) enum EnumCast {
     ToField,
-    ToUnsigned { max_ordinal: u128, strategy: UnsignedCastStrategy },
+    ToUnsigned {
+        max_ordinal: u128,
+        strategy: UnsignedCastStrategy,
+    },
     FromNumber {
         name: super::identifier::CheckedName,
         source: EnumOrdinalSource,
@@ -283,9 +314,15 @@ impl EnumCast {
                     },
                     _ => unreachable!("enum cast source is numeric"),
                 };
-                Ok(Self::FromNumber { name: super::identifier::check_name(name)?, source })
+                Ok(Self::FromNumber {
+                    name: super::identifier::check_name(name)?,
+                    source,
+                })
             }
-            _ => Err(RenderError::InvalidEnumCast { source: source.clone(), target: target.clone() }),
+            _ => Err(RenderError::InvalidEnumCast {
+                source: source.clone(),
+                target: target.clone(),
+            }),
         }
     }
 }
@@ -310,7 +347,9 @@ impl Secp256k1BytesCast {
             (Type::Bytes { length: 32 }, Type::Secp256r1Scalar) => Ok(Self::ToSecp256r1Scalar),
             (Type::Bytes { length: 32 }, Type::Curve25519Base) => Ok(Self::ToCurve25519Base),
             (Type::Bytes { length: 32 }, Type::Curve25519Scalar) => Ok(Self::ToCurve25519Scalar),
-            (Type::Bytes { length: 64 }, Type::Curve25519Scalar) => Ok(Self::WideToCurve25519Scalar),
+            (Type::Bytes { length: 64 }, Type::Curve25519Scalar) => {
+                Ok(Self::WideToCurve25519Scalar)
+            }
             (
                 Type::Secp256k1Base
                 | Type::Secp256k1Scalar

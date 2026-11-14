@@ -12,7 +12,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 //! Diagnostic contracts at the native stateful expression dispatch boundary.
 use super::*;
 use crate::ir::{Parameter, StateReturn};

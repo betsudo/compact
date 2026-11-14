@@ -66,12 +66,16 @@ pub fn keccak256<T: Into<Value>>(value: T) -> FixedBytes<32> {
 pub fn keccak256_aligned<T: Aligned + Into<Value>>(
     value: T,
 ) -> Result<FixedBytes<32>, CompactError> {
-    Ok(FixedBytes(Keccak256::digest(aligned_hash_input(value)?).into()))
+    Ok(FixedBytes(
+        Keccak256::digest(aligned_hash_input(value)?).into(),
+    ))
 }
 
 /// Hash the aligned binary representation with SHA-512.
 pub fn sha512<T: Aligned + Into<Value>>(value: T) -> Result<FixedBytes<64>, CompactError> {
-    Ok(FixedBytes(Sha512::digest(aligned_hash_input(value)?).into()))
+    Ok(FixedBytes(
+        Sha512::digest(aligned_hash_input(value)?).into(),
+    ))
 }
 
 fn aligned_hash_input<T: Aligned + Into<Value>>(value: T) -> Result<Vec<u8>, CompactError> {

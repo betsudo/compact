@@ -97,7 +97,7 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                     'tests-rust-backend/effect-plan-composite-source/build.rs':
                         'dd25f546925fb42a9cf315e8d3022533949ff20cd2986cac5175989586ab92e2',
                     'tests-rust-backend/effect-plan-composite-source/fixture.rs':
-                        '26705c455665efa87226ed82f2800c74a4a18fcd48a6fe84a3bf07cd58f40ff2',
+                        '3a5bfbb347e152a11fd0926935c1ccc1188858ea76a131f1121ba6fca6841b48',
                 }.items():
                     self.assertEqual(fingerprint(inventory.ROOT / path), expected)
                     self.assertEqual(row['consumer_input_sha256'][path], expected)
