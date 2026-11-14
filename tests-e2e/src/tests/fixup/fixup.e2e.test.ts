@@ -30,7 +30,6 @@ const overloadedCurveWarnings = [
     'Warning: standard.compact line 34 char 19:',
     '  not renaming reference of ec_mul_generator to ecMulGenerator because ecMulGenerator has other',
     '  bindings in scope',
-    '',
 ].join('\n');
 
 describe('[E2E] Example contract tests for fixup tool', () => {
