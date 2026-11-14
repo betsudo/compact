@@ -45,7 +45,7 @@ describe('[E2E] Example contract tests for fixup tool', () => {
 
             const result: Result = await fixup([filePath, fixedContract]);
 
-            expectCommandResult(result).toBeSuccess('', fileName === 'standard.compact' ? overloadedCurveWarnings : '');
+            expectCommandResult(result).toBeSuccess(fileName === 'standard.compact' ? overloadedCurveWarnings : '', '');
             expect(getFileContent(fixedContract)).toEqual(oracleContent);
         });
     });

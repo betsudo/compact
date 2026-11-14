@@ -90,10 +90,6 @@ export circuit nullX(): Boolean {
   return default<Boolean>;
 }
 
-export circuit keywordEmit(): [] {
-  emit(Paused {});
-}
-
 ledger kernel2: Kernel;
 ledger x0: Field;
 sealed ledger x1: Set<Field>;
