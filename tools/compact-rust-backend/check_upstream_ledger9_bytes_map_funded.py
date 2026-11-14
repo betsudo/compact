@@ -96,6 +96,21 @@ def normalized_lock(path: Path, root_name: str, contract_name: str) -> list[str]
     return sorted(rows)
 
 
+GENERATED_CONTRACT_FILES = {
+    'Cargo.toml', 'compact-rust-ir.json', 'compact-rust-origins.raw.json',
+    'index.d.ts', 'index.js', 'index.js.map', 'lib.rs', 'rust-capabilities.json',
+}
+
+
+def validate_generated_contract_files(contract: Path) -> None:
+    actual = {path.relative_to(contract).as_posix() for path in contract.rglob('*')
+              if path.is_file() or path.is_symlink()}
+    require(actual == GENERATED_CONTRACT_FILES and
+            all((contract / name).is_file() and not (contract / name).is_symlink()
+                for name in GENERATED_CONTRACT_FILES),
+            'generated contract has unpinned or missing files')
+
+
 def validate_aggregate_preflight(path: Path, *, head: str, tree: str,
                                  compiler_receipt: Path, runtime: Path,
                                  proof: dict) -> str:
@@ -352,8 +367,10 @@ def main() -> None:
          str(gate / 'wrong-key/slice_composition.verifier')], verifier_log)
     require('verified in separate process; rejected different verifier, changed binding and corrupt proof'
             in verifier_log.read_text(), 'standalone proof or refusals did not verify')
+    generated_contract = gate / 'fresh-dual/contract'
+    validate_generated_contract_files(generated_contract)
     canonical, runtime_checkout = generated_manifest(
-        gate / 'fresh-dual/contract/Cargo.toml',
+        generated_contract / 'Cargo.toml',
         expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA256,
         source_head=proof_head)
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA256 and
@@ -383,7 +400,6 @@ def main() -> None:
     (consumer / 'Cargo.toml').write_text(manifest)
     shutil.copyfile(base / 'Cargo.lock', consumer / 'Cargo.lock')
     shutil.copyfile(SOURCE, consumer / 'main.rs')
-    generated_contract = gate / 'fresh-dual/contract'
     runtime_crate = runtime_checkout / 'runtime-rs'
     for directory in (consumer, *consumer.parents,
                       generated_contract, *generated_contract.parents,

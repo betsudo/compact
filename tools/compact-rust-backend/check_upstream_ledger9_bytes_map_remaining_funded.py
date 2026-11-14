@@ -29,7 +29,7 @@ import tomllib
 from collection_gate_binding import compiler_recipe, generated_manifest
 from check_upstream_ledger9_bytes_map_funded import (
     normalized_lock, sha, require, git, run, require_receipt_pin,
-    validate_aggregate_preflight,
+    validate_aggregate_preflight, validate_generated_contract_files,
 )
 from check_upstream_ledger9_bytes_map_remaining_proofs import (
     CASES, CAPTURE, MATERIAL_RECEIPT_SHA256, PARAMS, ROOT,
@@ -276,7 +276,9 @@ def main() -> None:
              str(gate / 'keys' / f'{pins["wrong"]}.verifier')], verify_log)
         require('verified in separate process; rejected different verifier, changed binding and corrupt proof'
                 in verify_log.read_text(), f'{case} standalone verifier controls failed')
-        generated_manifest_path = gate / 'fresh-dual' / case / 'contract/Cargo.toml'
+        generated_contract = gate / 'fresh-dual' / case / 'contract'
+        validate_generated_contract_files(generated_contract)
+        generated_manifest_path = generated_contract / 'Cargo.toml'
         canonical, runtime_checkout = generated_manifest(
             generated_manifest_path,
             expected_canonical_sha256=CANONICAL_MANIFEST_SHA256[case],

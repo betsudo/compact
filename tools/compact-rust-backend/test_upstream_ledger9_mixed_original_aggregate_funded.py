@@ -53,8 +53,18 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.write(self.preflight / 'original/k1.callback.js', self.callback)
         artifact = self.preflight / 'k1/contract/lib.rs'
         self.write(artifact, b'generated Rust\n')
+        origins_path = self.preflight / 'k1/contract/compact-rust-origins.raw.json'
+        origins = {'files': [
+            {'id': 0, 'path': str((self.preflight / 'original/k1.compact').resolve())},
+            {'id': 1, 'path': 'compiler/standard-library.compact'},
+        ], 'spans': [[0, 1]]}
+        self.write(origins_path, json.dumps(origins).encode())
+        canonical_origins = json.loads(origins_path.read_text())
+        canonical_origins['files'][0]['path'] = '<original source>'
+        canonical_sha = digest(json.dumps(
+            canonical_origins, sort_keys=True, separators=(',', ':')).encode())
         extra = {}
-        for name in ('compact-rust-origins.raw.json', 'index.d.ts', 'index.js.map'):
+        for name in ('index.d.ts', 'index.js.map'):
             path = self.preflight / 'k1/contract' / name
             self.write(path, name.encode() + b'\n')
             extra[name] = gate.sha(path)
@@ -100,6 +110,8 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             mock.patch.object(gate, 'PREFLIGHT_GATE_SHA', gate.sha(producer)),
             mock.patch.object(gate, 'PREFLIGHT_CAPTURE_SHA', gate.sha(capture_source)),
             mock.patch.object(gate, 'AGGREGATE_CONTRACT_EXTRA_SHA', {'k1': extra}),
+            mock.patch.object(gate, 'AGGREGATE_ORIGINS_CANONICAL_SHA',
+                              {'k1': canonical_sha}),
         ]
         for patcher in patchers:
             patcher.start()
@@ -163,6 +175,22 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
     def test_refuses_extra_generated_build_script(self) -> None:
         self.write(self.preflight / 'k1/contract/build.rs', b'fn main() {}\n')
         with self.assertRaisesRegex(RuntimeError, 'unpinned or missing files'):
+            self.validate()
+
+    def test_refuses_origin_for_another_source(self) -> None:
+        path = self.preflight / 'k1/contract/compact-rust-origins.raw.json'
+        origins = json.loads(path.read_text())
+        origins['files'][0]['path'] = str(self.preflight / 'original/other.compact')
+        path.write_text(json.dumps(origins))
+        with self.assertRaisesRegex(RuntimeError, 'source origin does not name'):
+            self.validate()
+
+    def test_refuses_changed_origin_span(self) -> None:
+        path = self.preflight / 'k1/contract/compact-rust-origins.raw.json'
+        origins = json.loads(path.read_text())
+        origins['spans'] = [[0, 2]]
+        path.write_text(json.dumps(origins))
+        with self.assertRaisesRegex(RuntimeError, 'source origins changed'):
             self.validate()
 
     def test_current_worktree_runtime_path_needs_no_text_change(self) -> None:

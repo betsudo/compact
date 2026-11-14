@@ -175,6 +175,31 @@ class AggregatePreflightTests(unittest.TestCase):
             self.validate()
 
 
+class GeneratedContractAdmissionTests(unittest.TestCase):
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.contract = Path(temporary.name) / 'contract'
+        self.contract.mkdir()
+        for name in gate.GENERATED_CONTRACT_FILES:
+            (self.contract / name).write_text(name)
+
+    def test_accepts_exact_generated_files(self) -> None:
+        gate.validate_generated_contract_files(self.contract)
+
+    def test_refuses_unpinned_build_script(self) -> None:
+        (self.contract / 'build.rs').write_text('fn main() {}\n')
+        with self.assertRaisesRegex(RuntimeError, 'unpinned or missing files'):
+            gate.validate_generated_contract_files(self.contract)
+
+    def test_refuses_symlinked_generated_file(self) -> None:
+        path = self.contract / 'index.js'
+        path.unlink()
+        path.symlink_to(self.contract / 'lib.rs')
+        with self.assertRaisesRegex(RuntimeError, 'unpinned or missing files'):
+            gate.validate_generated_contract_files(self.contract)
+
+
 class AggregateProofAdmissionTests(unittest.TestCase):
     def test_refuses_ancestor_and_substituted_proof_before_funded_work(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
