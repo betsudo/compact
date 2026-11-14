@@ -442,6 +442,33 @@ test('an earlier unreadable argument precedes a later accessor circuit', () => {
   });
 });
 
+test('an undeclared extra circuit getter is never read', () => {
+  let reads = 0;
+  const implemented = {
+    use: { pure: false, provable: true, argumentTypes: [field], resultType: field },
+    get unused() {
+      reads += 1;
+      throw new Error('unused circuit must not be read');
+    },
+  } as unknown as CircuitSignatures;
+  expect(checkConformance(declaration, implemented)).toEqual({ outcome: 'Conformant' });
+  expect(reads).toEqual(0);
+});
+
+test('provability precedes an unreadable result getter on the snapshot refusal path', () => {
+  const implemented = {
+    use: {
+      pure: true,
+      provable: false,
+      argumentTypes: [field],
+      get resultType() {
+        throw new Error('result getter must not run');
+      },
+    },
+  } as unknown as CircuitSignatures;
+  expect(checkConformance(declaration, implemented)).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'Provability' });
+});
+
 test('an irrelevant huge buffer is refused before structuredClone can copy it', () => {
   const implemented = {
     use: {

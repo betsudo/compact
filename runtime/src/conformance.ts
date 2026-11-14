@@ -847,21 +847,36 @@ const inspectAgainstDeclaration = (declared: SignatureType, implemented: Signatu
 export function checkConformance(declaration: InterfaceDescriptor, implementation: CircuitSignatures): ConformanceResult {
   const declaredCircuitIds = Object.keys(declaration);
   if (declaredCircuitIds.length === 0) return { outcome: 'Conformant' };
-  // Detach every circuit before comparing the first one: a later resultType getter must not be
-  // able to mutate an earlier argument after that argument has already passed conformance.
+  // Project only declared own circuits. Superset circuits are irrelevant to conformance and may
+  // contain accessors or payloads that must never be read. Collect every declared descriptor
+  // before cloning so a later circuit cannot mutate one already being compared.
+  const projectedImplementation: Record<string, unknown> = Object.create(null);
+  const projectionFaults = new Map<string, 'Existence' | 'Unreadable'>();
+  for (const circuitId of declaredCircuitIds) {
+    try {
+      const property = Object.getOwnPropertyDescriptor(implementation, circuitId);
+      if (property === undefined) projectionFaults.set(circuitId, 'Existence');
+      else if (!Object.prototype.hasOwnProperty.call(property, 'value')) projectionFaults.set(circuitId, 'Unreadable');
+      else projectedImplementation[circuitId] = property.value;
+    } catch {
+      projectionFaults.set(circuitId, 'Unreadable');
+    }
+  }
   const descriptorDeclaration: SignatureType = { tag: 'Contract', name: '(implementation)', circuits: declaration };
-  const snapshot = snapshotSignature(descriptorDeclaration, implementation as unknown as SignatureType);
+  const snapshot = snapshotSignature(descriptorDeclaration, projectedImplementation as unknown as SignatureType);
   if (snapshot.unreadableTag !== undefined || snapshot.value === undefined) {
     // The whole-descriptor snapshot is the authority. Locate the unreadable argument/result for
     // diagnostics only; this path never compares or accepts the live implementation.
     try {
       for (const circuitId of declaredCircuitIds) {
-        const circuitProperty = Object.getOwnPropertyDescriptor(implementation, circuitId);
-        if (circuitProperty === undefined) return { outcome: 'Violation', circuitId, check: 'Existence' };
-        if (!Object.prototype.hasOwnProperty.call(circuitProperty, 'value'))
+        const fault = projectionFaults.get(circuitId);
+        if (fault === 'Existence') return { outcome: 'Violation', circuitId, check: 'Existence' };
+        if (fault === 'Unreadable') return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        const circuitProperty = Object.getOwnPropertyDescriptor(projectedImplementation, circuitId);
+        if (circuitProperty === undefined || !Object.prototype.hasOwnProperty.call(circuitProperty, 'value'))
           return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
         const circuit = asRecord(circuitProperty.value);
-        if (circuit === undefined || !ownData(circuit, 'argumentTypes') || !ownData(circuit, 'resultType'))
+        if (circuit === undefined || !ownData(circuit, 'argumentTypes'))
           return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
         const argumentsValue = circuit.argumentTypes;
         if (!Array.isArray(argumentsValue)) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
@@ -881,6 +896,7 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
             return { outcome: 'Unreadable', circuitId, unreadableTag: checked.unreadableTag, argumentIndex: i };
           if (!checked.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
         }
+        if (!ownData(circuit, 'resultType')) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
         const result = snapshotSignature(expected.resultType, circuit.resultType as SignatureType);
         if (result.unreadableTag !== undefined || result.value === undefined)
           return { outcome: 'Unreadable', circuitId, unreadableTag: result.unreadableTag ?? MALFORMED };
@@ -897,6 +913,9 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
   const detachedImplementation = snapshot.value as unknown as CircuitSignatures;
   for (const circuitId of declaredCircuitIds) {
     const declared = declaration[circuitId];
+    const fault = projectionFaults.get(circuitId);
+    if (fault === 'Existence') return { outcome: 'Violation', circuitId, check: 'Existence' };
+    if (fault === 'Unreadable') return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
     // Own-property, not `in` or a bare index: `constructor` and `toString` are legal circuit names,
     // and `Object.prototype`'s members would otherwise read as implementations.
     if (!Object.prototype.hasOwnProperty.call(detachedImplementation, circuitId)) {
