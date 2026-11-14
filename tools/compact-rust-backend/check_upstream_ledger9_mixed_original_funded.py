@@ -27,6 +27,12 @@ import shutil
 import subprocess
 import tomllib
 
+from collection_gate_binding import compiler_recipe, generated_manifest
+from check_upstream_ledger9_bytes_map_funded import RUNNER_SOURCE_SHA256, require_receipt_pin
+from check_upstream_ledger9_mixed_original_preflight import (
+    CASES as ORIGINAL_CASES, UPSTREAM, original_cases,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 PROOF_HEAD = '7512d05cb5c10e58adc429fc9fa28bc76eedb951'
@@ -37,6 +43,25 @@ BASE_LOCK_SHA = 'd77e63ce87efc463e04d7732ed64cd40d710a4765f6c40ec756211de18a469c
 MATERIAL_RECEIPT_SHA = '56a004076c7332845fb4cd61ef357892db6dcd7dd05c03f9efebfb43f8df4df7'
 GENERATED_MANIFEST_SHA = {'k1': 'f60b95076b029426c978983a2ea74ac35956679360e81c1cc314f0d0ae1a5935',
                           'r1': '95d46740e949bd20dc306fe6d80e0dafa18c5f7972dd8d4183437b3b389ff517'}
+GENERATED_MANIFEST_CANONICAL_SHA = {
+    'k1': '83636a1cba4d5e897b5656c020f1b4e8fa3b3db0dc15d741cb4967325674cf30',
+    'r1': 'eda6623072a80e2663b994a2d7b931a07c1ff196c702362de9df6e4def7ca7e0',
+}
+AGGREGATE_CONTRACT_EXTRA_SHA = {
+    'k1': {
+        'compact-rust-origins.raw.json': '22b3e6408af870cbd52ce2df8dafb94594914db2aa29b16accc95e06a6801c3c',
+        'index.d.ts': '06587ff29585bc9e7c84e8a1ea6f0bcd60cada251fe3016e00276dd44981be62',
+        'index.js.map': '904d3e7284bd6ed94c3fc2064acd204561745461eb719727ef1c485633c5b8f8',
+    },
+    'r1': {
+        'compact-rust-origins.raw.json': '2462112974f5d4ab41acca20aac3d61c51dadf398efa3ce635e47490aff674e7',
+        'index.d.ts': '250a541fc9281f0b50e0d466d7dd4bbb1fcfc51192fa1907d473022e6972d1c5',
+        'index.js.map': '312f0de4f246b2872d71f98bf480a4844eabd4e556e0557aa982c3de7080b4d7',
+    },
+}
+AGGREGATE_TEMPLATE_SHA = '0fc67ef4f13a5b836634aa6f0f7d7aad53d75281824155b839ddc39472948f87'
+PREFLIGHT_GATE_SHA = 'a368160b3fe482b39d885599367fe792a1139991d776f61ef1112395d19787a6'
+PREFLIGHT_CAPTURE_SHA = 'f6ad89f624ee0ddb307e226ff4c8efd52d53def41083701366322ca8e5f22870'
 TEMPLATE = ROOT / 'runtime-rs/tests/fixtures/ledger9-mixed-original-funded.rs.in'
 CASES = {'k1': (17, 'Secp256k1Scalar', 'two'),
          'r1': (18, 'Secp256r1Scalar', 'three')}
@@ -55,8 +80,8 @@ def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
 
 
-def run(command, log, *, env=None):
-    result = subprocess.run(command, cwd=ROOT, env=env, text=True,
+def run(command, log, *, env=None, cwd=ROOT):
+    result = subprocess.run(command, cwd=cwd, env=env, text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     log.write_text(result.stdout)
     require(result.returncode == 0, f'{command[0]} failed; inspect {log}')
@@ -69,23 +94,120 @@ def packages(lock):
                   for row in data['package'] if row.get('source'))
 
 
+def validate_aggregate_contract_files(contract: Path, case: str) -> None:
+    expected = {'Cargo.toml', 'compact-rust-ir.json', 'compact-rust-origins.raw.json',
+                'index.d.ts', 'index.js', 'index.js.map', 'lib.rs',
+                'rust-capabilities.json'}
+    actual = {path.relative_to(contract).as_posix() for path in contract.rglob('*')
+              if path.is_file() or path.is_symlink()}
+    require(actual == expected and all((contract / name).is_file() and
+                                       not (contract / name).is_symlink()
+                                       for name in expected),
+            f'{case} generated contract has unpinned or missing files')
+    require(all(sha(contract / name) == digest for name, digest in
+                AGGREGATE_CONTRACT_EXTRA_SHA[case].items()),
+            f'{case} generated contract auxiliary artifact changed')
+
+
+def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
+                                compiler_path: Path, proof_sha: str,
+                                preflight_sha: str, compiler_sha: str,
+                                head: str, tree: str) -> tuple[dict, dict]:
+    """Admit only independent receipt pins for this clean signed source tree."""
+    for path, digest, label in ((proof_path, proof_sha, 'mixed proof'),
+                                (preflight_path, preflight_sha, 'mixed preflight'),
+                                (compiler_path, compiler_sha, 'mixed compiler')):
+        require_receipt_pin(path, digest, label)
+    proof = json.loads(proof_path.read_text())
+    prior = json.loads(preflight_path.read_text())
+    require(proof.get('format') == 'ledger9-mixed-original-proofs/v1' and
+            prior.get('format') == 'ledger9-mixed-original-preflight/v1' and
+            proof.get('source_head') == prior.get('source_head') == head and
+            proof.get('source_tree') == prior.get('source_tree') == tree and
+            proof.get('preflight_receipt_sha256') == preflight_sha and
+            proof.get('compiler_receipt_sha256') ==
+            prior.get('compiler_receipt_sha256') == compiler_sha and
+            prior.get('upstream') == UPSTREAM,
+            'mixed aggregate receipts must bind the current head, tree, and each other')
+    require(prior.get('gate_source_sha256') == PREFLIGHT_GATE_SHA == sha(
+                ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py') and
+            prior.get('capture_source_sha256') == PREFLIGHT_CAPTURE_SHA == sha(
+                ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs') and
+            prior.get('runtime_baseline_sha256') ==
+            '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426',
+            'mixed aggregate preflight producer or runtime baseline changed')
+    extracted = original_cases()
+    for case, pins in ORIGINAL_CASES.items():
+        validate_aggregate_contract_files(preflight_path.parent / case / 'contract', case)
+        body, callback = extracted[case]
+        require(hashlib.sha256(body).hexdigest() == pins['source'] ==
+                sha(preflight_path.parent / 'original' / f'{case}.compact') and
+                hashlib.sha256(callback).hexdigest() == pins['callback'] ==
+                sha(preflight_path.parent / 'original' / f'{case}.callback.js'),
+                f'{case} original mixed source or callback changed')
+        for relative, digest in pins['artifacts'].items():
+            require(prior['artifacts'].get(f'{case}/{relative}') == digest ==
+                    sha(preflight_path.parent / case / relative),
+                    f'{case} generated mixed artifact changed: {relative}')
+        capture = prior['captures'][case]
+        require(capture == json.loads((preflight_path.parent /
+                                      f'{case}-capture/capture.json').read_text()) and
+                capture['checks'] == ['all original callback assertions and nested Map point',
+                                      'honest ZKIR accepted', 'changed nested Map key refused'] and
+                capture['honestPreimageSha256'] == pins['preimage'] ==
+                sha(preflight_path.parent / f'{case}-capture/honest.preimage') and
+                capture['changedKeyPreimageSha256'] == pins['changed_key_preimage'] ==
+                sha(preflight_path.parent / f'{case}-capture/changed-key.preimage'),
+                f'{case} original callback or refusal capture changed')
+    return proof, prior
+
+
+def rebound_runtime_manifest(manifest: str, runtime_path: str, *, aggregate: bool) -> str:
+    rebound = manifest.replace(
+        f'path = "{runtime_path}"', f'path = "{ROOT / "runtime-rs"}"')
+    require((aggregate or rebound != manifest) and
+            tomllib.loads(rebound)['dependencies']['midnight-compact-runtime']['path'] ==
+            str(ROOT / 'runtime-rs'), 'generated runtime rebinding failed')
+    return rebound
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for key in ('evidence', 'preflight', 'base-consumer', 'material',
                 'wrong-verifiers', 'ledger-static', 'output'):
         parser.add_argument('--' + key, required=True, type=Path)
+    parser.add_argument('--aggregate-head', action='store_true')
+    for key in ('proof-receipt', 'compiler-receipt', 'proof-runner', 'proof-runner-source',
+                'proof-runner-receipt', 'proof-verifier-source'):
+        parser.add_argument('--' + key, type=Path)
+    for key in ('proof', 'preflight', 'compiler'):
+        parser.add_argument('--aggregate-' + key + '-receipt-sha256')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'funded source must be clean')
     head, tree = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD^{tree}')
     require(git('log', '-1', '--format=%G?') == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B'),
             'funded source must be signed and DCO complete')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', PROOF_HEAD, head],
-                           cwd=ROOT).returncode == 0, 'proof head is not an ancestor')
-    require(set(git('diff', '--name-only', PROOF_HEAD, head).splitlines()) ==
-            {TEMPLATE.relative_to(ROOT).as_posix(),
-             Path(__file__).relative_to(ROOT).as_posix()},
-            'funded slice changed unexpected source')
+    aggregate_inputs = (args.proof_receipt, args.compiler_receipt, args.proof_runner,
+                        args.proof_runner_source,
+                        args.proof_runner_receipt, args.proof_verifier_source,
+                        args.aggregate_proof_receipt_sha256,
+                        args.aggregate_preflight_receipt_sha256,
+                        args.aggregate_compiler_receipt_sha256)
+    require(all(value is not None for value in aggregate_inputs) if args.aggregate_head
+            else all(value is None for value in aggregate_inputs),
+            'aggregate mode requires proof/compiler/runner inputs and three receipt SHA-256 pins')
+    proof_head = head if args.aggregate_head else PROOF_HEAD
+    if args.aggregate_head:
+        require(sha(TEMPLATE) == AGGREGATE_TEMPLATE_SHA,
+                'aggregate funded Rust template changed')
+    else:
+        require(subprocess.run(['git', 'merge-base', '--is-ancestor', PROOF_HEAD, head],
+                               cwd=ROOT).returncode == 0, 'proof head is not an ancestor')
+        require(set(git('diff', '--name-only', PROOF_HEAD, head).splitlines()) ==
+                {TEMPLATE.relative_to(ROOT).as_posix(),
+                 Path(__file__).relative_to(ROOT).as_posix()},
+                'funded slice changed unexpected source')
     evidence = args.evidence.resolve(strict=True)
     preflight = args.preflight.resolve(strict=True)
     material = args.material.resolve(strict=True)
@@ -94,18 +216,70 @@ def main():
     static = args.ledger_static.resolve(strict=True)
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
-    require(sha(evidence / 'proof-receipt-7512.json') == PROOF_RECEIPT_SHA and
-            sha(preflight / 'receipt.json') == PREFLIGHT_RECEIPT_SHA,
-            'pinned proof or preflight receipt changed')
-    proof = json.loads((evidence / 'proof-receipt-7512.json').read_text())
-    prior = json.loads((preflight / 'receipt.json').read_text())
-    require(proof['source_head'] == PROOF_HEAD and
-            proof['source_tree'] == git('rev-parse', f'{PROOF_HEAD}^{{tree}}') and
-            proof['preflight_receipt_sha256'] == PREFLIGHT_RECEIPT_SHA and
-            prior['source_head'] == PROOF_HEAD and
-            prior['source_tree'] == proof['source_tree'] and
-            proof['platform'] == 'Darwin arm64',
-            'proof source or platform binding changed')
+    if args.aggregate_head:
+        proof_path = args.proof_receipt.resolve(strict=True)
+        preflight_path = preflight / 'receipt.json'
+        compiler_path = args.compiler_receipt.resolve(strict=True)
+        proof, prior = validate_aggregate_receipts(
+            proof_path=proof_path, preflight_path=preflight_path,
+            compiler_path=compiler_path,
+            proof_sha=args.aggregate_proof_receipt_sha256,
+            preflight_sha=args.aggregate_preflight_receipt_sha256,
+            compiler_sha=args.aggregate_compiler_receipt_sha256,
+            head=head, tree=tree)
+        recipe = json.loads(compiler_path.read_text())
+        compiler = Path(recipe['compactc']['path']).resolve(strict=True)
+        scheme = Path(recipe['compactc-scheme']['path']).resolve(strict=True)
+        compiler_recipe(compiler_path, compiler, scheme,
+                        source_head=head, current_head=head)
+        require(prior['compiler_sha256'] == sha(compiler),
+                'mixed aggregate preflight compiler binary changed')
+        require(proof['verifier_source_sha256'] == sha(
+                    args.proof_verifier_source.resolve(strict=True)),
+                'mixed aggregate proof verifier source changed')
+        generated_runner = args.proof_runner.resolve(strict=True)
+        runner_source = args.proof_runner_source.resolve(strict=True)
+        runner_receipt_path = args.proof_runner_receipt.resolve(strict=True)
+        runner_receipt = json.loads(runner_receipt_path.read_text())
+        require(proof['runner_source_receipt_sha256'] == sha(runner_receipt_path) and
+                proof['runner_binary_sha256'] == sha(generated_runner) and
+                runner_receipt['runner_source_sha256'] == RUNNER_SOURCE_SHA256 and
+                {path.relative_to(runner_source).as_posix()
+                 for path in runner_source.rglob('*') if path.is_file()} ==
+                set(RUNNER_SOURCE_SHA256) and
+                all(sha(runner_source / name) == digest
+                    for name, digest in RUNNER_SOURCE_SHA256.items()),
+                'mixed aggregate proof runner source or binary changed')
+        runner_manifest = tomllib.loads((runner_source / 'Cargo.toml').read_text())
+        require(runner_manifest['package']['name'] == 'secp256k1-unary-proof' and
+                not any(isinstance(dependency, dict) and 'path' in dependency
+                        for dependency in runner_manifest['dependencies'].values()),
+                'mixed aggregate proof runner manifest changed')
+        for directory in (runner_source, *runner_source.parents, Path.home() / '.cargo'):
+            names = ('config', 'config.toml') if directory == Path.home() / '.cargo' else (
+                '.cargo/config', '.cargo/config.toml')
+            require(not any((directory / name).exists() for name in names),
+                    f'unpinned mixed verifier Cargo configuration: {directory}')
+        for directory in runner_source.parents:
+            parent_manifest = directory / 'Cargo.toml'
+            require(not (parent_manifest.is_file() and
+                         'workspace' in tomllib.loads(parent_manifest.read_text())),
+                    f'unpinned mixed verifier parent workspace: {directory}')
+    else:
+        proof_path = evidence / 'proof-receipt-7512.json'
+        preflight_path = preflight / 'receipt.json'
+        require(sha(proof_path) == PROOF_RECEIPT_SHA and
+                sha(preflight_path) == PREFLIGHT_RECEIPT_SHA,
+                'pinned proof or preflight receipt changed')
+        proof = json.loads(proof_path.read_text())
+        prior = json.loads(preflight_path.read_text())
+        require(proof['source_head'] == PROOF_HEAD and
+                proof['source_tree'] == git('rev-parse', f'{PROOF_HEAD}^{{tree}}') and
+                proof['preflight_receipt_sha256'] == PREFLIGHT_RECEIPT_SHA and
+                prior['source_head'] == PROOF_HEAD and
+                prior['source_tree'] == proof['source_tree'] and
+                proof['platform'] == 'Darwin arm64',
+                'proof source or platform binding changed')
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA and
             sha(base / 'Cargo.lock') == BASE_LOCK_SHA,
             'pinned funded Cargo baseline changed')
@@ -132,11 +306,37 @@ def main():
     env = {key: value for key, value in os.environ.items()
            if not key.startswith('CARGO_') and key not in
            {'RUSTFLAGS', 'RUSTC_WRAPPER', 'RUSTUP_TOOLCHAIN'}}
+    if args.aggregate_head:
+        for key in ('RUSTC', 'RUSTC_WORKSPACE_WRAPPER', 'RUSTDOCFLAGS',
+                    'CC', 'CXX', 'LD', 'AR', 'CFLAGS', 'CXXFLAGS', 'LDFLAGS'):
+            env.pop(key, None)
+        for directory in (ROOT, *ROOT.parents, output, *output.parents,
+                          Path.home() / '.cargo'):
+            names = ('config', 'config.toml') if directory == Path.home() / '.cargo' else (
+                '.cargo/config', '.cargo/config.toml')
+            require(not any((directory / name).exists() for name in names),
+                    f'unpinned mixed funded Cargo configuration: {directory}')
     env['CARGO_TARGET_DIR'] = str(output / 'target')
     env['MIDNIGHT_PP'] = str(material)
     env['MIDNIGHT_LEDGER_TEST_STATIC_DIR'] = str(static)
     rustc = run(['rustc', '+1.99.0', '-vV'], output / 'rustc.log')
     require('release: 1.99.0' in rustc.splitlines(), 'Rust toolchain changed')
+    if args.aggregate_head:
+        require('commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4' in
+                rustc.splitlines(), 'mixed independent verifier toolchain changed')
+        verifier_env = {key: value for key, value in os.environ.items()
+                        if not (key.startswith('CARGO_') or key in
+                                {'RUSTFLAGS', 'RUSTDOCFLAGS', 'RUSTC', 'RUSTC_WRAPPER',
+                                 'RUSTC_WORKSPACE_WRAPPER', 'RUSTUP_TOOLCHAIN',
+                                 'CC', 'CXX', 'LD', 'AR', 'CFLAGS', 'CXXFLAGS', 'LDFLAGS'})}
+        verifier_env['CARGO_TARGET_DIR'] = str(output / 'independent-runner-target')
+        run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--bin',
+             'secp256k1-unary-proof', '--manifest-path',
+             str(runner_source / 'Cargo.toml')],
+            output / 'independent-runner-build.log', env=verifier_env,
+            cwd=runner_source)
+        runner = output / 'independent-runner-target/debug/secp256k1-unary-proof'
+        require(runner.is_file(), 'mixed independent verifier build missing')
     results = {}
     for case, (k, scalar, wrong) in CASES.items():
         qualified = proof['cases'][case]
@@ -156,27 +356,41 @@ def main():
                 f'{case} proof parameters changed')
         require(sha(wrong_root / wrong / 'statement.verifier') ==
                 qualified['wrong_verifier_sha256'], f'{case} wrong verifier changed')
+        if args.aggregate_head:
+            verification = run([
+                str(runner), 'verify', str(preflight / case / 'zkir/test.zkir'),
+                str(preflight / f'{case}-capture/honest.preimage'),
+                str(evidence / 'proof' / case),
+                str(wrong_root / wrong / 'statement.verifier'),
+            ], output / f'{case}-independent-verification.log')
+            require('verified in separate process; rejected different verifier, changed binding and corrupt proof'
+                    in verification,
+                    f'{case} independent verification or proof refusals changed')
         consumer = output / 'consumer' / case
         consumer.mkdir(parents=True)
         generated = preflight / case / 'contract'
-        require(sha(generated / 'Cargo.toml') == GENERATED_MANIFEST_SHA[case],
-                f'{case} generated Cargo manifest changed')
-        generated_manifest = (generated / 'Cargo.toml').read_text()
-        package = tomllib.loads(generated_manifest)['package']['name']
+        if args.aggregate_head:
+            generated_manifest(
+                generated / 'Cargo.toml',
+                expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA[case],
+                source_head=head)
+        else:
+            require(sha(generated / 'Cargo.toml') == GENERATED_MANIFEST_SHA[case],
+                    f'{case} generated Cargo manifest changed')
+        generated_manifest_text = (generated / 'Cargo.toml').read_text()
+        package = tomllib.loads(generated_manifest_text)['package']['name']
         require(package == f'compact-contract-{case}', 'generated package changed')
-        runtime_path = tomllib.loads(generated_manifest)['dependencies']['midnight-compact-runtime']['path']
-        require(Path(runtime_path).name == 'runtime-rs' and
-                Path(runtime_path).parent ==
-                Path('/Users/ysh/.codex/worktrees/ledger9-mixed-original-proofs/compact'),
-                f'{case} generated runtime path changed')
+        runtime_path = tomllib.loads(generated_manifest_text)['dependencies']['midnight-compact-runtime']['path']
+        if not args.aggregate_head:
+            require(Path(runtime_path).name == 'runtime-rs' and
+                    Path(runtime_path).parent ==
+                    Path('/Users/ysh/.codex/worktrees/ledger9-mixed-original-proofs/compact'),
+                    f'{case} generated runtime path changed')
         generated_copy = output / 'generated' / case / 'contract'
         generated_copy.parent.mkdir(parents=True)
         shutil.copytree(generated, generated_copy)
-        copied_manifest = generated_manifest.replace(
-            f'path = "{runtime_path}"', f'path = "{ROOT / "runtime-rs"}"')
-        require(copied_manifest != generated_manifest and
-                tomllib.loads(copied_manifest)['dependencies']['midnight-compact-runtime']['path'] ==
-                str(ROOT / 'runtime-rs'), f'{case} runtime rebinding failed')
+        copied_manifest = rebound_runtime_manifest(
+            generated_manifest_text, runtime_path, aggregate=args.aggregate_head)
         (generated_copy / 'Cargo.toml').write_text(copied_manifest)
         name = f'mixed-original-{case}-funded'
         manifest = manifest_text.replace('mixed-original-k1-funded', name).replace(
@@ -226,14 +440,24 @@ def main():
                          'ledger_sha256': sha(destination / 'ledger-after.bin'),
                          'consumer_source_sha256': sha(consumer / 'main.rs')}
     receipt = {'format': 'ledger9-mixed-original-funded/v1',
-               'head': head, 'tree': tree, 'proof_head': PROOF_HEAD,
-               'proof_receipt_sha256': PROOF_RECEIPT_SHA,
-               'preflight_receipt_sha256': PREFLIGHT_RECEIPT_SHA,
+               'head': head, 'tree': tree, 'proof_head': proof_head,
+               'proof_receipt_sha256': sha(proof_path),
+               'preflight_receipt_sha256': sha(preflight_path),
                'template_sha256': sha(TEMPLATE), 'gate_sha256': sha(__file__),
                'platform': platform.platform(), 'cases': results,
                'limitations': ['The initial contract deployment is injected into local test ledger state; only the call is funded and applied as a transaction.',
                                'Local Darwin arm64 qualification; native Linux required.',
                                'Generated EntryPoint and real two-contract qualification remain held.']}
+    if args.aggregate_head:
+        receipt['mode'] = 'aggregate-exact-head'
+        receipt['compiler_receipt_sha256'] = sha(compiler_path)
+        receipt['proof_runner_sha256'] = sha(generated_runner)
+        receipt['independent_runner_sha256'] = sha(runner)
+        receipt['independent_runner_build_log_sha256'] = sha(
+            output / 'independent-runner-build.log')
+        receipt['independent_verification_logs_sha256'] = {
+            case: sha(output / f'{case}-independent-verification.log') for case in CASES
+        }
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': head, 'cases': list(results),
                       'receipt': str(output / 'receipt.json')}))
