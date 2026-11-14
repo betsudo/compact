@@ -132,13 +132,41 @@ def main() -> None:
             if destination.exists() or list(destination.parent.glob(f".{destination.name}.compactc-stage-*")):
                 raise RuntimeError(f"slice refusal published output for {name} {mode}")
 
-    # The circuit evaluator accepts more constant expressions than the Rust
-    # value backend can currently represent. Keep those limits as source
-    # diagnostics; an internal compiler error is never an admissible refusal.
+    # The pinned frontend admits a Field-to-Uint cast in a constant slice index.
+    # Exercise the generated TypeScript and Rust values on this local case.
+    name = "field_to_uint"
+    local_source = output / f"local-{name}.compact"
+    local_source.write_text(
+        "import CompactStandardLibrary; "
+        "export circuit vector_slice_field_to_uint(): Vector<1, Field> { "
+        "const v: Vector<3, Field> = [10 as Field, 20 as Field, 30 as Field]; "
+        "return slice<1>(v, (1 as Field) as Uint<8>); }\n")
+    local_positive = {}
+    for mode in ("typescript", "both"):
+        destination = output / "generated" / mode / name
+        command = [str(compiler), "--target", "ts"]
+        if mode == "both":
+            command += ["--target", "rust", "--rust-runtime-root", str(ROOT)]
+        command += ["--feature-zkir-v3", "--skip-zk", "--compact-path",
+                    str(ROOT / "compiler"), str(local_source), str(destination)]
+        run(command, output / f"{name}-{mode}.log", env=env)
+        contract = destination / "contract"
+        result = run(["node", str(FAMILY / "check.mjs"),
+                      str(contract / "index.js"), str(runtime), name],
+                     output / f"{name}-{mode}-runtime.log", env=env)
+        if f"{name}: local runtime result passed" not in result:
+            raise RuntimeError(f"local Field-to-Uint assertion missing for {mode}")
+        local_positive[mode] = {"typescript_sha256": sha256(contract / "index.js"),
+                                "runtime_result": result.strip()}
+        if mode == "both":
+            local_positive[mode]["rust_sha256"] = sha256(contract / "lib.rs")
+            local_positive[mode]["rust_ir_sha256"] = sha256(contract / "compact-rust-ir.json")
+    if local_positive["typescript"]["typescript_sha256"] != local_positive["both"]["typescript_sha256"]:
+        raise RuntimeError("TypeScript output changed in paired Field-to-Uint compile")
+
+    # Other constant expressions accepted by the circuit evaluator cannot yet
+    # be represented by the Rust value backend. Keep source diagnostics here.
     limited_indices = {
-        "field_to_uint": (
-            "(1 as Field) as Uint<8>",
-            "Rust backend does not yet support Field-to-Uint downcasts"),
         "constant_call": (
             "one()",
             "Rust backend cannot preserve evaluation of this constant Vector index"),
@@ -171,7 +199,7 @@ def main() -> None:
     shutil.copyfile(FAMILY / "consumer.rs", consumer / "src/main.rs")
     lines = ["[package]", 'name = "ledger9-vector-slice-consumer"',
              'version = "0.1.0"', 'edition = "2024"', "[workspace]", "[dependencies]"]
-    for name in POSITIVES:
+    for name in (*POSITIVES, "field_to_uint"):
         contract = output / "generated/both" / name / "contract"
         package = tomllib.loads((contract / "Cargo.toml").read_text())["package"]["name"]
         lines.append(f'{name} = {{ package = {json.dumps(package)}, '
@@ -183,7 +211,8 @@ def main() -> None:
     rust_output = run(["cargo", "+1.99.0", "run", "--locked", "--offline",
                        "--manifest-path", str(consumer / "Cargo.toml")],
                       output / "rust-run.log", env=cargo_env)
-    if "eight original vector slice assertions passed" not in rust_output:
+    if ("eight original vector slice assertions passed" not in rust_output
+            or "local Field-to-Uint slice assertion passed" not in rust_output):
         raise RuntimeError("generated Rust assertion result missing")
     receipt = {
         "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
@@ -197,6 +226,7 @@ def main() -> None:
         "scheme_sha256": sha256(scheme),
         "runtime_package_sha256": sha256(runtime / "package.json"),
         "generated": generated,
+        "local_field_to_uint": local_positive,
         "original_refusals_on_both_targets": sorted(refusals),
         "additional_constant_index_diagnostics": sorted(limited_indices),
         "rust_consumer_sha256": sha256(consumer / "src/main.rs"),
@@ -205,7 +235,7 @@ def main() -> None:
         "limitations": ["local Darwin arm64; native Linux qualification required",
                         "pure circuit values only; no proof or funded transaction applies",
                         "Nonconstant slice indices retain upstream compile refusal",
-                        "Field-to-Uint casts, constant-returning calls and tuple projections as slice indices have explicit Rust source diagnostics"],
+                        "Constant-returning calls and tuple projections as slice indices have explicit Rust source diagnostics"],
     }
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"status": "passed", "head": receipt["head"], "output": str(output)}))

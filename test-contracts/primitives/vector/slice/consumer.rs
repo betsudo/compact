@@ -40,5 +40,11 @@ fn main() {
         semantics::pure_circuits::vector_slice_semantics().unwrap().0.to_vec(),
         fields(&[20, 30]),
     );
+    assert_eq!(
+        field_to_uint::pure_circuits::vector_slice_field_to_uint()
+            .unwrap().0.to_vec(),
+        fields(&[20]),
+    );
     println!("eight original vector slice assertions passed");
+    println!("local Field-to-Uint slice assertion passed");
 }
