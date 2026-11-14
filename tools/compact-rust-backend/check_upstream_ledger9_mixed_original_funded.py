@@ -32,7 +32,8 @@ from check_upstream_ledger9_bytes_map_funded import (
     RUNNER_SOURCE_SHA256, require_receipt_pin, source_bound_to_receipt,
 )
 from check_upstream_ledger9_mixed_original_preflight import (
-    CASES as ORIGINAL_CASES, UPSTREAM, original_cases,
+    CASES as ORIGINAL_CASES, HISTORICAL_RUNTIME_BASE_SHA256, UPSTREAM,
+    original_cases, validate_runtime_baseline,
 )
 
 
@@ -125,7 +126,8 @@ def validate_aggregate_contract_files(contract: Path, case: str) -> None:
 
 
 def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
-                                compiler_path: Path, proof_sha: str,
+                                compiler_path: Path, runtime_baseline_path: Path,
+                                runtime_baseline_sha: str, proof_sha: str,
                                 preflight_sha: str, compiler_sha: str,
                                 head: str, tree: str) -> tuple[dict, dict]:
     """Admit only independent receipt pins for this clean signed source tree."""
@@ -148,10 +150,18 @@ def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
                 prior.get('gate_source_sha256'),
                 ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py') and
             prior.get('capture_source_sha256') == PREFLIGHT_CAPTURE_SHA == sha(
-                ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs') and
-            prior.get('runtime_baseline_sha256') ==
-            '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426',
-            'mixed aggregate preflight producer or runtime baseline changed')
+                ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'),
+            'mixed aggregate preflight producer or capture source changed')
+    baseline = validate_runtime_baseline(
+        runtime_baseline_path, runtime_baseline_sha, head=head, tree=tree,
+        compiler_receipt=compiler_path, compiler_sha=prior.get('compiler_sha256'),
+        runtime_store=Path(prior['runtime_store']), root=ROOT)
+    require(prior.get('runtime_baseline_sha256') == runtime_baseline_sha and
+            prior.get('runtime_manifest_sha256') ==
+                baseline['nix_runtime_package_sha256'] and
+            prior.get('runtime_dist_files') ==
+                baseline['typescript_runtime_dist_files'],
+            'mixed aggregate preflight runtime differs from current-head baseline')
     extracted = original_cases()
     for case, pins in ORIGINAL_CASES.items():
         validate_aggregate_contract_files(preflight_path.parent / case / 'contract', case)
@@ -194,10 +204,12 @@ def main():
         parser.add_argument('--' + key, required=True, type=Path)
     parser.add_argument('--aggregate-head', action='store_true')
     for key in ('proof-receipt', 'compiler-receipt', 'proof-runner', 'proof-runner-source',
-                'proof-runner-receipt', 'proof-verifier-source'):
+                'proof-runner-receipt', 'proof-verifier-source',
+                'runtime-baseline-receipt'):
         parser.add_argument('--' + key, type=Path)
     for key in ('proof', 'preflight', 'compiler'):
         parser.add_argument('--aggregate-' + key + '-receipt-sha256')
+    parser.add_argument('--aggregate-runtime-baseline-receipt-sha256')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'funded source must be clean')
     head, tree = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD^{tree}')
@@ -207,12 +219,14 @@ def main():
     aggregate_inputs = (args.proof_receipt, args.compiler_receipt, args.proof_runner,
                         args.proof_runner_source,
                         args.proof_runner_receipt, args.proof_verifier_source,
+                        args.runtime_baseline_receipt,
                         args.aggregate_proof_receipt_sha256,
                         args.aggregate_preflight_receipt_sha256,
-                        args.aggregate_compiler_receipt_sha256)
+                        args.aggregate_compiler_receipt_sha256,
+                        args.aggregate_runtime_baseline_receipt_sha256)
     require(all(value is not None for value in aggregate_inputs) if args.aggregate_head
             else all(value is None for value in aggregate_inputs),
-            'aggregate mode requires proof/compiler/runner inputs and three receipt SHA-256 pins')
+            'aggregate mode requires proof/compiler/runner/runtime baseline inputs and four receipt SHA-256 pins')
     proof_head = head if args.aggregate_head else PROOF_HEAD
     if args.aggregate_head:
         require(sha(TEMPLATE) == AGGREGATE_TEMPLATE_SHA,
@@ -239,6 +253,8 @@ def main():
         proof, prior = validate_aggregate_receipts(
             proof_path=proof_path, preflight_path=preflight_path,
             compiler_path=compiler_path,
+            runtime_baseline_path=args.runtime_baseline_receipt.resolve(strict=True),
+            runtime_baseline_sha=args.aggregate_runtime_baseline_receipt_sha256,
             proof_sha=args.aggregate_proof_receipt_sha256,
             preflight_sha=args.aggregate_preflight_receipt_sha256,
             compiler_sha=args.aggregate_compiler_receipt_sha256,
@@ -294,6 +310,7 @@ def main():
                 proof['preflight_receipt_sha256'] == PREFLIGHT_RECEIPT_SHA and
                 prior['source_head'] == PROOF_HEAD and
                 prior['source_tree'] == proof['source_tree'] and
+                prior['runtime_baseline_sha256'] == HISTORICAL_RUNTIME_BASE_SHA256 and
                 proof['platform'] == 'Darwin arm64',
                 'proof source or platform binding changed')
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA and

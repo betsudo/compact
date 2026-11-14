@@ -45,10 +45,38 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.changed = b'changed-key preimage'
         self.compiler_path = Path(temporary.name) / 'compiler-receipt.json'
         self.compiler_path.write_text('compiler receipt\n')
+        self.compiler_sha = 'c' * 64
         producer = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py'
+        baseline_gate = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py'
         capture_source = self.root / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'
         self.write(producer, b'preflight producer\n')
+        self.write(baseline_gate, b'Bytes map runtime producer\n')
         self.write(capture_source, b'capture producer\n')
+        runtime_package = (b'{"name":"@midnight-ntwrk/compact-runtime",'
+                           b'"version":"0.18.0","dependencies":{}}\n')
+        built_runtime_package = (b'{\n  "name": "@midnight-ntwrk/compact-runtime",\n'
+                                 b'  "version": "0.18.0",\n  "dependencies": {}\n}\n')
+        self.write(self.root / 'runtime/package.json', runtime_package)
+        self.runtime_store = Path(temporary.name) / 'nix-runtime'
+        runtime = self.runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+        self.write(runtime / 'package.json', built_runtime_package)
+        self.write(runtime / 'dist/index.js', b'runtime JavaScript\n')
+        self.runtime_store = self.runtime_store.resolve(strict=True)
+        self.baseline_path = Path(temporary.name) / 'baseline/receipt.json'
+        recipe_log = self.baseline_path.parent / 'typescript-runtime-recipe.log'
+        self.write(recipe_log, b'exact-head runtime realization\n')
+        self.baseline = {
+            'head': self.head, 'tree': self.tree, 'upstream': gate.UPSTREAM,
+            'compiler_receipt_sha256': gate.sha(self.compiler_path),
+            'compiler_sha256': self.compiler_sha,
+            'runner_sha256': gate.sha(baseline_gate),
+            'typescript_runtime_version': '0.18.0',
+            'typescript_runtime_nix_store': str(self.runtime_store),
+            'typescript_runtime_package_sha256': gate.sha(self.root / 'runtime/package.json'),
+            'typescript_runtime_dist_files': {'index.js': gate.sha(runtime / 'dist/index.js')},
+            'typescript_runtime_recipe_log_sha256': gate.sha(recipe_log),
+            'result': 'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed',
+        }
         self.write(self.preflight / 'original/k1.compact', self.body)
         self.write(self.preflight / 'original/k1.callback.js', self.callback)
         artifact = self.preflight / 'k1/contract/lib.rs'
@@ -85,11 +113,13 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             'format': 'ledger9-mixed-original-preflight/v1',
             'source_head': self.head, 'source_tree': self.tree,
             'compiler_receipt_sha256': gate.sha(self.compiler_path),
+            'compiler_sha256': self.compiler_sha,
             'upstream': gate.UPSTREAM,
             'gate_source_sha256': gate.sha(producer),
             'capture_source_sha256': gate.sha(capture_source),
-            'runtime_baseline_sha256':
-                '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426',
+            'runtime_store': str(self.runtime_store),
+            'runtime_manifest_sha256': gate.sha(runtime / 'package.json'),
+            'runtime_dist_files': self.baseline['typescript_runtime_dist_files'],
             'artifacts': {'k1/contract/lib.rs': gate.sha(artifact)},
             'captures': {'k1': capture},
         }
@@ -122,6 +152,8 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         path.write_bytes(data)
 
     def write_receipts(self) -> None:
+        self.baseline_path.write_text(json.dumps(self.baseline))
+        self.prior['runtime_baseline_sha256'] = gate.sha(self.baseline_path)
         self.preflight_path.write_text(json.dumps(self.prior))
         self.proof = {
             'format': 'ledger9-mixed-original-proofs/v1',
@@ -132,15 +164,20 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.proof_path.write_text(json.dumps(self.proof))
 
     def validate(self, *, proof_sha: str | None = None,
-                 preflight_sha: str | None = None) -> None:
+                 preflight_sha: str | None = None,
+                 baseline_sha: str | None = None) -> None:
         gate.validate_aggregate_receipts(
             proof_path=self.proof_path, preflight_path=self.preflight_path,
-            compiler_path=self.compiler_path,
+            compiler_path=self.compiler_path, runtime_baseline_path=self.baseline_path,
+            runtime_baseline_sha=baseline_sha or gate.sha(self.baseline_path),
             proof_sha=proof_sha or gate.sha(self.proof_path),
             preflight_sha=preflight_sha or gate.sha(self.preflight_path),
             compiler_sha=gate.sha(self.compiler_path), head=self.head, tree=self.tree)
 
     def test_accepts_matching_pinned_receipts_and_original_artifacts(self) -> None:
+        runtime = self.runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+        self.assertNotEqual(gate.sha(self.root / 'runtime/package.json'),
+                            gate.sha(runtime / 'package.json'))
         self.validate()
 
     def test_refuses_ancestor_proof_head(self) -> None:
@@ -160,6 +197,52 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.preflight_path.write_text('{}')
         with self.assertRaisesRegex(RuntimeError, 'independently supplied SHA-256 pin'):
             self.validate(preflight_sha=pin)
+
+    def test_refuses_substituted_runtime_baseline_receipt_bytes(self) -> None:
+        pin = gate.sha(self.baseline_path)
+        self.baseline_path.write_text('{}')
+        with self.assertRaisesRegex(RuntimeError, 'independently supplied SHA-256 pin'):
+            self.validate(baseline_sha=pin)
+
+    def test_refuses_runtime_baseline_from_previous_head(self) -> None:
+        self.baseline['head'] = '0' * 40
+        self.baseline_path.write_text(json.dumps(self.baseline))
+        with self.assertRaisesRegex(RuntimeError, 'current-head Bytes map runtime baseline'):
+            self.validate()
+
+    def test_refuses_runtime_baseline_from_other_compiler(self) -> None:
+        self.baseline['compiler_receipt_sha256'] = '0' * 64
+        self.baseline_path.write_text(json.dumps(self.baseline))
+        with self.assertRaisesRegex(RuntimeError, 'current-head Bytes map runtime baseline'):
+            self.validate()
+
+    def test_refuses_changed_runtime_baseline_gate_source(self) -> None:
+        producer = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py'
+        self.write(producer, b'changed Bytes map runtime producer\n')
+        with self.assertRaisesRegex(RuntimeError, 'current-head Bytes map runtime baseline'):
+            self.validate()
+
+    def test_refuses_changed_runtime_dist_after_baseline(self) -> None:
+        runtime = self.runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+        self.write(runtime / 'dist/index.js', b'changed runtime JavaScript\n')
+        with self.assertRaisesRegex(RuntimeError, 'current-head Bytes map runtime baseline'):
+            self.validate()
+
+    def test_refuses_changed_nix_runtime_package_metadata(self) -> None:
+        runtime = self.runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+        self.write(runtime / 'package.json',
+                   b'{"name":"@midnight-ntwrk/compact-runtime",'
+                   b'"version":"0.18.0","dependencies":{"added":"1"}}\n')
+        with self.assertRaisesRegex(RuntimeError, 'current-head Bytes map runtime baseline'):
+            self.validate()
+
+    def test_refuses_mixed_preflight_baseline_swap(self) -> None:
+        self.prior['runtime_baseline_sha256'] = '0' * 64
+        self.preflight_path.write_text(json.dumps(self.prior))
+        self.proof['preflight_receipt_sha256'] = gate.sha(self.preflight_path)
+        self.proof_path.write_text(json.dumps(self.proof))
+        with self.assertRaisesRegex(RuntimeError, 'mixed aggregate preflight runtime differs'):
+            self.validate()
 
     def test_refuses_changed_preflight_producer_source(self) -> None:
         producer = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py'

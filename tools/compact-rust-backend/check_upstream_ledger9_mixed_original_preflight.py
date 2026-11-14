@@ -37,7 +37,8 @@ ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'compiler/test.ss'
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'
 UPSTREAM = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
-RUNTIME_BASE_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
+# Retain the old Bytes map baseline pin for archived mixed receipts only.
+HISTORICAL_RUNTIME_BASE_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
 CASES = {
     'k1': {
         'source': '1bc9dacd4e33970b8f7561ad76142e2852ae20b4f781231d431d74002d01fe68',
@@ -75,6 +76,43 @@ def run(command: list[str], log: Path) -> str:
     return completed.stdout
 
 
+def validate_runtime_baseline(path: Path, expected_sha: str, *, head: str,
+                              tree: str, compiler_receipt: Path, compiler_sha: str,
+                              runtime_store: Path, root: Path) -> dict:
+    """Bind a fresh Bytes map runtime receipt to this exact source and Nix output."""
+    require(len(expected_sha) == 64 and
+            all(char in '0123456789abcdef' for char in expected_sha) and
+            sha(path) == expected_sha,
+            'runtime baseline receipt differs from independently supplied SHA-256 pin')
+    baseline = json.loads(path.read_text())
+    store = runtime_store.resolve(strict=True)
+    runtime = store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+    source_package = json.loads((root / 'runtime/package.json').read_text())
+    built_package = json.loads((runtime / 'package.json').read_text())
+    require(baseline.get('head') == head and baseline.get('tree') == tree and
+            baseline.get('upstream') == UPSTREAM and
+            baseline.get('compiler_receipt_sha256') == sha(compiler_receipt) and
+            baseline.get('compiler_sha256') == compiler_sha and
+            baseline.get('runner_sha256') == sha(
+                root / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py') and
+            baseline.get('typescript_runtime_version') == '0.18.0' and
+            source_package['name'] == built_package['name'] ==
+                '@midnight-ntwrk/compact-runtime' and
+            source_package['version'] == built_package['version'] == '0.18.0' and
+            source_package['dependencies'] == built_package['dependencies'] and
+            baseline.get('typescript_runtime_nix_store') == str(store) and
+            baseline.get('typescript_runtime_package_sha256') ==
+                sha(root / 'runtime/package.json') and
+            baseline.get('typescript_runtime_dist_files') == dist_hashes(runtime / 'dist') and
+            bool(baseline.get('typescript_runtime_dist_files')) and
+            baseline.get('typescript_runtime_recipe_log_sha256') ==
+                sha(path.parent / 'typescript-runtime-recipe.log') and
+            baseline.get('result') ==
+                'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed',
+            'current-head Bytes map runtime baseline source, compiler, or artifacts changed')
+    return {**baseline, 'nix_runtime_package_sha256': sha(runtime / 'package.json')}
+
+
 def original_cases() -> dict[str, tuple[bytes, bytes]]:
     """Extract exact original bodies/assertions from the maintained Scheme tests."""
     scheme = SOURCE.read_text()
@@ -106,6 +144,8 @@ def main() -> None:
     parser.add_argument('--compiler-receipt', type=Path, required=True)
     parser.add_argument('--compiler', type=Path, required=True)
     parser.add_argument('--runtime-baseline', type=Path, required=True)
+    parser.add_argument('--runtime-baseline-sha256', required=True,
+                        help='independently supplied SHA-256 of the current-head Bytes map receipt')
     parser.add_argument('--zkir-wasm-tgz', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -123,9 +163,8 @@ def main() -> None:
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     output.mkdir(parents=True)
     runtime_base = args.runtime_baseline.resolve(strict=True)
-    require(sha(runtime_base) == RUNTIME_BASE_SHA256,
-            'qualified Runtime 0.18.0 baseline receipt changed')
-    baseline = json.loads(runtime_base.read_text())
+    require(sha(runtime_base) == args.runtime_baseline_sha256,
+            'runtime baseline receipt differs from independently supplied SHA-256 pin')
     runtime_log = output / 'runtime-recipe.log'
     runtime_recipe = run([
         str(Path(shutil.which('nix')).resolve(strict=True)), 'build', '--offline',
@@ -134,10 +173,11 @@ def main() -> None:
     ], runtime_log)
     runtime_store = Path(runtime_recipe.splitlines()[-1]).resolve(strict=True)
     runtime_package = runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
-    require(json.loads((runtime_package / 'package.json').read_text())['version'] == '0.18.0' and
-            sha(ROOT / 'runtime/package.json') == baseline['typescript_runtime_package_sha256'] and
-            dist_hashes(runtime_package / 'dist') == baseline['typescript_runtime_dist_files'],
-            'exact-head Runtime 0.18.0 package differs from qualified baseline')
+    validate_runtime_baseline(runtime_base, args.runtime_baseline_sha256,
+                              head=head, tree=tree,
+                              compiler_receipt=args.compiler_receipt.resolve(strict=True),
+                              compiler_sha=sha(compiler), runtime_store=runtime_store,
+                              root=ROOT)
     wasm_tgz = args.zkir_wasm_tgz.resolve(strict=True)
     require(sha(wasm_tgz) == WASM_TGZ_SHA256,
             'ZKIR 3.2.0 wasm archive changed')
