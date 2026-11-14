@@ -88,9 +88,11 @@ def refusal(result: subprocess.CompletedProcess[str], destination: Path,
             re.search(pattern, message) is not None and
             message == EXPECTED_DIAGNOSTIC,
             'Vector length refusal diagnostic changed')
+    lock = destination.parent / f'.{destination.name}.compactc.lock'
     require(not destination.exists() and
             not list(destination.parent.glob(f'.{destination.name}.compactc-stage-*')) and
-            not any(destination.parent.iterdir()),
+            all(child == lock and child.is_file() and not child.is_symlink() and
+                child.stat().st_size == 0 for child in destination.parent.iterdir()),
             'refused oversized Vector published output')
     return message
 
@@ -134,7 +136,9 @@ def main() -> None:
         log.write_text(message)
         refused[mode] = {'exit_code': result.returncode, 'command': command,
                          'diagnostic_sha256': sha256(log),
-                         'output_absent': True, 'staging_absent': True}
+                         'output_absent': True, 'staging_absent': True,
+                         'empty_compiler_lock_present':
+                         (destination.parent / '.product.compactc.lock').is_file()}
     require(len({row['diagnostic_sha256'] for row in refused.values()}) == 1,
             'Vector length diagnostics differ across target modes')
     require(source_state() == source and

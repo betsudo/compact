@@ -88,6 +88,18 @@ class VectorLengthRefusalTests(unittest.TestCase):
         self.assertEqual(gate.refusal(self.result(), self.destination,
                                      gate.EXPECTED_PATTERN), gate.EXPECTED_DIAGNOSTIC)
 
+    def test_accepts_only_empty_regular_compiler_lock(self) -> None:
+        lock = self.destination.parent / '.product.compactc.lock'
+        lock.touch()
+        gate.refusal(self.result(), self.destination, gate.EXPECTED_PATTERN)
+        lock.write_text('unexpected bytes')
+        with self.assertRaisesRegex(RuntimeError, 'published output'):
+            gate.refusal(self.result(), self.destination, gate.EXPECTED_PATTERN)
+        lock.unlink()
+        lock.symlink_to(self.test)
+        with self.assertRaisesRegex(RuntimeError, 'published output'):
+            gate.refusal(self.result(), self.destination, gate.EXPECTED_PATTERN)
+
     def test_rejects_reordered_diagnostic_or_success(self) -> None:
         reversed_lines = gate.EXPECTED_DIAGNOSTIC.replace(
             '  vector type length\n  16777217\n',
@@ -108,6 +120,10 @@ class VectorLengthRefusalTests(unittest.TestCase):
         self.destination.rmdir()
         stage = self.destination.parent / '.product.compactc-stage-test'
         stage.mkdir()
+        with self.assertRaisesRegex(RuntimeError, 'published output'):
+            gate.refusal(self.result(), self.destination, gate.EXPECTED_PATTERN)
+        stage.rmdir()
+        (self.destination.parent / 'unexpected.txt').touch()
         with self.assertRaisesRegex(RuntimeError, 'published output'):
             gate.refusal(self.result(), self.destination, gate.EXPECTED_PATTERN)
 
