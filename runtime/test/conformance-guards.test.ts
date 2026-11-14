@@ -64,11 +64,75 @@ test('a shared acyclic descriptor cannot exhaust the caller', () => {
   });
 });
 
+test('large valid interfaces are checked per declared circuit', () => {
+  const names = Array.from({ length: 300 }, (_, i) => `Variant${i}`);
+  const largeEnum: SignatureType = { tag: 'Enum', name: 'Large', elements: names };
+  for (const count of [34, 40]) {
+    const declared: InterfaceDescriptor = Object.fromEntries(
+      Array.from({ length: count }, (_, i) => [`c${i}`, { argumentTypes: [largeEnum], resultType: field }]),
+    );
+    const implemented: CircuitSignatures = Object.fromEntries(
+      Array.from({ length: count }, (_, i) => [
+        `c${i}`,
+        { pure: false, provable: true, argumentTypes: [largeEnum], resultType: field },
+      ]),
+    );
+    expect(checkConformance(declared, implemented)).toEqual({ outcome: 'Conformant' });
+  }
+});
+
+test('a large caller declaration permits matching work but still refuses tampering and cycles', () => {
+  const names = Array.from({ length: 12_000 }, (_, i) => `Variant${i}`);
+  const largeEnum: SignatureType = { tag: 'Enum', name: 'Large', elements: names };
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [largeEnum], resultType: field } };
+  expect(checkConformance(declared, implementation(largeEnum))).toEqual({ outcome: 'Conformant' });
+  expect(
+    checkConformance(declared, implementation({ tag: 'Enum', name: 'Large', elements: [...names.slice(0, -1), 'Changed'] })),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+  expect(checkConformance(declared, implementation(malformed({ tag: 'Enum', name: 'Large', elements: [...names, 4] })))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Enum',
+    argumentIndex: 0,
+  });
+
+  const cycle: { tag: string; name: string; type?: unknown } = { tag: 'Alias', name: 'Loop' };
+  cycle.type = cycle;
+  expect(checkConformance(declared, implementation(malformed(cycle)))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Alias',
+    argumentIndex: 0,
+  });
+  let deep: unknown = field;
+  for (let i = 0; i < 140; i += 1) deep = { tag: 'Alias', name: `Level${i}`, type: deep };
+  expect(checkConformance(declared, implementation(malformed(deep)))).toMatchObject({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    argumentIndex: 0,
+  });
+});
+
 test('equal vector descriptors compare their element type once', () => {
   const huge: SignatureType = { tag: 'Vector', length: Number.MAX_SAFE_INTEGER, type: field };
   expect(signatureTypesEqual(huge, huge)).toEqual(true);
   expect(checkConformance({ use: { argumentTypes: [huge], resultType: field } }, implementation(huge))).toEqual({
     outcome: 'Conformant',
+  });
+});
+
+test('a Vector logical length does not enlarge the unrelated implementation budget', () => {
+  const huge: SignatureType = { tag: 'Vector', length: Number.MAX_SAFE_INTEGER, type: field };
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [huge], resultType: field } };
+  const nested = malformed({
+    tag: 'Contract',
+    name: 'Nested',
+    circuits: { c: { argumentTypes: Array<SignatureType>(20_000).fill(field), resultType: field } },
+  });
+  expect(checkConformance(declared, implementation(nested))).toMatchObject({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    argumentIndex: 0,
   });
 });
 

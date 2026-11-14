@@ -29,7 +29,7 @@
  */
 
 import { CompactError } from './error.js';
-import { CircuitSignatures, InterfaceDescriptor, SignatureType } from './interface-descriptor.js';
+import { CircuitSignatures, InterfaceCircuitDeclaration, InterfaceDescriptor, SignatureType } from './interface-descriptor.js';
 
 // This synchronous runtime has no circuit-context module yet. Circuit IDs are
 // external circuit names, as in the pinned upstream CircuitId alias.
@@ -107,6 +107,46 @@ const MALFORMED = '(malformed)';
 const MAX_SIGNATURE_DEPTH = 128;
 const MAX_SIGNATURE_NODES = 10_000;
 type ValidationBudget = { remaining: number };
+
+// A declared interface comes from the caller's own generated module. Size the work allowance from
+// its encoded shape, rather than a Vector's logical length. The fixed extra allowance still bounds
+// how much malformed implementation metadata can make us inspect per declared circuit.
+const MAX_DECLARATION_COST = Number.MAX_SAFE_INTEGER - MAX_SIGNATURE_NODES;
+const boundedAdd = (a: number, b: number): number => Math.min(MAX_DECLARATION_COST, a + b);
+
+const declarationTypeCost = (type: SignatureType, active: Set<object>, depth = 0): number => {
+  if (depth > MAX_SIGNATURE_DEPTH || active.has(type)) return 0;
+  active.add(type);
+  try {
+    switch (type.tag) {
+      case 'Enum':
+        return boundedAdd(1, type.elements.length);
+      case 'Alias':
+        return boundedAdd(1, declarationTypeCost(type.type, active, depth + 1));
+      case 'Vector':
+        return boundedAdd(1, declarationTypeCost(type.type, active, depth + 1));
+      case 'Tuple':
+        return type.types.reduce((cost, element) => boundedAdd(cost, declarationTypeCost(element, active, depth + 1)), 1);
+      case 'Struct':
+        return type.elements.reduce((cost, element) => boundedAdd(cost, declarationTypeCost(element.type, active, depth + 1)), 1);
+      case 'Contract':
+        return Object.values(type.circuits).reduce(
+          (cost, circuit) => boundedAdd(cost, declarationCircuitCost(circuit, active, depth + 1)),
+          1,
+        );
+      default:
+        return 1;
+    }
+  } finally {
+    active.delete(type);
+  }
+};
+
+const declarationCircuitCost = (circuit: InterfaceCircuitDeclaration, active: Set<object>, depth = 0): number =>
+  boundedAdd(
+    circuit.argumentTypes.reduce((cost, type) => boundedAdd(cost, declarationTypeCost(type, active, depth + 1)), 1),
+    declarationTypeCost(circuit.resultType, active, depth + 1),
+  );
 
 /** `value` as a readable record, or `undefined` if it is not one. */
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
@@ -412,9 +452,11 @@ export function signatureTypesEqual(a: SignatureType, b: SignatureType): boolean
  * @param implementation The resolved module's `circuitSignatures`.
  */
 export function checkConformance(declaration: InterfaceDescriptor, implementation: CircuitSignatures): ConformanceResult {
-  const budget: ValidationBudget = { remaining: MAX_SIGNATURE_NODES };
   for (const circuitId of Object.keys(declaration)) {
     const declared = declaration[circuitId];
+    const budget: ValidationBudget = {
+      remaining: Math.min(Number.MAX_SAFE_INTEGER, MAX_SIGNATURE_NODES + declarationCircuitCost(declared, new Set<object>())),
+    };
     // Own-property, not `in` or a bare index: `constructor` and `toString` are legal circuit names,
     // and `Object.prototype`'s members would otherwise read as implementations.
     if (!Object.prototype.hasOwnProperty.call(implementation, circuitId)) {
