@@ -503,7 +503,7 @@ type TypeCheckState = {
   readonly active: Set<object>;
   readonly memo: Map<object, Map<object, Map<number, TypeCheck>>>;
   readonly budget: ValidationBudget;
-  noCache: boolean;
+  fallbackGeneration: number;
 };
 
 // Compare within the shape declared by the caller. A matching expanded Vector is visited element
@@ -520,9 +520,10 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
   if (REQUIRED_TYPE_FIELDS[tag as SignatureType['tag']].some((key) => !ownData(actual, key)))
     return { unreadableTag: tag, equal: false };
   if (depth > MAX_SIGNATURE_DEPTH || state.active.has(actual)) return { unreadableTag: tag, equal: false };
-  const cached = state.noCache ? undefined : state.memo.get(declared)?.get(actual)?.get(depth);
+  const cached = state.memo.get(declared)?.get(actual)?.get(depth);
   if (cached !== undefined) return cached;
 
+  const generationAtEntry = state.fallbackGeneration;
   let usedFallback = false;
   const fallback = (): TypeCheck => {
     usedFallback = true;
@@ -543,8 +544,13 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
       tag !== 'Uint' &&
       tag !== 'Bytes' &&
       tag !== 'Opaque'
-    )
-      state.noCache = true;
+    ) {
+      // A composite fallback may read untrusted getters that mutate prior signature nodes.
+      // Drop earlier memo entries before that read, and prevent callers spanning this fallback
+      // from caching. Later independent siblings may build a fresh memo.
+      state.memo.clear();
+      state.fallbackGeneration += 1;
+    }
     // The fallback validates this node again, so replace the entry charge rather than counting it twice.
     state.budget.remaining += 1;
     const local = validationBudget(declared);
@@ -715,7 +721,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
   // ancestor would have returned Unreadable. Its equality result is therefore independent of the
   // ancestor path, including when another parent in a diamond reaches the same node. Never memoize
   // unreadability or a fallback that may have used a different local validation budget.
-  if (!usedFallback && !state.noCache && result.unreadableTag === undefined) {
+  if (!usedFallback && generationAtEntry === state.fallbackGeneration && result.unreadableTag === undefined) {
     let byActual = state.memo.get(declared);
     if (byActual === undefined) {
       byActual = new Map();
@@ -736,7 +742,7 @@ const inspectAgainstDeclaration = (declared: SignatureType, implemented: Signatu
     active: new Set<object>(),
     memo: new Map<object, Map<object, Map<number, TypeCheck>>>(),
     budget: validationBudget(declared, true),
-    noCache: false,
+    fallbackGeneration: 0,
   });
 
 /**

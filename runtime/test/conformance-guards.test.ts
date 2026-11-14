@@ -256,6 +256,62 @@ test('a matching diamond DAG reuses inspected pairs across different parents', (
   expect(reads).toBeLessThan(500);
 });
 
+test('a composite mismatch before a matching diamond does not disable later memoization', () => {
+  let declaredType: SignatureType = field;
+  let left: SignatureType = { tag: 'Field' };
+  let right: SignatureType = { tag: 'Field' };
+  let reads = 0;
+  const tuple = (a: SignatureType, b: SignatureType): SignatureType =>
+    malformed(
+      new Proxy(
+        { tag: 'Tuple', types: [a, b] },
+        {
+          get(target, key, receiver) {
+            if (key === 'types') reads += 1;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      ),
+    );
+  for (let i = 0; i < 25; i += 1) {
+    declaredType = { tag: 'Vector', length: 2, type: declaredType };
+    [left, right] = [tuple(left, right), tuple(left, right)];
+  }
+  const declared: SignatureType = { tag: 'Tuple', types: [field, declaredType] };
+  const implemented: SignatureType = { tag: 'Tuple', types: [{ tag: 'Alias', name: 'Different', type: field }, left] };
+  expect(checkConformance({ use: { argumentTypes: [declared], resultType: field } }, implementation(implemented))).toEqual({
+    outcome: 'Violation',
+    circuitId: 'use',
+    check: 'ArgumentType',
+    argumentIndex: 0,
+  });
+  expect(reads).toBeLessThan(500);
+});
+
+test('a composite fallback invalidates memo entries before untrusted reads can mutate them', () => {
+  const alias: SignatureType = { tag: 'Alias', name: 'A', type: field };
+  const declared: SignatureType = { tag: 'Tuple', types: [alias, field, alias] };
+  const shared = { tag: 'Alias', name: 'A', type: field as SignatureType };
+  const mutatingStruct = malformed(
+    new Proxy(
+      { tag: 'Struct', name: 'Other', elements: [] },
+      {
+        get(target, key, receiver) {
+          if (key === 'name') shared.type = malformed({ tag: 'Summer' });
+          return Reflect.get(target, key, receiver);
+        },
+      },
+    ),
+  );
+  const implemented = malformed({ tag: 'Tuple', types: [shared, mutatingStruct, shared] });
+  expect(checkConformance({ use: { argumentTypes: [declared], resultType: field } }, implementation(implemented))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Summer',
+    argumentIndex: 0,
+  });
+});
+
 test('a shared cyclic Tuple still reports unreadability before using a memoized sibling', () => {
   const expected: SignatureType = { tag: 'Vector', length: 2, type: { tag: 'Vector', length: 2, type: field } };
   const cyclic = malformed({ tag: 'Tuple', types: [] as SignatureType[] });
