@@ -772,9 +772,22 @@
 
       (define (vector-to-bytes-ir src len value lower)
         (define (from-vector value)
-          (object (cons "kind" "vector_to_bytes")
-                  (cons "value" (lower value (byte-vector-type src len)))
-                  (cons "length" len)))
+          (let* ([byte-type (byte-vector-type src len)]
+                 [source-value
+                   (nanopass-case (Lnodisclose Expression) value
+                     ;; A default<Vector<N, Uint<M>>> keeps its declared
+                     ;; element bound in analyzed IR. Widen that value to
+                     ;; byte elements explicitly before serialization; asking
+                     ;; typed lowering to reinterpret the default as Uint<8>
+                     ;; would discard its source type and fail binding.
+                     [(default ,src^ ,type)
+                      (object (cons "kind" "coerce")
+                              (cons "value" (lower value type))
+                              (cons "ty" (type-ir byte-type src)))]
+                     [else (lower value byte-type)])])
+            (object (cons "kind" "vector_to_bytes")
+                    (cons "value" source-value)
+                    (cons "length" len))))
         (define (zero-bytes? datum nat)
           (and (bytevector? datum) (= nat (bytevector-length datum))
                (let loop ([i 0])
