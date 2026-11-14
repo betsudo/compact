@@ -497,31 +497,40 @@
                              (cons (list var-name type expr) rbindings)
                              (append (reverse rprojections) relements))))])))))
 
-      ;; The pinned spread/slice fixture uses fixed slice positions. Keep the
-      ;; existing refusal for dynamic indices until their runtime bound check
-      ;; has a dedicated Rust IR operation.
-      (define (expanded-vector-slice src type expr start len)
-          (nanopass-case (Lnodisclose Type) type
-            [(tvector ,src^ ,len^ ,type^)
-             (unless (<= (+ start len) len^)
-               (source-errorf src "Rust Vector slice index and length exceed input length"))
-             (let* ([var-name (make-source-id src 'vector_slice_value)]
-                    [kindex* (map (lambda (offset) (+ start offset)) (iota len))]
-                    [tuple-arg*
-                      (map (lambda (kindex)
-                             (with-output-language (Lnodisclose Tuple-Argument)
-                               `(single ,src (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))
-                           kindex*)])
-               (with-output-language (Lnodisclose Expression)
-                 `(let* ,src (((,var-name ,type) ,expr))
-                    (tuple ,src ,tuple-arg* ...))))]
-            [else (source-errorf src "Rust Vector slice needs a Vector input")]))
+      ;; Circuit lowering has already checked slice bounds and reduced the
+      ;; index. Use its exact original-node observation, then retain index
+      ;; evaluation after the input expression for source failure ordering.
+      (define (expanded-vector-slice src type expr start len index)
+        (let ([input-len
+                (nanopass-case (Lnodisclose Type) type
+                  [(tvector ,src^ ,len^ ,type^) len^]
+                  [(ttuple ,src^ ,type* ...) (length type*)]
+                  [else (source-errorf src "Rust Vector slice needs a Vector or tuple input")])])
+          (unless (<= (+ start len) input-len)
+            (source-errorf src "Rust Vector slice index and length exceed input length"))
+          (let* ([var-name (make-source-id src 'vector_slice_value)]
+                 [kindex* (map (lambda (offset) (+ start offset)) (iota len))]
+                 [tuple-arg*
+                   (map (lambda (kindex)
+                          (with-output-language (Lnodisclose Tuple-Argument)
+                            `(single ,src (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))
+                        kindex*)]
+                 [result (with-output-language (Lnodisclose Expression)
+                           `(tuple ,src ,tuple-arg* ...))])
+            (if index
+                (let ([index-name (make-source-id src 'vector_slice_position)]
+                      [index-type (vector-index-type index '() src)])
+                  (with-output-language (Lnodisclose Expression)
+                    `(let* ,src (((,var-name ,type) ,expr)
+                                 ((,index-name ,index-type) ,index)) ,result)))
+                (with-output-language (Lnodisclose Expression)
+                  `(let* ,src (((,var-name ,type) ,expr)) ,result))))))
 
-      (define (expanded-constant-vector-slice src type expr index len)
-        (let ([start (maybe-nonnegative-integer-literal index src)])
+      (define (expanded-constant-vector-slice original src type expr index len)
+        (let ([start (rust-vector-index original)])
           (unless start
             (source-errorf src "Rust backend requires a constant Vector slice index"))
-          (expanded-vector-slice src type expr start len)))
+          (expanded-vector-slice src type expr start len index)))
 
       (define (maybe-nonnegative-integer-literal expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
@@ -801,7 +810,7 @@
       ;; evaluating the index or using its resolved value as a type bound.
       ;; Explicit analyzed types stay intact; bare arithmetic has only mbits
       ;; here, so its unused evaluation binding retains that native carrier.
-      (define (vector-index-type index locals)
+      (define (vector-index-type index locals owner-src)
         (nanopass-case (Lnodisclose Expression) index
           [(quote ,src ,datum)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,datum))]
@@ -812,19 +821,23 @@
                    (or (and types (eq-hashtable-ref types var-name #f))
                        (source-errorf src "Rust backend has no type for this constant Vector index binding")))))]
           [(safe-cast ,src ,type ,type^ ,expr) type]
+          [(downcast-unsigned ,src ,nat? ,nat ,expr)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))]
+          [(if ,src ,expr0 ,expr1 ,expr2) (vector-index-type expr1 locals src)]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
           [(- ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
           [(* ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
-          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals)]
+          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals src)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (vector-index-type expr
              (append (map (lambda (local)
                             (nanopass-case (Lnodisclose Argument) local
-                              [(,var-name ,type) (cons var-name type)])) local*) locals))]
-          [else (internal-errorf 'vector-index-type "unexpected admitted index")]))
+                              [(,var-name ,type) (cons var-name type)])) local*) locals) src)]
+          [else (source-errorf owner-src
+                  "Rust backend cannot preserve evaluation of this constant Vector index")]))
 
       (define (resolved-vector-expression original src type expr index)
         (let ([kindex (rust-vector-index original)])
@@ -854,7 +867,7 @@
             [else
              (let ([var-name (make-source-id src 'vector_index_value)]
                    [index-name (make-source-id src 'vector_index_position)]
-                   [index-type (vector-index-type index '())])
+                   [index-type (vector-index-type index '() src)])
                (with-output-language (Lnodisclose Expression)
                  `(let* ,src (((,var-name ,type) ,expr)
                               ((,index-name ,index-type) ,index))
@@ -1677,11 +1690,11 @@
            (let-expression-ir local* expr* expr expected-type src source-type)]
           [(tuple-slice ,src ,type ,expr ,kindex ,len)
            (typed-expression-ir
-             (expanded-vector-slice src type expr kindex len)
+             (expanded-vector-slice src type expr kindex len #f)
              expected-type src source-type)]
-          [(vector-slice ,src ,type ,expr ,index ,len)
+          [(vector-slice ,src ,type ,expr^ ,index ,len)
            (typed-expression-ir
-             (expanded-constant-vector-slice src type expr index len)
+             (expanded-constant-vector-slice expr src type expr^ index len)
              expected-type src source-type)]
           [(vector ,src ,tuple-arg* ...)
            (guard (literal-has-spread? tuple-arg*))
@@ -2932,11 +2945,11 @@
            (typed-expression-ir value-expr expected-type owner-src)]
           [(tuple-slice ,src ,type ,expr ,kindex ,len)
            (stateful-typed-expression-ir
-             (expanded-vector-slice src type expr kindex len)
+             (expanded-vector-slice src type expr kindex len #f)
              expected-type src witness-ids)]
           [(vector-slice ,src ,type ,expr ,index ,len)
            (stateful-typed-expression-ir
-             (expanded-constant-vector-slice src type expr index len)
+             (expanded-constant-vector-slice value-expr src type expr index len)
              expected-type src witness-ids)]
           [(vector ,src ,tuple-arg* ...)
            (guard (literal-has-spread? tuple-arg*))

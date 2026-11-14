@@ -1452,6 +1452,7 @@
                  (let ([input-len (tvector->length type)] [end (+ kindex len)])
                    (unless (<= end input-len)
                      (source-errorf src "invalid slice index ~d and length ~d for vector of length ~d" kindex len input-len)))
+                 (observe-rust-vector-index! src kindex)
                  (new-let src type expr expr-ctv
                    (lambda (var-name)
                      (let-values ([(var-ref var-ctv) (handle-var-ref src var-name)])
