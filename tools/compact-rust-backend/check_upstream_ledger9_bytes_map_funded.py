@@ -23,16 +23,24 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import shutil
 import subprocess
 import tomllib
 
 from collection_gate_binding import compiler_recipe, generated_manifest
+from check_upstream_ledger9_bytes_map import CASES, ORIGINAL_SHA256
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'runtime-rs/tests/fixtures/ledger9-bytes-map-transformation-funded.rs'
+ORIGINAL_SOURCE = ROOT / 'test-contracts/primitives/bytes/map/transformation/bytes_map_transformation.compact'
 PROOF_HEAD = 'e75cca456604659d89efd98fcadeea45322252f2'
+AGGREGATE_FUNDED_SOURCE_SHA256 = 'd91b4689322edcfaecf9c106e1e8120c64d634d4d95ca80deb0db2e763dfb4fa'
+AGGREGATE_PROOF_GATE_SOURCE_SHA256 = '7599b01ea234e95aa347fac6a7274248e7a6def79fc591ca453ab90934187b4d'
+AGGREGATE_CAPTURE_SOURCE_SHA256 = '60159fd9e4af1ed8120b9b239f557c65ebda1f56ad3d08459eab4d0227faefaf'
+AGGREGATE_PREFLIGHT_SOURCE_SHA256 = '74f86f3de7a1646133b4a7e4c0e60ed19adaf1eb41a51b9d1f092ef376dcf787'
+AGGREGATE_ADAPTER_SHA256 = '9be6e46dd3795c951e8ab0155db3f410220e75e842110ff80863970aad633acf'
 PROOF_GATE_SOURCE_SHA256 = 'bf5013a02845bac478042c6c93b0bea48a122170ea5914706a881741e2b54c9c'
 CAPTURE_SOURCE_SHA256 = 'db6df1c1aa1944249fdef392025e3ff2555af760f85692c82bf5b35a05307d4b'
 BASE_QUALIFICATION_RECEIPT_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
@@ -88,24 +96,136 @@ def normalized_lock(path: Path, root_name: str, contract_name: str) -> list[str]
     return sorted(rows)
 
 
+def validate_aggregate_preflight(path: Path, *, head: str, tree: str,
+                                 compiler_receipt: Path, runtime: Path,
+                                 proof: dict) -> str:
+    """Bind a fresh original-case qualification to this proof and source head."""
+    require(path.name == 'receipt.json', 'aggregate preflight must be a gate receipt')
+    prior = json.loads(path.read_text())
+    require(prior.get('head') == head and prior.get('tree') == tree and
+            prior.get('upstream') == '672bd0f226f47a7d036c5c074ce71fbe1af1925e',
+            'aggregate preflight must bind the current source head and tree')
+    require(prior.get('compiler_receipt_sha256') == sha(compiler_receipt) ==
+            proof['compiler_receipt_sha256'] and
+            prior.get('compiler_sha256') == proof['compiler_sha256'] and
+            prior.get('scheme_sha256') == proof['scheme_sha256'],
+            'aggregate preflight and proof compiler receipts differ')
+    require(prior.get('runner_sha256') == sha(
+                ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py') ==
+            AGGREGATE_PREFLIGHT_SOURCE_SHA256 and
+            prior.get('adapter_sha256') == sha(
+                ROOT / 'test-contracts/primitives/bytes/map/check.mjs') ==
+            AGGREGATE_ADAPTER_SHA256 and
+            prior.get('original_files', {}).get(ORIGINAL_SOURCE.relative_to(ROOT).as_posix()) ==
+            ORIGINAL_SOURCE_SHA256 == sha(ORIGINAL_SOURCE) and
+            prior.get('typescript_runtime_version') == '0.18.0',
+            'aggregate preflight source, fixture, or runtime binding changed')
+    originals = {}
+    for family, circuit in CASES.items():
+        for filename in (f'{circuit}.compact', 'compile.pass.test.ts', 'runtime.pass.test.ts'):
+            original = ROOT / 'test-contracts/primitives/bytes/map' / family / filename
+            relative = original.relative_to(ROOT).as_posix()
+            require(sha(original) == ORIGINAL_SHA256[family][filename],
+                    f'aggregate original Bytes map fixture changed: {relative}')
+            originals[relative] = ORIGINAL_SHA256[family][filename]
+    require(prior.get('original_files') == originals,
+            'aggregate preflight original fixture inventory changed')
+    source_package = json.loads((ROOT / 'runtime/package.json').read_text())
+    supplied_package = json.loads((runtime / 'package.json').read_text())
+    nix_runtime = (Path(prior['typescript_runtime_nix_store']) /
+                   'lib/node_modules/@midnight-ntwrk/compact-runtime').resolve(strict=True)
+    nix = Path(shutil.which('nix')).resolve(strict=True)
+    realized = subprocess.check_output([
+        str(nix), 'build', '--offline', '--no-link', '--print-out-paths',
+        '--max-jobs', '0', '--builders', '', '--option', 'substitute', 'false',
+        '.#runtime.package'], cwd=ROOT, text=True).strip()
+    require(Path(realized).resolve(strict=True) == nix_runtime.parents[3],
+            'aggregate preflight runtime differs from exact-head Nix realization')
+    nix_package = json.loads((nix_runtime / 'package.json').read_text())
+    metadata = ('name', 'version', 'dependencies')
+    require(prior.get('typescript_runtime_package_sha256') == sha(runtime / 'package.json') and
+            all(supplied_package[key] == source_package[key] == nix_package[key]
+                for key in metadata),
+            'aggregate preflight TypeScript runtime package metadata changed')
+    def dist_hashes(directory: Path) -> dict[str, str]:
+        return {file.relative_to(directory).as_posix(): sha(file)
+                for file in directory.rglob('*') if file.is_file()}
+    dist = prior.get('typescript_runtime_dist_files')
+    require(bool(dist) and dist == dist_hashes(runtime / 'dist') ==
+            dist_hashes(nix_runtime / 'dist'),
+            'aggregate preflight TypeScript runtime dist changed')
+    require(prior.get('result') ==
+            'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed' and
+            prior.get('cargo_test_log_sha256') == sha(path.parent / 'cargo-test.log') and
+            'Running tests/bytes_map.rs' in (path.parent / 'cargo-test.log').read_text() and
+            prior.get('typescript_runtime_recipe_log_sha256') ==
+            sha(path.parent / 'typescript-runtime-recipe.log'),
+            'aggregate preflight qualification result or test evidence changed')
+    for family in ('reordering', 'transformation', 'slice_composition', 'to_bytes'):
+        for target in ('default', 'paired'):
+            actual = (path.parent / f'{family}-{target}-typescript.log').read_text().strip()
+            require(actual == f'bytes_map_{family} TypeScript passed',
+                    f'aggregate preflight {family} {target} assertions did not pass')
+    names = {'typescript': 'index.js', 'rust': 'lib.rs',
+             'rust_ir': 'compact-rust-ir.json'}
+    for kind, filename in names.items():
+        expected = proof['artifacts'][f'transformation/{kind}']
+        require(prior['artifacts'].get(f'transformation/paired/{kind}') == expected and
+                sha(path.parent / 'paired/transformation/contract' / filename) == expected,
+                f'aggregate preflight generated {kind} differs from proof')
+    require(prior['artifacts'].get('transformation/default/typescript') ==
+            proof['artifacts']['transformation/typescript'] and
+            sha(path.parent / 'default/transformation/contract/index.js') ==
+            proof['artifacts']['transformation/typescript'],
+            'aggregate preflight default TypeScript differs from proof')
+    return sha(path)
+
+
+def require_receipt_pin(path: Path, expected: str, label: str) -> None:
+    require(re.fullmatch(r'[0-9a-f]{64}', expected) is not None and
+            sha(path) == expected,
+            f'aggregate {label} receipt differs from independently supplied SHA-256 pin')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('proof-gate', 'compiler-receipt', 'runner-source', 'base-consumer', 'material',
                  'cargo-target', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--aggregate-head', action='store_true',
+                        help='use fresh same-head proof and original-case preflight receipts')
+    parser.add_argument('--preflight-receipt', type=Path,
+                        help='required with --aggregate-head; rejected in historical mode')
+    parser.add_argument('--preflight-runtime', type=Path,
+                        help='Runtime 0.18.0 package supplied to the aggregate preflight gate')
+    for name in ('compiler', 'preflight', 'proof'):
+        parser.add_argument('--aggregate-' + name + '-receipt-sha256',
+                            help='independent SHA-256 pin for the fresh aggregate receipt')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'source checkout must be clean')
     head, tree = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD^{tree}')
     require(git('log', '-1', '--format=%G?') == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B'),
             'funded source head must be signed and DCO complete')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', PROOF_HEAD, head],
-                           cwd=ROOT).returncode == 0, 'funded source not stacked on proof')
-    changed = set(git('diff', '--name-only', PROOF_HEAD, head).splitlines())
-    require(changed == {
-        'runtime-rs/tests/fixtures/ledger9-bytes-map-transformation-funded.rs',
-        'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_funded.py',
-    }, 'funded source changed inputs outside this qualified transaction gate')
+    aggregate_inputs = (args.preflight_receipt, args.preflight_runtime,
+                        args.aggregate_compiler_receipt_sha256,
+                        args.aggregate_preflight_receipt_sha256,
+                        args.aggregate_proof_receipt_sha256)
+    require(all(value is not None for value in aggregate_inputs) if args.aggregate_head
+            else all(value is None for value in aggregate_inputs),
+            '--aggregate-head requires preflight receipt/runtime and three receipt SHA-256 pins')
+    proof_head = head if args.aggregate_head else PROOF_HEAD
+    if args.aggregate_head:
+        require(sha(SOURCE) == AGGREGATE_FUNDED_SOURCE_SHA256,
+                'aggregate funded consumer source changed')
+    else:
+        require(subprocess.run(['git', 'merge-base', '--is-ancestor', PROOF_HEAD, head],
+                               cwd=ROOT).returncode == 0, 'funded source not stacked on proof')
+        changed = set(git('diff', '--name-only', PROOF_HEAD, head).splitlines())
+        require(changed == {
+            'runtime-rs/tests/fixtures/ledger9-bytes-map-transformation-funded.rs',
+            'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_funded.py',
+        }, 'funded source changed inputs outside this qualified transaction gate')
     gate = args.proof_gate.resolve(strict=True)
     base = args.base_consumer.resolve(strict=True)
     material = args.material.resolve(strict=True)
@@ -113,17 +233,23 @@ def main() -> None:
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     receipt = gate / 'receipt.json'
+    if args.aggregate_head:
+        require_receipt_pin(receipt, args.aggregate_proof_receipt_sha256, 'proof')
     proof = json.loads(receipt.read_text())
-    require(proof['head'] == PROOF_HEAD and
-            proof['tree'] == git('rev-parse', f'{PROOF_HEAD}^{{tree}}') and
+    proof_gate_source = sha(ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_proof.py')
+    capture_source = sha(ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-bytes-map-transformation-proof.mjs')
+    expected_proof_gate_source = (AGGREGATE_PROOF_GATE_SOURCE_SHA256 if args.aggregate_head else
+                                  PROOF_GATE_SOURCE_SHA256)
+    expected_capture_source = (AGGREGATE_CAPTURE_SOURCE_SHA256 if args.aggregate_head else
+                               CAPTURE_SOURCE_SHA256)
+    require(proof['head'] == proof_head and
+            proof['tree'] == git('rev-parse', f'{proof_head}^{{tree}}') and
             proof['upstream'] == '672bd0f226f47a7d036c5c074ce71fbe1af1925e' and
             proof['base_qualification_receipt_sha256'] == BASE_QUALIFICATION_RECEIPT_SHA256 and
             proof['source_sha256'] == ORIGINAL_SOURCE_SHA256 and
             proof['artifacts']['transformation/zkir'] == ORIGINAL_ZKIR_SHA256 and
-            proof['gate_source_sha256'] == PROOF_GATE_SOURCE_SHA256 == sha(
-                ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_proof.py') and
-            proof['capture_source_sha256'] == CAPTURE_SOURCE_SHA256 == sha(
-                ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-bytes-map-transformation-proof.mjs') and
+            proof['gate_source_sha256'] == expected_proof_gate_source == proof_gate_source and
+            proof['capture_source_sha256'] == expected_capture_source == capture_source and
             all(proof['artifacts'].get(key) == digest
                 for key, digest in GENERATED_SHA256.items()) and
             proof['capture']['checks'] == [
@@ -131,13 +257,34 @@ def main() -> None:
                 'changed insert count refused'],
             'proof receipt source binding changed')
     compiler_receipt = args.compiler_receipt.resolve(strict=True)
+    preflight_sha256 = None
+    if args.aggregate_head:
+        preflight_receipt = args.preflight_receipt.resolve(strict=True)
+        require_receipt_pin(compiler_receipt, args.aggregate_compiler_receipt_sha256,
+                            'compiler')
+        require_receipt_pin(preflight_receipt, args.aggregate_preflight_receipt_sha256,
+                            'preflight')
+        preflight_sha256 = validate_aggregate_preflight(
+            preflight_receipt, head=head, tree=tree,
+            compiler_receipt=compiler_receipt,
+            runtime=args.preflight_runtime.resolve(strict=True), proof=proof)
+        require(proof['checks'] == [
+                    'exact-head generated Rust/TypeScript/IR/ZKIR bound to qualified base',
+                    'honest ZKIR wasm preimage accepted; changed value and insert refused',
+                    'fresh k=9 proof',
+                    'independent verifier and refusal controls'] and
+                sha(gate / 'prove.log') == proof['proof_log_sha256'] and
+                sha(gate / 'verify.log') == proof['verify_log_sha256'] and
+                'verified in separate process; rejected different verifier, changed binding and corrupt proof'
+                in (gate / 'verify.log').read_text(),
+                'aggregate proof or independent refusal evidence changed')
     require(sha(compiler_receipt) == proof['compiler_receipt_sha256'],
             'proof compiler recipe receipt changed')
     recipe = json.loads(compiler_receipt.read_text())
     compiler = Path(recipe['compactc']['path']).resolve(strict=True)
     scheme = Path(recipe['compactc-scheme']['path']).resolve(strict=True)
     compiler_recipe(compiler_receipt, compiler, scheme,
-                    source_head=PROOF_HEAD, current_head=PROOF_HEAD)
+                    source_head=proof_head, current_head=proof_head)
     require(sha(compiler) == proof['compiler_sha256'] and
             sha(scheme) == proof['scheme_sha256'],
             'proof compiler binaries changed')
@@ -208,7 +355,7 @@ def main() -> None:
     canonical, runtime_checkout = generated_manifest(
         gate / 'fresh-dual/contract/Cargo.toml',
         expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA256,
-        source_head=PROOF_HEAD)
+        source_head=proof_head)
     require(sha(base / 'Cargo.toml') == BASE_MANIFEST_SHA256 and
             sha(base / 'Cargo.lock') == BASE_LOCK_SHA256,
             'funded consumer template changed')
@@ -291,7 +438,7 @@ def main() -> None:
             'source checkout changed during funded gate')
     sealed = {
         'head': head, 'tree': tree, 'platform': f'{platform.system()} {platform.machine()}',
-        'proof_head': PROOF_HEAD, 'proof_receipt_sha256': sha(receipt),
+        'proof_head': proof_head, 'proof_receipt_sha256': sha(receipt),
         'funded_source_sha256': sha(SOURCE), 'gate_source_sha256': sha(Path(__file__)),
         'generated_manifest_canonical_sha256': canonical,
         'generated_runtime_checkout_head': git('-C', str(runtime_checkout), 'rev-parse', 'HEAD'),
@@ -314,6 +461,10 @@ def main() -> None:
                         'Deployment inserted into the local test ledger state.',
                         'Exact replay is refused by ledger application after a default-strict recheck succeeds.'],
     }
+    if args.aggregate_head:
+        sealed['mode'] = 'aggregate-exact-head'
+        sealed['preflight_receipt_sha256'] = preflight_sha256
+        sealed['compiler_receipt_sha256'] = sha(compiler_receipt)
     (output / 'receipt.json').write_text(json.dumps(sealed, indent=2, sort_keys=True) + '\n')
     print(f'funded original Bytes map strict application and replay refusal passed: {output}')
 
