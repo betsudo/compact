@@ -51,6 +51,8 @@ def main() -> None:
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--cargo-target", type=Path,
+                        help="reuse an existing Cargo build cache when local disk is constrained")
     args = parser.parse_args()
     compiler = args.compiler.resolve(strict=True)
     runtime = args.ts_runtime.resolve(strict=True)
@@ -137,7 +139,8 @@ def main() -> None:
         lines.append(f'{name} = {{ package = {json.dumps(package)}, '
                      f'path = {json.dumps(str(contract))} }}')
     (consumer / "Cargo.toml").write_text("\n".join(lines) + "\n")
-    cargo_env = dict(env, CARGO_TARGET_DIR=str(output / "rust-target"))
+    cargo_target = args.cargo_target.resolve() if args.cargo_target else output / "rust-target"
+    cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target))
     run(["cargo", "+1.99.0", "generate-lockfile", "--offline", "--manifest-path",
          str(consumer / "Cargo.toml")], output / "rust-lock.log", env=cargo_env)
     rust_output = run(["cargo", "+1.99.0", "run", "--locked", "--offline",
@@ -156,6 +159,7 @@ def main() -> None:
         "compiler_sha256": sha256(compiler),
         "scheme_sha256": sha256(scheme),
         "runtime_package_sha256": sha256(runtime / "package.json"),
+        "cargo_target": str(cargo_target),
         "generated": generated,
         "scalar_type_refused_on_both_targets": True,
         "rust_consumer_sha256": sha256(consumer / "src/main.rs"),
