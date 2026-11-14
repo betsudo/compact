@@ -18,6 +18,7 @@
 """Qualify three pinned stateful Vector loops on generated TS and Rust."""
 
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -37,12 +38,27 @@ ROOT = Path(__file__).resolve().parents[2]
 FAMILY = ROOT / 'test-contracts/primitives/vector/loops'
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 CASES = ('empty_iteration', 'iteration', 'spread_iteration')
-K = {'empty_iteration': 6, 'iteration': 8, 'spread_iteration': 8}
 
 
 def require(ok: bool, message: str) -> None:
     if not ok:
         raise RuntimeError(message)
+
+
+def pinned_original_sha256(name: str) -> str:
+    blob = subprocess.check_output(['git', 'show', f'{PINNED}:{name}'], cwd=ROOT)
+    return hashlib.sha256(blob).hexdigest()
+
+
+def original_result(path: Path) -> str:
+    matches = re.findall(r'expect\(result\)\.toBe\((\d+)n\)', path.read_text())
+    require(len(matches) == 1, 'original Vector loop result assertion changed')
+    return matches[0]
+
+
+def rust_tests_passed(log: str) -> bool:
+    return (re.search(r'test result: ok\. 3 passed; 0 failed;', log) is not None and
+            all(f'test original_{name} ... ok' in log for name in CASES))
 
 
 def original_inventory(path: Path) -> dict[str, str]:
@@ -58,7 +74,8 @@ def original_inventory(path: Path) -> dict[str, str]:
     for name, digest in manifest['files'].items():
         source = ROOT / name
         require(re.fullmatch(r'[0-9a-f]{64}', digest) is not None and
-                source.is_file() and not source.is_symlink() and sha256(source) == digest,
+                source.is_file() and not source.is_symlink() and
+                sha256(source) == digest == pinned_original_sha256(name),
                 f'pinned original Vector loop file changed: {name}')
     return manifest['files']
 
@@ -101,6 +118,7 @@ def main() -> None:
     generated = {}
     for name in CASES:
         fixture = FAMILY / name / f'vector_loop_{name}.compact'
+        expected_result = original_result(FAMILY / name / 'runtime.pass.test.ts')
         cases = {}
         for mode in ('typescript', 'both'):
             destination = output / 'generated' / mode / name
@@ -119,7 +137,7 @@ def main() -> None:
                     f'{name} stateful provability metadata changed')
             contract = destination / 'contract'
             result = run(['node', str(FAMILY / 'check.mjs'),
-                          str(contract / 'index.js'), name],
+                          str(contract / 'index.js'), name, expected_result],
                          output / f'{name}-{mode}-runtime.log', env=env)
             require(result.strip() == f'{name}: original loop result and state passed',
                     f'{name} original TypeScript assertion changed')
@@ -143,7 +161,8 @@ def main() -> None:
     shutil.copyfile(ROOT / 'Cargo.lock', lock)
     manifest = consumer / 'Cargo.toml'
     cargo = ['[workspace]', '[package]', 'name = "ledger9-vector-loops-consumer"',
-             'version = "0.1.0"', 'edition = "2024"', '[dependencies]']
+             'version = "0.1.0"', 'edition = "2024"', '[dependencies]',
+             'midnight-onchain-vm = "=4.0.1"', 'midnight-serialize = "=1.2.1"']
     contracts = []
     for name in CASES:
         contract = output / 'generated/both' / name / 'contract'
@@ -165,8 +184,25 @@ def main() -> None:
     validate_consumer_lock(metadata, lock, local, pinned)
     run(['cargo', '+1.99.0', 'test', '--locked', '--offline', '--manifest-path', str(manifest)],
         output / 'cargo-test.log', env=cargo_env)
-    require('3 passed' in (output / 'cargo-test.log').read_text(),
+    test_log = (output / 'cargo-test.log').read_text()
+    require(rust_tests_passed(test_log),
             'three original Rust ordinary/recorded assertions did not pass')
+    for name in CASES:
+        for mode in ('typescript', 'both'):
+            destination = output / 'generated' / mode / name
+            contract = destination / 'contract'
+            recorded = generated[name][mode]
+            require(sha256(contract / 'index.js') == recorded['typescript_sha256'] and
+                    sha256(destination / 'compiler/contract-info.json') ==
+                    recorded['contract_info_sha256'] and
+                    sha256(destination / 'zkir' / f'vector_loop_{name}.zkir') ==
+                    recorded['zkir_sha256'],
+                    f'{name} generated output changed during Rust test')
+            if mode == 'both':
+                require(sha256(contract / 'lib.rs') == recorded['rust_sha256'] and
+                        sha256(contract / 'compact-rust-ir.json') ==
+                        recorded['rust_ir_sha256'],
+                        f'{name} generated Rust changed during Rust test')
     require_unchanged(source, runtime_before, recipe, runtime,
                       args.compiler_recipe, compiler, scheme)
     require(original_inventory(manifest_path) == originals,
@@ -183,10 +219,10 @@ def main() -> None:
         'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
         'scheme_sha256': sha256(scheme), 'runtime': runtime_before,
         'runtime_recipe': runtime_recipe, 'generated': generated,
-        'raw_zkir_k': K, 'cargo_target': str(cargo_target),
+        'cargo_target': str(cargo_target),
         'rust_consumer_lock_sha256': sha256(lock),
         'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
-        'result': 'three original stateful Vector loops passed TypeScript and ordinary/recorded Rust',
+        'result': 'three pinned original stateful Vector loop result assertions restated on generated TypeScript; state and ordinary/recorded Rust replay passed',
         'limitations': ['local Darwin arm64; native Linux qualification required',
                         'fresh proof and funded strict application/replay are separate gates'],
     }

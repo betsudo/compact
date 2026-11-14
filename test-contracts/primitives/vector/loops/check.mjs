@@ -17,9 +17,9 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
-const [entry, name] = process.argv.slice(2);
-const expected = { empty_iteration: 0n, iteration: 150n, spread_iteration: 15n };
-assert.ok(entry && Object.hasOwn(expected, name));
+const [entry, name, expectedArg] = process.argv.slice(2);
+assert.ok(entry && name && /^\d+$/.test(expectedArg));
+const expected = BigInt(expectedArg);
 const runtimeEntry = createRequire(entry).resolve('@midnight-ntwrk/compact-runtime');
 const runtime = await import(pathToFileURL(runtimeEntry).href);
 const { Contract, ledger } = await import(pathToFileURL(entry).href);
@@ -30,7 +30,7 @@ const context = runtime.createCircuitContext(
   initial.currentContractState, initial.currentPrivateState,
 );
 const execution = contract.circuits[`vector_loop_${name}`](context);
-assert.strictEqual(execution.result, expected[name]);
-assert.strictEqual(ledger(execution.context.currentQueryContext.state).loop_result, expected[name]);
+assert.strictEqual(execution.result, expected);
+assert.strictEqual(ledger(execution.context.currentQueryContext.state).loop_result, expected);
 assert.ok(execution.proofData);
 console.log(`${name}: original loop result and state passed`);

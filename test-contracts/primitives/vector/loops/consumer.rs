@@ -15,6 +15,8 @@
 
 use empty_iteration::runtime::{context::ConstructorContext, ledger::ContractAddress, Field};
 use empty_iteration::runtime::public_state::PublicStateSource;
+use midnight_onchain_vm::cost_model::INITIAL_COST_MODEL;
+use midnight_serialize::tagged_serialize;
 
 macro_rules! check_original {
     ($contract:ident, $circuit:ident, $expected:expr) => {{
@@ -35,8 +37,18 @@ macro_rules! check_original {
         let recorded = $contract::ledger_contract::recorded::$circuit(context).unwrap();
         assert_eq!(recorded.execution.result, ordinary.result);
         assert_eq!(recorded.execution.public_state(), ordinary.public_state());
-        assert_eq!(recorded.execution.private_transcript_outputs,
-                   ordinary.private_transcript_outputs);
+        assert!(ordinary.private_transcript_outputs.is_empty());
+        assert!(recorded.execution.private_transcript_outputs.is_empty());
+        assert!(!recorded.public.verify_ops().is_empty());
+        let replay = recorded.public.initial()
+            .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL)
+            .unwrap();
+        let mut ordinary_bytes = Vec::new();
+        tagged_serialize(ordinary.public_state(), &mut ordinary_bytes).unwrap();
+        let mut replay_bytes = Vec::new();
+        tagged_serialize(replay.context.state.get_ref(), &mut replay_bytes).unwrap();
+        assert_eq!(replay_bytes, ordinary_bytes);
+        assert_eq!(recorded.execution.gas_cost, ordinary.gas_cost);
     }};
 }
 
