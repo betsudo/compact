@@ -65,6 +65,27 @@ def runtime_identity(runtime: Path) -> dict:
             "dist_files": files}
 
 
+def runtime_recipe_identity(runtime: Path, nix: Path, root: Path = ROOT) -> dict:
+    """Require the supplied runtime to be this clean source head's Nix output."""
+    command = [str(nix), "eval", "--offline", "--raw", "--option",
+               "substitute", "false", ".#runtime.package.outPath"]
+    result = subprocess.run(command, cwd=root, capture_output=True, text=True)
+    if result.returncode:
+        raise ValueError(f"offline Nix runtime evaluation failed: {result.stderr[-2000:]}")
+    output = result.stdout.strip()
+    if not output or "\n" in output:
+        raise ValueError("offline Nix runtime evaluation returned no single output path")
+    try:
+        store = Path(output).resolve(strict=True)
+        expected = (store / "lib/node_modules/@midnight-ntwrk/compact-runtime").resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise ValueError("offline Nix runtime output is unavailable") from error
+    if runtime.resolve(strict=True) != expected:
+        raise ValueError("supplied TypeScript runtime differs from exact-head Nix output")
+    return {"command": command, "store": str(store), "path": str(expected),
+            "nix_sha256": sha256(nix)}
+
+
 def compiler_recipe_identity(recipe_path: Path, source: dict[str, str],
                              compiler: Path, scheme: Path, root: Path = ROOT) -> dict:
     recipe_path = recipe_path.resolve(strict=True)
@@ -131,6 +152,11 @@ def main() -> None:
     if any(source_package[key] != runtime_package[key]
            for key in ("name", "version", "dependencies")):
         parser.error("TypeScript runtime package does not match this source tree")
+    nix_executable = shutil.which("nix")
+    if not nix_executable:
+        parser.error("Nix is required to bind the TypeScript runtime to this source head")
+    nix = Path(nix_executable).resolve(strict=True)
+    runtime_recipe = runtime_recipe_identity(runtime, nix)
     initial_runtime = runtime_identity(runtime)
     scheme = compiler.with_name("compactc-scheme")
     if not scheme.is_file():
@@ -234,6 +260,7 @@ def main() -> None:
         "compiler_sha256": sha256(compiler),
         "scheme_sha256": sha256(scheme),
         "runtime": initial_runtime,
+        "runtime_recipe": runtime_recipe,
         "compiler_recipe": recipe_identity,
         "cargo_target": str(cargo_target),
         "generated": generated,

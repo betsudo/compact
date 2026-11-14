@@ -11,6 +11,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+from unittest import mock
 
 
 CHECKER = Path(__file__).with_name("check_upstream_ledger9_vector_casts.py")
@@ -34,7 +35,8 @@ class IdentityControls(unittest.TestCase):
         self.scheme = bin_dir / "compactc-scheme"
         self.compiler.write_bytes(b"compiler")
         self.scheme.write_bytes(b"scheme")
-        self.runtime = base / "runtime"
+        self.runtime_store = base / "runtime-store"
+        self.runtime = self.runtime_store / "lib/node_modules/@midnight-ntwrk/compact-runtime"
         (self.runtime / "dist").mkdir(parents=True)
         (self.runtime / "package.json").write_text('{"version":"0.18.0"}\n')
         (self.runtime / "dist/index.js").write_text("export const value = 1;\n")
@@ -111,6 +113,35 @@ class IdentityControls(unittest.TestCase):
             checker.require_unchanged(self.source, self.runtime_snapshot,
                                       self.recipe_snapshot, other, self.recipe_path,
                                       self.compiler, self.scheme, self.root)
+
+    def test_exact_head_runtime_recipe_passes(self):
+        nix = self.root / "nix"
+        nix.write_bytes(b"nix executable")
+        with mock.patch.object(checker.subprocess, "run",
+                               return_value=subprocess.CompletedProcess([], 0, str(self.runtime_store), "")) as run:
+            identity = checker.runtime_recipe_identity(self.runtime, nix, self.root)
+        self.assertEqual(identity["store"], str(self.runtime_store.resolve(strict=True)))
+        self.assertEqual(identity["path"], str(self.runtime.resolve(strict=True)))
+        self.assertEqual(identity["nix_sha256"], checker.sha256(nix))
+        command = run.call_args.args[0]
+        self.assertEqual(command[-1], ".#runtime.package.outPath")
+        self.assertIn("--offline", command)
+        self.assertEqual(command[command.index("--option") + 1:],
+                         ["substitute", "false", ".#runtime.package.outPath"])
+
+    def test_same_version_wrong_runtime_recipe_refused(self):
+        other = self.runtime.parent / "same-version-runtime"
+        (other / "dist").mkdir(parents=True)
+        for name in ("package.json", "dist/index.js", "dist/helper.js"):
+            (other / name).write_bytes((self.runtime / name).read_bytes())
+        self.assertEqual(checker.runtime_identity(other)["package_sha256"],
+                         self.runtime_snapshot["package_sha256"])
+        nix = self.root / "nix"
+        nix.write_bytes(b"nix executable")
+        with mock.patch.object(checker.subprocess, "run",
+                               return_value=subprocess.CompletedProcess([], 0, str(self.runtime_store), "")):
+            with self.assertRaisesRegex(ValueError, "differs from exact-head Nix output"):
+                checker.runtime_recipe_identity(other, nix, self.root)
 
     def test_recipe_head_substitution_refused(self):
         self.recipe["head"] = "0" * 40
