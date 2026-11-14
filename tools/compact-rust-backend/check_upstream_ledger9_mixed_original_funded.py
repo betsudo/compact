@@ -49,15 +49,17 @@ GENERATED_MANIFEST_CANONICAL_SHA = {
 }
 AGGREGATE_CONTRACT_EXTRA_SHA = {
     'k1': {
-        'compact-rust-origins.raw.json': '22b3e6408af870cbd52ce2df8dafb94594914db2aa29b16accc95e06a6801c3c',
         'index.d.ts': '06587ff29585bc9e7c84e8a1ea6f0bcd60cada251fe3016e00276dd44981be62',
         'index.js.map': '904d3e7284bd6ed94c3fc2064acd204561745461eb719727ef1c485633c5b8f8',
     },
     'r1': {
-        'compact-rust-origins.raw.json': '2462112974f5d4ab41acca20aac3d61c51dadf398efa3ce635e47490aff674e7',
         'index.d.ts': '250a541fc9281f0b50e0d466d7dd4bbb1fcfc51192fa1907d473022e6972d1c5',
         'index.js.map': '312f0de4f246b2872d71f98bf480a4844eabd4e556e0557aa982c3de7080b4d7',
     },
+}
+AGGREGATE_ORIGINS_CANONICAL_SHA = {
+    'k1': '9ec4ca9685aa74adf06e31ca51da37b937b85bb8358c3c3f1765104e8013ad58',
+    'r1': 'ae3314a75fa953b1abc3da99ecc2288d6026cbc12c6260c6875c84391c816401',
 }
 AGGREGATE_TEMPLATE_SHA = '0fc67ef4f13a5b836634aa6f0f7d7aad53d75281824155b839ddc39472948f87'
 PREFLIGHT_GATE_SHA = 'a368160b3fe482b39d885599367fe792a1139991d776f61ef1112395d19787a6'
@@ -107,6 +109,18 @@ def validate_aggregate_contract_files(contract: Path, case: str) -> None:
     require(all(sha(contract / name) == digest for name, digest in
                 AGGREGATE_CONTRACT_EXTRA_SHA[case].items()),
             f'{case} generated contract auxiliary artifact changed')
+    origins = json.loads((contract / 'compact-rust-origins.raw.json').read_text())
+    files = origins.get('files')
+    original = (contract.parents[1] / 'original' / f'{case}.compact').resolve(strict=True)
+    require(isinstance(files, list) and len(files) == 2 and
+            files[0] == {'id': 0, 'path': str(original)} and
+            files[1] == {'id': 1, 'path': 'compiler/standard-library.compact'},
+            f'{case} generated source origin does not name the qualified original')
+    origins['files'][0]['path'] = '<original source>'
+    canonical = json.dumps(origins, sort_keys=True, separators=(',', ':')).encode()
+    require(hashlib.sha256(canonical).hexdigest() ==
+            AGGREGATE_ORIGINS_CANONICAL_SHA[case],
+            f'{case} generated source origins changed beyond the qualified path')
 
 
 def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
