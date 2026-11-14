@@ -16,6 +16,7 @@
 """Focused pinned Vector comparison source and assertion controls."""
 
 import json
+import copy
 from pathlib import Path
 import tempfile
 import unittest
@@ -109,6 +110,42 @@ class ComparisonInventoryTests(unittest.TestCase):
         self.assertFalse(gate.rust_tests_passed(names + 'test result: ok. 12 passed; 0 failed;'))
         self.assertFalse(gate.rust_tests_passed(names.replace('original_inequality', 'wrong') +
                                                 'test result: ok. 2 passed; 0 failed;'))
+
+    def test_rejects_missing_generated_internal_assertion(self) -> None:
+        source = self.root / 'fixture.compact'
+        source.write_text('assert(a == b, "first assertion");\n'
+                          'assert(a != c, "second assertion");\n')
+        messages = gate.assertion_messages(source, 2)
+        js = self.root / 'index.js'
+        rs = self.root / 'lib.rs'
+        js.write_text("__compactRuntime.assert(true, 'first assertion');\n"
+                      "__compactRuntime.assert(true, 'second assertion');\n")
+        rs.write_text('CompactError::AssertionFailed("first assertion".to_owned());\n'
+                      'CompactError::AssertionFailed("second assertion".to_owned());\n')
+        gate.require_generated_assertions(messages, js, rs)
+        js.write_text("__compactRuntime.assert(true, 'first assertion');\n")
+        with self.assertRaisesRegex(RuntimeError, 'TypeScript lost'):
+            gate.require_generated_assertions(messages, js, rs)
+        js.write_text("__compactRuntime.assert(true, 'first assertion');\n"
+                      "__compactRuntime.assert(true, 'second assertion');\n")
+        rs.write_text('CompactError::AssertionFailed("first assertion".to_owned());\n')
+        with self.assertRaisesRegex(RuntimeError, 'Rust lost'):
+            gate.require_generated_assertions(messages, js, rs)
+
+    def test_rejects_changed_circuit_capability(self) -> None:
+        original = [{'name': 'vector_equality_semantics', 'pure': True,
+                     'proof': False, 'arguments': [], 'result-type': gate.RESULT_TYPE}]
+        gate.require_circuit_info(original, 'equality')
+        for change in ({'pure': False}, {'proof': True},
+                       {'arguments': [{'name': 'x'}]},
+                       {'result-type': {'type-name': 'Field'}},
+                       {'name': 'wrong'}):
+            row = copy.deepcopy(original)
+            row[0].update(change)
+            with self.assertRaisesRegex(RuntimeError, 'capability or Boolean'):
+                gate.require_circuit_info(row, 'equality')
+        with self.assertRaisesRegex(RuntimeError, 'capability or Boolean'):
+            gate.require_circuit_info(original + original, 'equality')
 
 
 if __name__ == '__main__':

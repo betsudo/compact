@@ -96,6 +96,32 @@ def consumer_expected(path: Path) -> dict[str, bool]:
     return result
 
 
+def require_circuit_info(circuits: list[dict], name: str) -> None:
+    require(circuits == [{'name': f'vector_{name}_semantics', 'pure': True,
+                          'proof': False, 'arguments': [], 'result-type': RESULT_TYPE}],
+            f'{name} pure capability or Boolean result type changed')
+
+
+def assertion_messages(path: Path, count: int) -> tuple[str, ...]:
+    messages = tuple(re.findall(r'assert\([^;]*?,\s*"([^"]+)"\);', path.read_text()))
+    require(len(messages) == count and len(set(messages)) == count,
+            'pinned Vector comparison internal assertion inventory changed')
+    return messages
+
+
+def require_generated_assertions(messages: tuple[str, ...], typescript: Path,
+                                 rust: Path | None = None) -> None:
+    js = typescript.read_text()
+    require(js.count('__compactRuntime.assert(') == len(messages) and
+            all(js.count(repr(message)) == 1 for message in messages),
+            'generated TypeScript lost an original Vector assertion')
+    if rust is not None:
+        rs = rust.read_text()
+        require(rs.count('CompactError::AssertionFailed(') == len(messages) and
+                all(rs.count(json.dumps(message)) == 1 for message in messages),
+                'generated Rust lost an original Vector assertion')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
@@ -137,6 +163,7 @@ def main() -> None:
         fixture = FAMILY / name / 'semantics' / f'vector_{name}_semantics.compact'
         value = original_result(FAMILY / name / 'semantics/runtime.pass.test.ts')
         require(value == EXPECTED[name], f'{name} pinned result assertion changed')
+        messages = assertion_messages(fixture, 2 if name == 'equality' else 3)
         modes = {}
         for mode in ('typescript', 'both'):
             destination = output / 'generated' / mode / name
@@ -148,12 +175,10 @@ def main() -> None:
             run(command, output / f'{name}-{mode}.log', env=env)
             info_path = destination / 'compiler/contract-info.json'
             circuits = json.loads(info_path.read_text())['circuits']
-            require(len(circuits) == 1 and circuits[0]['name'] == f'vector_{name}_semantics'
-                    and circuits[0]['pure'] and not circuits[0]['proof'] and
-                    not circuits[0]['arguments'] and
-                    circuits[0]['result-type'] == RESULT_TYPE,
-                    f'{name} pure capability or Boolean result type changed')
+            require_circuit_info(circuits, name)
             contract = destination / 'contract'
+            require_generated_assertions(messages, contract / 'index.js',
+                                         contract / 'lib.rs' if mode == 'both' else None)
             result = run(['node', str(ADAPTER), str(contract / 'index.js'),
                           name, str(value).lower()],
                          output / f'{name}-{mode}-runtime.log', env=env)
