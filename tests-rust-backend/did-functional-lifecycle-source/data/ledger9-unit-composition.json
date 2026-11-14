@@ -19,7 +19,7 @@
     ]
   },
   "runtime_version": "0.17.0",
-  "claim": "Complete original DID lifecycle observations from paired Ledger 9 TypeScript output.",
+  "claim": "Complete original DID lifecycle observations from paired Ledger 9 TypeScript output; reported gas reflects source-built 0.17.0 query accumulation at the current compiler head.",
   "cases": [
     {
       "id": "did/valid",
@@ -915,10 +915,10 @@
         }
       ],
       "reportedGas": {
-        "readTime": "255000000",
-        "computeTime": "1416426939",
-        "bytesWritten": "1004",
-        "bytesDeleted": "1004"
+        "readTime": "2805000000",
+        "computeTime": "12954870108",
+        "bytesWritten": "5020",
+        "bytesDeleted": "5020"
       },
       "events": [
         {
@@ -2540,10 +2540,10 @@
         }
       ],
       "reportedGas": {
-        "readTime": "255000000",
-        "computeTime": "1416426939",
-        "bytesWritten": "1002",
-        "bytesDeleted": "1004"
+        "readTime": "2805000000",
+        "computeTime": "12954870108",
+        "bytesWritten": "5018",
+        "bytesDeleted": "5020"
       },
       "events": [
         {
