@@ -88,7 +88,7 @@ def qualify(output: Path, compiler: Path, scheme: Path,
         }
     consumer = output / "consumer"
     (consumer / "src").mkdir(parents=True)
-    shutil.copyfile(Path(__file__).parent / "tests/generated_collection_consumer.rs", consumer / "src/main.rs")
+    shutil.copyfile(Path(__file__).parent / "fixtures/generated_collection_consumer.rs", consumer / "src/main.rs")
     dependencies = "".join(
         f'{PACKAGES[kind]} = {{ path = {json.dumps(str(output / kind / "contract"))}, features = ["ledger-transaction"] }}\n'
         for kind in SOURCES
