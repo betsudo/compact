@@ -1320,6 +1320,36 @@
                          (cons "accumulator" (type-ir type0 src))
                          (cons "element" (type-ir type2 src))
                          (cons "length" len))])]
+             [(circuit ,src^ (,arg* ...) ,type ,expr)
+              (unless (= (length arg*) 2)
+                (source-errorf src "Rust Vector fold reducer needs an accumulator and one item"))
+              (let ([variable-types (if (current-variable-types)
+                                        (hashtable-copy (current-variable-types) #t)
+                                        (make-eq-hashtable))])
+                (for-each (lambda (arg)
+                            (nanopass-case (Lnodisclose Argument) arg
+                              [(,var-name ,type^)
+                               (eq-hashtable-set! variable-types var-name type^)])) arg*)
+                (parameterize ([current-variable-types variable-types])
+                  (nanopass-case (Lnodisclose Map-Argument) map-arg
+                    [(,expr1 ,type1 ,type2)
+                     (if (and (= len 0)
+                              (nanopass-case (Lnodisclose Expression) expr1
+                                [(tuple ,src2 ,tuple-arg* ...) (null? tuple-arg*)]
+                                [else #f]))
+                         ;; The literal empty source has no evaluation effects.
+                         ;; Its element type remains Unknown, but no reducer
+                         ;; call or item can occur; retain the initial value.
+                         (typed-expression-ir expr0 type0 src)
+                         (object (cons "kind" "vector_fold")
+                                 (cons "accumulator" (argument-ir (car arg*) src))
+                                 (cons "items" (vector (argument-ir (cadr arg*) src)))
+                                 (cons "initial" (typed-expression-ir expr0 type0 src))
+                                 (cons "sources" (vector (typed-expression-ir expr1 type1 src)))
+                                 (cons "body"
+                                       (object (cons "kind" "value")
+                                               (cons "value" (typed-expression-ir expr type src))))
+                                 (cons "length" len)))])))]
              [else (source-errorf src "Rust backend supports named Vector fold functions only")])]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "if")
