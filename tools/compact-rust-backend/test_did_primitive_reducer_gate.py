@@ -18,6 +18,7 @@ import copy
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import did_primitive_reducer_gate as gate
@@ -54,14 +55,11 @@ class EvidenceTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(gate.common.GateError):
                 gate.validate_summary(changed, self.row, require_v3=True)
 
-    def test_current_capture_requires_exact_ledger9_bytes_and_frozen_historical_binding(self):
+    def test_historical_capture_requires_exact_ledger9_bytes_and_frozen_source(self):
         fixture = "tests-rust-backend/did-point-digest-reducer"
         oracle = gate.ROOT / fixture / "oracle"
         with tempfile.TemporaryDirectory() as temp:
-            capture = Path(temp) / "fresh.json"
-            raw = (oracle / "ledger9-cases.json").read_bytes()
-            capture.write_bytes(raw)
-            self.assertEqual(set(gate.validate_current_capture(capture, fixture)),
+            self.assertEqual(set(gate.validate_historical_capture(fixture)),
                              {str(oracle / name) for name in
                               ("ledger9-binding.json", "ledger9-cases.json", "cases.json",
                                "reviewed-rust-binding.json")} |
@@ -72,10 +70,62 @@ class EvidenceTests(unittest.TestCase):
             with patch.dict(gate.FROZEN_LEDGER9_RUNTIME,
                             {'runtime/src/built-ins.ts': (changed_source, frozen[1])}):
                 with self.assertRaisesRegex(gate.common.GateError, 'reducer capture source changed'):
-                    gate.validate_current_capture(capture, fixture)
-            capture.write_bytes(raw + b" ")
-            with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
-                gate.validate_current_capture(capture, fixture)
+                    gate.validate_historical_capture(fixture)
+            with patch.object(gate.common, 'sha256', side_effect=lambda path:
+                              'changed' if Path(path) == oracle / 'ledger9-cases.json' else
+                              __import__('hashlib').sha256(Path(path).read_bytes()).hexdigest()):
+                with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
+                    gate.validate_historical_capture(fixture)
+
+    def test_current_capture_records_preserve_all_nine_historical_case_sets(self):
+        count = 0
+        for row in gate.reviewed_rows():
+            oracle = gate.ROOT / row['fixture'] / 'oracle'
+            binding = gate.read_json(oracle / 'ledger9-runtime0.18-binding.json')
+            capture = gate.read_json(oracle / 'ledger9-runtime0.18-cases.json')
+            historical = gate.read_json(oracle / 'ledger9-cases.json')
+            with self.subTest(kind=row['kind']):
+                gate.validate_current_capture_record(binding, binding.copy(), capture, historical)
+                self.assertEqual(binding['kind'], row['kind'])
+                self.assertEqual(binding['compact_runtime'], '0.18.0')
+                self.assertEqual(binding['historical_ledger9_binding_sha256'],
+                                 gate.common.sha256(oracle / 'ledger9-binding.json'))
+                self.assertEqual(binding['capture_sha256'],
+                                 gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
+                changed = binding.copy()
+                changed['generated_javascript_sha256'] = 'changed'
+                with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
+                    gate.validate_current_capture_record(changed, binding, capture, historical)
+                changed = copy.deepcopy(capture)
+                changed['cases'][0]['result'] = 'changed'
+                with self.assertRaisesRegex(gate.common.GateError, 'retained behavior'):
+                    gate.validate_current_capture_record(binding, binding, changed, historical)
+            count += len(capture['cases'])
+        self.assertEqual(count, 55)
+
+    def test_current_runtime_path_requires_matching_source_and_nix_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / 'runtime/package.json'
+            source.parent.mkdir()
+            package = root / 'nix-out/lib/node_modules/@midnight-ntwrk/compact-runtime/package.json'
+            package.parent.mkdir(parents=True)
+            (package.parent / 'dist').mkdir()
+            (package.parent / 'dist/built-ins.js').write_text('builtins')
+            metadata = {'name':'@midnight-ntwrk/compact-runtime','version':'0.18.0',
+                        'dependencies':{'@midnightntwrk/onchain-runtime-v4':'4.0.1'}}
+            source.write_text(json.dumps(metadata))
+            package.write_text(json.dumps(metadata))
+            result = SimpleNamespace(returncode=0, stdout=str(root / 'nix-out'))
+            with patch.object(gate, 'ROOT', root), patch.object(gate.subprocess, 'run', return_value=result):
+                self.assertEqual(gate.current_runtime_package(), package.parent.resolve())
+                package.write_text(json.dumps(dict(metadata, version='0.17.0')))
+                with self.assertRaisesRegex(gate.common.GateError, 'differs from source'):
+                    gate.current_runtime_package()
+                package.write_text(json.dumps(metadata))
+                source.write_text(json.dumps(dict(metadata, version='0.19.0')))
+                with self.assertRaisesRegex(gate.common.GateError, 'differs from source'):
+                    gate.current_runtime_package()
 
     def test_missing_duplicate_extra_or_wrong_operation_refuse(self):
         for change in ('missing','duplicate','extra','reordered','operation'):
@@ -108,6 +158,9 @@ class EvidenceTests(unittest.TestCase):
     def test_failed_command_retains_failed_receipt_and_no_completed_rows(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);out=root/'gate'
+            (root/'package.json').write_text('{}')
+            (root/'dist').mkdir()
+            (root/'dist/built-ins.js').write_text('')
             frozen_tool = root / 'frozen'
             frozen_tool.write_text('stub tool snapshot')
             row={**self.row,'package':'fixture'}
@@ -116,6 +169,7 @@ class EvidenceTests(unittest.TestCase):
                  patch.object(gate,'source_inventory',return_value={}), \
                  patch.object(gate.ledger_static,'FIXTURE_HASHES',{}), \
                  patch.object(gate.shutil,'which',return_value='/usr/bin/true'), \
+                 patch.object(gate,'current_runtime_package',return_value=root), \
                  patch.object(gate.common,'git_head',return_value='frozen'), \
                  patch.object(gate.common,'stable_copy',return_value={'snapshot':str(frozen_tool),'sha256':'hash'}), \
                  patch.object(gate.common,'run',side_effect=failed):
