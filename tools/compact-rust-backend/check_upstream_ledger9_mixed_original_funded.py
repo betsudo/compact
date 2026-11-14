@@ -84,6 +84,46 @@ def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
 
 
+def snapshot_inputs(files: list[Path], directories: list[Path]) -> dict[str, str]:
+    """Fingerprint admitted external inputs, including directory membership."""
+    paths = set(files)
+    membership = {}
+    links = {}
+    for directory in directories:
+        require(directory.is_dir() and not directory.is_symlink(),
+                f'mixed aggregate input directory changed: {directory}')
+        members = []
+        for path in directory.rglob('*'):
+            if path.is_symlink():
+                target = os.readlink(path)
+                links[str(path) + '@link'] = hashlib.sha256(target.encode()).hexdigest()
+                members.append(path.relative_to(directory).as_posix() + '@link')
+            elif path.is_file():
+                paths.add(path)
+                members.append(path.relative_to(directory).as_posix())
+        membership[str(directory) + '/'] = hashlib.sha256(
+            '\n'.join(sorted(members)).encode()).hexdigest()
+    require(all(path.is_file() and not path.is_symlink() for path in paths),
+            'mixed aggregate input missing or replaced')
+    return {**membership, **links,
+            **{str(path): sha(path) for path in sorted(paths)}}
+
+
+def require_final_binding(head: str, tree: str, admitted: dict[str, str],
+                          files: list[Path], directories: list[Path],
+                          copies: dict[str, str], copy_directories: list[Path]) -> None:
+    require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head and
+            git('rev-parse', 'HEAD^{tree}') == tree,
+            'mixed aggregate funded source changed during qualification')
+    require(snapshot_inputs(files, directories) == admitted,
+            'mixed aggregate funded input changed during qualification')
+    require(snapshot_inputs([], copy_directories) == copies,
+            'mixed aggregate funded generated copy changed during qualification')
+    require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head and
+            git('rev-parse', 'HEAD^{tree}') == tree,
+            'mixed aggregate funded source changed during final input check')
+
+
 def run(command, log, *, env=None, cwd=ROOT):
     result = subprocess.run(command, cwd=cwd, env=env, text=True,
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -125,6 +165,15 @@ def validate_aggregate_contract_files(contract: Path, case: str) -> None:
             f'{case} generated source origins changed beyond the qualified path')
 
 
+def validate_proof_checker_source(proof: dict, supplied: Path | None = None) -> None:
+    checker = ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_proof.py'
+    require(source_bound_to_receipt(proof.get('verifier_source_sha256'), checker),
+            'mixed aggregate proof checker differs from current repository source')
+    if supplied is not None:
+        require(supplied.resolve(strict=True) == checker.resolve(strict=True),
+                'mixed aggregate proof checker path differs from current repository source')
+
+
 def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
                                 compiler_path: Path, runtime_baseline_path: Path,
                                 runtime_baseline_sha: str, proof_sha: str,
@@ -146,6 +195,7 @@ def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
             prior.get('compiler_receipt_sha256') == compiler_sha and
             prior.get('upstream') == UPSTREAM,
             'mixed aggregate receipts must bind the current head, tree, and each other')
+    validate_proof_checker_source(proof)
     require(source_bound_to_receipt(
                 prior.get('gate_source_sha256'),
                 ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py') and
@@ -266,9 +316,7 @@ def main():
                         source_head=head, current_head=head)
         require(prior['compiler_sha256'] == sha(compiler),
                 'mixed aggregate preflight compiler binary changed')
-        require(proof['verifier_source_sha256'] == sha(
-                    args.proof_verifier_source.resolve(strict=True)),
-                'mixed aggregate proof verifier source changed')
+        validate_proof_checker_source(proof, args.proof_verifier_source)
         generated_runner = args.proof_runner.resolve(strict=True)
         runner_source = args.proof_runner_source.resolve(strict=True)
         runner_receipt_path = args.proof_runner_receipt.resolve(strict=True)
@@ -335,6 +383,26 @@ def main():
                 (material / name).stat().st_size == row['bytes']
                 for name, row in material_files.items()),
             'SDK material files changed')
+    admitted_files: list[Path] = []
+    admitted_directories: list[Path] = []
+    admitted_hashes: dict[str, str] = {}
+    copied_hashes: dict[str, str] = {}
+    copied_directories: list[Path] = []
+    if args.aggregate_head:
+        runtime_package = (Path(prior['runtime_store']) /
+                           'lib/node_modules/@midnight-ntwrk/compact-runtime')
+        admitted_files = [proof_path, compiler_path, runner_receipt_path,
+                          args.runtime_baseline_receipt.resolve(strict=True),
+                          compiler, scheme, generated_runner,
+                          base / 'Cargo.toml', base / 'Cargo.lock',
+                          material_receipt, TEMPLATE,
+                          runtime_package / 'package.json',
+                          args.runtime_baseline_receipt.resolve(strict=True).parent /
+                          'typescript-runtime-recipe.log',
+                          *(material / name for name in material_files)]
+        admitted_directories = [preflight, evidence, wrong_root, runner_source,
+                                runtime_package / 'dist']
+        admitted_hashes = snapshot_inputs(admitted_files, admitted_directories)
     output.mkdir(parents=True)
     env = {key: value for key, value in os.environ.items()
            if not key.startswith('CARGO_') and key not in
@@ -425,6 +493,15 @@ def main():
         copied_manifest = rebound_runtime_manifest(
             generated_manifest_text, runtime_path, aggregate=args.aggregate_head)
         (generated_copy / 'Cargo.toml').write_text(copied_manifest)
+        if args.aggregate_head:
+            source_files = {path.relative_to(generated) for path in generated.rglob('*')
+                            if path.is_file()}
+            copied_files = {path.relative_to(generated_copy)
+                            for path in generated_copy.rglob('*') if path.is_file()}
+            require(source_files == copied_files and all(
+                sha(generated / name) == sha(generated_copy / name)
+                for name in source_files if name != Path('Cargo.toml')),
+                f'{case} generated contract copy differs from admitted preflight')
         name = f'mixed-original-{case}-funded'
         manifest = manifest_text.replace('mixed-original-k1-funded', name).replace(
             'compact-contract-k1', package).replace(
@@ -444,6 +521,9 @@ def main():
         require(all(token not in source for token in replacements),
                 'funded Rust substitution incomplete')
         (consumer / 'main.rs').write_text(source)
+        if args.aggregate_head:
+            copied_directories.extend((generated_copy, consumer))
+            copied_hashes.update(snapshot_inputs([], [generated_copy, consumer]))
         require(packages(base / 'Cargo.lock') == packages(consumer / 'Cargo.lock'),
                 f'{case} Cargo package set changed before build')
         run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--manifest-path',
@@ -472,6 +552,10 @@ def main():
                          'transaction_proof_sha256': sha(destination / 'transaction-bound.proof'),
                          'ledger_sha256': sha(destination / 'ledger-after.bin'),
                          'consumer_source_sha256': sha(consumer / 'main.rs')}
+    if args.aggregate_head:
+        require_final_binding(head, tree, admitted_hashes, admitted_files,
+                              admitted_directories, copied_hashes,
+                              copied_directories)
     receipt = {'format': 'ledger9-mixed-original-funded/v1',
                'head': head, 'tree': tree, 'proof_head': proof_head,
                'proof_receipt_sha256': sha(proof_path),

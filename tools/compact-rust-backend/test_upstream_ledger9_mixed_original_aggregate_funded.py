@@ -47,9 +47,11 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.compiler_path.write_text('compiler receipt\n')
         self.compiler_sha = 'c' * 64
         producer = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py'
+        proof_checker = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_proof.py'
         baseline_gate = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py'
         capture_source = self.root / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'
         self.write(producer, b'preflight producer\n')
+        self.write(proof_checker, b'proof checker\n')
         self.write(baseline_gate, b'Bytes map runtime producer\n')
         self.write(capture_source, b'capture producer\n')
         runtime_package = (b'{"name":"@midnight-ntwrk/compact-runtime",'
@@ -160,6 +162,8 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             'source_head': self.head, 'source_tree': self.tree,
             'preflight_receipt_sha256': gate.sha(self.preflight_path),
             'compiler_receipt_sha256': gate.sha(self.compiler_path),
+            'verifier_source_sha256': gate.sha(
+                self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_proof.py'),
         }
         self.proof_path.write_text(json.dumps(self.proof))
 
@@ -249,6 +253,74 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.write(producer, b'changed preflight producer\n')
         with self.assertRaisesRegex(RuntimeError, 'mixed aggregate preflight producer'):
             self.validate()
+
+    def test_refuses_proof_checker_outside_current_repository(self) -> None:
+        foreign = self.root.parent / 'foreign-proof-checker.py'
+        self.write(foreign, b'proof checker\n')
+        with self.assertRaisesRegex(RuntimeError, 'proof checker path differs'):
+            gate.validate_proof_checker_source(self.proof, foreign)
+        checker = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_proof.py'
+        self.write(checker, b'changed proof checker\n')
+        with self.assertRaisesRegex(RuntimeError, 'proof checker differs'):
+            self.validate()
+
+    def test_refuses_external_input_mutated_after_admission(self) -> None:
+        admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        self.write(self.preflight / 'k1/contract/lib.rs', b'mutated after admission\n')
+        with mock.patch.object(gate, 'git', side_effect=['', self.head, self.tree]):
+            with self.assertRaisesRegex(RuntimeError, 'input changed during qualification'):
+                gate.require_final_binding(self.head, self.tree, admitted,
+                                           [self.proof_path], [self.preflight],
+                                           copied_hashes, [copied])
+
+    def test_accepts_unchanged_final_binding(self) -> None:
+        admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        with mock.patch.object(gate, 'git', side_effect=[
+                '', self.head, self.tree, '', self.head, self.tree]):
+            gate.require_final_binding(self.head, self.tree, admitted,
+                                       [self.proof_path], [self.preflight],
+                                       copied_hashes, [copied])
+
+    def test_refuses_generated_copy_mutated_after_admission(self) -> None:
+        admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        self.write(copied / 'lib.rs', b'mutated during build\n')
+        with mock.patch.object(gate, 'git', side_effect=['', self.head, self.tree]):
+            with self.assertRaisesRegex(RuntimeError, 'generated copy changed'):
+                gate.require_final_binding(self.head, self.tree, admitted,
+                                           [self.proof_path], [self.preflight],
+                                           copied_hashes, [copied])
+
+    def test_refuses_added_generated_copy_file(self) -> None:
+        admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        self.write(copied / 'build.rs', b'unadmitted build script\n')
+        with mock.patch.object(gate, 'git', side_effect=['', self.head, self.tree]):
+            with self.assertRaisesRegex(RuntimeError, 'generated copy changed'):
+                gate.require_final_binding(self.head, self.tree, admitted,
+                                           [self.proof_path], [self.preflight],
+                                           copied_hashes, [copied])
+
+    def test_refuses_source_changed_after_admission(self) -> None:
+        admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        with mock.patch.object(gate, 'git', side_effect=['', 'different-head']):
+            with self.assertRaisesRegex(RuntimeError, 'source changed'):
+                gate.require_final_binding(self.head, self.tree, admitted,
+                                           [self.proof_path], [self.preflight],
+                                           copied_hashes, [copied])
 
     def test_refuses_changed_original_callback(self) -> None:
         self.write(self.preflight / 'original/k1.callback.js', b'changed callback\n')
