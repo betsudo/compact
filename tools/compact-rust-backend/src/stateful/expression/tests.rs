@@ -61,6 +61,50 @@ fn nested_unsigned_comparisons_remain_boolean_equality_operands() {
     }
 }
 
+#[test]
+fn ordered_comparison_groups_compound_right_operands() {
+    let right = || Expr::If {
+        condition: parameter("boolean"),
+        then: parameter("uint"),
+        otherwise: Box::new(Expr::Default { ty: uint("255") }),
+    };
+    for operator in [
+        ComparisonOperator::Less,
+        ComparisonOperator::LessEqual,
+        ComparisonOperator::Greater,
+        ComparisonOperator::GreaterEqual,
+    ] {
+        for right in [
+            right(),
+            Expr::UnsignedAdd {
+                max: "255".into(),
+                left: parameter("uint"),
+                right: parameter("uint"),
+            },
+        ] {
+            let observed = Declarations::default().lower(Expr::Compare {
+                operator,
+                left: parameter("uint"),
+                right: Box::new(right),
+            });
+            let (rendered, ty, witness_effect) = observed.result.expect("comparison lowers");
+            assert_eq!(ty, Type::Boolean);
+            assert!(!witness_effect && !observed.query_effect);
+            let syn::Expr::Binary(binary) = rendered else {
+                panic!("ordered comparison must remain a binary expression");
+            };
+            let syn::Expr::MethodCall(method) = *binary.right else {
+                panic!("right value must be extracted before comparing");
+            };
+            assert_eq!(method.method, "value");
+            assert!(matches!(
+                *method.receiver,
+                syn::Expr::If(_) | syn::Expr::Try(_) | syn::Expr::Paren(_)
+            ));
+        }
+    }
+}
+
 #[derive(Default)]
 struct Declarations {
     ledger: Vec<LedgerField>,

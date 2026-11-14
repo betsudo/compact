@@ -69,7 +69,7 @@ export function registerPointChecks(compile) {
   }
 
   test('the P-256 point descriptor preserves the five-atom prefix', async () => {
-    const { build, cases } = await load(compile, 'upstream-tags');
+    const { build, module, cases } = await load(compile, 'upstream-tags');
     const descriptor = runtime.CompactTypeSecp256r1Point;
     expect(descriptor.alignment()).toEqual([
       ...[24, 8, 24, 8].map((length) => ({ tag: 'atom', value: { tag: 'bytes', length } })),
@@ -93,6 +93,12 @@ export function registerPointChecks(compile) {
     const ir = JSON.parse(readFileSync(join(build, 'contract/compact-rust-ir.json')));
     expect(ir.circuits.find(({ name }) => name === 'curves').parameters.map(({ ty }) => ty.kind))
       .toEqual(['secp256r1_base', 'secp256r1_scalar', 'secp256r1_point']);
+    // Original pinned upstream JavaScript assertion from upstream.ss.txt.
+    expect(module.circuitSignatures.curves.argumentTypes).toEqual([
+      { tag: 'Secp256r1Base' },
+      { tag: 'Secp256r1Scalar' },
+      { tag: 'Secp256r1Point' },
+    ]);
   });
 
   for (const [fixture, reason] of [

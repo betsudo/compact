@@ -366,7 +366,19 @@ The [P-256 point fixtures](../../../test-contracts/stdlib/secp256r1/point)
 retain the original equality and identity-hash assertions. Rust and
 TypeScript encode the same five atoms and reject off-curve finite inputs
 at their typed boundaries. The three point-family tags are checked in
-contract info and Rust IR. The upstream JavaScript circuit signature export remains open.
+contract info and Rust IR. A local metadata slice now emits the pinned
+`circuitSignatures` JavaScript export and declaration, including these three
+P-256 tags. It retains the original upstream metadata fixtures and assertions.
+An isolated local follow-up emits `declaredInterfaces` and accepts exported
+contract-typed arguments when the compiled contract matches the declaration.
+The generated `takesAdder` signature retains the `Adder` circuit interface;
+its called-interface table is empty because the fixture makes no external call.
+The original pinned `Adder` implementation lacks declared `peek`, so its
+declaration-mismatch refusal remains intact. The original `useAdder` call
+still receives the compiler's cross-contract refusal; a nonempty called
+interface table, secure call-time checking and real two-contract qualification
+remain open. These metadata checks are local macOS arm64; native Linux
+qualification remains required.
 The [P-256 accessor fixtures](../../../test-contracts/stdlib/secp256r1/accessors)
 run the intact point roundtrip and original direct, ledger and checked
 assertion cases. The proof checks cover guarded active and inactive
@@ -428,6 +440,24 @@ verification and test their distinct scalar, identity, subgroup and encoding
 rules. Preserve upstream vector exclusions with reasons and test malformed
 encodings at the decoder boundary. Use SHA-512 and canonical scalar
 conversion for Ed25519.
+
+The local 0.18.0 runtime now exports the pinned `signatureTypesEqual` and
+`checkConformance` helpers. The original 58 upstream conformance tests remain
+unchanged and cover all emitted curve tags, nested contract signatures,
+nominal names, exact unsigned bounds, proof availability, prototype-shaped
+circuit names and unreadable external descriptors. Nine local guard cases
+add strict proof flags, known-tag payload checks including sparse enums,
+cycle and depth refusal, bounded traversal of shared acyclic types and nested
+contract argument lists and names, inherited-name handling, and constant-time
+equal vector shapes. All 296
+runtime tests pass on macOS arm64. The fresh 0.18.0 generated Counter
+descriptor conforms to a matching declaration and refuses a mismatched result
+type. This is a standalone descriptor check; generated call sites
+do not invoke it yet, and the held EntryPoint and funded two-contract lanes
+remain separate qualifications. Native Linux integration is still required.
+The per-entry validation budget cannot cap memory already consumed to construct
+or enumerate an arbitrary JavaScript module object; module loading and resource
+limits remain a separate boundary.
 
 Start cross-contract calls with the pinned EntryPoint caller and callee
 fixtures and one provable fixed callee. Bind the address, compile-time
@@ -542,6 +572,66 @@ the compiler suite in both ZKIR modes, and fresh generated ordinary and
 recorded Rust consumers. The six raw v3 ZKIR files matched across targets.
 Proof, transaction and Linux qualification for this stateful fixture remain
 open.
+
+The Runtime 0.18.0 Set, Map and List recapture now has a fresh generated
+Rust consumer. `check_generated_collection_parity.py` compiles each frozen
+source to both targets with checked recording enabled, then executes the
+generated Rust circuits against the retained independent TypeScript state
+bytes. On local macOS arm64 with Rust 1.99, all three initial states and
+twelve transitions matched. The newly generated TypeScript modules were
+byte-identical to the paired Runtime 0.18.0 recapture outputs. The consumer
+does not prove these circuits or exercise a funded transaction; native Linux
+qualification remains open. A follow-up runs all twelve mutations through
+the generated recorded API and independently replays each public VM trace.
+Executed and replayed states, effects and gas costs match, and the recorded states
+match the same retained TypeScript oracle bytes. Broader proof and funded
+transaction qualification remain open.
+
+The Runtime 0.18.0 generated Set `add(true)` circuit has a fresh proof
+qualification gate. The generated TypeScript preimage passes ZKIR wasm's
+honest check, while an altered insert count is refused. The raw k=6 ZKIR
+produces a new prover, verifier and proof; a separate process verifies the
+proof and rejects the same-k `remove` verifier, changed binding and corrupt
+proof. This is local macOS arm64 evidence, and funded default-strict
+application and native Linux qualification remain open.
+
+The follow-up generated Set funded gate checks the TypeScript and generated
+Rust proof preimage fields, recomputes the communications commitment from
+Rust call inputs, outputs and retained TypeScript randomness, builds a separate
+transaction proof, and applies
+one recorded `add(true)` call with a positive-fee Dust spend under Ledger 9
+default strictness. Exact replay returns `IntentAlreadyExists` at ledger
+application and leaves serialized ledger bytes unchanged; default-strict
+rechecking by itself accepts the already applied transaction. Deployment is
+represented by direct insertion into the local test ledger. The broader
+two-contract and native Linux gates remain open.
+
+The generated Map `put(true, 42)` follow-up has a local k=7 proof from fresh
+both-target artifacts. The retained TypeScript preimage passes ZKIR wasm,
+while changed insert count and stored value refuse. A separate verifier
+process accepts the honest proof and rejects same-k `has`, changed binding
+and corrupt proof. Funded Map and native Linux qualification remain open.
+
+The generated Map funded gate uses the recorded `put(true, 42)` Rust API and
+the qualified k=7 proof artifacts. TypeScript and Rust preimage fields match,
+the communications commitment is recomputed from the Rust call and retained
+TypeScript randomness, and one positive-fee Dust spend funds a default-strict
+application. Exact replay refuses at ledger application with unchanged bytes;
+default-strict rechecking alone succeeds. Deployment is inserted into the
+local test ledger. Native Linux and the real two-contract transaction remain
+open.
+
+The collection gate follow-up requires a clean-head original compiler recipe
+receipt for each new parity run. Its Nix realization binds the compiler and
+Scheme binaries to the exact source head/tree used by the proof and funded
+gates. Funded gates
+retain the exact historical proof receipt pins while admitting new receipts
+through generated receipt, source, artifact and proof bindings. They normalize
+only the verified runtime checkout path in generated Cargo manifests and
+rebuild the pinned standalone verifier for fresh proofs. This
+protocol has syntax and targeted binding checks so far; a full positive
+source-bound proof and funded rerun plus native Linux qualification remain
+required before treating the follow-up as accepted.
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0

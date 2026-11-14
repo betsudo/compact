@@ -1,7 +1,7 @@
 # Select versions and an execution target
 
-The local Ledger 9 migration pairs compiler **0.31.211**, Compact language
-**0.23.105**, TypeScript runtime **0.17.0** and
+The local Ledger 9 migration pairs compiler **0.31.213**, Compact language
+**0.23.105**, TypeScript runtime **0.18.0** and
 `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Rust backend, runtime and
 macros source packages are **0.2.0**. The generated crates require Rust
 **1.99**, with **1.99.0** pinned for the local checks. The native graph
