@@ -365,6 +365,119 @@ test('an unavailable structuredClone refuses implementation metadata', () => {
   }
 });
 
+test('a resultType getter cannot mutate an argument after it passed conformance', () => {
+  const alias: SignatureType = { tag: 'Alias', name: 'A', type: field };
+  const shared = { tag: 'Alias', name: 'A', type: field as SignatureType };
+  let reads = 0;
+  const implemented = malformed({
+    pure: false,
+    provable: true,
+    argumentTypes: [shared],
+    get resultType() {
+      reads += 1;
+      shared.type = malformed({ tag: 'Summer' });
+      return field;
+    },
+  });
+  expect(
+    checkConformance({ use: { argumentTypes: [alias], resultType: field } }, {
+      use: implemented,
+    } as unknown as CircuitSignatures),
+  ).toEqual({ outcome: 'Unreadable', circuitId: 'use', unreadableTag: '(malformed)' });
+  expect(reads).toEqual(0);
+  expect(shared.type).toEqual(field);
+});
+
+test('a later circuit getter cannot mutate an earlier checked circuit', () => {
+  const alias: SignatureType = { tag: 'Alias', name: 'A', type: field };
+  const shared = { tag: 'Alias', name: 'A', type: field as SignatureType };
+  let reads = 0;
+  const implementationMap = {
+    first: { pure: false, provable: true, argumentTypes: [shared], resultType: field },
+    get second() {
+      reads += 1;
+      shared.type = malformed({ tag: 'Summer' });
+      return { pure: false, provable: true, argumentTypes: [], resultType: field };
+    },
+  } as unknown as CircuitSignatures;
+  const declared: InterfaceDescriptor = {
+    first: { argumentTypes: [alias], resultType: field },
+    second: { argumentTypes: [], resultType: field },
+  };
+  expect(checkConformance(declared, implementationMap)).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'second',
+    unreadableTag: '(malformed)',
+  });
+  expect(reads).toEqual(0);
+});
+
+test('an earlier provability failure precedes a later missing circuit', () => {
+  const declared: InterfaceDescriptor = {
+    first: { argumentTypes: [], resultType: field },
+    second: { argumentTypes: [], resultType: field },
+  };
+  const implemented: CircuitSignatures = {
+    first: { pure: true, provable: false, argumentTypes: [], resultType: field },
+  };
+  expect(checkConformance(declared, implemented)).toEqual({ outcome: 'Violation', circuitId: 'first', check: 'Provability' });
+});
+
+test('an earlier unreadable argument precedes a later accessor circuit', () => {
+  const declared: InterfaceDescriptor = {
+    first: { argumentTypes: [field], resultType: field },
+    second: { argumentTypes: [], resultType: field },
+  };
+  const implemented = {
+    first: { pure: false, provable: true, argumentTypes: [malformed({ tag: 'Summer' })], resultType: field },
+    get second() {
+      throw new Error('must not invoke getter');
+    },
+  } as unknown as CircuitSignatures;
+  expect(checkConformance(declared, implemented)).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'first',
+    unreadableTag: 'Summer',
+    argumentIndex: 0,
+  });
+});
+
+test('an irrelevant huge buffer is refused before structuredClone can copy it', () => {
+  const implemented = {
+    use: {
+      pure: false,
+      provable: true,
+      argumentTypes: [field],
+      resultType: field,
+      extra: new ArrayBuffer(64 * 1024 * 1024),
+    },
+  } as unknown as CircuitSignatures;
+  const clone = globalThis.structuredClone;
+  let calls = 0;
+  vi.stubGlobal('structuredClone', ((value: unknown) => {
+    calls += 1;
+    return clone(value);
+  }) as typeof structuredClone);
+  try {
+    expect(checkConformance(declaration, implemented)).toMatchObject({ outcome: 'Unreadable', circuitId: 'use' });
+    // Diagnostic snapshots of the small required types are allowed; the full descriptor is never cloned.
+    expect(calls).toBeLessThan(3);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+test('a huge required string is refused by the snapshot byte budget', () => {
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [{ tag: 'Opaque', tsType: 'Payload' }], resultType: field } };
+  const implemented = implementation({ tag: 'Opaque', tsType: 'x'.repeat(9 * 1024 * 1024) });
+  expect(checkConformance(declared, implemented)).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Opaque',
+    argumentIndex: 0,
+  });
+});
+
 test('a shared cyclic Tuple still reports unreadability before using a memoized sibling', () => {
   const expected: SignatureType = { tag: 'Vector', length: 2, type: { tag: 'Vector', length: 2, type: field } };
   const cyclic = malformed({ tag: 'Tuple', types: [] as SignatureType[] });

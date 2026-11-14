@@ -184,6 +184,7 @@ const validationBudget = (declared: SignatureType, expandVectors = false): Valid
 // checks own descriptors first so ordinary accessors cannot run during cloning. Physical DAG
 // nodes are visited once, while array lengths and own properties consume the allowance.
 const MAX_SNAPSHOT_ENTRIES = 100_000;
+const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024;
 const MAX_SNAPSHOT_CONTAINER_DEPTH = 1_024;
 const snapshotSignature = (
   declared: SignatureType,
@@ -194,13 +195,31 @@ const snapshotSignature = (
     MAX_SIGNATURE_NODES + boundedMultiply(3, declarationTypeCost(declared, new Set<object>(), 0, true)),
   );
   const budget: ValidationBudget = { remaining: allowance };
+  const bytes: ValidationBudget = { remaining: MAX_SNAPSHOT_BYTES };
   const active = new Set<object>();
   const seen = new Set<object>();
   const inspect = (value: unknown, typeDepth: number, containerDepth: number, parentTag: string): string | undefined => {
+    if (typeof value === 'bigint') return parentTag;
+    if (typeof value === 'string') {
+      bytes.remaining -= value.length * 2;
+      return bytes.remaining < 0 ? parentTag : undefined;
+    }
     if (typeof value !== 'object' || value === null) return undefined;
     let tag = parentTag;
     let entered = false;
     try {
+      if (value instanceof ArrayBuffer || ArrayBuffer.isView(value)) {
+        bytes.remaining -= value.byteLength;
+        return bytes.remaining < 0 ? tag : undefined;
+      }
+      if (
+        value instanceof Map ||
+        value instanceof Set ||
+        value instanceof Date ||
+        value instanceof RegExp ||
+        (typeof Blob !== 'undefined' && value instanceof Blob)
+      )
+        return tag;
       const ownTag = Object.getOwnPropertyDescriptor(value, 'tag');
       const hasOwnTypeTag =
         ownTag !== undefined && Object.prototype.hasOwnProperty.call(ownTag, 'value') && typeof ownTag.value === 'string';
@@ -223,6 +242,10 @@ const snapshotSignature = (
       }
       for (const key of keys) {
         if (budget.remaining-- <= 0) return tag;
+        if (typeof key === 'string') {
+          bytes.remaining -= key.length * 2;
+          if (bytes.remaining < 0) return tag;
+        }
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
         if (descriptor === undefined || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return tag;
         const unreadable = inspect(descriptor.value, nextTypeDepth, containerDepth + 1, tag);
@@ -822,14 +845,64 @@ const inspectAgainstDeclaration = (declared: SignatureType, implemented: Signatu
  * @param implementation The resolved module's `circuitSignatures`.
  */
 export function checkConformance(declaration: InterfaceDescriptor, implementation: CircuitSignatures): ConformanceResult {
-  for (const circuitId of Object.keys(declaration)) {
+  const declaredCircuitIds = Object.keys(declaration);
+  if (declaredCircuitIds.length === 0) return { outcome: 'Conformant' };
+  // Detach every circuit before comparing the first one: a later resultType getter must not be
+  // able to mutate an earlier argument after that argument has already passed conformance.
+  const descriptorDeclaration: SignatureType = { tag: 'Contract', name: '(implementation)', circuits: declaration };
+  const snapshot = snapshotSignature(descriptorDeclaration, implementation as unknown as SignatureType);
+  if (snapshot.unreadableTag !== undefined || snapshot.value === undefined) {
+    // The whole-descriptor snapshot is the authority. Locate the unreadable argument/result for
+    // diagnostics only; this path never compares or accepts the live implementation.
+    try {
+      for (const circuitId of declaredCircuitIds) {
+        const circuitProperty = Object.getOwnPropertyDescriptor(implementation, circuitId);
+        if (circuitProperty === undefined) return { outcome: 'Violation', circuitId, check: 'Existence' };
+        if (!Object.prototype.hasOwnProperty.call(circuitProperty, 'value'))
+          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        const circuit = asRecord(circuitProperty.value);
+        if (circuit === undefined || !ownData(circuit, 'argumentTypes') || !ownData(circuit, 'resultType'))
+          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        const argumentsValue = circuit.argumentTypes;
+        if (!Array.isArray(argumentsValue)) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (!ownData(circuit, 'pure') || !ownData(circuit, 'provable'))
+          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (circuit.provable !== true || circuit.pure !== false) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        const expected = declaration[circuitId];
+        if (expected.argumentTypes.length !== argumentsValue.length) return { outcome: 'Violation', circuitId, check: 'Arity' };
+        for (let i = 0; i < Math.min(expected.argumentTypes.length, argumentsValue.length); i += 1) {
+          if (!ownData(argumentsValue, i))
+            return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED, argumentIndex: i };
+          const located = snapshotSignature(expected.argumentTypes[i], argumentsValue[i] as SignatureType);
+          if (located.unreadableTag !== undefined || located.value === undefined)
+            return { outcome: 'Unreadable', circuitId, unreadableTag: located.unreadableTag ?? MALFORMED, argumentIndex: i };
+          const checked = inspectAgainstDeclaration(expected.argumentTypes[i], located.value);
+          if (checked.unreadableTag !== undefined)
+            return { outcome: 'Unreadable', circuitId, unreadableTag: checked.unreadableTag, argumentIndex: i };
+          if (!checked.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
+        }
+        const result = snapshotSignature(expected.resultType, circuit.resultType as SignatureType);
+        if (result.unreadableTag !== undefined || result.value === undefined)
+          return { outcome: 'Unreadable', circuitId, unreadableTag: result.unreadableTag ?? MALFORMED };
+        const checkedResult = inspectAgainstDeclaration(expected.resultType, result.value);
+        if (checkedResult.unreadableTag !== undefined)
+          return { outcome: 'Unreadable', circuitId, unreadableTag: checkedResult.unreadableTag };
+        if (!checkedResult.equal) return { outcome: 'Violation', circuitId, check: 'ResultType' };
+      }
+    } catch {
+      // Hostile Proxy traps can also throw while locating a diagnostic.
+    }
+    return { outcome: 'Unreadable', circuitId: declaredCircuitIds[0], unreadableTag: snapshot.unreadableTag ?? MALFORMED };
+  }
+  const detachedImplementation = snapshot.value as unknown as CircuitSignatures;
+  for (const circuitId of declaredCircuitIds) {
     const declared = declaration[circuitId];
     // Own-property, not `in` or a bare index: `constructor` and `toString` are legal circuit names,
     // and `Object.prototype`'s members would otherwise read as implementations.
-    if (!Object.prototype.hasOwnProperty.call(implementation, circuitId)) {
+    if (!Object.prototype.hasOwnProperty.call(detachedImplementation, circuitId)) {
       return { outcome: 'Violation', circuitId, check: 'Existence' };
     }
-    const implemented = implementation[circuitId];
+    const implemented = detachedImplementation[circuitId];
     // Also a module we didn't compile. Its argument list must be readable before arity is checked.
     if (!Array.isArray(asRecord(implemented)?.argumentTypes)) {
       return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
