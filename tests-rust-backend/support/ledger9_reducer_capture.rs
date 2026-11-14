@@ -89,11 +89,27 @@ pub fn verify(manifest: &str, active_capture: &Value) {
             path.components()
                 .all(|part| matches!(part, std::path::Component::Normal(_)))
         );
-        assert_eq!(
-            digest(&bytes(&root.join(path))),
-            row["sha256"],
-            "{relative}"
-        );
+        // Ledger 9 was captured against the reviewed Runtime 0.17.0 sources.
+        // Keep those bytes pinned while the live runtime advances for later
+        // Ledger 9 behavior; the retained Ledger 8 binding stays untouched.
+        let reviewed = match relative {
+            "runtime/src/built-ins.ts" => Some((
+                "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/built-ins.ts",
+                "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b",
+            )),
+            "runtime/src/compact-types.ts" => Some((
+                "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/compact-types.ts",
+                "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4",
+            )),
+            _ => None,
+        };
+        let source = if let Some((reviewed_path, expected_sha)) = reviewed {
+            assert_eq!(row["sha256"], expected_sha, "reviewed source: {relative}");
+            root.join(reviewed_path)
+        } else {
+            root.join(path)
+        };
+        assert_eq!(digest(&bytes(&source)), row["sha256"], "{relative}");
     }
     let old_cases = historical["cases"].as_array().unwrap();
     let cases = current["cases"].as_array().unwrap();

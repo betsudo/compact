@@ -24,17 +24,17 @@ pub mod pure_circuits {
     pub fn hash_field(
         value: runtime::Field,
     ) -> Result<runtime::FixedBytes<32>, runtime::CompactError> {
-        Ok(runtime::keccak256(value))
+        runtime::keccak256_aligned(value)
     }
     pub fn hash_bytes(
         value: runtime::FixedBytes<4>,
     ) -> Result<runtime::FixedBytes<32>, runtime::CompactError> {
-        Ok(runtime::keccak256(value))
+        runtime::keccak256_aligned(value)
     }
     pub fn hash_pair(
         value: runtime::FixedVector<runtime::Field, 2>,
     ) -> Result<runtime::FixedBytes<32>, runtime::CompactError> {
-        Ok(runtime::keccak256(value.clone()))
+        runtime::keccak256_aligned(value.clone())
     }
 }
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
@@ -89,7 +89,7 @@ pub mod ledger_contract {
         total_cost += __compact_witness_meter_1.gas_cost();
         context.private_state = __compact_next_private_1;
         private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_1));
-        let result = runtime::keccak256(__compact_witness_1);
+        let result = runtime::keccak256_aligned(__compact_witness_1)?;
         Ok(runtime::context::CircuitResult {
             context,
             result,
@@ -121,7 +121,7 @@ pub mod ledger_contract {
                     )
                 })?;
             let __compact_effect_2: runtime::FixedBytes<32> =
-                runtime::keccak256(__compact_effect_1);
+                runtime::keccak256_aligned(__compact_effect_1)?;
             Ok(frame.finish(__compact_effect_2))
         }
         /// Typed handle for circuits with a complete recorded trace.

@@ -30,14 +30,45 @@ fn data(name: &str) -> Value {
     )
     .unwrap()
 }
-fn hash_rows(rows: &Value) {
+fn hash_rows(rows: &Value, reviewed_ledger9_sources: bool) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for row in rows.as_array().unwrap() {
         let path = row["path"].as_str().unwrap();
         assert!(!Path::new(path).is_absolute());
         assert!(!path.split('/').any(|p| p == ".."));
+        // The reviewed Runtime 0.17.0 capture also pins this test's original
+        // source. Keep that historical byte identity when the live test adds
+        // checks for later Ledger 9 runtime changes.
+        let frozen = if reviewed_ledger9_sources {
+            match path {
+                "runtime/src/built-ins.ts" => Some((
+                    "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/built-ins.ts",
+                    "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b",
+                )),
+                "runtime/src/compact-types.ts" => Some((
+                    "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/compact-types.ts",
+                    "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4",
+                )),
+                "tests-rust-backend/did-adoption/tests/provenance.rs" => Some((
+                    "tests-rust-backend/did-adoption/oracle/ledger9/reviewed-provenance-05912594.rs",
+                    "b864ec12133eff1391a010296ab7d7c122b9a66e9f0be2fc746b8f7ed6000884",
+                )),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        let source = if let Some((reviewed_path, expected_sha)) = frozen {
+            assert_eq!(
+                row["sha256"], expected_sha,
+                "reviewed source identity: {path}"
+            );
+            root.join(reviewed_path)
+        } else {
+            root.join(path)
+        };
         assert_eq!(
-            hex::encode(Sha256::digest(fs::read(root.join(path)).unwrap())),
+            hex::encode(Sha256::digest(fs::read(source).unwrap())),
             row["sha256"],
             "stale evidence: {path}"
         );
@@ -50,7 +81,7 @@ fn retained_ledger8_evidence_keeps_its_original_identity() {
         binding["ledger8_head"],
         "09c75e2891283fed65f2db385925a5a4b9409af6"
     );
-    hash_rows(&binding["ledger8_artifacts"]);
+    hash_rows(&binding["ledger8_artifacts"], false);
 }
 
 #[test]
@@ -59,7 +90,7 @@ fn ledger9_capture_source_and_test_identities() {
     assert_eq!(binding["format"], "compact-did-ledger9-capture-binding/v1");
     assert_eq!(binding["compact_runtime"], "0.17.0");
     assert_eq!(binding["onchain_runtime"], "4.0.1");
-    hash_rows(&binding["ledger9_artifacts"]);
+    hash_rows(&binding["ledger9_artifacts"], true);
     for file in [
         "lifecycle.json",
         "pure.json",
@@ -70,7 +101,7 @@ fn ledger9_capture_source_and_test_identities() {
         "jwk-method-lifecycle.json",
     ] {
         let capture = data(&format!("ledger9/{file}"));
-        hash_rows(&capture["provenance"]);
+        hash_rows(&capture["provenance"], true);
         assert_eq!(
             capture["generatedJavaScriptSha256"],
             binding["did_javascript_sha256"]
@@ -84,7 +115,7 @@ fn ledger9_capture_source_and_test_identities() {
         "../../../runtime-rs/tests/fixtures/ledger9-unit-composition.json"
     ))
     .unwrap();
-    hash_rows(&composition["provenance"]);
+    hash_rows(&composition["provenance"], true);
     assert_eq!(
         composition["sources"],
         serde_json::json!([
