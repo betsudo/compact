@@ -1,0 +1,12 @@
+{
+  "files": {
+    "tests-e2e/src/fuzzer/fuzzers.ts": "764b080f10288c6f29a6f5335652a9e29a35f580a3dd0ce8e8db176d9876a10c",
+    "tests-e2e/src/fuzzer/grammar/compact.ts": "cb9fca95702203a5d1b8e98ca19cc33ad7504b33bcf56f5594ac3e44e726f079",
+    "tests-e2e/src/fuzzer/grammar/index.ts": "e087a2a0b5c8c974c069212269473c444f1e0fc41903abf9b71962af35b6ff52",
+    "tests-e2e/src/fuzzer/grammar/types.ts": "c91051b277316cc8c046d80312d7032fc279096b7a1534c6045a17a62e06d3fd",
+    "tests-e2e/src/fuzzer/utils/fuzzer.ts": "552fde8196ed6783d03339c4241b5b48fbb6a15daf4a445f782189ca28769c59",
+    "tests-e2e/src/fuzzer/utils/generators.ts": "ef9ea0c51e49457a3dc30d4724027ce5c3224b57098eed95a92148c7ee48c2c9",
+    "tests-e2e/src/tests/fuzzer.unit.test.ts": "f6c6ebb02f34af9833e70516b20762966e38f6c8523be87936ed228c535c095d"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}
