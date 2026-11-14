@@ -66,6 +66,8 @@ class CurrentSourceRegistryTests(unittest.TestCase):
                 '02de9b7cea15880cf6ef216fc3963bdd1b9763043b5e27320565808fe367b843',
             'examples/rust_backend/transient_receive_send_oracle.compact':
                 '50628a2aff70d8157aa3675febb79e943f9a4cae6804103c89587b4e355c516b',
+            'examples/rust_backend/zerocash_oracle.compact':
+                '89f90014c7519de12208a3081e683b1829b005370ed21988a33382e55ded2e8d',
             'test-center/test-contracts/coracle.compact':
                 '6af56bd824b7c9f97753b56a79e2dde501051f3c5aa074832079e0e403ae8630',
             'test-center/test-contracts/micro-dao.compact':

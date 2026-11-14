@@ -3733,7 +3733,7 @@
       "library": "tests-rust-backend/zerocash-oracle/lib.rs",
       "qualification": "Actual Cargo library is an OUT_DIR include wrapper, not a flat golden. Its build script renders the complete retained schema20 IR without transforming the registered contract.rs artifact; fresh frontend/output and actual consumer gates establish source acceptance and behavior, not registration.",
       "retained_ir": "tools/compact-rust-backend/tests/zerocash-oracle-schema20-ir.json",
-      "retained_ir_sha256": "decc69047bc9dcca19592a2d5b848dfbe7be426ac8e5749444ad24b25e14c30d",
+      "retained_ir_sha256": "89f90014c7519de12208a3081e683b1829b005370ed21988a33382e55ded2e8d",
       "build_script": "tests-rust-backend/zerocash-oracle/build.rs",
       "generated_artifact": "contract.rs",
       "consumer": "tests-rust-backend/zerocash-oracle/lib.rs",
