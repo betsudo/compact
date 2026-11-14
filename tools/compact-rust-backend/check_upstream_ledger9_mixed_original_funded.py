@@ -28,7 +28,9 @@ import subprocess
 import tomllib
 
 from collection_gate_binding import compiler_recipe, generated_manifest
-from check_upstream_ledger9_bytes_map_funded import RUNNER_SOURCE_SHA256, require_receipt_pin
+from check_upstream_ledger9_bytes_map_funded import (
+    RUNNER_SOURCE_SHA256, require_receipt_pin, source_bound_to_receipt,
+)
 from check_upstream_ledger9_mixed_original_preflight import (
     CASES as ORIGINAL_CASES, UPSTREAM, original_cases,
 )
@@ -62,7 +64,6 @@ AGGREGATE_ORIGINS_CANONICAL_SHA = {
     'r1': 'ae3314a75fa953b1abc3da99ecc2288d6026cbc12c6260c6875c84391c816401',
 }
 AGGREGATE_TEMPLATE_SHA = '0fc67ef4f13a5b836634aa6f0f7d7aad53d75281824155b839ddc39472948f87'
-PREFLIGHT_GATE_SHA = 'a368160b3fe482b39d885599367fe792a1139991d776f61ef1112395d19787a6'
 PREFLIGHT_CAPTURE_SHA = 'f6ad89f624ee0ddb307e226ff4c8efd52d53def41083701366322ca8e5f22870'
 TEMPLATE = ROOT / 'runtime-rs/tests/fixtures/ledger9-mixed-original-funded.rs.in'
 CASES = {'k1': (17, 'Secp256k1Scalar', 'two'),
@@ -143,7 +144,8 @@ def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
             prior.get('compiler_receipt_sha256') == compiler_sha and
             prior.get('upstream') == UPSTREAM,
             'mixed aggregate receipts must bind the current head, tree, and each other')
-    require(prior.get('gate_source_sha256') == PREFLIGHT_GATE_SHA == sha(
+    require(source_bound_to_receipt(
+                prior.get('gate_source_sha256'),
                 ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py') and
             prior.get('capture_source_sha256') == PREFLIGHT_CAPTURE_SHA == sha(
                 ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs') and

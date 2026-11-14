@@ -37,7 +37,6 @@ SOURCE = ROOT / 'runtime-rs/tests/fixtures/ledger9-bytes-map-transformation-fund
 ORIGINAL_SOURCE = ROOT / 'test-contracts/primitives/bytes/map/transformation/bytes_map_transformation.compact'
 PROOF_HEAD = 'e75cca456604659d89efd98fcadeea45322252f2'
 AGGREGATE_FUNDED_SOURCE_SHA256 = 'd91b4689322edcfaecf9c106e1e8120c64d634d4d95ca80deb0db2e763dfb4fa'
-AGGREGATE_PROOF_GATE_SOURCE_SHA256 = '7599b01ea234e95aa347fac6a7274248e7a6def79fc591ca453ab90934187b4d'
 AGGREGATE_CAPTURE_SOURCE_SHA256 = '60159fd9e4af1ed8120b9b239f557c65ebda1f56ad3d08459eab4d0227faefaf'
 AGGREGATE_PREFLIGHT_SOURCE_SHA256 = '74f86f3de7a1646133b4a7e4c0e60ed19adaf1eb41a51b9d1f092ef376dcf787'
 AGGREGATE_ADAPTER_SHA256 = '9be6e46dd3795c951e8ab0155db3f410220e75e842110ff80863970aad633acf'
@@ -202,6 +201,13 @@ def require_receipt_pin(path: Path, expected: str, label: str) -> None:
             f'aggregate {label} receipt differs from independently supplied SHA-256 pin')
 
 
+def source_bound_to_receipt(receipt_digest: str, source: Path,
+                            historical_pin: str | None = None) -> bool:
+    """An aggregate receipt binds its current producer; old evidence keeps its fixed pin."""
+    actual = sha(source)
+    return receipt_digest == actual and (historical_pin is None or actual == historical_pin)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('proof-gate', 'compiler-receipt', 'runner-source', 'base-consumer', 'material',
@@ -251,10 +257,8 @@ def main() -> None:
     if args.aggregate_head:
         require_receipt_pin(receipt, args.aggregate_proof_receipt_sha256, 'proof')
     proof = json.loads(receipt.read_text())
-    proof_gate_source = sha(ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_proof.py')
     capture_source = sha(ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-bytes-map-transformation-proof.mjs')
-    expected_proof_gate_source = (AGGREGATE_PROOF_GATE_SOURCE_SHA256 if args.aggregate_head else
-                                  PROOF_GATE_SOURCE_SHA256)
+    proof_gate_historical_pin = None if args.aggregate_head else PROOF_GATE_SOURCE_SHA256
     expected_capture_source = (AGGREGATE_CAPTURE_SOURCE_SHA256 if args.aggregate_head else
                                CAPTURE_SOURCE_SHA256)
     require(proof['head'] == proof_head and
@@ -263,7 +267,9 @@ def main() -> None:
             proof['base_qualification_receipt_sha256'] == BASE_QUALIFICATION_RECEIPT_SHA256 and
             proof['source_sha256'] == ORIGINAL_SOURCE_SHA256 and
             proof['artifacts']['transformation/zkir'] == ORIGINAL_ZKIR_SHA256 and
-            proof['gate_source_sha256'] == expected_proof_gate_source == proof_gate_source and
+            source_bound_to_receipt(proof['gate_source_sha256'],
+                                    ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map_proof.py',
+                                    proof_gate_historical_pin) and
             proof['capture_source_sha256'] == expected_capture_source == capture_source and
             all(proof['artifacts'].get(key) == digest
                 for key, digest in GENERATED_SHA256.items()) and
