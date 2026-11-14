@@ -240,28 +240,30 @@ test('large Vector/Tuple pairs remain conformant inside aliases, structs and con
   }
 });
 
-test('the first mismatching tuple element stops work on later untrusted elements', () => {
+test('a mismatching tuple cannot force unbounded work over later untrusted elements', () => {
   const fields = Array.from({ length: 5_000 }, (_, i) => ({ name: `f${i}`, type: field }));
   let inspected = 0;
   const elements = Array.from({ length: 2_000 }, () =>
-    malformed({
-      tag: 'Struct',
-      name: 'Unrelated',
-      get elements() {
-        inspected += 1;
-        return fields;
-      },
-    }),
+    malformed(
+      new Proxy(
+        { tag: 'Struct', name: 'Unrelated', elements: fields },
+        {
+          get(target, key, receiver) {
+            if (key === 'elements') inspected += 1;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      ),
+    ),
   );
   const expected: SignatureType = { tag: 'Vector', length: elements.length, type: field };
   const received: SignatureType = { tag: 'Tuple', types: elements };
-  expect(checkConformance({ use: { argumentTypes: [expected], resultType: field } }, implementation(received))).toEqual({
-    outcome: 'Violation',
+  expect(checkConformance({ use: { argumentTypes: [expected], resultType: field } }, implementation(received))).toMatchObject({
+    outcome: 'Unreadable',
     circuitId: 'use',
-    check: 'ArgumentType',
     argumentIndex: 0,
   });
-  expect(inspected).toBeLessThan(10);
+  expect(inspected).toBeLessThan(30);
 });
 
 test('a matching expanded struct field cannot lend its allowance to another field', () => {
@@ -292,6 +294,98 @@ test('a matching expanded struct field cannot lend its allowance to another fiel
   expect(
     checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
   ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
+});
+
+test('an unreadable later tuple member takes precedence over an earlier type mismatch', () => {
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [{ tag: 'Tuple', types: [field, field] }], resultType: field } };
+  const implemented = malformed({ tag: 'Tuple', types: [{ tag: 'Boolean' }, { tag: 'Summer' }] });
+  expect(checkConformance(declared, implementation(implemented))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Summer',
+    argumentIndex: 0,
+  });
+});
+
+test('a later Struct field-name mismatch does not rewalk a valid large expanded field', () => {
+  const length = 12_000;
+  const vector: SignatureType = { tag: 'Vector', length, type: field };
+  const tuple: SignatureType = { tag: 'Tuple', types: Array<SignatureType>(length).fill(field) };
+  const declaredType: SignatureType = {
+    tag: 'Struct',
+    name: 'Pair',
+    elements: [
+      { name: 'big', type: vector },
+      { name: 'other', type: field },
+    ],
+  };
+  const implementedType: SignatureType = {
+    tag: 'Struct',
+    name: 'Pair',
+    elements: [
+      { name: 'big', type: tuple },
+      { name: 'wrong', type: field },
+    ],
+  };
+  expect(
+    checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+
+  let nestedDeclared: SignatureType = field;
+  let nestedImplemented: SignatureType = field;
+  for (let i = 0; i < 14; i += 1) {
+    nestedDeclared = { tag: 'Vector', length: 2, type: nestedDeclared };
+    nestedImplemented = { tag: 'Tuple', types: [nestedImplemented, nestedImplemented] };
+  }
+  expect(
+    checkConformance(
+      {
+        use: {
+          argumentTypes: [
+            {
+              tag: 'Struct',
+              name: 'Pair',
+              elements: [
+                { name: 'big', type: nestedDeclared },
+                { name: 'other', type: field },
+              ],
+            },
+          ],
+          resultType: field,
+        },
+      },
+      implementation({
+        tag: 'Struct',
+        name: 'Pair',
+        elements: [
+          { name: 'big', type: nestedImplemented },
+          { name: 'wrong', type: field },
+        ],
+      }),
+    ),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+});
+
+test('getter-backed signatures are unreadable and cannot hide mutation behind memoization', () => {
+  const alias: SignatureType = { tag: 'Alias', name: 'A', type: field };
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [{ tag: 'Tuple', types: [alias, alias] }], resultType: field } };
+  let reads = 0;
+  const mutable = malformed({
+    tag: 'Alias',
+    get name() {
+      reads += 1;
+      return reads <= 2 ? 'A' : 'B';
+    },
+    type: field,
+  });
+  const implemented = malformed({ tag: 'Tuple', types: [mutable, mutable] });
+  expect(checkConformance(declared, implementation(implemented))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Alias',
+    argumentIndex: 0,
+  });
+  expect(reads).toEqual(0);
 });
 
 test('nested contract arguments stop at the validation budget', () => {

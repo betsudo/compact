@@ -182,6 +182,38 @@ const validationBudget = (declared: SignatureType, expandVectors = false): Valid
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
 
+// Generated signature objects use own data properties. Accessors can change values between a
+// comparison and a memoized reuse, so they are not readable implementation metadata.
+const ownData = (value: object, key: PropertyKey): boolean => {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key);
+  return descriptor !== undefined && Object.prototype.hasOwnProperty.call(descriptor, 'value');
+};
+
+const REQUIRED_TYPE_FIELDS: { readonly [K in SignatureType['tag']]: readonly string[] } = {
+  Boolean: [],
+  Field: [],
+  JubjubScalar: [],
+  JubjubPoint: [],
+  Secp256k1Base: [],
+  Secp256k1Scalar: [],
+  Secp256k1Point: [],
+  Secp256r1Base: [],
+  Secp256r1Scalar: [],
+  Secp256r1Point: [],
+  Curve25519Base: [],
+  Curve25519Scalar: [],
+  Curve25519Point: [],
+  Uint: ['maxval'],
+  Bytes: ['length'],
+  Opaque: ['tsType'],
+  Vector: ['length', 'type'],
+  Tuple: ['types'],
+  Enum: ['name', 'elements'],
+  Struct: ['name', 'elements'],
+  Alias: ['name', 'type'],
+  Contract: ['name', 'circuits'],
+};
+
 /** A `Vector`'s element count as encoded: anything else makes the type unreadable, not unequal. */
 const isEncodedLength = (value: unknown): boolean => typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 
@@ -472,22 +504,48 @@ type TypeCheckState = {
   readonly active: Set<object>;
   readonly memo: Map<object, Map<object, Map<number, TypeCheck>>>;
   readonly budget: ValidationBudget;
+  noCache: boolean;
 };
 
 // Compare within the shape declared by the caller. A matching expanded Vector is visited element
-// by element; a mismatch falls back to the fixed local validation allowance and stops at once.
+// by element; an unrelated shape falls back to the fixed local validation allowance. Within a
+// matching shape, keep scanning after a difference so a later unreadable tag takes precedence.
 // The total allowance is derived from the trusted declaration's logical shape, while memoization
 // prevents a shared implementation DAG from multiplying the amount of work.
 const inspectTypePair = (declared: SignatureType, implemented: SignatureType, state: TypeCheckState, depth = 0): TypeCheck => {
   const actual = asRecord(implemented);
-  if (actual === undefined || typeof actual.tag !== 'string') return { unreadableTag: MALFORMED, equal: false };
+  if (actual === undefined || !ownData(actual, 'tag') || typeof actual.tag !== 'string')
+    return { unreadableTag: MALFORMED, equal: false };
   const tag = actual.tag;
   if (!Object.prototype.hasOwnProperty.call(KNOWN_SIGNATURE_TAGS, tag)) return { unreadableTag: tag, equal: false };
+  if (REQUIRED_TYPE_FIELDS[tag as SignatureType['tag']].some((key) => !ownData(actual, key)))
+    return { unreadableTag: tag, equal: false };
   if (depth > MAX_SIGNATURE_DEPTH || state.active.has(actual)) return { unreadableTag: tag, equal: false };
-  const cached = state.memo.get(declared)?.get(actual)?.get(depth);
+  const cached = state.noCache ? undefined : state.memo.get(declared)?.get(actual)?.get(depth);
   if (cached !== undefined) return cached;
 
+  let usedFallback = false;
   const fallback = (): TypeCheck => {
+    usedFallback = true;
+    if (
+      tag !== 'Boolean' &&
+      tag !== 'Field' &&
+      tag !== 'JubjubScalar' &&
+      tag !== 'JubjubPoint' &&
+      tag !== 'Secp256k1Base' &&
+      tag !== 'Secp256k1Scalar' &&
+      tag !== 'Secp256k1Point' &&
+      tag !== 'Secp256r1Base' &&
+      tag !== 'Secp256r1Scalar' &&
+      tag !== 'Secp256r1Point' &&
+      tag !== 'Curve25519Base' &&
+      tag !== 'Curve25519Scalar' &&
+      tag !== 'Curve25519Point' &&
+      tag !== 'Uint' &&
+      tag !== 'Bytes' &&
+      tag !== 'Opaque'
+    )
+      state.noCache = true;
     // The fallback validates this node again, so replace the entry charge rather than counting it twice.
     state.budget.remaining += 1;
     const local = validationBudget(declared);
@@ -502,12 +560,16 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
     expectedAt: (index: number) => SignatureType,
     receivedAt: (index: number) => SignatureType,
     childDepth: number,
+    receivedArray?: readonly unknown[],
   ): TypeCheck => {
+    let equal = true;
     for (let i = 0; i < length; i += 1) {
+      if (receivedArray !== undefined && !ownData(receivedArray, i)) return { unreadableTag: tag, equal: false };
       const child = inspectTypePair(expectedAt(i), receivedAt(i), state, childDepth);
-      if (child.unreadableTag !== undefined || !child.equal) return child;
+      if (child.unreadableTag !== undefined) return child;
+      if (!child.equal) equal = false;
     }
-    return { equal: true };
+    return { equal };
   };
   state.active.add(actual);
   const compute = (): TypeCheck => {
@@ -533,6 +595,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
         () => declared.type,
         (i) => implemented.types[i],
         depth + 1,
+        implemented.types,
       );
     }
     if (
@@ -546,6 +609,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
         (i) => declared.types[i],
         (i) => implemented.types[i],
         depth + 1,
+        implemented.types,
       );
     }
     if (
@@ -567,27 +631,36 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
       declared.tag === 'Alias' &&
       implemented.tag === 'Alias' &&
       typeof implemented.name === 'string' &&
-      declared.name === implemented.name &&
       asRecord(implemented.type) !== undefined
     ) {
-      return inspectTypePair(declared.type, implemented.type, state, depth + 1);
+      const child = inspectTypePair(declared.type, implemented.type, state, depth + 1);
+      return child.unreadableTag === undefined ? { equal: declared.name === implemented.name && child.equal } : child;
     }
     if (
       declared.tag === 'Struct' &&
       implemented.tag === 'Struct' &&
       typeof implemented.name === 'string' &&
-      declared.name === implemented.name &&
       Array.isArray(implemented.elements) &&
       declared.elements.length === implemented.elements.length
     ) {
+      let equal = declared.name === implemented.name;
       for (let i = 0; i < declared.elements.length; i += 1) {
+        if (!ownData(implemented.elements, i)) return { unreadableTag: 'Struct', equal: false };
         const field = asRecord(implemented.elements[i]);
-        if (field === undefined || field.name !== declared.elements[i].name || asRecord(field.type) === undefined)
-          return fallback();
+        if (
+          field === undefined ||
+          !ownData(field, 'name') ||
+          !ownData(field, 'type') ||
+          typeof field.name !== 'string' ||
+          asRecord(field.type) === undefined
+        )
+          return { unreadableTag: 'Struct', equal: false };
+        if (field.name !== declared.elements[i].name) equal = false;
         const child = inspectTypePair(declared.elements[i].type, field.type as SignatureType, state, depth + 1);
-        if (child.unreadableTag !== undefined || !child.equal) return child;
+        if (child.unreadableTag !== undefined) return child;
+        if (!child.equal) equal = false;
       }
-      return { equal: true };
+      return { equal };
     }
     if (
       declared.tag === 'Contract' &&
@@ -596,30 +669,40 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
       asRecord(implemented.circuits) !== undefined
     ) {
       const expectedNames = Object.keys(declared.circuits);
-      let actualCount = 0;
-      for (const name in implemented.circuits) {
-        if (!Object.prototype.hasOwnProperty.call(implemented.circuits, name)) continue;
-        actualCount += 1;
-        if (actualCount > expectedNames.length || !Object.prototype.hasOwnProperty.call(declared.circuits, name))
-          return fallback();
-      }
-      if (actualCount !== expectedNames.length) return fallback();
+      const actualNames = Object.keys(implemented.circuits);
+      if (
+        actualNames.length !== expectedNames.length ||
+        actualNames.some((name) => !Object.prototype.hasOwnProperty.call(declared.circuits, name))
+      )
+        return fallback();
+      let equal = true;
       for (const name of expectedNames) {
         const expected = declared.circuits[name];
+        if (!ownData(implemented.circuits, name)) return { unreadableTag: 'Contract', equal: false };
         const received = implemented.circuits[name];
-        if (!Array.isArray(asRecord(received)?.argumentTypes) || received.argumentTypes.length !== expected.argumentTypes.length)
-          return fallback();
+        const record = asRecord(received);
+        if (
+          record === undefined ||
+          !ownData(record, 'argumentTypes') ||
+          !ownData(record, 'resultType') ||
+          !Array.isArray(received.argumentTypes)
+        )
+          return { unreadableTag: MALFORMED, equal: false };
+        if (received.argumentTypes.length !== expected.argumentTypes.length) return fallback();
         const argumentsResult = inspectChildren(
           expected.argumentTypes.length,
           (i) => expected.argumentTypes[i],
           (i) => received.argumentTypes[i],
           depth + 2,
+          received.argumentTypes,
         );
-        if (argumentsResult.unreadableTag !== undefined || !argumentsResult.equal) return argumentsResult;
+        if (argumentsResult.unreadableTag !== undefined) return argumentsResult;
+        if (!argumentsResult.equal) equal = false;
         const result = inspectTypePair(expected.resultType, received.resultType, state, depth + 2);
-        if (result.unreadableTag !== undefined || !result.equal) return result;
+        if (result.unreadableTag !== undefined) return result;
+        if (!result.equal) equal = false;
       }
-      return { equal: true };
+      return { equal };
     }
     return fallback();
   };
@@ -629,17 +712,19 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
   } finally {
     state.active.delete(actual);
   }
-  let byActual = state.memo.get(declared);
-  if (byActual === undefined) {
-    byActual = new Map();
-    state.memo.set(declared, byActual);
+  if (!usedFallback && !state.noCache && result.equal) {
+    let byActual = state.memo.get(declared);
+    if (byActual === undefined) {
+      byActual = new Map();
+      state.memo.set(declared, byActual);
+    }
+    let byDepth = byActual.get(actual);
+    if (byDepth === undefined) {
+      byDepth = new Map();
+      byActual.set(actual, byDepth);
+    }
+    byDepth.set(depth, result);
   }
-  let byDepth = byActual.get(actual);
-  if (byDepth === undefined) {
-    byDepth = new Map();
-    byActual.set(actual, byDepth);
-  }
-  byDepth.set(depth, result);
   return result;
 };
 
@@ -648,6 +733,7 @@ const inspectAgainstDeclaration = (declared: SignatureType, implemented: Signatu
     active: new Set<object>(),
     memo: new Map<object, Map<object, Map<number, TypeCheck>>>(),
     budget: validationBudget(declared, true),
+    noCache: false,
   });
 
 /**
