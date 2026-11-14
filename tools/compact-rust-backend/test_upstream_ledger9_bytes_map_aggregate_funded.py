@@ -25,6 +25,7 @@ import unittest
 from unittest import mock
 
 import check_upstream_ledger9_bytes_map_funded as gate
+import check_upstream_ledger9_bytes_map_proof as proof_gate
 
 
 class AggregatePreflightTests(unittest.TestCase):
@@ -131,6 +132,60 @@ class AggregatePreflightTests(unittest.TestCase):
             return gate.validate_aggregate_preflight(
                 self.receipt, head=self.head, tree=self.tree,
                 compiler_receipt=self.compiler, runtime=self.runtime, proof=self.proof)
+
+    def validate_proof_runtime(self, pin: str | None = None) -> str:
+        self.prior['compiler_sha256'] = gate.sha(self.compiler)
+        self.prior['scheme_sha256'] = gate.sha(self.compiler)
+        self.receipt.write_text(json.dumps(self.prior))
+        base_receipt = {
+            'original_files': self.prior['original_files'],
+            'artifacts': self.prior['artifacts'],
+        }
+        with (mock.patch.object(proof_gate, 'ROOT', self.root),
+              mock.patch.object(proof_gate, 'FAMILY', self.original.parents[1]),
+              mock.patch.object(proof_gate, 'CASES',
+                                {'transformation': 'bytes_map_transformation'}),
+              mock.patch.object(proof_gate, 'ORIGINAL_SHA256',
+                                {'transformation': {
+                                    'bytes_map_transformation.compact': gate.sha(self.original),
+                                    'compile.pass.test.ts': gate.sha(self.compile_test),
+                                    'runtime.pass.test.ts': gate.sha(self.runtime_test),
+                                }})):
+            return proof_gate.validate_current_preflight(
+                self.receipt, pin or gate.sha(self.receipt),
+                head=self.head, tree=self.tree, compiler_receipt=self.compiler,
+                compiler=self.compiler, scheme=self.compiler,
+                runtime_store=self.nix_runtime.parents[3], base_receipt=base_receipt)
+
+    def test_proof_accepts_current_runtime_with_matching_preflight(self) -> None:
+        self.assertEqual(self.validate_proof_runtime(), gate.sha(self.receipt))
+
+    def test_proof_refuses_wrong_independent_preflight_pin(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, 'SHA-256 pin changed'):
+            self.validate_proof_runtime('0' * 64)
+
+    def test_proof_refuses_stale_head_preflight(self) -> None:
+        self.prior['head'] = '0' * 40
+        with self.assertRaisesRegex(RuntimeError, 'source head, tree'):
+            self.validate_proof_runtime()
+
+    def test_proof_refuses_rehashed_but_unrealized_runtime_dist(self) -> None:
+        self.prior['typescript_runtime_dist_files']['index.js'] = '0' * 64
+        with self.assertRaisesRegex(RuntimeError, 'runtime package or dist changed'):
+            self.validate_proof_runtime()
+
+    def test_funded_refuses_proof_bound_to_other_runtime(self) -> None:
+        self.validate_proof_runtime()
+        proof = {
+            'preflight_receipt_sha256': gate.sha(self.receipt),
+            'runtime_nix_store': self.prior['typescript_runtime_nix_store'],
+            'runtime_dist_files': self.prior['typescript_runtime_dist_files'],
+        }
+        proof_gate.validate_proof_preflight_binding(proof, self.prior, gate.sha(self.receipt))
+        proof['runtime_dist_files'] = {'index.js': '0' * 64}
+        with self.assertRaisesRegex(RuntimeError, 'preflight runtime binding differ'):
+            proof_gate.validate_proof_preflight_binding(proof, self.prior,
+                                                        gate.sha(self.receipt))
 
     def test_accepts_matching_current_head_and_artifact_bytes(self) -> None:
         self.assertEqual(self.validate(), gate.sha(self.receipt))

@@ -32,7 +32,7 @@ from collection_gate_binding import compiler_recipe
 from check_upstream_ledger9_bytes_map_proof import (
     BASE, BASE_RECEIPT_SHA256, FAMILY, PINNED, ROOT, RUNNER_SOURCE_SHA256,
     WASM_TGZ_SHA256, ZKIR_SHA256, BASE_TREE, dist_hashes, git, require,
-    require_grouped_lineage, run, sha,
+    require_grouped_lineage, run, sha, validate_current_preflight,
 )
 
 
@@ -79,8 +79,10 @@ CASES = {
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('base-output', 'compiler-receipt', 'zkir', 'zkir-wasm-tgz',
-                 'runner-source', 'material', 'output'):
+                 'runner-source', 'material', 'preflight-receipt', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--preflight-receipt-sha256', required=True,
+                        help='independently computed SHA-256 pin for the current-head receipt')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'source checkout must be clean')
     head, tree = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD^{tree}')
@@ -154,9 +156,11 @@ def main() -> None:
     ], output / 'runtime-recipe.log')
     runtime_store = Path(runtime_recipe.splitlines()[-1]).resolve(strict=True)
     runtime = runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
-    require(json.loads((runtime / 'package.json').read_text())['version'] == '0.18.0'
-            and dist_hashes(runtime / 'dist') == prior['typescript_runtime_dist_files'],
-            'exact-head runtime differs from base qualified runtime')
+    preflight_receipt = args.preflight_receipt.resolve(strict=True)
+    preflight_sha256 = validate_current_preflight(
+        preflight_receipt, args.preflight_receipt_sha256, head=head, tree=tree,
+        compiler_receipt=recipe_path, compiler=compiler, scheme=scheme,
+        runtime_store=runtime_store, base_receipt=prior)
     package = output / 'node_modules/@midnight-ntwrk/compact-runtime'
     package.parent.mkdir(parents=True)
     package.symlink_to(runtime, target_is_directory=True)
@@ -268,10 +272,12 @@ def main() -> None:
         'head': head, 'tree': tree, 'upstream': PINNED,
         'platform': f'{platform.system()} {platform.machine()}',
         'base_head': BASE, 'base_receipt_sha256': sha(base_receipt),
+        'preflight_receipt_sha256': preflight_sha256,
         'compiler_receipt_sha256': sha(recipe_path),
         'compiler_sha256': sha(compiler), 'scheme_sha256': sha(scheme),
         'capture_source_sha256': sha(CAPTURE), 'gate_source_sha256': sha(Path(__file__)),
         'runtime_nix_store': str(runtime_store),
+        'runtime_dist_files': dist_hashes(runtime / 'dist'),
         'wasm_tgz_sha256': sha(wasm_tgz), 'zkir_binary_sha256': sha(zkir),
         'material_receipt_sha256': sha(material_receipt),
         'params_sha256': PARAMS, 'runner_source_sha256': RUNNER_SOURCE_SHA256,

@@ -30,6 +30,7 @@ import tarfile
 import tomllib
 
 from collection_gate_binding import compiler_recipe
+from check_upstream_ledger9_bytes_map import CASES, ORIGINAL_SHA256
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -92,11 +93,84 @@ def dist_hashes(root: Path) -> dict[str, str]:
             for file in root.rglob('*') if file.is_file()}
 
 
+def validate_current_preflight(path: Path, pin: str, *, head: str, tree: str,
+                               compiler_receipt: Path, compiler: Path, scheme: Path,
+                               runtime_store: Path, base_receipt: dict) -> str:
+    """Admit a same-head Bytes qualification and its exact Nix runtime bytes."""
+    require(path.name == 'receipt.json' and re.fullmatch(r'[0-9a-f]{64}', pin) is not None
+            and sha(path) == pin, 'current Bytes preflight receipt SHA-256 pin changed')
+    prior = json.loads(path.read_text())
+    require(prior.get('head') == head and prior.get('tree') == tree and
+            prior.get('upstream') == PINNED,
+            'current Bytes preflight source head, tree or upstream changed')
+    require(prior.get('compiler_receipt_sha256') == sha(compiler_receipt) and
+            prior.get('compiler_sha256') == sha(compiler) and
+            prior.get('scheme_sha256') == sha(scheme),
+            'current Bytes preflight compiler binding changed')
+    require(prior.get('runner_sha256') == sha(
+                ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_bytes_map.py') and
+            prior.get('adapter_sha256') == sha(FAMILY / 'check.mjs'),
+            'current Bytes preflight gate or adapter source changed')
+    originals = {}
+    for family, circuit in CASES.items():
+        for filename in (f'{circuit}.compact', 'compile.pass.test.ts',
+                         'runtime.pass.test.ts'):
+            file = FAMILY / family / filename
+            digest = ORIGINAL_SHA256[family][filename]
+            require(sha(file) == digest == base_receipt['original_files'][
+                file.relative_to(ROOT).as_posix()],
+                f'pinned Bytes original changed: {file}')
+            originals[file.relative_to(ROOT).as_posix()] = digest
+    require(prior.get('original_files') == originals,
+            'current Bytes preflight original inventory changed')
+    runtime = runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
+    source_package = json.loads((ROOT / 'runtime/package.json').read_text())
+    built_package = json.loads((runtime / 'package.json').read_text())
+    require(prior.get('typescript_runtime_nix_store') == str(runtime_store) and
+            prior.get('typescript_runtime_version') == '0.18.0' and
+            prior.get('typescript_runtime_package_sha256') == sha(runtime / 'package.json') and
+            all(source_package[key] == built_package[key] for key in
+                ('name', 'version', 'dependencies')) and
+            built_package['version'] == '0.18.0' and
+            bool(prior.get('typescript_runtime_dist_files')) and
+            prior['typescript_runtime_dist_files'] == dist_hashes(runtime / 'dist'),
+            'current Bytes preflight runtime package or dist changed')
+    require(prior.get('typescript_runtime_recipe_log_sha256') ==
+            sha(path.parent / 'typescript-runtime-recipe.log') and
+            prior.get('cargo_test_log_sha256') == sha(path.parent / 'cargo-test.log') and
+            'Running tests/bytes_map.rs' in (path.parent / 'cargo-test.log').read_text() and
+            prior.get('result') ==
+            'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed',
+            'current Bytes preflight test evidence changed')
+    for family in CASES:
+        for target in ('default', 'paired'):
+            require((path.parent / f'{family}-{target}-typescript.log').read_text().strip()
+                    == f'bytes_map_{family} TypeScript passed',
+                    f'current Bytes preflight {family} {target} assertions changed')
+        for kind, filename in (('typescript', 'index.js'), ('rust', 'lib.rs'),
+                               ('rust_ir', 'compact-rust-ir.json')):
+            expected = base_receipt['artifacts'][f'{family}/paired/{kind}']
+            require(prior['artifacts'].get(f'{family}/paired/{kind}') == expected and
+                    sha(path.parent / 'paired' / family / 'contract' / filename) == expected,
+                    f'current Bytes preflight {family} {kind} artifact changed')
+    return pin
+
+
+def validate_proof_preflight_binding(proof: dict, preflight: dict,
+                                     preflight_sha256: str) -> None:
+    require(proof.get('preflight_receipt_sha256') == preflight_sha256 and
+            proof.get('runtime_nix_store') == preflight.get('typescript_runtime_nix_store') and
+            proof.get('runtime_dist_files') == preflight.get('typescript_runtime_dist_files'),
+            'aggregate proof and current Bytes preflight runtime binding differ')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('base-output', 'compiler-receipt', 'zkir', 'zkir-wasm-tgz',
-                 'runner-source', 'params-k9', 'output'):
+                 'runner-source', 'params-k9', 'preflight-receipt', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--preflight-receipt-sha256', required=True,
+                        help='independently computed SHA-256 pin for the current-head receipt')
     args = parser.parse_args()
     require(not git('status', '--porcelain'), 'source checkout must be clean')
     head, tree = git('rev-parse', 'HEAD'), git('rev-parse', 'HEAD^{tree}')
@@ -155,9 +229,11 @@ def main() -> None:
     ], output / 'runtime-recipe.log')
     runtime_store = Path(runtime_recipe_output.splitlines()[-1]).resolve(strict=True)
     runtime = runtime_store / 'lib/node_modules/@midnight-ntwrk/compact-runtime'
-    require(json.loads((runtime / 'package.json').read_text())['version'] == '0.18.0'
-            and dist_hashes(runtime / 'dist') == prior['typescript_runtime_dist_files'],
-            'exact-head runtime differs from base qualified runtime')
+    preflight_receipt = args.preflight_receipt.resolve(strict=True)
+    preflight_sha256 = validate_current_preflight(
+        preflight_receipt, args.preflight_receipt_sha256, head=head, tree=tree,
+        compiler_receipt=recipe_path, compiler=compiler, scheme=scheme,
+        runtime_store=runtime_store, base_receipt=prior)
     package = output / 'node_modules/@midnight-ntwrk/compact-runtime'
     package.parent.mkdir(parents=True)
     package.symlink_to(runtime, target_is_directory=True)
@@ -260,10 +336,12 @@ def main() -> None:
         'head': head, 'tree': tree, 'platform': f'{platform.system()} {platform.machine()}',
         'upstream': PINNED, 'base_head': BASE,
         'base_qualification_receipt_sha256': sha(base_receipt),
+        'preflight_receipt_sha256': preflight_sha256,
         'compiler_receipt_sha256': sha(recipe_path), 'compiler_sha256': sha(compiler),
         'scheme_sha256': sha(scheme), 'capture_source_sha256': sha(CAPTURE),
         'gate_source_sha256': sha(Path(__file__)), 'source_sha256': sha(source),
         'runtime_nix_store': str(runtime_store), 'wasm_tgz_sha256': sha(wasm_tgz),
+        'runtime_dist_files': dist_hashes(runtime / 'dist'),
         'zkir_binary_sha256': sha(zkir), 'params_k9_sha256': sha(params),
         'runner_source_sha256': RUNNER_SOURCE_SHA256, 'runner_binary_sha256': sha(runner),
         'artifacts': artifacts, 'capture': capture,

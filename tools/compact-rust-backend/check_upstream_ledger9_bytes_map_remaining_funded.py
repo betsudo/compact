@@ -34,7 +34,9 @@ from check_upstream_ledger9_bytes_map_funded import (
 from check_upstream_ledger9_bytes_map_remaining_proofs import (
     CASES, CAPTURE, MATERIAL_RECEIPT_SHA256, PARAMS, ROOT,
 )
-from check_upstream_ledger9_bytes_map_proof import RUNNER_SOURCE_SHA256
+from check_upstream_ledger9_bytes_map_proof import (
+    RUNNER_SOURCE_SHA256, validate_proof_preflight_binding,
+)
 
 
 PROOF_HEAD = '3c67f1e2630ab3a931f5acaa6599b804c9be11ac'
@@ -146,6 +148,7 @@ def main() -> None:
             compiler_receipt=compiler_receipt,
             runtime=args.preflight_runtime.resolve(strict=True), proof=preflight_proof)
         preflight = json.loads(preflight_receipt.read_text())
+        validate_proof_preflight_binding(proof, preflight, preflight_sha256)
         require(proof['checks'] == [
                     'three original TypeScript runtime results and internal Compact assertions',
                     'exact-head generated Rust/TypeScript/IR/ZKIR match pinned qualified base',

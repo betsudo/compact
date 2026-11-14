@@ -30,6 +30,7 @@ import tomllib
 
 from collection_gate_binding import compiler_recipe, generated_manifest
 from check_upstream_ledger9_bytes_map import CASES, ORIGINAL_SHA256
+from check_upstream_ledger9_bytes_map_proof import validate_proof_preflight_binding
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -289,6 +290,8 @@ def main() -> None:
             preflight_receipt, head=head, tree=tree,
             compiler_receipt=compiler_receipt,
             runtime=args.preflight_runtime.resolve(strict=True), proof=proof)
+        preflight = json.loads(preflight_receipt.read_text())
+        validate_proof_preflight_binding(proof, preflight, preflight_sha256)
         require(proof['checks'] == [
                     'exact-head generated Rust/TypeScript/IR/ZKIR bound to qualified base',
                     'honest ZKIR wasm preimage accepted; changed value and insert refused',
