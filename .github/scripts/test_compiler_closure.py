@@ -454,7 +454,7 @@ class CompilerFanoutTests(unittest.TestCase):
         users = {name for name, body in jobs.items() if 'nix develop .#compiler' in body}
         self.assertEqual(users, {'constructor-vector', 'compiler-tests', 'generated-api',
             'build', 'product-proofs', 'component-vector-proof', 'outer-vector-proof',
-            'native-scenarios', 'native-backend', 'e2e-tests'})
+            'native-scenarios', 'native-backend', 'e2e-tests', 'did-primitive-reducers'})
         for name, body in jobs.items():
             with self.subTest(job=name):
                 action = 'uses: ./.github/actions/import-compiler-shell'
@@ -576,7 +576,7 @@ class NestedProductWiringTests(unittest.TestCase):
         self.assertNotIn('steps.runtime-packages', upload)
         self.assertNotIn('Qualify isolated witnessed functional SDK', linux)
         self.assertIn('Qualify isolated witnessed functional SDK', main)
-        self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build, constructor-vector]', workflow)
+        self.assertIn('product-proofs, component-vector-proof, outer-vector-proof, native-scenarios, native-backend, e2e-tests, build, constructor-vector, did-primitive-reducers]', workflow)
         for role in ('recipe', 'proof'):
             self.assertEqual(linux.splitlines().count('            ${{ runner.temp }}/compact-outer-vector-product-' + role + '/'), 1)
         self.assertNotIn('Qualify component-product Vector APIs and fifteen selected proofs', main)
@@ -836,24 +836,40 @@ if stage == 'zkir': print('/mock/zkir-v3-package')
         required = workflow.split('  complete:\n', 1)[1]
         self.assertIn('name: Build and test compiler', required)
         self.assertEqual(workflow.count('name: Build and test compiler\n'), 1)
-        self.assertIn('constructor-vector]', required)
+        self.assertIn('constructor-vector, did-primitive-reducers]', required)
         self.assertIn('CONSTRUCTOR_RESULT: ${{ needs.constructor-vector.result }}', required)
+        self.assertIn('DID_REDUCERS_RESULT: ${{ needs.did-primitive-reducers.result }}', required)
+        self.assertIn("DID_REDUCERS_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.run_did_primitive_reducers }}", required)
         self.assertIn('if: ${{ always() }}', required)
         self.assertNotIn('continue-on-error', workflow)
         shell = textwrap.dedent(required.split('        run: |\n', 1)[1])
         all_names = re.findall(r'test "\$([A-Z0-9_]+)" = success', shell)
         self.assertEqual(len(all_names), len(set(all_names)))
         self.assertIn('CONSTRUCTOR_RESULT', all_names)
+        self.assertIn('DID_REDUCERS_RESULT', all_names)
         names = ('LICENSE_RESULT', 'PRODUCER_RESULT', 'NATIVE_RESULT', 'CONSTRUCTOR_RESULT')
         baseline = dict.fromkeys(all_names, 'success')
         # Preserve the original four-owner combination coverage and require
-        # the merged graph's other owners to succeed at the same time.
-        for outcomes in itertools.product(('success', 'failure', 'skipped', 'cancelled', ''), repeat=4):
-            with self.subTest(outcomes=outcomes):
-                env = dict(os.environ, **(baseline | dict(zip(names, outcomes))))
-                run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
-                                           env=env, capture_output=True, timeout=10)
-                self.assertEqual(run.returncode == 0, all(x == 'success' for x in outcomes))
+        # the merged graph's other owners to succeed at the same time. The
+        # opt-in DID owner must be skipped normally and succeed when requested.
+        for requested in (False, True):
+            did_status = 'success' if requested else 'skipped'
+            for outcomes in itertools.product(('success', 'failure', 'skipped', 'cancelled', ''), repeat=4):
+                with self.subTest(requested=requested, outcomes=outcomes):
+                    env = dict(os.environ, **(baseline | dict(zip(names, outcomes)) |
+                        {'DID_REDUCERS_REQUESTED': str(requested).lower(),
+                         'DID_REDUCERS_RESULT': did_status}))
+                    run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                               env=env, capture_output=True, timeout=10)
+                    self.assertEqual(run.returncode == 0, all(x == 'success' for x in outcomes))
+            for status in ('success', 'failure', 'skipped', 'cancelled', ''):
+                with self.subTest(requested=requested, did_status=status):
+                    env = dict(os.environ, **(baseline |
+                        {'DID_REDUCERS_REQUESTED': str(requested).lower(),
+                         'DID_REDUCERS_RESULT': status}))
+                    run = owner.subprocess.run(['bash', '-e', '-o', 'pipefail', '-c', shell],
+                                               env=env, capture_output=True, timeout=10)
+                    self.assertEqual(run.returncode == 0, status == did_status)
 
     def test_required_product_jobs_run_every_migrated_ledger9_gate(self):
         import re
@@ -1024,6 +1040,7 @@ class RunnerResourceControls(unittest.TestCase):
                                text.split('\njobs:\n', 1)[1], re.M | re.S))
 
     def test_expensive_jobs_require_every_declared_prerequisite_success(self):
+        import itertools
         import re
         jobs = self.jobs()
         full = ['license-check', 'source-preflight', 'compiler-linux', 'fixture-freshness']
@@ -1048,12 +1065,33 @@ class RunnerResourceControls(unittest.TestCase):
                     for cancelled in (False, True):
                         actual = eval(expression, {'__builtins__': {}}, dict(states=states, cancelled=cancelled))
                         self.assertEqual(actual, not cancelled and all(s == 'success' for s in states.values()))
+        did = jobs['did-primitive-reducers']
+        did_header = did.split('    steps:', 1)[0]
+        self.assertIn('needs: [compiler-linux, build]', did_header)
+        condition = re.search(r'^    if: \$\{\{ (.*) \}\}$', did_header, re.M).group(1)
+        self.assertEqual(set(re.findall(r'needs\.([\w-]+)\.result', condition)),
+                         {'compiler-linux', 'build'})
+        expression = re.sub(r'needs\.([\w-]+)\.result',
+                            lambda m: 'states['+repr(m[1])+']', condition)
+        expression = (expression.replace('!cancelled()', 'not cancelled')
+                     .replace('&&', ' and ').replace('github.event_name', 'event')
+                     .replace('inputs.run_did_primitive_reducers', 'requested'))
+        for event, requested, producer, build, cancelled in itertools.product(
+                ('pull_request', 'workflow_dispatch'), (False, True),
+                ('success', 'failure', 'cancelled', 'skipped', ''),
+                ('success', 'failure', 'cancelled', 'skipped', ''), (False, True)):
+            states = {'compiler-linux': producer, 'build': build}
+            actual = eval(expression, {'__builtins__': {}},
+                          dict(states=states, event=event, requested=requested, cancelled=cancelled))
+            self.assertEqual(actual, not cancelled and event == 'workflow_dispatch'
+                             and requested and producer == build == 'success')
         # Failed/skipped consumers must still fail the existing always-run gate.
         complete = jobs['complete']
         self.assertIn('if: ${{ always() }}', complete)
         required = re.search(r'^    needs: \[(.+)\]$', complete, re.M).group(1)
         self.assertEqual({x.strip() for x in required.split(',')},
-                         set(expected) | {'license-check', 'source-preflight', 'compiler-linux'})
+                         set(expected) | {'license-check', 'source-preflight',
+                                          'compiler-linux', 'did-primitive-reducers'})
         self.assertNotIn('continue-on-error', complete)
 
     def test_cheap_controls_precede_producer_and_workspace_allocations(self):
