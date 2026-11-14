@@ -38,14 +38,10 @@ PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 POSITIVES = ('empty_tuple', 'semantics')
 REFUSALS = {
     'circuit_argument_mismatch': (
-        'line 22 char 10:',
-        'no compatible function named enabled_power is in scope at this call',
-        'one function is incompatible with the supplied argument types',
-    ),
-    'lambda_arity_mismatch': (
-        'line 18 char 10:',
-        'incompatible arguments in call to anonymous circuit',
-    ),
+        r'line 22 char 10:\s+no compatible function named enabled_power is in scope at this call'
+        r'\s+one function is incompatible with the supplied argument types'),
+    'lambda_arity_mismatch':
+        r'line 18 char 10:\s+incompatible arguments in call to anonymous circuit',
 }
 
 
@@ -74,9 +70,9 @@ def original_inventory(path: Path) -> dict[str, str]:
 
 
 def refusal(result: subprocess.CompletedProcess[str], destination: Path,
-            diagnostics: tuple[str, ...]) -> None:
+            diagnostic: str) -> None:
     message = result.stdout + result.stderr
-    require(result.returncode != 0 and all(part in message for part in diagnostics),
+    require(result.returncode != 0 and re.search(diagnostic, message) is not None,
             f'original Vector fold refusal changed: {message}')
     require(not destination.exists() and
             not list(destination.parent.glob(f'.{destination.name}.compactc-stage-*')),
@@ -169,7 +165,7 @@ def main() -> None:
                 f'{name} TypeScript output differs in paired compile')
         generated[name] = cases
     refused = {}
-    for name, diagnostics in REFUSALS.items():
+    for name, diagnostic in REFUSALS.items():
         refused[name] = {}
         for target in ('typescript', 'rust'):
             destination = output / 'refused' / target / name
@@ -179,8 +175,8 @@ def main() -> None:
             result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
             log = output / f'{name}-{target}-refused.log'
             log.write_text(result.stdout + result.stderr)
-            refusal(result, destination, diagnostics)
-            refused[name][target] = {'diagnostics': diagnostics, 'log_sha256': sha256(log)}
+            refusal(result, destination, diagnostic)
+            refused[name][target] = {'diagnostic_regex': diagnostic, 'log_sha256': sha256(log)}
     consumer = output / 'rust-consumer'
     (consumer / 'src').mkdir(parents=True)
     shutil.copyfile(FAMILY / 'consumer.rs', consumer / 'src/main.rs')

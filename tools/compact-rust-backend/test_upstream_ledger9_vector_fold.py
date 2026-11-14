@@ -67,15 +67,31 @@ class FoldAdmissionTests(unittest.TestCase):
 
     def test_refusal_requires_diagnostics_and_no_output(self) -> None:
         destination = self.root / 'refused'
-        diagnostics = gate.REFUSALS['lambda_arity_mismatch']
+        diagnostic = gate.REFUSALS['lambda_arity_mismatch']
         failed = subprocess.CompletedProcess([], 255, '', 'line 18 char 10: incompatible arguments in call to anonymous circuit')
-        gate.refusal(failed, destination, diagnostics)
+        gate.refusal(failed, destination, diagnostic)
         with self.assertRaisesRegex(RuntimeError, 'original Vector fold refusal changed'):
             gate.refusal(subprocess.CompletedProcess([], 0, '', failed.stderr), destination,
-                         diagnostics)
+                         diagnostic)
         destination.mkdir()
         with self.assertRaisesRegex(RuntimeError, 'published output'):
-            gate.refusal(failed, destination, diagnostics)
+            gate.refusal(failed, destination, diagnostic)
+
+    def test_refuses_reversed_named_circuit_diagnostic_lines(self) -> None:
+        destination = self.root / 'refused'
+        diagnostic = gate.REFUSALS['circuit_argument_mismatch']
+        ordered = subprocess.CompletedProcess(
+            [], 255, '',
+            'line 22 char 10:\n  no compatible function named enabled_power is in scope at this call\n'
+            '  one function is incompatible with the supplied argument types')
+        gate.refusal(ordered, destination, diagnostic)
+        reversed_lines = subprocess.CompletedProcess(
+            [], 255, '',
+            'one function is incompatible with the supplied argument types\n'
+            'no compatible function named enabled_power is in scope at this call\n'
+            'line 22 char 10:')
+        with self.assertRaisesRegex(RuntimeError, 'original Vector fold refusal changed'):
+            gate.refusal(reversed_lines, destination, diagnostic)
 
     def test_lexical_fold_node_is_not_confused_with_named_fold(self) -> None:
         source = {'kind': 'vector_fold', 'length': 5,
