@@ -13,14 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+const TO_TUPLE_EXPECTED: [u128; 2] = [1, 2];
+const WIDENING_EXPECTED: [u128; 4] = [1, 2, 3, 255];
+
 #[test]
 fn original_to_tuple() {
-    let result = to_tuple::pure_circuits::vector_implicit_casts_to_tuple().unwrap();
-    assert_eq!([result.0.value(), result.1.value()], [1, 2]);
+    let result: (to_tuple::runtime::BoundedUint<255>, to_tuple::runtime::BoundedUint<255>) =
+        to_tuple::pure_circuits::vector_implicit_casts_to_tuple().unwrap();
+    assert_eq!([result.0.value(), result.1.value()], TO_TUPLE_EXPECTED);
 }
 
 #[test]
 fn original_widening() {
-    let result = widening::pure_circuits::vector_implicit_casts_widening().unwrap();
-    assert_eq!(result.into_array().map(|item| item.value()), [1, 2, 3, 255]);
+    let result: widening::runtime::FixedVector<
+        widening::runtime::BoundedUint<18446744073709551615>, 4,
+    > = widening::pure_circuits::vector_implicit_casts_widening().unwrap();
+    assert_eq!(result.into_array().map(|item| item.value()), WIDENING_EXPECTED);
 }

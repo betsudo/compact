@@ -106,6 +106,17 @@ class ImplicitCastInventoryTests(unittest.TestCase):
         self.assertFalse(gate.rust_tests_passed(names.replace('original_widening', 'wrong') +
                                                 'test result: ok. 2 passed; 0 failed;'))
 
+    def test_rust_expected_values_match_originals(self) -> None:
+        source = self.root / 'consumer.rs'
+        source.write_text('const TO_TUPLE_EXPECTED: [u128; 2] = [1, 2];\n'
+                          'const WIDENING_EXPECTED: [u128; 4] = [1, 2, 3, 255];\n')
+        self.assertEqual(gate.consumer_expected(source), gate.EXPECTED)
+        source.write_text(source.read_text().replace('[1, 2, 3, 255]', '[1, 2, 3, 254]'))
+        self.assertNotEqual(gate.consumer_expected(source), gate.EXPECTED)
+        source.write_text(source.read_text().replace('[1, 2, 3, 254]', '[1, 2, bad, 255]'))
+        with self.assertRaisesRegex(RuntimeError, 'Rust expected values changed'):
+            gate.consumer_expected(source)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -39,6 +39,14 @@ FAMILY = ROOT / 'test-contracts/primitives/vector/implicit_casts'
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 CASES = ('to_tuple', 'widening')
 EXPECTED = {'to_tuple': [1, 2], 'widening': [1, 2, 3, 255]}
+RESULT_TYPES = {
+    'to_tuple': {'type-name': 'Tuple', 'types': [
+        {'type-name': 'Uint', 'maxval': 255},
+        {'type-name': 'Uint', 'maxval': 255},
+    ]},
+    'widening': {'type-name': 'Vector', 'length': 4,
+                 'type': {'type-name': 'Uint', 'maxval': 18446744073709551615}},
+}
 
 
 def require(ok: bool, message: str) -> None:
@@ -85,6 +93,21 @@ def rust_tests_passed(log: str) -> bool:
             all(f'test original_{name} ... ok' in log for name in CASES))
 
 
+def consumer_expected(path: Path) -> dict[str, list[int]]:
+    source = path.read_text()
+    result = {}
+    for name in CASES:
+        constant = name.upper()
+        matches = re.findall(rf'const {constant}_EXPECTED: \[u128; \d+\] = \[([^\]]+)\];',
+                             source)
+        require(len(matches) == 1, f'{name} Rust expected values changed')
+        tokens = [token.strip() for token in matches[0].split(',')]
+        require(all(re.fullmatch(r'\d+', token) for token in tokens),
+                f'{name} Rust expected values changed')
+        result[name] = [int(token) for token in tokens]
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
@@ -112,6 +135,8 @@ def main() -> None:
     recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
     manifest = FAMILY / 'original-source-sha256.json'
     originals = original_inventory(manifest)
+    require(consumer_expected(FAMILY / 'consumer.rs') == EXPECTED,
+            'Rust expected values differ from original assertions')
     output.mkdir(parents=True)
     link = output / 'node_modules/@midnight-ntwrk/compact-runtime'
     link.parent.mkdir(parents=True)
@@ -137,7 +162,9 @@ def main() -> None:
             circuits = json.loads(info_path.read_text())['circuits']
             require(len(circuits) == 1 and circuits[0]['name'] == f'vector_implicit_casts_{name}'
                     and circuits[0]['pure'] and not circuits[0]['proof'] and
-                    not circuits[0]['arguments'], f'{name} pure capability changed')
+                    not circuits[0]['arguments'] and
+                    circuits[0]['result-type'] == RESULT_TYPES[name],
+                    f'{name} pure capability or implicit-cast result type changed')
             contract = destination / 'contract'
             result = run(['node', str(FAMILY / 'check.mjs'), str(contract / 'index.js'),
                           name, ','.join(map(str, values))],
@@ -202,6 +229,8 @@ def main() -> None:
                       args.compiler_recipe, compiler, scheme)
     require(original_inventory(manifest) == originals,
             'original Vector implicit-cast files changed during qualification')
+    require(consumer_expected(FAMILY / 'consumer.rs') == EXPECTED,
+            'Rust expected values changed during qualification')
     receipt = {
         **source, 'source_clean': True,
         'platform': os.uname().sysname + ' ' + os.uname().machine,
@@ -217,7 +246,8 @@ def main() -> None:
         'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
         'result': 'two pinned pure Vector implicit-cast assertions restated on generated TypeScript and Rust',
         'limitations': ['local Darwin arm64; native Linux qualification required',
-                        'both pinned circuits are pure with proof=false; no recorded or funded API'],
+                        'both pinned circuits are pure with proof=false; no recorded or funded API',
+                        'original Vitest harness was not run; its pinned assertions were extracted and rerun on generated APIs'],
     }
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'], 'output': str(output)}))
