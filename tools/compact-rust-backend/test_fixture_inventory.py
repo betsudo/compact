@@ -51,14 +51,27 @@ class CurrentSourceRegistryTests(unittest.TestCase):
         self.assertEqual({row['source'] for row in extension}, names)
         self.assertEqual(len(extension), 29)
         current['sources'] = [row for row in current['sources'] if row not in extension]
-        # Stateful arithmetic now keeps the analyzed result maximum instead of
-        # its rounded bit carrier. Only these complete generated IR inputs were
-        # refreshed; their sources, consumers and historical registry stay put.
+        # Stateful arithmetic keeps the analyzed result maximum, and the
+        # standard-library header shifts source-line metadata by ten lines.
+        # Only complete current-source IR inputs were refreshed; their source,
+        # consumers and historical registry stay put.
         refreshed = {
             'examples/rust_backend/effect_plan_wide_add.compact':
                 '148ce2df4dc5ad0588f8e8c76281a46fb4edd8a7c3363023d9a1098b39436cb6',
+            'examples/rust_backend/shielded_merge_oracle.compact':
+                '89735970781d5173751ba5394fd88bd05ea53d6b3bbe407895b3ce9ff89ad243',
+            'examples/rust_backend/shielded_receive_oracle.compact':
+                '6e86c9934f31d6f0a0ee83136151c24a78ac4154583b90c53b333cc2a4220ee5',
+            'examples/rust_backend/shielded_send_oracle.compact':
+                '02de9b7cea15880cf6ef216fc3963bdd1b9763043b5e27320565808fe367b843',
+            'examples/rust_backend/transient_receive_send_oracle.compact':
+                '50628a2aff70d8157aa3675febb79e943f9a4cae6804103c89587b4e355c516b',
+            'examples/rust_backend/zerocash_oracle.compact':
+                '89f90014c7519de12208a3081e683b1829b005370ed21988a33382e55ded2e8d',
+            'test-center/test-contracts/coracle.compact':
+                '6af56bd824b7c9f97753b56a79e2dde501051f3c5aa074832079e0e403ae8630',
             'test-center/test-contracts/micro-dao.compact':
-                '39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d',
+                '92d558c4967134901b3f3f1f742d36a47fb3c8e4b08c67b7f0309e6bd9917a8c',
         }
         # These wrappers expose their exact generated source to the v3 proof
         # admission check and carry the complete license header.
