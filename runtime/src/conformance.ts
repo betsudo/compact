@@ -236,6 +236,7 @@ const firstUnreadableTag = (
   if (encoded === undefined) {
     return MALFORMED;
   }
+  if (!ownData(encoded, 'tag')) return MALFORMED;
   const tag = encoded.tag;
   if (typeof tag !== 'string') {
     return MALFORMED;
@@ -243,6 +244,7 @@ const firstUnreadableTag = (
   if (!Object.prototype.hasOwnProperty.call(KNOWN_SIGNATURE_TAGS, tag)) {
     return tag;
   }
+  if (REQUIRED_TYPE_FIELDS[tag as SignatureType['tag']].some((key) => !ownData(encoded, key))) return tag;
   if (depth > MAX_SIGNATURE_DEPTH || active.has(encoded) || budget.remaining-- <= 0) {
     return tag;
   }
@@ -271,13 +273,15 @@ const firstUnreadableTag = (
         return typeof t.tsType === 'string' ? undefined : t.tag;
       // Its elements are names rather than types, so there is nothing to walk — but
       // `signatureTypesEqual` still reads them.
-      case 'Enum':
-        if (typeof t.name !== 'string' || !Array.isArray(t.elements) || t.elements.length > budget.remaining) return t.tag;
-        budget.remaining -= t.elements.length;
-        for (let i = 0; i < t.elements.length; i += 1) {
-          if (typeof t.elements[i] !== 'string') return t.tag;
+      case 'Enum': {
+        const elements = t.elements;
+        if (typeof t.name !== 'string' || !Array.isArray(elements) || elements.length > budget.remaining) return t.tag;
+        budget.remaining -= elements.length;
+        for (let i = 0; i < elements.length; i += 1) {
+          if (!ownData(elements, i) || typeof elements[i] !== 'string') return t.tag;
         }
         return undefined;
+      }
       case 'Alias':
         return typeof t.name === 'string' && asRecord(t.type) !== undefined
           ? firstUnreadableTag(t.type, active, depth + 1, budget)
@@ -289,10 +293,20 @@ const firstUnreadableTag = (
       case 'Tuple':
         return Array.isArray(t.types) ? firstUnreadable(t.types, active, depth + 1, budget) : t.tag;
       case 'Struct': {
-        if (typeof t.name !== 'string' || !Array.isArray(t.elements)) return t.tag;
-        for (const element of t.elements) {
+        const elements = t.elements;
+        if (typeof t.name !== 'string' || !Array.isArray(elements)) return t.tag;
+        for (let i = 0; i < elements.length; i += 1) {
+          if (!ownData(elements, i)) return t.tag;
+          const element = elements[i];
           const field = asRecord(element);
-          if (field === undefined || typeof field.name !== 'string' || asRecord(field.type) === undefined) return t.tag;
+          if (
+            field === undefined ||
+            !ownData(field, 'name') ||
+            !ownData(field, 'type') ||
+            typeof field.name !== 'string' ||
+            asRecord(field.type) === undefined
+          )
+            return t.tag;
           const unreadable = firstUnreadableTag(field.type as SignatureType, active, depth + 1, budget);
           if (unreadable !== undefined) return unreadable;
         }
@@ -320,8 +334,9 @@ const firstUnreadable = (
   depth: number,
   budget: ValidationBudget,
 ): string | undefined => {
-  for (const t of types) {
-    const tag = firstUnreadableTag(t, active, depth, budget);
+  for (let i = 0; i < types.length; i += 1) {
+    if (!ownData(types, i)) return MALFORMED;
+    const tag = firstUnreadableTag(types[i], active, depth, budget);
     if (tag !== undefined) {
       return tag;
     }
@@ -342,8 +357,14 @@ const firstUnreadableInDescriptor = (
     // arbitrarily large inherited prototype before it reaches any own name.
     for (const name of Object.keys(descriptor)) {
       if (budget.remaining-- <= 0) return MALFORMED;
+      if (!ownData(descriptor, name)) return MALFORMED;
       const declaration = descriptor[name];
-      if (!Array.isArray(asRecord(declaration)?.argumentTypes)) {
+      if (
+        asRecord(declaration) === undefined ||
+        !ownData(declaration, 'argumentTypes') ||
+        !ownData(declaration, 'resultType') ||
+        !Array.isArray(declaration.argumentTypes)
+      ) {
         return MALFORMED;
       }
       const tag = firstUnreadable(declaration.argumentTypes, active, depth + 1, budget);
@@ -503,7 +524,6 @@ type TypeCheckState = {
   readonly active: Set<object>;
   readonly memo: Map<object, Map<object, Map<number, TypeCheck>>>;
   readonly budget: ValidationBudget;
-  fallbackGeneration: number;
 };
 
 // Compare within the shape declared by the caller. A matching expanded Vector is visited element
@@ -523,34 +543,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
   const cached = state.memo.get(declared)?.get(actual)?.get(depth);
   if (cached !== undefined) return cached;
 
-  const generationAtEntry = state.fallbackGeneration;
-  let usedFallback = false;
   const fallback = (): TypeCheck => {
-    usedFallback = true;
-    if (
-      tag !== 'Boolean' &&
-      tag !== 'Field' &&
-      tag !== 'JubjubScalar' &&
-      tag !== 'JubjubPoint' &&
-      tag !== 'Secp256k1Base' &&
-      tag !== 'Secp256k1Scalar' &&
-      tag !== 'Secp256k1Point' &&
-      tag !== 'Secp256r1Base' &&
-      tag !== 'Secp256r1Scalar' &&
-      tag !== 'Secp256r1Point' &&
-      tag !== 'Curve25519Base' &&
-      tag !== 'Curve25519Scalar' &&
-      tag !== 'Curve25519Point' &&
-      tag !== 'Uint' &&
-      tag !== 'Bytes' &&
-      tag !== 'Opaque'
-    ) {
-      // A composite fallback may read untrusted getters that mutate prior signature nodes.
-      // Drop earlier memo entries before that read, and prevent callers spanning this fallback
-      // from caching. Later independent siblings may build a fresh memo.
-      state.memo.clear();
-      state.fallbackGeneration += 1;
-    }
     // The fallback validates this node again, so replace the entry charge rather than counting it twice.
     state.budget.remaining += 1;
     const local = validationBudget(declared);
@@ -718,10 +711,10 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
     state.active.delete(actual);
   }
   // A fully inspected readable subtree is cycle-free: any path back to this node or an active
-  // ancestor would have returned Unreadable. Its equality result is therefore independent of the
-  // ancestor path, including when another parent in a diamond reaches the same node. Never memoize
-  // unreadability or a fallback that may have used a different local validation budget.
-  if (!usedFallback && generationAtEntry === state.fallbackGeneration && result.unreadableTag === undefined) {
+  // ancestor would have returned Unreadable. Its equality result is independent of the ancestor
+  // path, including when a diamond reaches the same node. A successful fallback is reusable too;
+  // an unreadable or budget-exhausted result is not.
+  if (result.unreadableTag === undefined) {
     let byActual = state.memo.get(declared);
     if (byActual === undefined) {
       byActual = new Map();
@@ -742,7 +735,6 @@ const inspectAgainstDeclaration = (declared: SignatureType, implemented: Signatu
     active: new Set<object>(),
     memo: new Map<object, Map<object, Map<number, TypeCheck>>>(),
     budget: validationBudget(declared, true),
-    fallbackGeneration: 0,
   });
 
 /**

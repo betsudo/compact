@@ -229,6 +229,31 @@ test('a shared mismatching Tuple DAG is inspected once per type pair', () => {
   expect(reads).toBeLessThan(200);
 });
 
+test('a shared Tuple DAG with a mismatching Alias leaf is inspected once per type pair', () => {
+  let declaredType: SignatureType = field;
+  let implementedType: SignatureType = { tag: 'Alias', name: 'Other', type: field };
+  let reads = 0;
+  for (let i = 0; i < 25; i += 1) {
+    declaredType = { tag: 'Vector', length: 2, type: declaredType };
+    const child = implementedType;
+    implementedType = malformed(
+      new Proxy(
+        { tag: 'Tuple', types: [child, child] },
+        {
+          get(target, key, receiver) {
+            if (key === 'types') reads += 1;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      ),
+    );
+  }
+  expect(
+    checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+  expect(reads).toBeLessThan(200);
+});
+
 test('a matching diamond DAG reuses inspected pairs across different parents', () => {
   let declaredType: SignatureType = field;
   let left: SignatureType = { tag: 'Field' };
@@ -288,28 +313,34 @@ test('a composite mismatch before a matching diamond does not disable later memo
   expect(reads).toBeLessThan(500);
 });
 
-test('a composite fallback invalidates memo entries before untrusted reads can mutate them', () => {
+test('a composite fallback rejects an accessor before it can mutate a cached sibling', () => {
   const alias: SignatureType = { tag: 'Alias', name: 'A', type: field };
   const declared: SignatureType = { tag: 'Tuple', types: [alias, field, alias] };
   const shared = { tag: 'Alias', name: 'A', type: field as SignatureType };
-  const mutatingStruct = malformed(
-    new Proxy(
-      { tag: 'Struct', name: 'Other', elements: [] },
-      {
-        get(target, key, receiver) {
-          if (key === 'name') shared.type = malformed({ tag: 'Summer' });
-          return Reflect.get(target, key, receiver);
-        },
-      },
-    ),
-  );
+  let reads = 0;
+  const elements = [{ name: 'item', type: field }];
+  Object.defineProperty(elements, 0, {
+    configurable: true,
+    enumerable: true,
+    get() {
+      reads += 1;
+      shared.type = malformed({ tag: 'Summer' });
+      return { name: 'item', type: field };
+    },
+  });
+  const mutatingStruct = malformed({
+    tag: 'Struct',
+    name: 'Other',
+    elements,
+  });
   const implemented = malformed({ tag: 'Tuple', types: [shared, mutatingStruct, shared] });
   expect(checkConformance({ use: { argumentTypes: [declared], resultType: field } }, implementation(implemented))).toEqual({
     outcome: 'Unreadable',
     circuitId: 'use',
-    unreadableTag: 'Summer',
+    unreadableTag: 'Struct',
     argumentIndex: 0,
   });
+  expect(reads).toEqual(0);
 });
 
 test('a shared cyclic Tuple still reports unreadability before using a memoized sibling', () => {
