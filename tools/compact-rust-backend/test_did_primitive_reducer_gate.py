@@ -85,23 +85,70 @@ class EvidenceTests(unittest.TestCase):
             capture = gate.read_json(oracle / 'ledger9-runtime0.18-cases.json')
             historical = gate.read_json(oracle / 'ledger9-cases.json')
             with self.subTest(kind=row['kind']):
-                gate.validate_current_capture_record(binding, binding.copy(), capture, historical)
+                expected = dict(binding, source_sha256=gate.common.sha256(gate.ROOT / row['source']),
+                    capture_script_sha256=gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT),
+                    runtime_source_sha256=gate.runtime_source_hash(),
+                    historical_ledger9_binding_sha256=gate.common.sha256(oracle / 'ledger9-binding.json'),
+                    capture_sha256=gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
+                gate.validate_current_capture_record(binding, expected, capture, historical)
                 self.assertEqual(binding['kind'], row['kind'])
                 self.assertEqual(binding['compact_runtime'], '0.18.0')
+                self.assertEqual(binding['source_sha256'],
+                                 gate.common.sha256(gate.ROOT / row['source']))
+                self.assertEqual(binding['capture_script_sha256'],
+                                 gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT))
+                self.assertEqual(binding['runtime_source_sha256'], gate.runtime_source_hash())
                 self.assertEqual(binding['historical_ledger9_binding_sha256'],
                                  gate.common.sha256(oracle / 'ledger9-binding.json'))
                 self.assertEqual(binding['capture_sha256'],
                                  gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
+                for provenance in capture['provenance']:
+                    relative = gate.reviewed.relative(provenance['path'])
+                    self.assertEqual(provenance['sha256'], gate.common.sha256(gate.ROOT / relative),
+                                     f"{row['kind']}: {relative}")
                 changed = binding.copy()
                 changed['generated_javascript_sha256'] = 'changed'
                 with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
-                    gate.validate_current_capture_record(changed, binding, capture, historical)
+                    gate.validate_current_capture_record(changed, expected, capture, historical)
                 changed = copy.deepcopy(capture)
                 changed['cases'][0]['result'] = 'changed'
                 with self.assertRaisesRegex(gate.common.GateError, 'retained behavior'):
-                    gate.validate_current_capture_record(binding, binding, changed, historical)
+                    gate.validate_current_capture_record(binding, expected, changed, historical)
             count += len(capture['cases'])
         self.assertEqual(count, 55)
+
+    def test_runtime_closure_hash_covers_dist_lock_and_nested_dependencies_without_store_prefix(self):
+        def make_runtime(root):
+            runtime = root / 'runtime'
+            (runtime / 'dist').mkdir(parents=True)
+            (runtime / 'dist/index.js').write_text('export const v = 1;')
+            (runtime / 'package.json').write_text(json.dumps({'name':'runtime','dependencies':{'outer':'1'}}))
+            (runtime / 'package-lock.json').write_text('{}')
+            outer = runtime / 'node_modules/outer'
+            outer.mkdir(parents=True)
+            (outer / 'package.json').write_text(json.dumps({'name':'outer','dependencies':{'nested':'1'}}))
+            (outer / 'index.js').write_text('outer')
+            nested = outer / 'node_modules/nested'
+            nested.mkdir(parents=True)
+            (nested / 'package.json').write_text(json.dumps({'name':'nested'}))
+            (nested / 'index.js').write_text('nested')
+            return runtime, nested
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime, nested = make_runtime(root / 'first')
+            other, _ = make_runtime(root / 'second')
+            baseline = gate.runtime_closure_hash(runtime)
+            self.assertEqual(baseline, gate.runtime_closure_hash(other))
+            for path in (runtime / 'dist/index.js', runtime / 'package-lock.json',
+                         nested / 'index.js'):
+                with self.subTest(path=path):
+                    original = path.read_text()
+                    path.write_text(original + 'changed')
+                    self.assertNotEqual(baseline, gate.runtime_closure_hash(runtime))
+                    path.write_text(original)
+            (nested / 'package.json').unlink()
+            with self.assertRaisesRegex(gate.common.GateError, 'dependency missing'):
+                gate.runtime_closure_hash(runtime)
 
     def test_current_runtime_path_requires_matching_source_and_nix_package(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -170,6 +217,7 @@ class EvidenceTests(unittest.TestCase):
                  patch.object(gate.ledger_static,'FIXTURE_HASHES',{}), \
                  patch.object(gate.shutil,'which',return_value='/usr/bin/true'), \
                  patch.object(gate,'current_runtime_package',return_value=root), \
+                 patch.object(gate,'current_runtime_identity',return_value={'runtime_source_sha256':'source','runtime_closure_sha256':'closure'}), \
                  patch.object(gate.common,'git_head',return_value='frozen'), \
                  patch.object(gate.common,'stable_copy',return_value={'snapshot':str(frozen_tool),'sha256':'hash'}), \
                  patch.object(gate.common,'run',side_effect=failed):

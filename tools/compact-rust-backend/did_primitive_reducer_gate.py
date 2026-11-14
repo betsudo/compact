@@ -16,6 +16,7 @@
 
 """Qualify selected maintained DID primitive reducers using exact local artifacts."""
 import argparse
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -72,6 +73,67 @@ def read_json(path):
 
 def hashes(paths):
     return {str(p): common.sha256(p) for p in sorted(set(paths)) if p.is_file()}
+
+
+def stable_file_set_hash(root, paths):
+    """Hash logical paths and file bytes, independent of Nix store prefixes."""
+    files = sorted(set(paths), key=lambda path: path.relative_to(root).as_posix())
+    require(files and all(path.is_file() for path in files), 'reducer runtime closure file missing')
+    digest = hashlib.sha256()
+    for path in files:
+        name = path.relative_to(root).as_posix().encode()
+        digest.update(name + b'\0' + bytes.fromhex(common.sha256(path)) + b'\n')
+    return digest.hexdigest()
+
+
+def runtime_source_files():
+    runtime = ROOT / 'runtime'
+    return [*runtime.glob('*.json'), *runtime.glob('*.ss'),
+            *(path for path in (runtime / 'src').rglob('*') if path.is_file()),
+            ROOT / 'flake.nix', ROOT / 'flake.lock']
+
+
+def runtime_source_hash():
+    return stable_file_set_hash(ROOT, runtime_source_files())
+
+
+def runtime_closure_hash(runtime):
+    """Hash compiled Runtime plus every installed production dependency, including nested versions."""
+    files = [runtime / 'package.json', runtime / 'package-lock.json',
+             *(path for path in (runtime / 'dist').rglob('*') if path.is_file())]
+    require(any(path.parent == runtime / 'dist' for path in files), 'reducer Runtime dist is empty')
+    visited = set()
+    queue = [(runtime, read_json(runtime / 'package.json'))]
+    while queue:
+        package, manifest = queue.pop()
+        dependencies = {**manifest.get('dependencies', {}), **manifest.get('optionalDependencies', {})}
+        for name in sorted(dependencies):
+            candidate = None
+            for ancestor in (package, *package.parents):
+                if ancestor == runtime.parent:
+                    break
+                option = ancestor / 'node_modules' / name
+                if (option / 'package.json').is_file():
+                    candidate = option
+                    break
+            require(candidate is not None, f'reducer Runtime dependency missing: {name}')
+            logical = candidate.relative_to(runtime).as_posix()
+            if logical in visited:
+                continue
+            visited.add(logical)
+            child = read_json(candidate / 'package.json')
+            require(child.get('name') == name, f'reducer Runtime dependency identity differs: {name}')
+            package_files = [path for path in candidate.rglob('*')
+                             if path.is_file() and 'node_modules' not in path.relative_to(candidate).parts]
+            require(package_files, f'reducer Runtime dependency has no files: {name}')
+            files.extend(package_files)
+            queue.append((candidate, child))
+    return stable_file_set_hash(runtime, files)
+
+
+def current_runtime_identity(runtime):
+    return {'runtime_source_sha256': runtime_source_hash(),
+            'runtime_closure_sha256': runtime_closure_hash(runtime)}
 
 
 def reviewed_rows():
@@ -177,7 +239,7 @@ def validate_current_capture_record(binding, fields, capture, old_capture):
             'current reducer capture differs from retained behavior or source')
 
 
-def validate_current_capture(path, fixture, runtime, source, generated_js, kind):
+def validate_current_capture(path, fixture, runtime, source, generated_js, kind, identity=None):
     historical_hashes = validate_historical_capture(fixture)
     oracle = ROOT / fixture / 'oracle'
     binding_path = oracle / 'ledger9-runtime0.18-binding.json'
@@ -185,6 +247,8 @@ def validate_current_capture(path, fixture, runtime, source, generated_js, kind)
     binding = read_json(binding_path)
     capture = read_json(path)
     old_capture = read_json(oracle / 'ledger9-cases.json')
+    if identity is None:
+        identity = current_runtime_identity(runtime)
     fields = {
         'format': 'compact-ledger9-reducer-capture-binding/v2',
         'kind': kind,
@@ -194,6 +258,7 @@ def validate_current_capture(path, fixture, runtime, source, generated_js, kind)
         'onchain_runtime': '4.0.1',
         'runtime_package_sha256': common.sha256(runtime / 'package.json'),
         'runtime_builtins_sha256': common.sha256(runtime / 'dist/built-ins.js'),
+        **identity,
         'generated_javascript_sha256': common.sha256(generated_js),
         'capture_script_sha256': common.sha256(CURRENT_CAPTURE_SCRIPT),
         'capture_sha256': common.sha256(retained),
@@ -219,8 +284,7 @@ def source_inventory(rows):
              ROOT/'Cargo.toml', ROOT/'Cargo.lock', ROOT/'flake.nix', ROOT/'flake.lock',
              ROOT/'tools/compact-rust-proof-smoke/Cargo.toml',
              ROOT/'tools/compact-rust-backend/did_primitive_reducer_capture.mjs',
-             CURRENT_CAPTURE_SCRIPT, ROOT/'runtime/package.json',
-             ROOT/'runtime/src/built-ins.ts', ROOT/'runtime/src/compact-types.ts',
+             CURRENT_CAPTURE_SCRIPT, *runtime_source_files(),
              ROOT/'tools/compact-rust-backend/did_primitive_reducer_cases.mjs',
              ROOT/'tools/compact-rust-backend/test_did_primitive_reducer_gate.py',
              ROOT/'tools/compact-rust-backend/check_fixture_outputs.py']
@@ -264,9 +328,11 @@ def run_gate(directory, compiler, scheme, target, selected, environment=None):
         receipt['source_hashes']=source_inventory(rows)
         receipt['git_head']=common.git_head()
         runtime = current_runtime_package()
+        runtime_identity = current_runtime_identity(runtime)
         receipt['typescript_runtime'] = {'path': str(runtime),
             'package_sha256': common.sha256(runtime / 'package.json'),
-            'builtins_sha256': common.sha256(runtime / 'dist/built-ins.js')}
+            'builtins_sha256': common.sha256(runtime / 'dist/built-ins.js'),
+            **runtime_identity}
         (directory/'bin').mkdir()
         components=receipt['components']={}
         for name,path in (('compactc',compiler),('compactc-scheme',scheme),('zkir',Path(zkir))):
@@ -315,7 +381,7 @@ def run_gate(directory, compiler, scheme, target, selected, environment=None):
             execute(['node',CURRENT_CAPTURE_SCRIPT,kind,
                      output/'contract/index.js',runtime],f'{kind}-capture',capture)
             binding_hashes = validate_current_capture(capture, row['fixture'], runtime, source,
-                                                     output/'contract/index.js', kind)
+                                                     output/'contract/index.js', kind, runtime_identity)
             generated = reducer.generated_hashes(output)
             generated.update(hashes([output / "contract/index.js"]))
             model = reducer.model(execute, receipt, zkir, output, GEOMETRY[kind])
@@ -344,6 +410,8 @@ def run_gate(directory, compiler, scheme, target, selected, environment=None):
                 did.unchanged(result[field])
         did.unchanged(receipt["parameter_hashes"])
         did.unchanged(receipt["dust_fixture_hashes"])
+        require(current_runtime_identity(runtime) == runtime_identity,
+                'current reducer Runtime source or dependency closure changed')
         require(source_inventory(rows)==receipt['source_hashes'] and common.git_head()==receipt['git_head'],
                 'source or HEAD changed during gate')
         require(all(common.sha256(Path(r['snapshot']))==r['sha256'] for r in components.values()),'tool changed')

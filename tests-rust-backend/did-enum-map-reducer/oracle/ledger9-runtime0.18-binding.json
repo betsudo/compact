@@ -9,5 +9,7 @@
   "runtime_builtins_sha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
   "generated_javascript_sha256": "084535dfb836774bc79a73b8e6b26f426133151c1543dc919bd728aa7e597af0",
   "capture_script_sha256": "57896f2796a13a6f78207c478b197c1ffe933b39fc04fdb8d83b680dd053f97b",
-  "capture_sha256": "7cb5013b1f54d975eca59320741928107c6aab06d2c6eacc4064dbbb3ef9c573"
+  "capture_sha256": "7cb5013b1f54d975eca59320741928107c6aab06d2c6eacc4064dbbb3ef9c573",
+  "runtime_source_sha256": "5e056e2188f9b3363fedddd46daa483d8f1f59f9272d96f07e8fbf05270ba0c8",
+  "runtime_closure_sha256": "2353d6f149316c99e67dadb55a34cf397a129cfc4d9f3c87ff304d8f62b10799"
 }
