@@ -338,10 +338,9 @@ const firstUnreadableInDescriptor = (
   if (depth > MAX_SIGNATURE_DEPTH || active.has(descriptor)) return MALFORMED;
   active.add(descriptor);
   try {
-    // Avoid a JavaScript-level copy of every key before applying the budget.
-    // An engine may still allocate internal enumeration storage for the input.
-    for (const name in descriptor) {
-      if (!Object.prototype.hasOwnProperty.call(descriptor, name)) continue;
+    // Only own circuit names are part of the encoded descriptor. `for...in` can walk an
+    // arbitrarily large inherited prototype before it reaches any own name.
+    for (const name of Object.keys(descriptor)) {
       if (budget.remaining-- <= 0) return MALFORMED;
       const declaration = descriptor[name];
       if (!Array.isArray(asRecord(declaration)?.argumentTypes)) {
