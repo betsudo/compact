@@ -229,6 +229,46 @@ test('a shared mismatching Tuple DAG is inspected once per type pair', () => {
   expect(reads).toBeLessThan(200);
 });
 
+test('a matching diamond DAG reuses inspected pairs across different parents', () => {
+  let declaredType: SignatureType = field;
+  let left: SignatureType = { tag: 'Field' };
+  let right: SignatureType = { tag: 'Field' };
+  let reads = 0;
+  const tuple = (a: SignatureType, b: SignatureType): SignatureType =>
+    malformed(
+      new Proxy(
+        { tag: 'Tuple', types: [a, b] },
+        {
+          get(target, key, receiver) {
+            if (key === 'types') reads += 1;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      ),
+    );
+  for (let i = 0; i < 25; i += 1) {
+    declaredType = { tag: 'Vector', length: 2, type: declaredType };
+    [left, right] = [tuple(left, right), tuple(left, right)];
+  }
+  expect(checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(left))).toEqual({
+    outcome: 'Conformant',
+  });
+  expect(reads).toBeLessThan(500);
+});
+
+test('a shared cyclic Tuple still reports unreadability before using a memoized sibling', () => {
+  const expected: SignatureType = { tag: 'Vector', length: 2, type: { tag: 'Vector', length: 2, type: field } };
+  const cyclic = malformed({ tag: 'Tuple', types: [] as SignatureType[] });
+  (cyclic as { types: SignatureType[] }).types.push(field, cyclic);
+  const implemented = malformed({ tag: 'Tuple', types: [cyclic, cyclic] });
+  expect(checkConformance({ use: { argumentTypes: [expected], resultType: field } }, implementation(implemented))).toEqual({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    unreadableTag: 'Tuple',
+    argumentIndex: 0,
+  });
+});
+
 test('a large expanded result Vector conforms under its own validation allowance', () => {
   const length = 12_000;
   const expected: SignatureType = { tag: 'Vector', length, type: field };
