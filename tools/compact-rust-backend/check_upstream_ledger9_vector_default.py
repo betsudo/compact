@@ -108,8 +108,9 @@ def require_generated_assertions(messages: tuple[str, ...], typescript: Path,
             'generated TypeScript lost an original Vector default assertion')
     if rust is not None:
         rs = rust.read_text()
-        require(rs.count('CompactError::AssertionFailed(') == len(messages) and
-                all(rs.count(json.dumps(message)) == 1 for message in messages),
+        # Stateful Rust emits both ordinary execution and recorded execution.
+        require(rs.count('CompactError::AssertionFailed(') == 2 * len(messages) and
+                all(rs.count(json.dumps(message)) == 2 for message in messages),
                 'generated Rust lost an original Vector default assertion')
 
 

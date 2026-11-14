@@ -103,15 +103,19 @@ class VectorDefaultInventoryTests(unittest.TestCase):
         rs = self.root / 'lib.rs'
         js.write_text("__compactRuntime.assert(true, 'first zero');\n"
                       "__compactRuntime.assert(true, 'last zero');\n")
-        rs.write_text('CompactError::AssertionFailed("first zero".to_owned());\n'
-                      'CompactError::AssertionFailed("last zero".to_owned());\n')
+        ordinary = ('CompactError::AssertionFailed("first zero".to_owned());\n'
+                    'CompactError::AssertionFailed("last zero".to_owned());\n')
+        rs.write_text(ordinary * 2)
         gate.require_generated_assertions(messages, js, rs)
         js.write_text("__compactRuntime.assert(true, 'first zero');\n")
         with self.assertRaisesRegex(RuntimeError, 'TypeScript lost'):
             gate.require_generated_assertions(messages, js, rs)
         js.write_text("__compactRuntime.assert(true, 'first zero');\n"
                       "__compactRuntime.assert(true, 'last zero');\n")
-        rs.write_text('CompactError::AssertionFailed("first zero".to_owned());\n')
+        rs.write_text(ordinary + 'CompactError::AssertionFailed("first zero".to_owned());\n')
+        with self.assertRaisesRegex(RuntimeError, 'Rust lost'):
+            gate.require_generated_assertions(messages, js, rs)
+        rs.write_text(ordinary * 2 + 'CompactError::AssertionFailed("last zero".to_owned());\n')
         with self.assertRaisesRegex(RuntimeError, 'Rust lost'):
             gate.require_generated_assertions(messages, js, rs)
 
