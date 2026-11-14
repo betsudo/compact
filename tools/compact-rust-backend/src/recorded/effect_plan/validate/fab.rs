@@ -1,9 +1,21 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! FAB representation capabilities remain separate from ordinary local ownership.
 use super::{Type, value_type};
+use crate::ir::KeccakEncoding;
 
 #[derive(Clone, Copy)]
 enum Capability {
@@ -32,9 +44,17 @@ fn supports(ty: &Type, capability: Capability) -> bool {
     value_type(ty) && product(ty, capability)
 }
 
-/// Keccak consumes Into<Value> atoms without requiring aligned conversion.
-pub(in crate::recorded::effect_plan) fn keccak_input_type(ty: &Type) -> bool {
-    supports(ty, Capability::Atoms)
+pub(in crate::recorded::effect_plan) fn keccak_input_type(
+    ty: &Type,
+    encoding: KeccakEncoding,
+) -> bool {
+    supports(
+        ty,
+        match encoding {
+            KeccakEncoding::NormalizedAtoms => Capability::Atoms,
+            KeccakEncoding::Aligned => Capability::FixedAligned,
+        },
+    )
 }
 
 /// Qualified Aligned + Into<Value> domain for curve/transient hashes. Opaque

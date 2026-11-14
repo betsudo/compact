@@ -19,6 +19,7 @@
   (export analysis-passes fixup-analysis-passes)
   (import (except (chezscheme) errorf)
           (utils)
+          (config-params)
           (datatype)
           (nanopass)
           (langs)
@@ -67,6 +68,22 @@
             a))
         (unless (member standard-library-path (registered-source-pathnames))
           (register-source-pathname! standard-library-path)))
+      ;; These are ordinary exported standard-library generics. Import
+      ;; selection, prefixes and local name resolution use the existing path.
+      (define (serialization-declarations)
+        (let ([src (make-source-object (assert (stdlib-sfd)) 0 0 1 1)])
+          (with-output-language (Lpreexpand Circuit-Definition)
+            (list
+              `(circuit ,src #t #t serialize
+                 ((type-valued ,src T) (nat-valued ,src n))
+                 ((,src value (type-ref ,src T)))
+                 (tbytes ,src (type-size-ref ,src n))
+                 (return ,src (serialize ,src (type-size-ref ,src n) (type-ref ,src T) (var-ref ,src value))))
+              `(circuit ,src #t #t deserialize
+                 ((type-valued ,src T) (nat-valued ,src n))
+                 ((,src value (tbytes ,src (type-size-ref ,src n))))
+                 (type-ref ,src T)
+                 (return ,src (deserialize ,src (type-size-ref ,src n) (type-ref ,src T) (var-ref ,src value))))))))
       (define program-src)
       (module (make-instance-table instance-table-cell)
         (define (combine hash*)
@@ -630,6 +647,7 @@
                                                   '()
                                                   (append standard-library-pelt*
                                                           (native-declarations)
+                                                          (serialization-declarations)
                                                           (map (lambda (adt-defn)
                                                                   (nanopass-case (Lpreexpand ADT-Definition) adt-defn
                                                                     [(define-adt ,src ,exported? ,adt-name (,type-param* ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
@@ -1171,6 +1189,12 @@
                 [else #f])]
              [else #f])
            `(elt-ref ,src ,(Expression expr p) ,elt-name^))]
+      [(serialize ,src ,[Type-Size->nat : tsize p 0 -> * nat] ,[type] ,[expr])
+       (check-length! src "serialized Bytes" nat)
+       `(serialize ,src ,nat ,type ,expr)]
+      [(deserialize ,src ,[Type-Size->nat : tsize p 0 -> * nat] ,[type] ,[expr])
+       (check-length! src "serialized Bytes" nat)
+       `(deserialize ,src ,nat ,type ,expr)]
       [(call ,src ,[fun] ,expr* ...) ; force fun to be processed before expr* to get better error messages
        `(call ,src ,fun ,(map (lambda (e) (Expression e p)) expr*) ...)])
     (Function : Function (ir p) -> Function ()
@@ -1188,6 +1212,11 @@
     (New-Field : New-Field (ir p) -> New-Field ())
     (Type : Type (ir p) -> Type ()
       [,tref (Type-Ref->Type ir p)]
+      [(topaque ,src ,opaque-type)
+       (when (and (foreign-native-type? opaque-type) (not (stdlib-src? src)))
+         (source-errorf src "~a is a built-in foreign ~a type; import CompactStandardLibrary"
+                        opaque-type (if (or (string=? opaque-type "JubjubScalar") (foreign-field-max opaque-type)) "field" "point")))
+       `(topaque ,src ,opaque-type)]
       [(tunsigned ,src ,[Type-Size->nat : tsize p 1 -> * nat])
        (unless (<= 1 nat (unsigned-bits))
           (source-errorf src "Uint width ~d is not between 1 and the maximum Uint width ~d (inclusive)"
@@ -1249,9 +1278,7 @@
                 (format "~a.compact" contract-name)
                 (format "~a/~a.compact" sd contract-name))))
         (define (contract-info-filename)
-          (format "~a/~a/compiler/contract-info.json"
-            (path-parent (target-directory))
-            contract-name))
+          (contract-info-pathname contract-name))
         (define (malformed msg . args)
           (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                            (contract-info-filename)
@@ -1349,7 +1376,8 @@
                       (and (= (expt 2 bits) (+ nat 1))
                            (format "Uint<~d>" bits))))
                (format "Uint<0..~d>" (+ nat 1)))]
-          [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+          [(topaque ,src ,opaque-type)
+           (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tundeclared) "Undeclared"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
@@ -1570,9 +1598,7 @@
           (let ([info (hashtable-cell (contract-ht) contract-name #f)])
             (lambda (src elt-name pure-dcl type* type)
               (define (contract-info-filename)
-                (format "~a/~a/compiler/contract-info.json"
-                  (path-parent (target-directory))
-                  contract-name))
+                (contract-info-pathname contract-name))
               (define (malformed msg . args)
                 (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                                  (contract-info-filename)
@@ -1603,7 +1629,15 @@
                       [("Field") `(tfield ,src)]
                       [("Uint") `(tunsigned ,src ,(tonat (get-assoc "maxval" alist)))]
                       [("Bytes") `(tbytes ,src ,(tonat (get-assoc "length" alist)))]
-                      [("Opaque") `(topaque ,src ,(get-assoc "tsType" alist))]
+                      [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256k1Point" "Secp256r1Base" "Secp256r1Scalar" "Secp256r1Point" "Curve25519Base" "Curve25519Scalar" "Curve25519Point")
+                       `(topaque ,src ,type-name)]
+                      [("Opaque")
+                       (let ([name (get-assoc "tsType" alist)])
+                         (when (or (string=? name "JubjubScalar") (foreign-field-max name))
+                           (malformed "a built-in foreign field requires its own type-name"))
+                         (when (foreign-point-base name)
+                           (malformed "a built-in foreign point requires its own type-name"))
+                         `(topaque ,src ,name))]
                       [("Vector") `(tvector ,src ,(tonat (get-assoc "length" alist)) ,(totype (get-assoc "type" alist)))]
                       [("Tuple") `(ttuple ,src ,(map totype (tolist (get-assoc "types" alist))) ...)]
                       ;; this will never be exercised since exported circuits cannot take contracts as their
@@ -1730,7 +1764,7 @@
                (id-src (blob-name blob2))))
            (define (opaque-hashing-error? symbolic-name blob)
              (and (blob-is-native blob)
-                  (memq symbolic-name '(persistentHash persistentCommit))
+                  (memq symbolic-name '(persistentHash persistentCommit keccak256))
                   (> (length (blob-arg-type* blob)) 0)
                   (contains-js-opaque? (car (blob-arg-type* blob)))))
            (let outer ([function-name** function-name**] [arg-incompatible-blob** '()] [fold-incompatible-blob** '()])
@@ -1969,6 +2003,202 @@
                   (with-output-language (Ltypes Expression)
                     `(let* ,src ([(,t ,result-type) ,expr])
                        ,(k `(var-ref ,src ,t)))))]))
+      (define (check-serialization-width src type width len)
+        (when (> width len)
+          (source-errorf src "actual serialized size ~d exceeds specified length ~d for type ~a"
+                         width len (format-type type))))
+      (define (pad-serialized-bytes src expr len^ len)
+        (with-output-language (Ltypes Expression)
+          (if (= len^ len)
+              expr
+              (let ([len^^ (- len len^)])
+                `(vector->bytes ,src ,len
+                   (vector ,src
+                     (spread ,src ,len^ (bytes->vector ,src ,len^ ,expr))
+                     (spread ,src ,len^^
+                       (bytes->vector ,src ,len^^ (quote ,src ,(make-bytevector len^^ 0))))))))))
+      (define (unsigned-serialized-width nat)
+        (quotient (+ (integer-length nat) 7) 8))
+      ;; Follow the declaration order and fixed little-endian widths used
+      ;; by the standard library wire format. Alias identity is restored after
+      ;; decoding the underlying carrier.
+      (define (serialization-width src type operation)
+        (nanopass-case (Ltypes Type) (de-alias type #t)
+          [(tboolean ,src^) 1]
+          [(tfield ,src^) (+ 1 (field-bytes))]
+          [(topaque ,src^ ,opaque-type)
+           (guard (foreign-field-max opaque-type))
+           32]
+          [(tunsigned ,src^ ,nat) (unsigned-serialized-width nat)]
+          [(tbytes ,src^ ,len) len]
+          [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+           (unsigned-serialized-width (length elt-name*))]
+          [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+           (apply + (maplr (lambda (field-type) (serialization-width src field-type operation)) type*))]
+          [(ttuple ,src^ ,type* ...)
+           (apply + (maplr (lambda (element-type) (serialization-width src element-type operation)) type*))]
+          [(tvector ,src^ ,len ,type)
+           (if (= len 0) 0 (* len (serialization-width src type operation)))]
+          [(topaque ,src^ ,opaque-type)
+           (guard (or (foreign-point-base opaque-type) (string=? opaque-type "JubjubPoint")))
+           (source-errorf src
+                          (if (string=? operation "serialize")
+                              "serialization is not yet supported for curve type ~a"
+                              "deserialization is not yet supported for curve type ~a")
+                          opaque-type)]
+          [else (source-errorf src "~a does not yet support type ~a" operation (format-type type))]))
+
+      (define (enum-to-serialized-bytes src type carrier expr maximum width)
+        (with-output-language (Ltypes Expression)
+          `(field->bytes ,src ,width
+             (safe-cast ,src (tfield ,src) (tunsigned ,src ,maximum)
+               (cast-from-enum ,src (tunsigned ,src ,maximum) ,carrier
+                 ,(maybe-safecast src carrier type expr))))))
+
+      (define (serialize-product src type expr len)
+        (define (collect type expr parts)
+          (let ([carrier (de-alias type #t)])
+            (with-output-language (Ltypes Expression)
+              (define (add width bytes)
+                (cons (with-output-language (Ltypes Tuple-Argument)
+                        `(spread ,src ,width (bytes->vector ,src ,width ,bytes)))
+                      parts))
+              (nanopass-case (Ltypes Type) carrier
+                [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+                 (let loop ([names elt-name*] [types type*] [index 0] [parts parts])
+                   (if (null? types)
+                       parts
+                       (loop (cdr names) (cdr types) (+ index 1)
+                         (collect (car types) `(elt-ref ,src ,expr ,(car names) ,index) parts))))]
+                [(ttuple ,src^ ,type* ...)
+                 (let loop ([types type*] [index 0] [parts parts])
+                   (if (null? types)
+                       parts
+                       (loop (cdr types) (+ index 1)
+                         (collect (car types) `(tuple-ref ,src ,expr ,index) parts))))]
+                [(tvector ,src^ ,len^ ,type^)
+                 (if (or (= len^ 0) (= (serialization-width src type^ "serialize") 0))
+                     parts
+                     (let loop ([index 0] [parts parts])
+                       (if (= index len^)
+                           parts
+                           (loop (+ index 1)
+                             (collect type^ `(tuple-ref ,src ,expr ,index) parts)))))]
+                [(tboolean ,src^)
+                 (add 1 `(if ,src ,(maybe-safecast src carrier type expr)
+                              (quote ,src #vu8(1)) (quote ,src #vu8(0))))]
+                [(tfield ,src^)
+                 (let ([width (+ 1 (field-bytes))])
+                   (add width `(field->bytes ,src ,width ,(maybe-safecast src carrier type expr))))]
+                [(topaque ,src^ ,opaque-type)
+                 (guard (foreign-field-max opaque-type))
+                 (add 32 `(secp256k1-bytes-cast ,src (tbytes ,src 32)
+                            ,(maybe-safecast src carrier type expr)))]
+                [(tbytes ,src^ ,len^)
+                 (if (= len^ 0) parts (add len^ (maybe-safecast src carrier type expr)))]
+                [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+                 (let* ([maximum (length elt-name*)] [width (unsigned-serialized-width maximum)])
+                   (if (= width 0)
+                       parts
+                       (add width (enum-to-serialized-bytes src type carrier expr maximum width))))]
+                [(tunsigned ,src^ ,nat)
+                 (let ([width (unsigned-serialized-width nat)])
+                   (if (= width 0)
+                       parts
+                       (add width
+                         `(field->bytes ,src ,width
+                            (safe-cast ,src (tfield ,src) ,carrier ,(maybe-safecast src carrier type expr))))))]
+                [else (assert cannot-happen)]))))
+        (let ([width (serialization-width src type "serialize")])
+          (check-serialization-width src type width len)
+          (maybe-bind src type expr
+            (lambda (expr)
+              (with-output-language (Ltypes Expression)
+                (if (= width 0)
+                    `(quote ,src ,(make-bytevector len 0))
+                    (let* ([parts (collect type expr '())]
+                           [padding (- len width)]
+                           [parts (if (= padding 0)
+                                      parts
+                                      (cons (with-output-language (Ltypes Tuple-Argument)
+                                              `(spread ,src ,padding
+                                                 (bytes->vector ,src ,padding
+                                                   (quote ,src ,(make-bytevector padding 0)))))
+                                            parts))])
+                      `(vector->bytes ,src ,len (vector ,src ,(reverse parts) ...)))))))))
+
+      (define (deserialize-value src type bytes-type len expr)
+        (define (decode expr)
+          (define (prefix index width)
+            (with-output-language (Ltypes Expression)
+              (if (and (= index 0) (= width len))
+                  expr
+                  `(bytes-slice ,src ,bytes-type ,expr (quote ,src ,index) ,width))))
+          (define (fields types start)
+            (let loop ([types types] [index start] [result '()])
+              (if (null? types)
+                  (reverse result)
+                  (let ([type (car types)])
+                    (loop (cdr types)
+                          (+ index (serialization-width src type "deserialize"))
+                          (cons (at type index) result))))))
+          (define (at type index)
+            (let* ([carrier (de-alias type #t)]
+                   [value (with-output-language (Ltypes Expression)
+                            (nanopass-case (Ltypes Type) carrier
+                              [(tboolean ,src^)
+                               ;; Match upstream #772. Check the byte before equality.
+                               `(== ,src (tunsigned ,src 1)
+                                  (downcast-unsigned ,src 255 1
+                                    (tuple-ref ,src (bytes->vector ,src ,len ,expr) ,index))
+                                  (quote ,src 1))]
+                              [(tbytes ,src^ ,len^) (prefix index len^)]
+                              [(tfield ,src^)
+                               (let ([len^ (+ 1 (field-bytes))])
+                                 `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^)))]
+                              [(topaque ,src^ ,opaque-type)
+                               (guard (foreign-field-max opaque-type))
+                               `(secp256k1-bytes-cast ,src ,carrier ,(prefix index 32))]
+                              [(tunsigned ,src^ ,nat)
+                               (let ([len^ (unsigned-serialized-width nat)])
+                                 (if (= len^ 0)
+                                     `(quote ,src 0)
+                                     `(cast-from-bytes ,src ,carrier ,len^ ,(prefix index len^))))]
+                              [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+                               (let* ([maximum (length elt-name*)]
+                                      [width (unsigned-serialized-width maximum)])
+                                 (if (= width 0)
+                                     `(enum-ref ,src ,carrier ,elt-name)
+                                     `(cast-to-enum ,src ,carrier (tunsigned ,src ,maximum)
+                                        (cast-from-bytes ,src (tunsigned ,src ,maximum) ,width
+                                          ,(prefix index width)))))]
+                              [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+                               `(new ,src ,carrier ,(fields type* index) ...)]
+                              [(ttuple ,src^ ,type* ...)
+                               `(tuple ,src ,(map (lambda (item) `(single ,src ,item))
+                                                  (fields type* index)) ...)]
+                              [(tvector ,src^ ,len^ ,type)
+                               (if (= (serialization-width src carrier "deserialize") 0)
+                                   `(default ,src ,carrier)
+                                   (let ([types (make-list len^ type)])
+                                     `(safe-cast ,src ,carrier (ttuple ,src ,types ...)
+                                        (tuple ,src ,(map (lambda (item) `(single ,src ,item))
+                                                           (fields types index)) ...))))]
+                              [else (assert cannot-happen)]))])
+              (maybe-safecast src type carrier value)))
+          (at type 0))
+        (let ([width (serialization-width src type "deserialize")])
+          (check-serialization-width src type width len)
+          ;; A zero-byte or aggregate result may omit or reuse its operand.
+          ;; Bind once to retain checks and prevent duplicate evaluation.
+          (if (or (= width 0)
+                  (T (de-alias type #t)
+                     [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...) #t]
+                     [(ttuple ,src^ ,type* ...) #t]
+                     [(tvector ,src^ ,len^ ,type) #t]))
+              (maybe-bind src bytes-type expr decode)
+              (decode expr))))
+
       (define (arithmetic-binop src op expr1 expr2 k)
         (let*-values ([(expr1 type1) (Care expr1)] [(expr2 type2) (Care expr2)])
           (define (condense type l/r)
@@ -1980,6 +2210,9 @@
                    nat))]
               [(tfield ,src1) (values '() #f)]
               [(tunsigned ,src ,nat) (values '() nat)]
+              [(topaque ,src ,opaque-type)
+               (guard (foreign-field-max opaque-type))
+               (values '() opaque-type)]
               [else (source-errorf src "~a requires its ~a operand to be a Field or Uint; the actual type is ~a"
                                    op
                                    l/r
@@ -1987,8 +2220,20 @@
           (let-values ([(type-name1* nat1) (condense type1 "left")]
                        [(type-name2* nat2) (condense type2 "right")])
             (let-values ([(result-expr result-type)
-                          (if (and nat1 nat2)
-                              (let ([result-nat (case op
+                          (cond
+                            [(or (string? nat1) (string? nat2))
+                             (unless (equal? nat1 nat2)
+                               (source-errorf src "incompatible combination of types ~a and ~a for binary arithmetic operator ~a"
+                                              (format-type type1) (format-type type2) op))
+                             (let ([result-type (with-output-language (Ltypes Type) `(topaque ,src ,nat1))])
+                               (values
+                                 (with-output-language (Ltypes Expression)
+                                   `(secp256k1-arithmetic ,src ,op ,result-type
+                                      ,(maybe-safecast src result-type type1 expr1)
+                                      ,(maybe-safecast src result-type type2 expr2)))
+                                 result-type))]
+                            [(and nat1 nat2)
+                             (let ([result-nat (case op
                                                   [+ (+ nat1 nat2)]
                                                   [* (* nat1 nat2)]
                                                   [- nat1]
@@ -2023,18 +2268,19 @@
                                             (k mbits
                                                (maybe-cast nat1 type1 expr1)
                                                (maybe-cast nat2 type2 expr2))))
-                                      result-type))))
-                              (let ([result-type (with-output-language (Ltypes Type) `(tfield ,src))])
+                                      result-type))))]
+                            [else
+                             (let ([result-type (with-output-language (Ltypes Type) `(tfield ,src))])
                                 (values
                                   (k #f
                                      (maybe-safecast src result-type type1 expr1)
                                      (maybe-safecast src result-type type2 expr2))
-                                  result-type)))])
+                                  result-type))])])
               (if (and (null? type-name1*) (null? type-name2*))
                   (values result-expr result-type)
                   (begin
                     ; this is, in effect, (sametype? type1 type2)
-                    (unless (and (equal? type-name1* type-name2*) (eqv? nat1 nat2))
+                    (unless (and (equal? type-name1* type-name2*) (equal? nat1 nat2))
                       (source-errorf src "incompatible combination of types ~a and ~a for binary arithmetic operator ~s"
                                      (format-type type1)
                                      (format-type type2)
@@ -2042,12 +2288,12 @@
                     ; from here, type1 = type2, nat1 = nat2
                     (values
                       (with-output-language (Ltypes Expression)
-                        (if nat1
-                            (if (eq? op '-)
-                                result-expr
-                                (let ([result-nat (nanopass-case (Ltypes Type) result-type
-                                                    [(tunsigned ,src ,nat) nat]
-                                                    [else (assert cannot-happen)])])
+                        (if (number? nat1)
+                            (let ([result-nat (nanopass-case (Ltypes Type) result-type
+                                                [(tunsigned ,src ,nat) nat]
+                                                [else (assert cannot-happen)])])
+                              (if (= result-nat nat1)
+                                  result-expr
                                   `(downcast-unsigned ,src ,result-nat ,nat1 ,result-expr)))
                             `(safe-cast ,src ,type1 ,result-type ,result-expr)))
                       type1)))))))
@@ -2986,6 +3232,98 @@
                               ...)
                     ,expr)
                   body-type)))))]
+      [(serialize ,src ,len ,[type] ,[Care : expr type^])
+       (unless (subtype? type^ type)
+         (source-errorf src "expected serialize argument to have type ~a, received ~a"
+                        (format-type type) (format-type type^)))
+       (nanopass-case (Ltypes Type) (de-alias type #t)
+         [(tboolean ,src^)
+          (when (= len 0)
+            (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
+          (let ([no (make-bytevector len 0)] [yes (make-bytevector len 0)]
+                [expr (maybe-safecast src
+                        (with-output-language (Ltypes Type) `(tboolean ,src))
+                        type^ expr)])
+            (bytevector-u8-set! yes 0 1)
+            (values `(if ,src ,expr (quote ,src ,yes) (quote ,src ,no))
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tbytes ,src^ ,len^)
+          (check-serialization-width src type len^ len)
+          (let ([carrier (with-output-language (Ltypes Type) `(tbytes ,src ,len^))])
+            (values (pad-serialized-bytes src (maybe-safecast src carrier type^ expr) len^ len)
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tfield ,src^)
+          (let ([len^ (+ 1 (field-bytes))]
+                [carrier (with-output-language (Ltypes Type) `(tfield ,src))])
+            (check-serialization-width src type len^ len)
+            (values (pad-serialized-bytes src
+                      `(field->bytes ,src ,len^ ,(maybe-safecast src carrier type^ expr))
+                      len^ len)
+                    (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tunsigned ,src^ ,nat)
+          (let ([len^ (unsigned-serialized-width nat)])
+            (check-serialization-width src type len^ len)
+            (values
+              (if (= len^ 0)
+                  (maybe-bind src type^ expr
+                    (lambda (value) `(quote ,src ,(make-bytevector len 0))))
+                  (let* ([carrier (with-output-language (Ltypes Type) `(tunsigned ,src ,nat))]
+                         [field-type (with-output-language (Ltypes Type) `(tfield ,src))]
+                         [value (maybe-safecast src carrier type^ expr)])
+                    (pad-serialized-bytes src
+                      `(field->bytes ,src ,len^ (safe-cast ,src ,field-type ,carrier ,value))
+                      len^ len)))
+              (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [(tenum ,src^ ,enum-name ,elt-name ,elt-name* ...)
+          (let* ([maximum (length elt-name*)] [width (unsigned-serialized-width maximum)]
+                 [carrier (de-alias type #t)])
+            (check-serialization-width src type width len)
+            (values
+              (if (= width 0)
+                  (maybe-bind src type^ expr (lambda (value) `(quote ,src ,(make-bytevector len 0))))
+                  (pad-serialized-bytes src
+                    (enum-to-serialized-bytes src type^ carrier expr maximum width)
+                    width len))
+              (with-output-language (Ltypes Type) `(tbytes ,src ,len))))]
+         [else
+          (values (serialize-product src type (maybe-safecast src type type^ expr) len)
+                  (with-output-language (Ltypes Type) `(tbytes ,src ,len)))])]
+      [(deserialize ,src ,len ,[type] ,[Care : expr type^])
+       (let ([bytes-type (with-output-language (Ltypes Type) `(tbytes ,src ,len))])
+         (unless (sametype? type^ bytes-type)
+           (source-errorf src "expected deserialize argument to have type ~a, received ~a"
+                          (format-type bytes-type) (format-type type^)))
+         ;; Keep the existing Boolean width diagnostic stable.
+         (when (and (= len 0) (T (de-alias type #t) [(tboolean ,src^) #t]))
+           (source-errorf src "actual serialized size 1 exceeds specified length 0 for type Boolean"))
+         (values (deserialize-value src type bytes-type len expr) type))]
+      [(emit ,src ,[Care : expr type])
+       (unless (feature-zkir-v3)
+         (source-errorf src "emit requires ZKIR v3; recompile with --feature-zkir-v3"))
+       (nanopass-case (Ltypes Type) (de-alias type #t)
+         [(tstruct ,src^ ,struct-name (,elt-name (tbytes ,src^^ ,len)))
+          (guard (stdlib-src? src^) (eq? struct-name 'ShieldedSpend)
+                 (eq? elt-name 'nullifier) (= len 32))
+          (values
+            `(emit-log ,src 0 32 (elt-ref ,src ,expr ,elt-name 0))
+            (with-output-language (Ltypes Type) `(ttuple ,src)))]
+         [(tstruct ,src^ ,struct-name (,elt-name* ,type*) ...)
+          (guard (stdlib-src? src^) (memq struct-name '(ShieldedReceive ShieldedMint ShieldedBurn UnshieldedSpend UnshieldedReceive UnshieldedMint UnshieldedBurn Paused Unpaused Misc)))
+          (let-values ([(tag len) (case struct-name
+                                    [(ShieldedReceive) (values 1 578)]
+                                    [(ShieldedMint) (values 2 81)]
+                                    [(ShieldedBurn) (values 3 49)]
+                                    [(UnshieldedSpend) (values 4 145)]
+                                    [(UnshieldedReceive) (values 5 145)]
+                                    [(UnshieldedMint) (values 6 80)]
+                                    [(UnshieldedBurn) (values 7 113)]
+                                    [(Paused) (values 8 0)]
+                                    [(Unpaused) (values 9 0)]
+                                    [(Misc) (values 10 288)])])
+            (values
+              `(emit-log ,src ,tag ,len ,(serialize-product src type expr len))
+              (with-output-language (Ltypes Type) `(ttuple ,src))))]
+         [else (source-errorf src "~a is not a declared event type" (format-type type))])]
       [(assert ,src ,[Care : expr type0] ,mesg)
        (unless (nanopass-case (Ltypes Type) (de-alias type0 #t)
                  [(tboolean ,src1) #t]
@@ -3024,6 +3362,9 @@
              (T type
                 [(tfield ,src1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type^)
+                     (guard (string=? opaque-type^ "JubjubScalar"))
+                     `(jubjub-cast ,src ,type ,expr)]
                     [(tbytes ,src2 ,len2)
                      (guard (not (= len2 0)))
                      `(cast-from-bytes ,src ,type ,len2 ,expr)]
@@ -3033,8 +3374,25 @@
                      `(if ,src ,expr
                           (safe-cast ,src ,type (tunsigned ,src 1) (quote ,src 1))
                           (safe-cast ,src ,type (tunsigned ,src 0) (quote ,src 0)))])]
+                [(topaque ,src1 ,opaque-type)
+                 (guard (string=? opaque-type "JubjubScalar"))
+                 (T type^
+                    [(tfield ,src2) `(jubjub-cast ,src ,type ,expr)]
+                    [(tunsigned ,src2 ,nat)
+                     `(jubjub-cast ,src ,type
+                        (safe-cast ,src (tfield ,src2) ,type^ ,expr))])]
+                [(topaque ,src1 ,opaque-type)
+                 (guard (foreign-field-max opaque-type))
+                 (T type^
+                    [(tbytes ,src2 ,len2)
+                     (guard (or (= len2 32)
+                                (and (= len2 64) (string=? opaque-type "Curve25519Scalar"))))
+                     `(secp256k1-bytes-cast ,src ,type ,expr)])]
                 [(tbytes ,src1 ,len1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type)
+                     (guard (= len1 32) (foreign-field-max opaque-type))
+                     `(secp256k1-bytes-cast ,src ,type ,expr)]
                     [(tfield ,src2)
                      (guard (not (= len1 0)))
                      `(field->bytes ,src ,len1 ,expr)]
@@ -3067,6 +3425,9 @@
                        `(bytes->vector ,src ,len1 ,expr))])]
                 [(tunsigned ,src1 ,nat1)
                  (T type^
+                    [(topaque ,src2 ,opaque-type^)
+                     (guard (string=? opaque-type^ "JubjubScalar"))
+                     `(downcast-unsigned ,src #f ,nat1 (jubjub-cast ,src (tfield ,src2) ,expr))]
                     [(tfield ,src2)
                      `(downcast-unsigned ,src #f ,nat1 ,expr)]
                     [(tunsigned ,src2 ,nat2)
@@ -3428,7 +3789,8 @@
           [(tboolean ,src) "Boolean"]
           [(tfield ,src) "Field"]
           [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
-          [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+          [(topaque ,src ,opaque-type)
+           (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
           [(tunknown) "Unknown"]
           [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
           [(tbytes ,src ,len) (format "Bytes<~s>" len)]
@@ -3880,6 +4242,13 @@
        (arithmetic-binop src "-" mbits expr1 expr2)]
       [(* ,src ,mbits ,expr1 ,expr2)
        (arithmetic-binop src "*" mbits expr1 expr2)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
+       (unless (and (memq arithmetic-op '(+ - *))
+                    (T type [(topaque ,src ,opaque-type) (foreign-field-max opaque-type)])
+                    (sametype? (de-alias type1) type)
+                    (sametype? (de-alias type2) type))
+         (source-errorf src "invalid operands for foreign field arithmetic"))
+       type]
       [(< ,src ,bits ,expr1 ,expr2)
        (relational-operator src bits expr1 expr2)]
       [(<= ,src ,bits ,expr1 ,expr2)
@@ -3966,6 +4335,12 @@
            (let ([type (Care expr)])
              (for-each unset-idtype! var-name*)
              type)))]
+      [(emit-log ,src ,nat ,len ,[Care : expr -> * type])
+       (unless (nanopass-case (Lnodca Type) (de-alias type)
+                 [(tbytes ,src^ ,len^) (= len^ len)]
+                 [else #f])
+         (source-errorf src "event payload must have type Bytes<~d>" len))
+       (with-output-language (Lnodca Type) `(ttuple ,src))]
       [(assert ,src ,[Care : expr -> * type] ,mesg)
        (unless (nanopass-case (Lnodca Type) (de-alias type)
                  [(tboolean ,src1) #t]
@@ -4040,6 +4415,29 @@
          [else (source-errorf src "expected Bytes<~d>, got ~a for cast-from-bytes"
                               len 
                               (format-type type^))])
+       type]
+      [(jubjub-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Lnodca Type) (de-alias type)
+           [(tfield ,src) 'field]
+           [(topaque ,src ,opaque-type) (and (string=? opaque-type "JubjubScalar") 'scalar)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'field) (eq? to 'scalar))
+                     (and (eq? from 'scalar) (eq? to 'field)))
+           (source-errorf src "invalid JubjubScalar cast")))
+       type]
+      [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Lnodca Type) (de-alias type)
+           [(tbytes ,src ,len) len]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) opaque-type)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eqv? from 32) (string? to))
+                     (and (string? from) (eqv? to 32))
+                     (and (eqv? from 64) (equal? to "Curve25519Scalar")))
+           (source-errorf src "invalid foreign field byte cast")))
        type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (when (= len 0) (source-errorf src "invalid cast from field to Bytes<0>"))
@@ -4304,7 +4702,8 @@
         make-cc-call-condition cc-call-condition?
         (function-name cc-call-condition-function-name)
         (src cc-call-condition-src)
-        (reason cc-call-condition-reason))
+        (reason cc-call-condition-reason)
+        (event? cc-call-condition-event?))
       ; function-ht maps ids (circuit names) to one of:
       ;   an Lnodca Expression:  a circuit that has yet to be processed
       ;   inprocess-circuit:     a circuit that is being processed; used to detect cycles
@@ -4358,10 +4757,14 @@
            (when (cc-call-condition? result)
              (let ([offending-function-name (cc-call-condition-function-name result)])
                (if (eq? offending-function-name #f)
-                   (source-errorf src "constructor cannot call external contracts but ~a at ~a"
+                   (source-errorf src (if (cc-call-condition-event? result)
+                                          "constructor cannot emit an event but ~a at ~a"
+                                          "constructor cannot call external contracts but ~a at ~a")
                                   (cc-call-condition-reason result)
                                   (format-source-object (cc-call-condition-src result)))
-                   (source-errorf src "constructor cannot call external contracts but calls (directly or indirectly) ~a, which ~a at ~a"
+                   (source-errorf src (if (cc-call-condition-event? result)
+                                          "constructor cannot emit an event but calls (directly or indirectly) ~a, which ~a at ~a"
+                                          "constructor cannot call external contracts but calls (directly or indirectly) ~a, which ~a at ~a")
                                   (id-sym offending-function-name)
                                   (cc-call-condition-reason result)
                                   (format-source-object (cc-call-condition-src result))))))))
@@ -4374,7 +4777,10 @@
        (raise (make-cc-call-condition function-name src
                 (format "calls circuit ~a from external contract ~a"
                   elt-name
-                  (name-of-contract type))))])
+                  (name-of-contract type))
+                #f))]
+      [(emit-log ,src ,nat ,len ,expr)
+       (raise (make-cc-call-condition function-name src "emits an event" #t))])
     (Ledger-Accessor : Ledger-Accessor (ir function-name) -> Ledger-Accessor ())
     (Function : Function (ir function-name) -> Function ()
       [(fref ,src ,function-name)
@@ -4474,6 +4880,8 @@
        ir]
       [else ir])
     (Expression : Expression (ir function-name) -> Expression ()
+      [(emit-log ,src ,nat ,len ,expr)
+       (raise (make-impure-condition function-name src "emits a public event"))]
       [(public-ledger ,src ,ledger-field-name ,sugar? ,accessor* ...)
        (raise (make-impure-condition function-name src
                 (format "accesses ledger field ~s" (id-sym ledger-field-name))))]
@@ -5392,6 +5800,13 @@
        (add-path-point src "the computation" "the result of a subtraction involving" (combine-abs abs1 abs2))]
       [(* ,src ,mbits ,[* abs1] ,[* abs2])
        (add-path-point src "the computation" "the result of a multiplication involving" (combine-abs abs1 abs2))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[* abs1] ,[* abs2])
+       (add-path-point src "the computation"
+         (case arithmetic-op
+           [(+) "the result of an addition involving"]
+           [(-) "the result of a subtraction involving"]
+           [(*) "the result of a multiplication involving"])
+         (combine-abs abs1 abs2))]
       [(< ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]
       [(<= ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]
       [(> ,src ,bits ,[* abs1] ,[* abs2]) (handle-comparison src abs1 abs2)]
@@ -5472,7 +5887,7 @@
                 (cons abs abs*)]
                [(spread ,src ,nat ,[Expression : expr p control-witness* disclosing-function-name? -> abs])
                 (Abs-case abs
-                  ; this case isn't exercised because tuple forms don't vector-typed spreads
+                  ; a vector spread cast to a tuple can appear here
                   [(Abs-single abs) (append (make-list nat abs) abs*)]
                   [(Abs-multiple abs^*) (append abs^* abs*)]
                   [else (assert cannot-happen)])]))
@@ -5494,10 +5909,7 @@
                      tuple-arg*)])
          (if (null? abs*)
              (Abs-multiple '())
-             (Abs-single
-               (add-witnesses
-                 (fold-left merge-witnesses '() (map abs->witnesses (cdr abs*)))
-                 (car abs*)))))]
+             (Abs-single (fold-left combine-abs (car abs*) (cdr abs*)))))]
 
       [(seq ,src ,[*] ... ,[* abs]) abs]
 
@@ -5507,11 +5919,20 @@
       ; define-pass doesn't realize above pattern covers let*
       [(let* ,src ([,local* ,[* abs*]] ...) ,expr) (assert cannot-happen)]
 
-      [(assert ,src ,[* abs] ,mesg) (Abs-atomic '())]
+      [(emit-log ,src ,nat ,len ,[* abs])
+       (unless (null? control-witness*)
+         (record-leak! src "performing this emit operation" control-witness*))
+       (let ([witness* (abs->witnesses abs)])
+         (unless (null? witness*)
+           (record-leak! src "emit payload" witness*)))
+       (Abs-multiple '())]
+      [(assert ,src ,[* abs] ,mesg) (Abs-multiple '())]
 
       [(cast-from-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-to-enum ,src ,type ,type^ ,[* abs]) abs]
       [(cast-from-bytes ,src ,type ,len ,[* abs]) abs]
+      [(jubjub-cast ,src ,type ,[* abs]) abs]
+      [(secp256k1-bytes-cast ,src ,type ,[* abs]) abs]
       [(field->bytes ,src ,len ,[* abs]) abs]
       [(bytes->vector ,src ,len ,[* abs]) (Abs-single (Abs-atomic (abs->witnesses abs)))]
       [(vector->bytes ,src ,len ,[* abs]) (Abs-atomic (abs->witnesses abs))]

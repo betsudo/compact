@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Ordinary value carriers: one bounded semantic traversal, two consumers.
 //!
@@ -20,6 +31,16 @@ pub(crate) enum Leaf<'a> {
     Boolean,
     Field,
     JubjubPoint,
+    JubjubScalar,
+    Secp256k1Base,
+    Secp256r1Base,
+    Curve25519Base,
+    Secp256k1Scalar,
+    Secp256r1Scalar,
+    Curve25519Scalar,
+    Secp256k1Point,
+    Secp256r1Point,
+    Curve25519Point,
     OpaqueString,
     OpaqueBytes,
     Bytes(usize),
@@ -92,7 +113,17 @@ fn fold_bounded<S: CarrierSink>(
         Type::Unit => Leaf::Unit,
         Type::Boolean => Leaf::Boolean,
         Type::Field => Leaf::Field,
+        Type::JubjubScalar => Leaf::JubjubScalar,
         Type::JubjubPoint => Leaf::JubjubPoint,
+        Type::Secp256k1Base => Leaf::Secp256k1Base,
+        Type::Secp256r1Base => Leaf::Secp256r1Base,
+        Type::Curve25519Base => Leaf::Curve25519Base,
+        Type::Secp256k1Scalar => Leaf::Secp256k1Scalar,
+        Type::Secp256r1Scalar => Leaf::Secp256r1Scalar,
+        Type::Curve25519Scalar => Leaf::Curve25519Scalar,
+        Type::Secp256k1Point => Leaf::Secp256k1Point,
+        Type::Secp256r1Point => Leaf::Secp256r1Point,
+        Type::Curve25519Point => Leaf::Curve25519Point,
         Type::OpaqueString => Leaf::OpaqueString,
         Type::OpaqueBytes => Leaf::OpaqueBytes,
         Type::Bytes { length } => Leaf::Bytes(*length),
@@ -123,7 +154,7 @@ fn fold_bounded<S: CarrierSink>(
             let element = fold_bounded(element, sink, observer)?;
             return Ok(sink.vector(element, *length));
         }
-        Type::LedgerMap { .. } => {
+        Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => {
             if let Some(observer) = observer {
                 observer.refused(RefusalSite::node(Owner::Type(ty)));
             }

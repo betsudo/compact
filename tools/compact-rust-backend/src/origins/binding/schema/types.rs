@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use super::*;
 pub(super) fn ty(value: &Type) -> Schema<'_> {
     let mut s = Schema::new();
@@ -5,7 +20,17 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
         Type::Unit => s.unit("unit"),
         Type::Boolean => s.unit("boolean"),
         Type::Field => s.unit("field"),
+        Type::JubjubScalar => s.unit("jubjub_scalar"),
         Type::JubjubPoint => s.unit("jubjub_point"),
+        Type::Secp256k1Base => s.unit("secp256k1_base"),
+        Type::Secp256k1Scalar => s.unit("secp256k1_scalar"),
+        Type::Secp256r1Base => s.unit("secp256r1_base"),
+        Type::Secp256r1Scalar => s.unit("secp256r1_scalar"),
+        Type::Curve25519Base => s.unit("curve25519_base"),
+        Type::Curve25519Scalar => s.unit("curve25519_scalar"),
+        Type::Secp256k1Point => s.unit("secp256k1_point"),
+        Type::Secp256r1Point => s.unit("secp256r1_point"),
+        Type::Curve25519Point => s.unit("curve25519_point"),
         Type::OpaqueString => s.unit("opaque_string"),
         Type::OpaqueBytes => s.unit("opaque_bytes"),
         Type::Bytes { length } => {
@@ -34,6 +59,16 @@ pub(super) fn ty(value: &Type) -> Schema<'_> {
             s.tag("vector");
             s.node("element", Owner::Type(element));
             s.size("length", *length);
+        }
+        Type::LedgerMerkle {
+            historic,
+            depth,
+            ty,
+        } => {
+            s.tag("ledger_merkle");
+            s.field("historic", Value::Scalar(Scalar::Bool(*historic)));
+            s.size("depth", usize::from(*depth));
+            s.node("ty", Owner::Type(ty));
         }
         Type::LedgerMap { key, value } => {
             s.tag("ledger_map");

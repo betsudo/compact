@@ -23,6 +23,12 @@ import {
 } from './zswap.js';
 import { PartialProofData, ProofData } from './proof-data.js';
 import { CompactError } from './error.js';
+import { CompactTypeBytes } from './compact-types.js';
+
+/** A Ledger VM log with the address of the emitting contract. */
+export type LogEvent = Extract<ocrt.GatherResult, { tag: 'log' }>['content'] & {
+  address: ocrt.ContractAddress;
+};
 
 /**
  * The external information accessible from within a Compact circuit call
@@ -48,6 +54,8 @@ export interface CircuitContext<PS = any> {
    * The gas limit for this circuit.
    */
   gasLimit?: ocrt.RunningCost;
+  /** Events emitted by successful calls, in execution order. */
+  events?: readonly LogEvent[];
 }
 
 /**
@@ -148,6 +156,7 @@ export const createCircuitContext = <PS>(
     currentQueryContext: initialQueryContext,
     costModel: costModel ?? ocrt.CostModel.initialCostModel(),
     gasLimit,
+    events: [],
   };
 };
 
@@ -202,8 +211,21 @@ export const queryLedgerState = (
   try {
     const res = circuitContext.currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
     circuitContext.currentQueryContext = res.context;
-    // @ts-expect-error: We use a hidden variable to track running cost so we can move it to `CircuitResults` at the end
-    circuitContext['gasCost'] = res.gasCost;
+    // Generated circuits move this internal accumulator to CircuitResults.
+    const context = circuitContext as CircuitContext & { gasCost?: ocrt.RunningCost };
+    const previous = context.gasCost ?? emptyRunningCost();
+    context.gasCost = {
+      readTime: previous.readTime + res.gasCost.readTime,
+      computeTime: previous.computeTime + res.gasCost.computeTime,
+      bytesWritten: previous.bytesWritten + res.gasCost.bytesWritten,
+      bytesDeleted: previous.bytesDeleted + res.gasCost.bytesDeleted,
+    };
+    const logs = res.events
+      .filter((event) => event.tag === 'log')
+      .map((event) => ({ ...event.content, address: res.context.address }));
+    if (logs.length !== 0) {
+      circuitContext.events = [...(circuitContext.events ?? []), ...logs];
+    }
     const reads = res.events.filter((e) => e.tag === 'read');
     let i = 0;
     partialProofData.publicTranscript = partialProofData.publicTranscript.concat(
@@ -231,4 +253,116 @@ export const queryLedgerState = (
     }
     throw err;
   }
+};
+
+/** @internal */
+export const emitShieldedSpend = (context: CircuitContext, proofData: PartialProofData, nullifier: Uint8Array): [] => {
+  if (nullifier.length !== 32) {
+    throw new CompactError('ShieldedSpend nullifier must be Bytes<32>');
+  }
+  return emitEvent(context, proofData, 0n, nullifier, 32);
+};
+
+/** @internal */
+export const emitShieldedBurn = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 49) {
+    throw new CompactError('ShieldedBurn payload must be Bytes<49>');
+  }
+  return emitEvent(context, proofData, 3n, payload, 49);
+};
+
+/** @internal */
+export const emitShieldedMint = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 81) {
+    throw new CompactError('ShieldedMint payload must be Bytes<81>');
+  }
+  return emitEvent(context, proofData, 2n, payload, 81);
+};
+
+/** @internal */
+export const emitShieldedReceive = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 578) {
+    throw new CompactError('ShieldedReceive payload must be Bytes<578>');
+  }
+  return emitEvent(context, proofData, 1n, payload, 578);
+};
+
+/** @internal */
+export const emitUnshieldedSpend = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 145) {
+    throw new CompactError('UnshieldedSpend payload must be Bytes<145>');
+  }
+  return emitEvent(context, proofData, 4n, payload, 145);
+};
+
+/** @internal */
+export const emitUnshieldedReceive = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 145) {
+    throw new CompactError('UnshieldedReceive payload must be Bytes<145>');
+  }
+  return emitEvent(context, proofData, 5n, payload, 145);
+};
+
+/** @internal */
+export const emitUnshieldedMint = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 80) {
+    throw new CompactError('UnshieldedMint payload must be Bytes<80>');
+  }
+  return emitEvent(context, proofData, 6n, payload, 80);
+};
+
+/** @internal */
+export const emitUnshieldedBurn = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 113) {
+    throw new CompactError('UnshieldedBurn payload must be Bytes<113>');
+  }
+  return emitEvent(context, proofData, 7n, payload, 113);
+};
+
+/** @internal */
+export const emitMisc = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 288) {
+    throw new CompactError('Misc payload must be Bytes<288>');
+  }
+  return emitEvent(context, proofData, 10n, payload, 288);
+};
+
+/** @internal */
+export const emitPaused = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 0) {
+    throw new CompactError('Paused payload must be Bytes<0>');
+  }
+  return emitEvent(context, proofData, 8n, payload, 0);
+};
+
+/** @internal */
+export const emitUnpaused = (context: CircuitContext, proofData: PartialProofData, payload: Uint8Array): [] => {
+  if (payload.length !== 0) {
+    throw new CompactError('Unpaused payload must be Bytes<0>');
+  }
+  return emitEvent(context, proofData, 9n, payload, 0);
+};
+
+const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
+  const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
+    tag: 'cell',
+    content: { value, alignment: [{ tag: 'atom', value: { tag: 'bytes', length } }] },
+  });
+  queryLedgerState(context, proofData, [
+    {
+      push: {
+        storage: false,
+        value: {
+          tag: 'array',
+          content: [
+            cell(ocrt.bigIntToValue(1n), 4),
+            cell(ocrt.bigIntToValue(tag), 1),
+            cell(new CompactTypeBytes(length).toValue(payload), length),
+          ],
+        },
+      },
+    },
+    'log',
+  ]);
+  return [];
 };

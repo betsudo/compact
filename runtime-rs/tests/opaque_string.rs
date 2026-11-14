@@ -24,6 +24,9 @@ fn opaque_string_uses_ledger_compress_encoding() {
         "",
         "registry-key",
         "a longer key spanning more than thirty-one bytes",
+        "\u{feff}hi",
+        "\u{feff}\u{feff}hi",
+        "\u{feff}",
     ] {
         let string = OpaqueString::from(text);
         let bytes = text.as_bytes().to_vec();

@@ -191,15 +191,319 @@ fn map_size_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
 
 // #661 adds only explicit new-tag denials to retired exhaustive matchers.
 // Reconstruct exact predecessor bytes before the unchanged older projections.
+const FOLD_ENUM_SHA256: &str = "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15";
 const FOLD_ENUM: &[u8] = include_bytes!("fold-expression-enum-661.json");
 fn fold_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
-    if digest(bytes) != "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15" {
+    if digest(bytes) != FOLD_ENUM_SHA256 {
         return Err("unreviewed Fold enum compatibility checkpoint".into());
     }
     serde_json::from_slice(bytes).map_err(|error| error.to_string())
 }
+
+// SHA-512 adds one operand to historical traversals and one old-oracle refusal.
+const SHA512_ENUM: &[u8] = include_bytes!("sha512-expression-enum.json");
+fn sha512_enum_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "665d8a3ed631131bc5569292e644d3d3ce8dde1c6703229df45070990de31558" {
+        return Err("unreviewed SHA-512 enum compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_sha512_enum(path: &str, current: &str) -> Result<String, String> {
+    let before_secp256k1 = before_secp256k1_cast(path, current)?;
+    legacy_source(path, &before_secp256k1, &sha512_enum_manifest(SHA512_ENUM)?)
+}
+
+const SECP256K1_CAST: &[u8] = include_bytes!("secp256k1-bytes-cast-expression.json");
+fn secp256k1_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "2c0c3f6b849fe7db1f8a141ff2db1c41e2eac36a52a7e70f957b0c1745f227a8" {
+        return Err("unreviewed secp256k1 cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+// Fixed byte conversions add two closed variants to retained exhaustive matchers.
+const FIXED_BYTES_ENUM: &[u8] = include_bytes!("fixed-bytes-expression.json");
+fn fixed_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "a2da256f5d860e8359ced0c98c69bd0fd12a830466ec795c93db4b9e80f3f1d2" {
+        return Err("unreviewed fixed bytes compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+const VECTOR_TO_BYTES: &[u8] = include_bytes!("vector-to-bytes-expression.json");
+fn vector_to_bytes_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "7cf84de7b79af54d0fe946b1d18fb1d25ca9e7311433cb056c029b14eba10117" {
+        return Err("unreviewed Vector-to-Bytes compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+const JUBJUB_CAST: &[u8] = include_bytes!("jubjub-scalar-cast-expression.json");
+
+fn jubjub_cast_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "efd83beeb5ea8735b50220ac676f889c29b85e37b4c06dd1d8c4c1c81a94bd7d" {
+        return Err("unreviewed Jubjub scalar cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+const NESTED_MAP: &[u8] = include_bytes!("nested-map-expression.json");
+
+fn nested_map_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "16626bbcfeecb3ec6fc44039d7b3c71fe425fe4a6b4383f78c590d9cb79f1c07" {
+        return Err("unreviewed nested Map compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+// The event variant extends the historical walkers with an explicit operand or refusal.
+const SHIELDED_SPEND_EVENT: &[u8] = include_bytes!("shielded-spend-event-expression.json");
+
+fn shielded_spend_event_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "76f84b0985527396e52f606d44e35171f82c67aff119b1e59f6a61be7653ea34" {
+        return Err("unreviewed ShieldedSpend event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+const BYTES_ZERO_PAD: &[u8] = include_bytes!("bytes-zero-pad-expression.json");
+
+fn bytes_zero_pad_manifest() -> Result<Value, String> {
+    if digest(BYTES_ZERO_PAD) != "83e0e815ae24786000f0a1d6f1dd16d6a831356700a9533d7003cbe91b7df965"
+    {
+        return Err("unreviewed Bytes zero-padding compatibility checkpoint".into());
+    }
+    serde_json::from_slice(BYTES_ZERO_PAD).map_err(|error| error.to_string())
+}
+
+const UINT_BYTES: &[u8] = include_bytes!("uint-bytes-expression.json");
+
+fn uint_bytes_manifest() -> Result<Value, String> {
+    if digest(UINT_BYTES) != "78ec997f27d23f45ce4d65217c92e8da11843bf29da96a3c16a45df844a14216" {
+        return Err("unreviewed Uint byte conversion compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UINT_BYTES).map_err(|error| error.to_string())
+}
+
+const FIELD_BYTES: &[u8] = include_bytes!("field-bytes-expression.json");
+
+fn field_bytes_manifest() -> Result<Value, String> {
+    if digest(FIELD_BYTES) != "747714f4a07b6f430b8f7f58a4172c836a821b9cbfe89dfe6733671a0831d6a8" {
+        return Err("unreviewed Field byte conversion compatibility checkpoint".into());
+    }
+    serde_json::from_slice(FIELD_BYTES).map_err(|error| error.to_string())
+}
+
+const BYTES_FROM_CHUNKS: &[u8] = include_bytes!("bytes-from-chunks-expression.json");
+
+fn bytes_from_chunks_manifest() -> Result<Value, String> {
+    if digest(BYTES_FROM_CHUNKS)
+        != "3de7907495cf58af98752fe9fca5a5818f73238537784bbd44daff6e8bb09c40"
+    {
+        return Err("unreviewed Bytes chunk compatibility checkpoint".into());
+    }
+    serde_json::from_slice(BYTES_FROM_CHUNKS).map_err(|error| error.to_string())
+}
+
+const ENUM_CAST: &[u8] = include_bytes!("enum-cast-expression.json");
+
+fn enum_cast_manifest() -> Result<Value, String> {
+    if digest(ENUM_CAST) != "bf12fb434e7532ecc2db9dc669442e3c02f468f80ffccee5879fefffe46f058d" {
+        return Err("unreviewed enum cast compatibility checkpoint".into());
+    }
+    serde_json::from_slice(ENUM_CAST).map_err(|error| error.to_string())
+}
+
+const WIDE_UINT_BYTES: &[u8] = include_bytes!("wide-uint-bytes-expression.json");
+
+fn wide_uint_bytes_manifest() -> Result<Value, String> {
+    if digest(WIDE_UINT_BYTES) != "5f0bcd041ee2631eb97c9e0333fb469aac311b6d41944cc735983e1b911b8766"
+    {
+        return Err("unreviewed wide Uint byte compatibility checkpoint".into());
+    }
+    serde_json::from_slice(WIDE_UINT_BYTES).map_err(|error| error.to_string())
+}
+
+const SHIELDED_BURN_EVENT: &[u8] = include_bytes!("shielded-burn-event-expression.json");
+
+fn shielded_burn_event_manifest() -> Result<Value, String> {
+    if digest(SHIELDED_BURN_EVENT)
+        != "cde729d3dd2a6ec2469c103b1b391742280ed743151336e6168b54764875a30b"
+    {
+        return Err("unreviewed ShieldedBurn event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SHIELDED_BURN_EVENT).map_err(|error| error.to_string())
+}
+
+const SHIELDED_MINT_EVENT: &[u8] = include_bytes!("shielded-mint-event-expression.json");
+
+fn shielded_mint_event_manifest() -> Result<Value, String> {
+    if digest(SHIELDED_MINT_EVENT)
+        != "3e045104ec56f30a0eead62f7833f08c2ffc8b610385a212b0177006c32facae"
+    {
+        return Err("unreviewed ShieldedMint event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SHIELDED_MINT_EVENT).map_err(|error| error.to_string())
+}
+
+const SHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("shielded-receive-event-expression.json");
+
+fn shielded_receive_event_manifest() -> Result<Value, String> {
+    if digest(SHIELDED_RECEIVE_EVENT)
+        != "1849c79092890dffccb1789b33fadf1b452f762e94b2cda2a5bbc14a37c342a8"
+    {
+        return Err("unreviewed ShieldedReceive event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
+}
+
+const UNSHIELDED_SPEND_EVENT: &[u8] = include_bytes!("unshielded-spend-event-expression.json");
+
+fn unshielded_spend_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_SPEND_EVENT)
+        != "ce0658702126a8b8d4f987050eadcdd8d6a672c6f94713a76f9b6b1419a4787d"
+    {
+        return Err("unreviewed UnshieldedSpend event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_SPEND_EVENT).map_err(|error| error.to_string())
+}
+
+const UNSHIELDED_RECEIVE_EVENT: &[u8] = include_bytes!("unshielded-receive-event-expression.json");
+
+fn unshielded_receive_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_RECEIVE_EVENT)
+        != "3f6ae7f9c972cc30591c81e39bc5a731ef7846765cc6bf31ad4522a930d3e19c"
+    {
+        return Err("unreviewed UnshieldedReceive event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_RECEIVE_EVENT).map_err(|error| error.to_string())
+}
+
+const UNSHIELDED_MINT_EVENT: &[u8] = include_bytes!("unshielded-mint-event-expression.json");
+
+fn unshielded_mint_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_MINT_EVENT)
+        != "cf516c725ba065c1b7216d9fc1fe2d9a75cf916712ad3bda55a903cc6bd6b664"
+    {
+        return Err("unreviewed UnshieldedMint event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_MINT_EVENT).map_err(|error| error.to_string())
+}
+
+const UNSHIELDED_BURN_EVENT: &[u8] = include_bytes!("unshielded-burn-event-expression.json");
+
+fn unshielded_burn_event_manifest() -> Result<Value, String> {
+    if digest(UNSHIELDED_BURN_EVENT)
+        != "4593d2d49d08f82329dce3bdb86faa21749f96d2f09f3281e8e40050566b1201"
+    {
+        return Err("unreviewed UnshieldedBurn event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(UNSHIELDED_BURN_EVENT).map_err(|error| error.to_string())
+}
+
+const PAUSE_EVENT: &[u8] = include_bytes!("pause-event-expression.json");
+
+fn pause_event_manifest() -> Result<Value, String> {
+    if digest(PAUSE_EVENT) != "3e55f932ce64167aae680341d96956149e7eedd87b1a64634b814bea7a13867f" {
+        return Err("unreviewed pause event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(PAUSE_EVENT).map_err(|error| error.to_string())
+}
+
+const MISC_EVENT: &[u8] = include_bytes!("misc-event-expression.json");
+
+fn misc_event_manifest() -> Result<Value, String> {
+    if digest(MISC_EVENT) != "3ad3ea878b6c99d1a7f0b6a73769cf691a294480a0056ee8ff471d25cd31ec86" {
+        return Err("unreviewed Misc event compatibility checkpoint".into());
+    }
+    serde_json::from_slice(MISC_EVENT).map_err(|error| error.to_string())
+}
+
+fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
+    let current = legacy_source(path, current, &misc_event_manifest()?)?;
+    let current = legacy_source(path, &current, &pause_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_burn_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_mint_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_receive_event_manifest()?)?;
+    let current = legacy_source(path, &current, &unshielded_spend_event_manifest()?)?;
+    let current = legacy_source(path, &current, &shielded_receive_event_manifest()?)?;
+    let current = legacy_source(path, &current, &shielded_mint_event_manifest()?)?;
+    let current = legacy_source(path, &current, &shielded_burn_event_manifest()?)?;
+    let current = legacy_source(path, &current, &wide_uint_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &enum_cast_manifest()?)?;
+    let current = legacy_source(path, &current, &bytes_from_chunks_manifest()?)?;
+    let current = legacy_source(path, &current, &field_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &uint_bytes_manifest()?)?;
+    let current = legacy_source(path, &current, &bytes_zero_pad_manifest()?)?;
+    let current = legacy_source(
+        path,
+        &current,
+        &shielded_spend_event_manifest(SHIELDED_SPEND_EVENT)?,
+    )?;
+    legacy_source(path, &current, &nested_map_manifest(NESTED_MAP)?)
+}
+
+fn before_jubjub_cast(path: &str, current: &str) -> Result<String, String> {
+    let current = before_nested_map(path, current)?;
+    legacy_source(path, &current, &jubjub_cast_manifest(JUBJUB_CAST)?)
+}
+
+fn before_vector_to_bytes(path: &str, current: &str) -> Result<String, String> {
+    let current = before_jubjub_cast(path, current)?;
+    legacy_source(path, &current, &vector_to_bytes_manifest(VECTOR_TO_BYTES)?)
+}
+
+fn before_secp256k1_cast(path: &str, current: &str) -> Result<String, String> {
+    let before_vector = before_vector_to_bytes(path, current)?;
+    let before_bytes = legacy_source(
+        path,
+        &before_vector,
+        &fixed_bytes_manifest(FIXED_BYTES_ENUM)?,
+    )?;
+    let before_accessors = legacy_source(path, &before_bytes, &secp256k1_accessors_manifest()?)?;
+    let before_unary = legacy_source(
+        path,
+        &before_accessors,
+        &secp256k1_unary_manifest(SECP256K1_UNARY)?,
+    )?;
+    legacy_source(
+        path,
+        &before_unary,
+        &secp256k1_cast_manifest(SECP256K1_CAST)?,
+    )
+}
+
+const SECP256K1_ACCESSORS: &[u8] = include_bytes!("secp256k1-point-accessor-expression.json");
+fn secp256k1_accessors_manifest() -> Result<Value, String> {
+    if digest(SECP256K1_ACCESSORS)
+        != "61f0176a053d08fd3ca08f12127998b3e4fc99113ed7d62fd59bff4a8028ece8"
+    {
+        return Err("unreviewed secp256k1 accessor compatibility checkpoint".into());
+    }
+    serde_json::from_slice(SECP256K1_ACCESSORS).map_err(|error| error.to_string())
+}
+
+const SECP256K1_UNARY: &[u8] = include_bytes!("secp256k1-unary-expression.json");
+fn secp256k1_unary_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "fb7beda87e26b8eddf818f4b8a047e28307f24c52dcf910e55a534f05f9a96ad" {
+        return Err("unreviewed secp256k1 unary compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+
+// Keccak adds an encoding field to three historical traversal patterns.
+const KECCAK_ENCODING: &[u8] = include_bytes!("keccak-encoding-schema20.json");
+fn keccak_encoding_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "c00e3084f3be4d4a6cb1216d6f21fb4314726945ec96bd9e399de0a3d1440ca4" {
+        return Err("unreviewed Keccak encoding compatibility checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_keccak_encoding(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(path, current, &keccak_encoding_manifest(KECCAK_ENCODING)?)
+}
 fn before_fold_enum(path: &str, current: &str) -> Result<String, String> {
-    legacy_source(path, current, &fold_enum_manifest(FOLD_ENUM)?)
+    let before_sha512 = before_sha512_enum(path, current)?;
+    let before_keccak = before_keccak_encoding(path, &before_sha512)?;
+    legacy_source(path, &before_keccak, &fold_enum_manifest(FOLD_ENUM)?)
 }
 
 // #617 extracts the two live shared definitions from the frozen Plan oracle.
@@ -232,7 +536,8 @@ fn shared_source(manifest: &Value, path: &str, bytes: &[u8]) -> Result<(), Strin
         .ok_or("unreviewed shared oracle source")?;
     let current = std::str::from_utf8(bytes).map_err(|e| e.to_string())?;
     let checkpoint = generic_retirement_manifest(GENERIC_RETIREMENT)?;
-    let previous = legacy_source(path, current, &checkpoint)?;
+    let current = before_nested_map(path, current)?;
+    let previous = legacy_source(path, &current, &checkpoint)?;
     if digest(previous.as_bytes()) != expected {
         return Err(format!("shared oracle source drift: {path}"));
     }
@@ -316,6 +621,13 @@ pub(super) fn legacy_authority() -> Value {
     authority["resource_metadata_projection"] = resource_metadata;
     authority["commit_input_test_projection"] = commit_inputs_manifest(COMMIT_INPUTS).unwrap();
     authority["audited_local_projection"] = audited_local_manifest(AUDITED_LOCAL).unwrap();
+    authority["vector_to_bytes_projection"] = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
+    authority["fixed_bytes_projection"] = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
+    authority["secp256k1_cast_projection"] = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
+    authority["secp256k1_accessors_projection"] = secp256k1_accessors_manifest().unwrap();
+    authority["secp256k1_unary_projection"] = secp256k1_unary_manifest(SECP256K1_UNARY).unwrap();
+    authority["sha512_enum_projection"] = sha512_enum_manifest(SHA512_ENUM).unwrap();
+    authority["keccak_encoding_projection"] = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
     authority["fold_enum_projection"] = fold_enum_manifest(FOLD_ENUM).unwrap();
     authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     authority["start_funding_projection"] = start_funding_manifest(START_FUNDING).unwrap();
@@ -386,6 +698,7 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
 
     for (path, row) in start_funding["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_nested_map(path, &current).unwrap();
         let previous = legacy_source(path, &current, &start_funding).unwrap();
         assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
         assert!(legacy_source(path, &(current.clone() + "\n// drift\n"), &start_funding).is_err());
@@ -442,6 +755,7 @@ fn retired_oracle_projection_rejects_drift_and_forged_authority() {
     for (path, row) in commit_inputs["owners"].as_object().unwrap() {
         let live = std::fs::read_to_string(root.join(path)).unwrap();
         let generic = generic_retirement_manifest(GENERIC_RETIREMENT).unwrap();
+        let live = before_nested_map(path, &live).unwrap();
         let current = legacy_source(path, &live, &generic).unwrap();
         assert!(legacy_source(path, &(live + "\n// drift\n"), &generic).is_err());
         assert_eq!(
@@ -554,6 +868,8 @@ fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forge
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, row) in projection["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_sha512_enum(path, &current).unwrap();
+        let current = before_keccak_encoding(path, &current).unwrap();
         let previous = legacy_source(path, &current, &projection).unwrap();
         assert_eq!(digest(previous.as_bytes()), row["previous_sha256"]);
         let edits = row["predecessor_reconstruction"].as_array().unwrap();
@@ -573,4 +889,183 @@ fn fold_enum_projection_preserves_every_predecessor_and_rejects_partial_or_forge
     forged["owners"][path]["predecessor_reconstruction"][0]["previous"] =
         Value::String("unreviewed acceptance".into());
     assert!(fold_enum_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
+}
+
+#[test]
+fn keccak_encoding_projection_preserves_exact_fold_oracles() {
+    let projection = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
+    let fold = fold_enum_manifest(FOLD_ENUM).unwrap();
+    assert!(keccak_encoding_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        FOLD_ENUM_SHA256
+    );
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 3);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_sha512_enum(path, &current).unwrap();
+        let predecessor = before_keccak_encoding(path, &current).unwrap();
+        assert_eq!(
+            digest(predecessor.as_bytes()),
+            fold["owners"][path]["current_sha256"]
+        );
+        assert_eq!(
+            current.replacen(
+                "Expr::Keccak256 { value, .. }",
+                "Expr::Keccak256 { value }",
+                1
+            ),
+            predecessor
+        );
+        assert!(before_keccak_encoding(path, &predecessor).is_err());
+        assert!(before_keccak_encoding(path, &(current + "\n// drift\n")).is_err());
+    }
+}
+
+#[test]
+fn sha512_enum_projection_preserves_exact_predecessors() {
+    let projection = sha512_enum_manifest(SHA512_ENUM).unwrap();
+    let keccak = keccak_encoding_manifest(KECCAK_ENCODING).unwrap();
+    let fold = fold_enum_manifest(FOLD_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(KECCAK_ENCODING)
+    );
+    assert!(sha512_enum_manifest(br#"{"owners":{}}"#).is_err());
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    for (path, owner) in owners {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_secp256k1_cast(path, &current).unwrap();
+        let predecessor = legacy_source(path, &current, &projection).unwrap();
+        let pinned = keccak["owners"].get(path).unwrap_or(&fold["owners"][path]);
+        assert_eq!(digest(predecessor.as_bytes()), pinned["current_sha256"]);
+        let edits = owner["predecessor_reconstruction"].as_array().unwrap();
+        assert_eq!(edits.len(), 1);
+        let edit = edits[0]["current"].as_str().unwrap();
+        assert!(edit.contains("Expr::Sha512"));
+        assert_eq!(edits[0]["previous"], "");
+        assert_eq!(current.replacen(edit, "", 1), predecessor);
+        assert!(legacy_source(path, &predecessor, &projection).is_err());
+        assert!(legacy_source(path, &(current + "\n// drift\n"), &projection).is_err());
+    }
+}
+
+#[test]
+fn secp256k1_cast_projection_authenticates_exact_sha512_predecessors() {
+    let projection = secp256k1_cast_manifest(SECP256K1_CAST).unwrap();
+    let sha512 = sha512_enum_manifest(SHA512_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(SHA512_ENUM)
+    );
+    assert!(secp256k1_cast_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let predecessor = before_secp256k1_cast(path, &current).unwrap();
+        assert_eq!(
+            digest(predecessor.as_bytes()),
+            sha512["owners"][path]["current_sha256"]
+        );
+        assert!(before_secp256k1_cast(path, &predecessor).is_err());
+        assert!(before_secp256k1_cast(path, &(current + "\n// drift\n")).is_err());
+    }
+}
+
+#[test]
+fn fixed_bytes_projection_preserves_all_exact_predecessors() {
+    let projection = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
+    let accessors = secp256k1_accessors_manifest().unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(SECP256K1_ACCESSORS)
+    );
+    assert!(fixed_bytes_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let current = before_vector_to_bytes(path, &current).unwrap();
+        let previous = legacy_source(path, &current, &projection).unwrap();
+        assert_eq!(
+            digest(previous.as_bytes()),
+            accessors["owners"][path]["current_sha256"]
+        );
+        assert!(legacy_source(path, &previous, &projection).is_err());
+        assert!(legacy_source(path, &(current + "\n// unrelated drift\n"), &projection).is_err());
+    }
+}
+
+#[test]
+fn vector_to_bytes_projection_preserves_exact_fixed_bytes_predecessors() {
+    let projection = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
+    let fixed_bytes = fixed_bytes_manifest(FIXED_BYTES_ENUM).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(FIXED_BYTES_ENUM)
+    );
+    assert!(vector_to_bytes_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_vector_to_bytes(path, &current).unwrap();
+        assert_eq!(
+            digest(previous.as_bytes()),
+            fixed_bytes["owners"][path]["current_sha256"]
+        );
+        assert!(before_vector_to_bytes(path, &previous).is_err());
+        assert!(before_vector_to_bytes(path, &(current + "\n// unrelated drift\n")).is_err());
+    }
+}
+
+#[test]
+fn jubjub_cast_projection_preserves_exact_vector_to_bytes_predecessors() {
+    let projection = jubjub_cast_manifest(JUBJUB_CAST).unwrap();
+    let vector = vector_to_bytes_manifest(VECTOR_TO_BYTES).unwrap();
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(VECTOR_TO_BYTES)
+    );
+    assert!(jubjub_cast_manifest(br#"{"owners":{}}"#).is_err());
+    let owners = projection["owners"].as_object().unwrap();
+    assert_eq!(owners.len(), 4);
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for path in owners.keys() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_jubjub_cast(path, &current).unwrap();
+        assert_eq!(
+            digest(previous.as_bytes()),
+            vector["owners"][path]["current_sha256"]
+        );
+        let current = before_nested_map(path, &current).unwrap();
+        assert!(before_jubjub_cast(path, &previous).is_err());
+        assert!(before_jubjub_cast(path, &(current + "\n// unrelated drift\n")).is_err());
+    }
+}
+
+#[test]
+fn nested_map_projection_reconstructs_exact_historical_owners() {
+    let projection = nested_map_manifest(NESTED_MAP).unwrap();
+    assert!(nested_map_manifest(br#"{"owners":{}}"#).is_err());
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(JUBJUB_CAST)
+    );
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_nested_map(path, &current).unwrap();
+        assert_eq!(digest(previous.as_bytes()), owner["previous_sha256"]);
+        assert!(before_nested_map(path, &previous).is_err());
+        assert!(before_nested_map(path, &(current + "\n// unrelated drift\n")).is_err());
+    }
 }

@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "5f0bcd041ee2631eb97c9e0333fb469aac311b6d41944cc735983e1b911b8766"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "2d4d876535dfef326a23cd24f150b5231d6c584f8ccd20583208badbe1cbabed",
+      "previous_sha256": "5028bde8b38e1a7d1eb94954be471dd34522b66891f28922b9cc2e435567973d",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::KernelClaim { value, .. } => visit(value),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "2ee8286dcbd4309274bea441d2e2e4ac042a605ff2b469e41983dff003eb6ba8",
+      "previous_sha256": "5469f26f6a9f154edc876c460abf394232f110af0bbce3eaf3dd1415f2238d9d",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::KernelClaim { value, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "3d162782fac2c0da27dc8ce01996ebba31ab4906b3b7aceac517e03b1a44939c",
+      "previous_sha256": "c0f2460217490614d2e950fcb25cad6a081c766a3e1d27750b8de6f0a9c82445",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedSpend { .. }\n        | Expr::EmitShieldedBurn { .. }\n",
+          "previous": "        | Expr::EmitShieldedSpend { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "3ff6e763de4c9f3f58e47e457ca50f63648e411ac8702851fb54cc82975d21d6",
+      "previous_sha256": "de4972498dd62d4fd7079270e2c3cc47be82ce9ee4ec6739247453a1357a5c83",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedSpend { .. }\n        | Expr::EmitShieldedBurn { .. }\n",
+          "previous": "        | Expr::EmitShieldedSpend { .. }\n"
+        }
+      ]
+    }
+  }
+}

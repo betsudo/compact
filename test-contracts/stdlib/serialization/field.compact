@@ -1,0 +1,40 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export circuit serialize_field(x: Field): Bytes<32> {
+  return serialize<Field, 32>(x);
+}
+export circuit deserialize_field(x: Bytes<32>): Field {
+  return deserialize<Field, 32>(x);
+}
+
+new type Element = Field;
+
+export circuit pad_field(x: Element): Bytes<34> {
+  return serialize<Element, 34>(x);
+}
+
+export circuit decode_field(x: Bytes<34>): Element {
+  return deserialize<Element, 34>(x);
+}
+
+export circuit direct_short(x: Bytes<3>): Field {
+  return x as Field;
+}
+
+export circuit direct_long(x: Bytes<33>): Field {
+  return x as Field;
+}

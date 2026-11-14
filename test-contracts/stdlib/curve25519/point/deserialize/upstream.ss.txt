@@ -1,0 +1,23 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger F1: Curve25519Point;"
+      "ledger F2: Secp256k1Point;"
+      "ledger F3: Secp256r1Point;"
+      "export circuit foo1(bv: Bytes<64>): Curve25519Point {"
+      "  F1 = deserialize<Curve25519Point, 64>(disclose(bv));"
+      "  return F1;"
+      "}"
+    ; "export circuit foo2(bv: Bytes<64>): Secp256k1Point {"
+    ; "  F2 = deserialize<Secp256k1Point, 64>(disclose(bv));"
+    ; "  return F2;"
+    ; "}"
+    ; "export circuit foo3(bv: Bytes<64>): Secp256r1Point {"
+    ; "  F3 = deserialize<Secp256r1Point, 64>(disclose(bv));"
+    ; "  return F3;"
+    ; "}"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("<standard library>" "deserialization is not yet supported for curve type ~a" ("Curve25519Point")))
+    )

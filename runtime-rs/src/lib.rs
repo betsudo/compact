@@ -22,22 +22,35 @@
 #![forbid(unsafe_code)]
 
 pub mod context;
+mod curve25519_point;
+mod foreign_fields;
 #[cfg(feature = "experimental-functional")]
 pub mod functional;
 mod hash_input;
+mod jubjub_scalar;
 pub mod ledger;
 mod natives;
 mod opaque;
 mod primitives;
 pub mod public_state;
 pub mod recording;
+mod secp256k1_point;
+mod secp256k1_recovery;
+mod secp256r1_point;
+mod secp256r1_recovery;
 pub mod slots;
 mod zswap;
 pub use zswap::{CircuitZswapOutput, CircuitZswapPlan};
 #[cfg(feature = "ledger-transaction")]
 pub mod transaction;
 
+pub use curve25519_point::Curve25519Point;
+pub use foreign_fields::{
+    Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Scalar, Secp256r1Base,
+    Secp256r1Scalar,
+};
 pub use hash_input::{ExactHashInput, HashInputValue, exact_hash_input, exact_private_output};
+pub use jubjub_scalar::JubjubScalar;
 pub use midnight_compact_runtime_macros::{
     CompactCellValue, CompactEnum, CompactHashInput, CompactMerklePath, CompactMerklePathEntry,
     CompactMerkleTreeDigest, CompactStructRepr, compact_witness_bridge,
@@ -45,13 +58,18 @@ pub use midnight_compact_runtime_macros::{
 pub use natives::{
     construct_jubjub_point, degrade_to_transient, ec_add, ec_mul, ec_mul_generator, ec_neg,
     hash_to_curve, jubjub_point_x, jubjub_point_y, jubjub_scalar_from_native, keccak256,
-    persistent_commit, persistent_hash, transient_commit, transient_hash, upgrade_from_transient,
+    keccak256_aligned, persistent_commit, persistent_hash, sha512, transient_commit,
+    transient_hash, upgrade_from_transient,
 };
 pub use opaque::{OpaqueBytes, OpaqueString};
 pub use primitives::{
     BoundedUint, FixedBytes, FixedVector, JubjubPoint, UnsignedOperand, WideUint, add_unsigned,
     add_wide_unsigned, cast_unsigned, multiply_unsigned, narrow_wide_uint, subtract_unsigned,
 };
+pub use secp256k1_point::Secp256k1Point;
+pub use secp256k1_recovery::secp256k1_ecdsa_recover;
+pub use secp256r1_point::Secp256r1Point;
+pub use secp256r1_recovery::secp256r1_ecdsa_recover;
 
 /// Ledger FAB types used by the generated user-type derive.
 pub mod fab {
@@ -89,6 +107,21 @@ pub enum CompactError {
     InvalidUnsignedValue,
     InvalidJubjubScalar,
     InvalidJubjubPoint,
+    Secp256k1BaseZeroInverse,
+    Secp256k1ScalarZeroInverse,
+    Secp256r1BaseZeroInverse,
+    Secp256r1ScalarZeroInverse,
+    Curve25519BaseZeroInverse,
+    Curve25519ScalarZeroInverse,
+    Secp256k1IdentityX,
+    Secp256k1IdentityY,
+    Secp256r1IdentityX,
+    Secp256r1IdentityY,
+    InvalidSecp256k1Signature,
+    Secp256k1RecoveryFailed,
+    InvalidSecp256r1Signature,
+    Secp256r1RecoveryFailed,
+    InvalidHashInput,
     MissingCoinPublicKey,
     ZswapAllocationLocked,
     ZswapOfferOutputMismatch,
@@ -115,6 +148,63 @@ impl std::fmt::Display for CompactError {
             Self::InvalidUnsignedValue => write!(f, "invalid Compact unsigned value"),
             Self::InvalidJubjubScalar => write!(f, "invalid Jubjub scalar"),
             Self::InvalidJubjubPoint => write!(f, "invalid Jubjub point"),
+            Self::Secp256k1BaseZeroInverse => {
+                write!(f, "secp256k1 base field has no inverse for 0")
+            }
+            Self::Secp256k1ScalarZeroInverse => {
+                write!(f, "secp256k1 scalar field has no inverse for 0")
+            }
+            Self::Secp256r1BaseZeroInverse => {
+                write!(f, "secp256r1 base field has no inverse for 0")
+            }
+            Self::Secp256r1ScalarZeroInverse => {
+                write!(f, "secp256r1 scalar field has no inverse for 0")
+            }
+            Self::Curve25519BaseZeroInverse => {
+                write!(f, "Curve25519 base field has no inverse for 0")
+            }
+            Self::Curve25519ScalarZeroInverse => {
+                write!(f, "Curve25519 scalar field has no inverse for 0")
+            }
+            Self::Secp256k1IdentityX => {
+                write!(
+                    f,
+                    "cannot extract the x-coordinate of the secp256k1 identity point"
+                )
+            }
+            Self::Secp256k1IdentityY => {
+                write!(
+                    f,
+                    "cannot extract the y-coordinate of the secp256k1 identity point"
+                )
+            }
+            Self::Secp256r1IdentityX => {
+                write!(
+                    f,
+                    "cannot extract the x-coordinate of the secp256r1 identity point"
+                )
+            }
+            Self::Secp256r1IdentityY => {
+                write!(
+                    f,
+                    "cannot extract the y-coordinate of the secp256r1 identity point"
+                )
+            }
+            Self::InvalidSecp256k1Signature => {
+                write!(f, "expected nonzero secp256k1 signature scalars")
+            }
+            Self::Secp256k1RecoveryFailed => write!(
+                f,
+                "no finite secp256k1 key for this signature and recovery id"
+            ),
+            Self::InvalidSecp256r1Signature => {
+                write!(f, "expected nonzero secp256r1 signature scalars")
+            }
+            Self::Secp256r1RecoveryFailed => write!(
+                f,
+                "no finite secp256r1 key for this signature and recovery id"
+            ),
+            Self::InvalidHashInput => write!(f, "invalid Compact hash input"),
             Self::ZswapOfferOutputMismatch => write!(
                 f,
                 "Zswap output intent differs from authoritative offer allocation"

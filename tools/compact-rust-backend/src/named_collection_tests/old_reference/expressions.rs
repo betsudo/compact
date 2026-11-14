@@ -100,6 +100,10 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::CounterLessThan {
             threshold: value, ..
         } => collect_expression_types(value, structs, enums, origins)?,
+        Expr::NestedMapLookup { inner, outer, .. } => {
+            collect_expression_types(inner, structs, enums, origins)?;
+            collect_expression_types(outer, structs, enums, origins)?;
+        }
         Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {
             collect_expression_types(key, structs, enums, origins)?
         }
@@ -113,12 +117,17 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         }
         Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
         | Expr::JubjubPointX { value }
         | Expr::JubjubPointY { value }
+        | Expr::Secp256k1Neg { value }
+        | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => {
             collect_expression_types(value, structs, enums, origins)?
@@ -140,10 +149,20 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         }
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
+        | Expr::BytesToVector { value, .. }
+        | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
+        | Expr::BytesToField { value }
+        | Expr::BytesToUint { value, .. }
+        | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins)?
         }
-        Expr::Coerce { value, ty } => {
+        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }
+            | Expr::EnumCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins)?;
             collect_named_types_with_origins(ty, structs, enums, Some(origins))?;
         }
@@ -169,7 +188,7 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins)?
         }
         Expr::KernelMintShielded { domain, amount } => {

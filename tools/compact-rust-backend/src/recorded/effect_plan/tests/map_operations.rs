@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Map composition laws; immutable authority and runtime execution have separate tests.
 use super::super::type_environment::TypeEnvironment;
 use super::*;
@@ -129,6 +141,87 @@ fn rendered(checked: &CheckedPlan) -> String {
     let steps = render(checked).unwrap().steps;
     quote::quote!(#(#steps)*).to_string()
 }
+
+#[test]
+fn nested_map_plan_checks_both_key_types_and_the_declared_slot() {
+    let inner = validate::uint("255");
+    let mut c = contract(
+        Type::Boolean,
+        Type::LedgerMap {
+            key: Box::new(inner.clone()),
+            value: Box::new(Type::JubjubPoint),
+        },
+    );
+    let root = &mut c.stateful_circuits[0];
+    root.parameters[1].ty = inner;
+    root.actions.clear();
+    root.result = Type::JubjubPoint;
+    root.return_value = StateReturn::Expression {
+        value: Expr::NestedMapLookup {
+            field: "table".into(),
+            index: 0,
+            outer: Box::new(parameter("key")),
+            inner: Box::new(parameter("input")),
+        },
+    };
+    let checked = checked(&c).unwrap();
+    assert!(rendered(&checked).contains("record_lookup_child"));
+    let plan = checked.plan();
+    let binding = plan.body.bindings.last().unwrap();
+    let Operation::NestedMapLookup { slot, outer, inner } = &binding.operation else {
+        panic!("expected a checked nested lookup");
+    };
+    for operation in [
+        Operation::NestedMapLookup {
+            slot: MapSlot { index: 1, ..*slot },
+            outer: outer.clone(),
+            inner: inner.clone(),
+        },
+        Operation::NestedMapLookup {
+            slot: *slot,
+            outer: inner.clone(),
+            inner: outer.clone(),
+        },
+    ] {
+        let mut forged = plan.clone();
+        forged.body.bindings.last_mut().unwrap().operation = operation;
+        assert!(validate::validate(&forged, &declarations(&c)).is_err());
+    }
+}
+#[test]
+fn child_map_initialization_rejects_an_unsupported_inner_key() {
+    let child = |key| Type::LedgerMap {
+        key: Box::new(key),
+        value: Box::new(Type::Field),
+    };
+    let mut c = contract(Type::Boolean, child(Type::Field));
+    let root = &mut c.stateful_circuits[0];
+    root.parameters.truncate(1);
+    root.actions = vec![StateAction::MapInitChild {
+        field: "table".into(),
+        index: 0,
+        key: parameter("key"),
+    }];
+    root.return_value = StateReturn::Expression {
+        value: parameter("key"),
+    };
+    let plan = checked(&c).unwrap();
+    assert!(rendered(&plan).contains("record_init_child"));
+
+    c.ledger_fields[0].declaration = LedgerFieldKind::Map {
+        key: Type::Boolean,
+        value: child(Type::Tuple {
+            elements: vec![Type::Field; 9],
+        }),
+    };
+    let Err(PlanError::Unsupported(gap) | PlanError::Invalid(gap)) = checked(&c) else {
+        panic!("expected invalid child Map key to be refused during lowering");
+    };
+    assert_eq!(gap.detail, "unsupported nested Map key type");
+    let gap = validate::validate(plan.plan(), &declarations(&c)).unwrap_err();
+    assert_eq!(gap.detail, "unsupported nested Map key type");
+}
+
 #[test]
 fn four_map_operations_compose_in_order_with_exact_declared_types() {
     for value in [

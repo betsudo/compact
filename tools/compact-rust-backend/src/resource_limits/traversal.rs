@@ -664,7 +664,21 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            StateAction::MapInsertDefault { field, index, key } => {
+            StateAction::NestedMapInsert {
+                field,
+                index: _,
+                outer,
+                inner,
+                value,
+            } => {
+                scan.push(Node::Text(field), visit_depth + 1, owner)?;
+                // The scanner consumes this pending stack in reverse order.
+                scan.push(Node::Expr(outer), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(inner), visit_depth + 1, owner)?;
+            }
+            StateAction::MapInitChild { field, index, key }
+            | StateAction::MapInsertDefault { field, index, key } => {
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
                 let _ = index;
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
@@ -829,6 +843,16 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Type::Boolean => {}
             Type::Field => {}
             Type::JubjubPoint => {}
+            Type::Secp256k1Base
+            | Type::Secp256k1Scalar
+            | Type::Secp256k1Point
+            | Type::JubjubScalar
+            | Type::Secp256r1Base
+            | Type::Secp256r1Scalar
+            | Type::Curve25519Base
+            | Type::Curve25519Scalar
+            | Type::Curve25519Point
+            | Type::Secp256r1Point => {}
             Type::OpaqueString => {}
             Type::OpaqueBytes => {}
             Type::Bytes { length } => {
@@ -860,6 +884,9 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Type::Vector { element, length } => {
                 scan.push(Node::Type(element), visit_depth + 1, owner)?;
                 let _ = length;
+            }
+            Type::LedgerMerkle { ty, .. } => {
+                scan.push(Node::Type(ty), visit_depth + 1, owner)?;
             }
             Type::LedgerMap { key, value } => {
                 scan.push(Node::Type(key), visit_depth + 1, owner)?;
@@ -901,10 +928,31 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Expr::FieldCast { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            Expr::FieldToBytes32 { value } => {
+            Expr::BytesToField { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            Expr::Coerce { value, ty } => {
+            Expr::BytesToUint { value, max } => {
+                scan.push(Node::Text(max), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+            }
+            Expr::VectorToBytes { value, .. }
+            | Expr::BytesToVector { value, .. }
+            | Expr::UintToBytes { value, .. }
+            | Expr::WideUintToBytes { value, .. }
+            | Expr::BytesZeroPad { value, .. }
+            | Expr::BytesFromChunks { value, .. }
+            | Expr::BytesSlice { value, .. }
+            | Expr::FieldToBytes32 { value }
+            | Expr::Secp256k1Neg { value }
+            | Expr::Secp256k1Inv { value }
+            | Expr::Secp256k1PointX { value }
+            | Expr::Secp256k1PointY { value } => {
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
+            }
+            Expr::Coerce { value, ty }
+            | Expr::JubjubCast { value, ty }
+            | Expr::Secp256k1BytesCast { value, ty }
+            | Expr::EnumCast { value, ty } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
                 scan.push(Node::Type(ty), visit_depth + 1, owner)?;
             }
@@ -953,6 +1001,16 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
                 let _ = index;
                 scan.push(Node::Expr(key), visit_depth + 1, owner)?;
+            }
+            Expr::NestedMapLookup {
+                field,
+                index: _,
+                outer,
+                inner,
+            } => {
+                scan.push(Node::Text(field), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(outer), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(inner), visit_depth + 1, owner)?;
             }
             Expr::ListLength { field, index } => {
                 scan.push(Node::Text(field), visit_depth + 1, owner)?;
@@ -1138,7 +1196,7 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
             Expr::PersistentHash { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
-            Expr::Keccak256 { value } => {
+            Expr::Keccak256 { value, .. } | Expr::Sha512 { value } => {
                 scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
             Expr::PersistentCommit { value, opening } => {
@@ -1187,6 +1245,19 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 for child in arguments {
                     scan.push(Node::Expr(child), visit_depth + 1, owner)?;
                 }
+            }
+            Expr::EmitShieldedSpend { value }
+            | Expr::EmitShieldedBurn { value }
+            | Expr::EmitShieldedMint { value }
+            | Expr::EmitShieldedReceive { value }
+            | Expr::EmitUnshieldedSpend { value }
+            | Expr::EmitUnshieldedReceive { value }
+            | Expr::EmitUnshieldedMint { value }
+            | Expr::EmitUnshieldedBurn { value }
+            | Expr::EmitMisc { value }
+            | Expr::EmitPaused { value }
+            | Expr::EmitUnpaused { value } => {
+                scan.push(Node::Expr(value), visit_depth + 1, owner)?;
             }
             Expr::KernelClaim { claim, value } => {
                 scan.push(Node::KernelClaimKind(claim), visit_depth + 1, owner)?;

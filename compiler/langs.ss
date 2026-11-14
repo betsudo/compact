@@ -258,6 +258,7 @@
       (seq src expr* ... expr)                            => (seq #f expr* ... #f expr)
       (cast src type expr)                                => (cast type #f expr)
       (disclose src expr)                                 => (disclose expr)
+      (emit src expr)                                    => (emit expr)
       (assert src expr mesg)                              => (assert #f expr #f mesg)
       )
     (Function (fun)
@@ -411,6 +412,9 @@
       (+ ndecl
          adt-defn
          fixup-alias-defn))
+    (Expression (expr index)
+      (+ (serialize src tsize type expr) => (serialize tsize type expr)
+         (deserialize src tsize type expr) => (deserialize tsize type expr)))
     (Native-Declaration (ndecl)
       (+ (native src exported? function-name native-entry (type-param* ...) (arg* ...) type) =>
            (native function-name (type-param* ...) (arg* 0 ...) 4 type)))
@@ -568,11 +572,15 @@
       (- (block src (var-name* ...) expr)
          (new src tref new-field* ...)
          (tuple-slice src expr index tsize)
+         (serialize src tsize type expr)
+         (deserialize src tsize type expr)
          (for src var-name tsize0 tsize1 expr2))
       (+ (ledger-ref src ledger-field-name) => ledger-field-name
          (new src type new-field* ...)      => (new type #f new-field* ...)
          (enum-ref src type elt-name)       => (enum-ref type elt-name)
-         (tuple-slice src expr index len)   => (tuple-slice #f expr #f index #f len)))
+         (tuple-slice src expr index len)   => (tuple-slice #f expr #f index #f len)
+         (serialize src len type expr) => (serialize len type expr)
+         (deserialize src len type expr) => (deserialize len type expr)))
     (Function (fun)
       (- (fref src function-name)
          (fref src function-name (targ* ...)))
@@ -611,8 +619,11 @@
       (- (targ-size src nat)
          (targ-type src type))))
 
+  (define (arithmetic-operator? op) (memq op '(+ - *)))
+
   (define-language/pretty Ltypes (entry Program)
     (terminals
+      (arithmetic-operator (arithmetic-op))
       (field (nat kindex))
       (len (len))
       (bits (bits))
@@ -710,7 +721,11 @@
       (new src type expr* ...)                => (new type #f expr* ...)
       (seq src expr* ... expr)                => (seq #f expr* ... #f expr)
       (let* src ([local* expr*] ...) expr)    => (let* ([bracket local* 0 expr*] 0 ...) #f expr)
+      (emit-log src nat len expr)            => (emit-log nat len expr)
       (assert src expr mesg)                  => (assert expr mesg)
+      (secp256k1-arithmetic src arithmetic-op type expr1 expr2) => (secp256k1-arithmetic arithmetic-op type expr1 expr2)
+      (jubjub-cast src type expr)             => (jubjub-cast type expr)
+      (secp256k1-bytes-cast src type expr)    => (secp256k1-bytes-cast type expr)
       (field->bytes src len expr)             => (field->bytes len expr)
       (cast-from-bytes src type len expr)     => (cast-from-bytes type len #f expr)
       (vector->bytes src len expr)            => (vector->bytes len expr)
@@ -957,6 +972,7 @@
 
   (define-language/pretty Lcircuit (entry Program)
     (terminals
+      (arithmetic-operator (arithmetic-op))
       (field (nat))
       (len (len))
       (kindex (kindex))
@@ -1007,6 +1023,7 @@
       (var-name type) => (bracket var-name type))
     (Statement (stmt)
       (= test var-name rhs)             => (= test var-name 2 rhs)
+      (emit-log src nat len test triv) => (emit-log nat len test triv)
       (assert src test mesg)            => (assert test #f mesg))
     (Rhs (rhs)
       triv
@@ -1030,6 +1047,9 @@
         (public-ledger ledger-field-name (path-elt* ...) adt-op #f triv* ...)
       (contract-call src elt-name (triv type) triv* ...) =>
         (contract-call elt-name 4 (triv 0 type) #f triv* ...)
+      (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
+      (jubjub-cast src type triv)            => (jubjub-cast type triv)
+      (secp256k1-bytes-cast src type triv)   => (secp256k1-bytes-cast type triv)
       (field->bytes src len triv)            => (field->bytes len triv)
       (bytes->field src len triv)            => (bytes->field len triv)
       (downcast-unsigned src (maybe nat?) nat triv) =>
@@ -1073,6 +1093,9 @@
       (- (circuit src function-name (arg* ...) type stmt* ... triv))
       (+ (circuit src function-name (arg* ...) type stmt* ... (triv* ...)) =>
             (circuit function-name (arg* 0 ...) 4 type #f stmt* ... #f (triv* ...))))
+    (Statement (stmt)
+      (- (emit-log src nat len test triv))
+      (+ (emit-log src nat len test triv* ...) => (emit-log nat len test triv* ...)))
     (Public-Ledger-Binding (public-binding)
       (- (src ledger-field-name (path-index* ...) type))
       (+ (src ledger-field-name (path-index* ...) primitive-type) =>
@@ -1113,6 +1136,9 @@
          (call src function-name triv* ...)
          (public-ledger src ledger-field-name (maybe sugar) (path-elt* ...) src^ adt-op triv* ...)
          (contract-call src elt-name (triv type) triv* ...)
+         (secp256k1-arithmetic src arithmetic-op type triv1 triv2)
+         (jubjub-cast src type triv)
+         (secp256k1-bytes-cast src type triv)
          (field->bytes src len triv)
          (bytes->field src len triv)
          (downcast-unsigned src (maybe nat?) nat triv)))
@@ -1125,6 +1151,7 @@
          (== triv1 triv2)                        => (== triv1 3 triv2)
          (select triv0 triv1 triv2)              => (select triv0 triv1 triv2)
          (bytes-ref triv nat)
+         (secp256k1-arithmetic src arithmetic-op opaque-type triv1 triv2)
          (bytes->field src len triv1 triv2)      => (bytes->field len #f triv1 #f triv2)
          (vector->bytes triv triv* ...)          => (vector->bytes triv triv* ...) ; result holds one field's worth of bytes
          (downcast-unsigned src safe (maybe nat?) nat triv) =>
@@ -1132,6 +1159,8 @@
     (Multiple (multiple)
       (+ (call src function-name triv* ...)      => (call function-name #f triv* ...)
          (default opaque-type)
+         (jubjub-cast src opaque-type triv)
+         (secp256k1-bytes-cast src opaque-type triv* ...)
          (field->bytes src len triv)             => (field->bytes len #f triv)
          (bytes->vector triv)                    => (bytes->vector #f triv) ; triv holds one field's worth of bytes
          (div-mod-power-of-two triv bits)
@@ -1194,6 +1223,8 @@
       (add outp inp0 inp1)
       (assert inp)
       (bytes32_into_low_high outp0 outp1 inp)
+      (bytes_from_natives outp imm inp* ...)
+      (bytes_into_natives (outp* ...) inp)
       (cond_select outp inp0 inp1 inp2)
       (constrain_bits inp imm)
       (constrain_eq inp0 inp1)
@@ -1203,11 +1234,15 @@
       (ec_mul outp inp0 inp1)
       (ec_mul_generator outp0 inp)
       (encode (outp* ...) inp)
+      (from_bytes zkir-type outp inp)
       (from_coordinates outp inp0 inp1)
       (hash_to_curve outp inp* ...)
       (impact inp inp* ...)
+      (into_coordinates outp0 outp1 inp)
+      (inv outp inp)
       (jubjub_scalar_from_native outp inp)
       (keccak256 outp (alignment* ...) inp* ...)
+      (sha512 outp (alignment* ...) inp* ...)
       (less_than outp inp0 inp1 imm)
       (mul outp inp0 inp1)
       (neg outp inp)
@@ -1219,6 +1254,7 @@
       (public_input zkir-type outp inp)
       (reconstitute_field outp inp0 inp1 imm)
       (test_eq outp inp0 inp1)
+      (to_bytes outp inp)
       (transient_hash outp inp* ...))
     (Input (inp)
       fr

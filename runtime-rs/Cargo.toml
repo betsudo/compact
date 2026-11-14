@@ -31,6 +31,10 @@ experimental-functional = []
 ledger-transaction = ["dep:midnight-ledger-v9", "dep:rand"]
 
 [dependencies]
+ecdsa = { version = "=0.16.9", default-features = false }
+k256 = { version = "=0.14.0", default-features = false, features = ["ecdsa"] }
+ff = { version = "=0.13.1", default-features = false }
+group = "=0.13.0"
 midnight-compact-runtime-macros = { version = "=0.2.0", path = "../runtime-rs-macros" }
 midnight-base-crypto = { version = "=1.1.1" }
 midnight-coin-structure = { version = "=3.0.1" }
@@ -48,7 +52,9 @@ midnight-proofs = { version = "=0.8.2" }
 midnight-zk-stdlib = { version = "=2.4.0" }
 midnight-zswap = { version = "=9.0.1" }
 midnight-ledger-v9 = { version = "=1.0.1", optional = true }
+p256 = { version = "=0.13.2", default-features = false, features = ["ecdsa"] }
 rand = { version = "=0.8.6", optional = true }
+sha2 = "=0.10.9"
 sha3 = "=0.10.8"
 
 [dev-dependencies]

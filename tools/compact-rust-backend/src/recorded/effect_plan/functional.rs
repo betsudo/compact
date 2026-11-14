@@ -29,6 +29,7 @@ pub(crate) enum Capability {
     Pure,
     ExecutionIdentity,
     KernelAddress,
+    EventEmission,
     KernelClaims,
     ShieldedMint,
     ZswapInput,
@@ -373,9 +374,21 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::UnsignedSubtract(..)
                 | Operation::UnsignedMultiply(..)
                 | Operation::Compare { .. }
+                | Operation::Secp256k1Unary { .. }
                 | Operation::Convert { .. } => Capability::Pure,
                 Operation::OwnPublicKey => Capability::ExecutionIdentity,
                 Operation::KernelSelf => Capability::KernelAddress,
+                Operation::EmitShieldedSpend(_)
+                | Operation::EmitShieldedBurn(_)
+                | Operation::EmitShieldedMint(_)
+                | Operation::EmitShieldedReceive(_)
+                | Operation::EmitUnshieldedSpend(_)
+                | Operation::EmitUnshieldedReceive(_)
+                | Operation::EmitUnshieldedMint(_)
+                | Operation::EmitUnshieldedBurn(_)
+                | Operation::EmitMisc(_)
+                | Operation::EmitPaused(_)
+                | Operation::EmitUnpaused(_) => Capability::EventEmission,
                 Operation::KernelClaim { .. } => Capability::KernelClaims,
                 Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
                 Operation::CreateZswapInput { .. } => Capability::ZswapInput,
@@ -400,6 +413,13 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::FieldToBytes32(_)
                 | Operation::DegradeToTransient(_)
                 | Operation::UpgradeFromTransient(_) => Capability::FieldEncoding,
+                Operation::EcMulGenerator(_)
+                | Operation::EcMul { .. }
+                | Operation::EcAdd { .. }
+                    if binding.value.ty == crate::ir::Type::Secp256k1Point =>
+                {
+                    continue;
+                }
                 Operation::JubjubPointX(_)
                 | Operation::JubjubPointY(_)
                 | Operation::JubjubScalarFromNative(_)
@@ -533,7 +553,11 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 Operation::PureCall { .. } => Capability::Pure,
                 // Deliberately exhaustive: every new checked operation needs
                 // an explicit functional admission or refusal decision.
-                Operation::Keccak256(..) => {
+                Operation::Keccak256(..)
+                | Operation::Sha512(_)
+                | Operation::NestedMapLookup { .. }
+                | Operation::NestedMapInsert { .. }
+                | Operation::MapInitChild { .. } => {
                     return Err(ProjectionRefusal::OutsideFunctionalSubset {
                         path: binding.path.clone(),
                     });

@@ -65,6 +65,61 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         }
         Expr::FieldCast { value } => unary!("field_cast", "value", value),
         Expr::FieldToBytes32 { value } => unary!("field_to_bytes32", "value", value),
+        Expr::VectorToBytes { value, length } => {
+            unary!("vector_to_bytes", "value", value);
+            s.size("length", *length);
+        }
+        Expr::BytesToVector { value, length } => {
+            unary!("bytes_to_vector", "value", value);
+            s.size("length", *length);
+        }
+        Expr::UintToBytes { value, length } => {
+            unary!("uint_to_bytes", "value", value);
+            s.size("length", *length);
+        }
+        Expr::WideUintToBytes { value, length } => {
+            unary!("wide_uint_to_bytes", "value", value);
+            s.size("length", *length);
+        }
+        Expr::BytesToField { value } => unary!("bytes_to_field", "value", value),
+        Expr::BytesToUint { value, max } => {
+            unary!("bytes_to_uint", "value", value);
+            s.text("max", max);
+        }
+        Expr::BytesZeroPad { value, length } => {
+            unary!("bytes_zero_pad", "value", value);
+            s.size("length", *length);
+        }
+        Expr::BytesFromChunks {
+            value,
+            length,
+            chunk_count,
+        } => {
+            unary!("bytes_from_chunks", "value", value);
+            s.size("length", *length);
+            s.size("chunk_count", *chunk_count);
+        }
+        Expr::BytesSlice {
+            value,
+            start,
+            length,
+        } => {
+            unary!("bytes_slice", "value", value);
+            s.size("start", *start);
+            s.size("length", *length);
+        }
+        Expr::JubjubCast { value, ty } => {
+            unary!("jubjub_cast", "value", value);
+            s.node("ty", Owner::Type(ty));
+        }
+        Expr::EnumCast { value, ty } => {
+            unary!("enum_cast", "value", value);
+            s.node("ty", Owner::Type(ty));
+        }
+        Expr::Secp256k1BytesCast { value, ty } => {
+            unary!("secp256k1_bytes_cast", "value", value);
+            s.node("ty", Owner::Type(ty));
+        }
         Expr::Coerce { value, ty } => {
             unary!("coerce", "value", value);
             s.node("ty", Owner::Type(ty));
@@ -111,6 +166,16 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         Expr::MapLookup { field, index, key } => {
             slot!("map_lookup", field, index);
             s.node("key", Owner::Expr(key));
+        }
+        Expr::NestedMapLookup {
+            field,
+            index,
+            outer,
+            inner,
+        } => {
+            slot!("nested_map_lookup", field, index);
+            s.node("outer", Owner::Expr(outer));
+            s.node("inner", Owner::Expr(inner));
         }
         Expr::ListLength { field, index } => slot!("list_length", field, index),
         Expr::ListIsEmpty { field, index } => slot!("list_is_empty", field, index),
@@ -252,7 +317,18 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             binary!("transient_commit", "value", value, "opening", opening)
         }
         Expr::PersistentHash { value } => unary!("persistent_hash", "value", value),
-        Expr::Keccak256 { value } => unary!("keccak256", "value", value),
+        Expr::Keccak256 { value, encoding } => {
+            unary!("keccak256", "value", value);
+            s.default(
+                "encoding",
+                Value::Scalar(Scalar::Text(match encoding {
+                    crate::ir::KeccakEncoding::NormalizedAtoms => "normalized_atoms",
+                    crate::ir::KeccakEncoding::Aligned => "aligned",
+                })),
+                encoding.is_normalized_atoms(),
+            );
+        }
+        Expr::Sha512 { value } => unary!("sha512", "value", value),
         Expr::PersistentCommit { value, opening } => {
             binary!("persistent_commit", "value", value, "opening", opening)
         }
@@ -264,6 +340,10 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         Expr::EcAdd { left, right } => binary!("ec_add", "left", left, "right", right),
         Expr::ConstructJubjubPoint { x, y } => binary!("construct_jubjub_point", "x", x, "y", y),
         Expr::EcNeg { value } => unary!("ec_neg", "value", value),
+        Expr::Secp256k1Neg { value } => unary!("secp256k1_neg", "value", value),
+        Expr::Secp256k1Inv { value } => unary!("secp256k1_inv", "value", value),
+        Expr::Secp256k1PointX { value } => unary!("secp256k1_point_x", "value", value),
+        Expr::Secp256k1PointY { value } => unary!("secp256k1_point_y", "value", value),
         Expr::EcMul { point, scalar } => binary!("ec_mul", "point", point, "scalar", scalar),
         Expr::EcMulGenerator { scalar } => unary!("ec_mul_generator", "scalar", scalar),
         Expr::JubjubScalarFromNative { value } => {
@@ -274,6 +354,17 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             s.text("name", name);
             s.array("arguments", Slice::Expr(arguments));
         }
+        Expr::EmitShieldedSpend { value } => unary!("emit_shielded_spend", "value", value),
+        Expr::EmitShieldedBurn { value } => unary!("emit_shielded_burn", "value", value),
+        Expr::EmitShieldedMint { value } => unary!("emit_shielded_mint", "value", value),
+        Expr::EmitShieldedReceive { value } => unary!("emit_shielded_receive", "value", value),
+        Expr::EmitUnshieldedSpend { value } => unary!("emit_unshielded_spend", "value", value),
+        Expr::EmitUnshieldedReceive { value } => unary!("emit_unshielded_receive", "value", value),
+        Expr::EmitUnshieldedMint { value } => unary!("emit_unshielded_mint", "value", value),
+        Expr::EmitUnshieldedBurn { value } => unary!("emit_unshielded_burn", "value", value),
+        Expr::EmitMisc { value } => unary!("emit_misc", "value", value),
+        Expr::EmitPaused { value } => unary!("emit_paused", "value", value),
+        Expr::EmitUnpaused { value } => unary!("emit_unpaused", "value", value),
         Expr::KernelClaim { claim, value } => {
             unary!("kernel_claim", "value", value);
             s.text(

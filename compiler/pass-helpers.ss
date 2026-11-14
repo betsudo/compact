@@ -18,7 +18,7 @@
 (library (pass-helpers)
   (export target-ports get-target-port target-directory source-directory source-file-name
           find-source-pathname
-          contract-ht
+          contract-ht contract-info-pathname
           proof-circuit-names
           define-passes define-checker checkers
           passrec-name passrec-pass passrec-unparse passrec-pretty-formats)
@@ -36,6 +36,12 @@
   ; source-file-name is used for getting the contract name from the source file
   ; for the print-TS pass.
   (define source-file-name (make-parameter #f))
+
+  (define (contract-info-pathname contract-name)
+    (let ([directory (or (contract-dependency-directory) (path-parent (target-directory)))])
+      (format "~a/~a/compiler/contract-info.json"
+        (if (string=? directory "") "." directory)
+        contract-name)))
 
   (define (find-source-pathname src pathname err)
     (define (try pathname)

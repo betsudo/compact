@@ -21,6 +21,7 @@
 
 mod cell;
 mod counter;
+mod event;
 mod frame;
 mod list;
 mod local_boundary;
@@ -29,6 +30,7 @@ mod set;
 mod trees;
 mod witness;
 
+pub use event::ContractEvent;
 pub use frame::CircuitFrame;
 pub use witness::{WitnessContext, WitnessReadMeter};
 
@@ -97,6 +99,7 @@ impl<Private, D: DB> ConstructorResult<Private, D> {
             zswap_state: self.zswap_state,
             circuit_zswap: self.circuit_zswap,
             coin_public_key: None,
+            events: Vec::new(),
             cost_model: INITIAL_COST_MODEL.clone(),
             gas_limit: None,
         }
@@ -109,6 +112,7 @@ pub struct CircuitContext<Private, D: DB = DefaultDB> {
     pub zswap_state: ZswapLocalState<D>,
     pub(crate) circuit_zswap: crate::CircuitZswapPlan,
     coin_public_key: Option<CoinPublicKey>,
+    pub(crate) events: Vec<ContractEvent<D>>,
     pub cost_model: CostModel,
     /// Ledger-8 VM guard for each individual query, including witness reads.
     /// CircuitResult::gas_cost separately sums the accepted query costs.
@@ -341,6 +345,7 @@ impl<Private, D: DB> CircuitContext<Private, D> {
             zswap_state: ZswapLocalState::default(),
             circuit_zswap: crate::CircuitZswapPlan::default(),
             coin_public_key: None,
+            events: Vec::new(),
             cost_model: INITIAL_COST_MODEL.clone(),
             gas_limit: None,
         }

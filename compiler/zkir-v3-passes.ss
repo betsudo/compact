@@ -80,12 +80,13 @@
       ;; Compact's field representation puts the high byte before the low
       ;; 31 bytes. The ZKIR split instruction returns the low limb first.
       (define (emit-persistent-hash src high low alignment* input* instr*)
-        (let ([bytes (make-temp-id src 'hash-bytes)])
-          (with-output-language (Lzkir Instruction)
-            (cons*
-              `(bytes32_into_low_high ,low ,high ,bytes)
-              `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
-              instr*))))
+        (let-values ([(alignment* input* instr*) (ledger-alignment src alignment* input* instr*)])
+          (let ([bytes (make-temp-id src 'hash-bytes)])
+            (with-output-language (Lzkir Instruction)
+              (cons*
+                `(bytes32_into_low_high ,low ,high ,bytes)
+                `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
+                instr*)))))
 
       (define jubjub-scalar-order
         #x0e7db4ea6533afa906673b0101343b00a6682093ccc81082d0970e5ed6f72cb7)
@@ -108,12 +109,63 @@
                 `(less_than ,canonical ,native ,jubjub-scalar-order ,(integer-length jubjub-scalar-order))
                 instr*)))))
 
+      (define (emit-point-coordinate src test base-type point x y instr*)
+        (with-output-language (Lzkir Instruction)
+          (if (eqv? test 1)
+              (cons `(into_coordinates ,x ,y ,point) instr*)
+              (let*-values ([(generator-x generator-y)
+                             (case base-type
+                               [("Base<Secp256k1>")
+                                (values #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+                                        #x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8)]
+                               [("Base<Secp256r1>")
+                                (values #x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296
+                                        #x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5)]
+                               [else (assert cannot-happen)])]
+                            [(x-high x-low) (div-and-mod generator-x (expt 2 248))]
+                            [(y-high y-low) (div-and-mod generator-y (expt 2 248))])
+                (let ([x-bytes (make-temp-id src 'generator-x-bytes)]
+                      [y-bytes (make-temp-id src 'generator-y-bytes)]
+                      [gx (make-temp-id src 'generator-x)]
+                      [gy (make-temp-id src 'generator-y)]
+                      [generator (make-temp-id src 'generator)]
+                      [active (make-temp-id src 'active-coordinate-input)])
+                  ;; Coordinate extraction is eager. On an inactive branch use the
+                  ;; fixed, finite generator of the same curve in place of the actual point.
+                  (cons*
+                    `(into_coordinates ,x ,y ,active)
+                    `(cond_select ,active ,test ,point ,generator)
+                    `(from_coordinates ,generator ,gx ,gy)
+                    `(from_bytes ,base-type ,gy ,y-bytes)
+                    `(bytes_from_natives ,y-bytes 32 ,y-low ,y-high)
+                    `(from_bytes ,base-type ,gx ,x-bytes)
+                    `(bytes_from_natives ,x-bytes 32 ,x-low ,x-high)
+                    instr*))))))
+
       (define (make-native name arg*)
         ;; Get the list of alignment atoms for a 0-based arg index.
         (define (arg->alignment arg* index)
           (nanopass-case (Lflattened Argument) (list-ref arg* index)
             [(argument (,var-name ...) (ty (,alignment* ...) (,primitive-type* ...)))
              alignment*]))
+        (define (emit-inverse src test outp inp instr*)
+          (with-output-language (Lzkir Instruction)
+            (if (eqv? test 1)
+                (cons `(inv ,outp ,inp) instr*)
+                (let ([field-type
+                       (nanopass-case (Lflattened Argument) (car arg*)
+                         [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type)))
+                          (type->string primitive-type)])]
+                      [one-bytes (make-temp-id src 'one-bytes)]
+                      [one (make-temp-id src 'one)]
+                      [active (make-temp-id src 'active-inverse-input)])
+                  ;; The VM evaluates inv eagerly. Only an active zero is an error.
+                  (cons*
+                    `(inv ,outp ,active)
+                    `(cond_select ,active ,test ,inp ,one)
+                    `(from_bytes ,field-type ,one ,one-bytes)
+                    `(to_bytes ,one-bytes 1)
+                    instr*)))))
         (lambda (var-name* src test triv* instr*)
           (with-output-language (Lzkir Instruction)
             ;; Generally assume that the arity is correct here.
@@ -122,7 +174,7 @@
                (cons `(from_coordinates ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(degradeToTransient)
                (cons `(copy ,(car var-name*) ,(cadr triv*)) instr*)]
-              [(ecAdd)
+              [(ecAdd secp256k1Add secp256r1Add curve25519Add)
                (assert (= (length var-name*) 1))
                (cons `(add ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(ecNeg)
@@ -145,6 +197,10 @@
                (let ([scalar (make-temp-id src 'scalar)])
                  (cons `(ec_mul_generator ,(car var-name*) ,scalar)
                    (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
+              [(ecMulJubjubScalar secp256k1Mul secp256r1Mul curve25519Mul)
+               (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+              [(ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator curve25519MulGenerator)
+               (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
                ;; The Compact reduction returns a Field.
@@ -156,6 +212,24 @@
               [(hashToCurve)
                (assert (= (length var-name*) 1))
                (cons `(hash_to_curve ,(car var-name*) ,triv* ...) instr*)]
+              [(neg)
+               (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
+              [(inv)
+               (emit-inverse src test (car var-name*) (car triv*) instr*)]
+              [(curve25519PointX)
+               (let ([y (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,(car var-name*) ,y ,(car triv*)) instr*))]
+              [(secp256k1PointX secp256r1PointX)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointX) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (car var-name*) (make-temp-id src 'ignore) instr*)]
+              [(curve25519PointY)
+               (let ([x (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,x ,(car var-name*) ,(car triv*)) instr*))]
+              [(secp256k1PointY secp256r1PointY)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointY) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (make-temp-id src 'ignore) (car var-name*) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
                (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]
@@ -164,12 +238,22 @@
                (cons `(encode (,(make-temp-id src 'ignore) ,(car var-name*)) ,(car triv*)) instr*)]
               [(keccak256)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)]
-                     [bytes (make-temp-id src 'hash-bytes)])
-                 (cons*
-                   `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
-                   `(keccak256 ,bytes (,alignment* ...) ,triv* ...)
-                   instr*))]
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
+                     `(keccak256 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
+              [(sha512)
+               (assert (= (length var-name*) 3))
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes_into_natives (,(reverse var-name*) ...) ,bytes)
+                     `(sha512 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
               [(persistentCommit)
                (assert (= (length var-name*) 2))
                ;; The two source arguments are swapped for the persistent_hash gate.  We assume
@@ -215,7 +299,21 @@
            (hashtable-set! callable-ht function-name
              (if (eq? (native-entry-class native-entry) 'witness)
                  (make-witness alignment* primitive-type*)
-                 (make-native (id-sym function-name) arg*)))]
+                 (make-native
+                   (case (native-entry-function native-entry)
+                     [("__compactRuntime.secp256k1Add") 'secp256k1Add]
+                     [("__compactRuntime.secp256r1Add") 'secp256r1Add]
+                     [("__compactRuntime.curve25519Add") 'curve25519Add]
+                     [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
+                     [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
+                     [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                     [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
+                     [("__compactRuntime.curve25519Mul") 'curve25519Mul]
+                     [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                     [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
+                     [("__compactRuntime.curve25519MulGenerator") 'curve25519MulGenerator]
+                     [else (id-sym function-name)])
+                   arg*)))]
           [else (void)]))
 
       ;; ==== Impact Assembler ====
@@ -239,8 +337,8 @@
           [(anative ,opaque-type) #t]
           [else #f]))
 
-      ;; The ledger stores a Jubjub point as two fields. Walk the alignment
-      ;; and circuit operands together so nested points use that same encoding.
+      ;; A typed ZKIR operand may occupy multiple ledger alignment atoms.
+      ;; Walk them together so nested values retain their ledger encoding.
       (define (ledger-alignment src alignment* input* instr*)
         (define (input-count atom)
           (nanopass-case (Lflattened Alignment) atom
@@ -258,15 +356,48 @@
                  (let ([atom (car alignment*)])
                    (nanopass-case (Lflattened Alignment) atom
                      [(anative ,opaque-type)
-                      (assert (string=? opaque-type "JubjubPoint"))
-                      (let* ([x (make-temp-id src 'pt)]
-                             [y (make-temp-id src 'pt)])
+                      (guard (string=? opaque-type "JubjubScalar"))
+                      (let ([field (make-temp-id src 'scalar-field)])
                         (loop (cdr alignment*) (cdr input*)
                           (with-output-language (Lzkir Instruction)
-                            (cons `(encode (,x ,y) ,(car input*)) instr*))
+                            (cons `(encode (,field) ,(car input*)) instr*))
                           (with-output-language (Lflattened Alignment)
-                            (cons* `(afield) `(afield) encoded-alignment*))
-                          (cons* y x encoded-input*)))]
+                            (cons `(afield) encoded-alignment*))
+                          (cons field encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (guard (string=? opaque-type "Curve25519Point"))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 4))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (guard (foreign-point-base opaque-type))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (let* ([prefix (if (string=? opaque-type "JubjubPoint") 'pt 'limb)]
+                             [low (make-temp-id src prefix)]
+                             [high (make-temp-id src prefix)])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,low ,high) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (case opaque-type
+                              [("JubjubPoint") (cons* `(afield) `(afield) encoded-alignment*)]
+                              [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base")
+                               (cons* `(abytes 8) `(abytes 24) encoded-alignment*)]
+                              [("Curve25519Scalar")
+                               (cons* `(abytes 7) `(abytes 26) encoded-alignment*)]
+                              [else (assert cannot-happen)]))
+                          (cons* high low encoded-input*)))]
                      [else
                       (let ([count (input-count atom)])
                         (loop (cdr alignment*) (list-tail input* count) instr*
@@ -309,11 +440,44 @@
                    (let ([atom (car atom*)])
                      (nanopass-case (Lflattened Alignment) atom
                        [(anative ,opaque-type)
-                        (assert (string=? opaque-type "JubjubPoint"))
-                        (loop (cdr atom*)
-                          (with-output-language (Lflattened Alignment)
-                            (cons* `(afield) `(afield) alignment*))
-                          (cons* 1 0 input*))]
+                        (cond
+                          [(string=? opaque-type "Curve25519Point")
+                           (let-values ([(high low) (div-and-mod (foreign-field-max "Curve25519Base") (expt 2 192))])
+                             (loop (cdr atom*)
+                               (with-output-language (Lflattened Alignment)
+                                 (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                               (cons* 0 0 high low input*)))]
+                          [(foreign-point-base opaque-type) =>
+                           (lambda (base)
+                             ;; The identity has two zero coordinates and a native field flag.
+                             (let-values ([(high low) (div-and-mod (foreign-field-max base) (expt 2 192))])
+                               (loop (cdr atom*)
+                                 (with-output-language (Lflattened Alignment)
+                                   (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                                 (cons* 1 high low high low input*))))]
+                          [(string=? opaque-type "JubjubScalar")
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons `(afield) alignment*))
+                             (cons 0 input*))]
+                          [(foreign-field-max opaque-type) =>
+                           (lambda (maximum)
+                             ;; Zero is represented by modulus minus one on the ledger.
+                             (let* ([scalar? (string=? opaque-type "Curve25519Scalar")]
+                                    [low-bits (if scalar? 204 192)]
+                                    [low-bytes (if scalar? 26 24)]
+                                    [high-bytes (if scalar? 7 8)])
+                               (let-values ([(high low) (div-and-mod maximum (expt 2 low-bits))])
+                                 (loop (cdr atom*)
+                                   (with-output-language (Lflattened Alignment)
+                                     (cons* `(abytes ,high-bytes) `(abytes ,low-bytes) alignment*))
+                                   (cons* high low input*)))))]
+                          [else
+                           (assert (string=? opaque-type "JubjubPoint"))
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons* `(afield) `(afield) alignment*))
+                             (cons* 1 0 input*))])]
                        [(abytes ,nat)
                         (loop (cdr atom*) (cons atom alignment*)
                           (append (make-list (ceiling (/ nat (field-bytes))) 0) input*))]
@@ -457,8 +621,8 @@
               [(VMstate-value-merkle-tree nat key* val*)
                (fold-left assemble-operand-acc
                  (fold-left assemble-operand-acc
-                   ;; Tag with length(key*) << 8 | combine(nat, 4)
-                   (cons (fxlogor (fxsll (length key*) 8) (combine nat 4)) code*)
+                   ;; Ledger StateValue tag, eight-bit tree depth, then entry count.
+                   (cons (fxlogor 4 (fxsll nat 4) (fxsll (length key*) 12)) code*)
                    key*)
                  val*)]
               [(VMstate-value-array val*)
@@ -516,6 +680,7 @@
             [("size") (list #x04)]
 
             ;; neg --> 0x08
+            [("log") (list #x09)]
             [("neg") (list #x08)]
 
             ;; root --> 0x0a
@@ -682,13 +847,27 @@
                 [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type* ...)))
                  (values (append var-name* name*) (append primitive-type* type*))]))))
 
+      (define (foreign-zkir-type name)
+        (case name
+          [("JubjubScalar") "Scalar<Jubjub>"]
+          [("Secp256k1Base") "Base<Secp256k1>"]
+          [("Secp256k1Scalar") "Scalar<Secp256k1>"]
+          [("Secp256r1Base") "Base<Secp256r1>"]
+          [("Secp256r1Scalar") "Scalar<Secp256r1>"]
+          [("Curve25519Base") "Base<Curve25519>"]
+          [("Curve25519Scalar") "Scalar<Curve25519>"]
+          [("Secp256k1Point") "Point<Secp256k1>"]
+          [("Secp256r1Point") "Point<Secp256r1>"]
+          [("Curve25519Point") "Point<Curve25519>"]
+          [else #f]))
+
       (define (type->string primitive-type)
         (nanopass-case (Lflattened Primitive-Type) primitive-type
           [(tfield) "Scalar<BLS12-381>"]
           [(tfield ,nat) "Scalar<BLS12-381>"]
           [(topaque ,opaque-type) (guard (string=? opaque-type "JubjubPoint"))
            "Point<Jubjub>"]
-          [(topaque ,opaque-type) "Scalar<BLS12-381>"]
+          [(topaque ,opaque-type) (or (foreign-zkir-type opaque-type) "Scalar<BLS12-381>")]
           [else (assert cannot-happen)]))
       )
 
@@ -752,9 +931,55 @@
       [(= ,test (,var-name* ...) (contract-call ,src ,elt-name (,triv ,primitive-type) ,triv* ...))
        (source-errorf src "cross-contract calls are not yet supported")]
       [(= ,test (,var-name) (default ,opaque-type))
-       (assert (string=? opaque-type "JubjubPoint"))
        (with-output-language (Lzkir Instruction)
-         (cons `(from_coordinates ,var-name 0 1) instr*))]
+         (cond
+           [(foreign-point-base opaque-type)
+            (let ([bytes (make-temp-id default-src 'bytes)]
+                  [scalar (make-temp-id default-src 'scalar)]
+                  [scalar-type (case opaque-type
+                                 [("Secp256k1Point") "Scalar<Secp256k1>"]
+                                 [("Secp256r1Point") "Scalar<Secp256r1>"]
+                                 [("Curve25519Point") "Scalar<Curve25519>"]
+                                 [else (assert cannot-happen)])])
+              (cons* `(ec_mul_generator ,var-name ,scalar)
+                     `(from_bytes ,scalar-type ,scalar ,bytes)
+                     `(to_bytes ,bytes 0)
+                     instr*))]
+           [(string=? opaque-type "JubjubScalar")
+            (cons `(jubjub_scalar_from_native ,var-name 0) instr*)]
+           [(foreign-zkir-type opaque-type) =>
+            (lambda (zkir-type)
+              (let ([bytes (make-temp-id default-src 'bytes)])
+                (cons* `(from_bytes ,zkir-type ,var-name ,bytes) `(to_bytes ,bytes 0) instr*)))]
+           [else
+            (assert (string=? opaque-type "JubjubPoint"))
+            (cons `(from_coordinates ,var-name 0 1) instr*)]))]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv))
+       (with-output-language (Lzkir Instruction)
+         (cons (case opaque-type
+                 [("Field") `(encode (,var-name) ,triv)]
+                 [("JubjubScalar") `(jubjub_scalar_from_native ,var-name ,triv)])
+           instr*))]
+      [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,triv))
+       (guard (string=? opaque-type "Bytes<32>"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons* `(bytes_into_natives (,var-name2 ,var-name1) ,bytes) `(to_bytes ,bytes ,triv) instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes ,(assert (foreign-zkir-type opaque-type)) ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 32 ,triv2 ,triv1)
+             instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2 ,triv3))
+       (guard (string=? opaque-type "Curve25519Scalar"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes "Scalar<Curve25519>" ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 64 ,triv3 ,triv2 ,triv1)
+             instr*)))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures
@@ -782,6 +1007,18 @@
                (let ([quo (make-temp-id default-src 'quo)])
                  (loop (cdr var-name*) quo
                    (cons `(div_mod_power_of_two ,quo ,(car var-name*) ,var ,8) instr*))))))]
+      [(emit-log ,src ,nat ,len ,test ,triv* ...)
+       (let* ([alignment* (with-output-language (Lflattened Alignment) (list `(abytes ,len)))]
+              [env (list (cons 'payload (make-zkir-val alignment* triv*)))]
+              [vm-code (with-syntax ([tag (datum->syntax #'push nat)])
+                         (make-vm-code
+                           #'((push [storage #f]
+                                  [value (state-value 'array
+                                           ((state-value 'cell (align 1 4))
+                                            (state-value 'cell (align tag 1))
+                                            (state-value 'cell payload)))])
+                              (log))))])
+         (assemble test '() '() '() src '() env vm-code instr*))]
       [(= ,test (,var-name* ...) (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...)
                              ,src^ ,adt-op ,triv* ...))
        (nanopass-case (Lflattened ADT-Op) adt-op
@@ -825,6 +1062,14 @@
         (assert cannot-happen)])
 
     (Single : Single (ir var-name instr*) -> * (instr*)
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+       (with-output-language (Lzkir Instruction)
+         (case arithmetic-op
+           [(+) (cons `(add ,var-name ,triv1 ,triv2) instr*)]
+           [(-) (let ([neg (make-temp-id src 'neg)])
+                  (cons* `(add ,var-name ,triv1 ,neg) `(neg ,neg ,triv2) instr*))]
+           [(*) (cons `(mul ,var-name ,triv1 ,triv2) instr*)]
+           [else (assert cannot-happen)]))]
       [(+ ,mbits ,triv0 ,triv1)
        (with-output-language (Lzkir Instruction)
          (cons `(add ,var-name ,triv0 ,triv1) instr*))]
@@ -976,6 +1221,11 @@
       [(bytes32_into_low_high ,outp0 ,outp1 ,[* inp])
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "bytes32_into_low_high") (bytes . ,inp) (outputs . ,(vector outp0 outp1))))]
+      [(bytes_from_natives ,[* outp] ,imm ,[* inp*] ...)
+       `((op . "bytes_from_natives") (output . ,outp) (len . ,imm) (inputs . ,(list->vector inp*)))]
+      [(bytes_into_natives (,outp* ...) ,[* inp])
+       (let ([outp* (maplr Output outp*)])
+         `((op . "bytes_into_natives") (outputs . ,(list->vector outp*)) (bytes . ,inp)))]
       [(cond_select ,[* outp] ,[* inp0] ,[* inp1] ,[* inp2])
        `((op . "cond_select") (output . ,outp) (bit . ,inp0) (a . ,inp1) (b . ,inp2))]
       [(constrain_bits ,[* inp] ,imm)
@@ -996,14 +1246,24 @@
        `((op . "ec_mul_generator") (output . ,outp) (scalar . ,inp))]
       [(encode (,outp* ...) ,[* inp])
        `((op . "encode") (outputs . ,(list->vector (map Output outp*))) (input . ,inp))]
+      [(from_bytes ,zkir-type ,[* outp] ,[* inp])
+       `((op . "from_bytes") (type . ,zkir-type) (output . ,outp) (bytes . ,inp))]
       [(from_coordinates ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
        `((op . "hash_to_curve") (output . ,outp) (inputs . ,(list->vector inp*)))]
+      [(into_coordinates ,outp0 ,outp1 ,[* inp])
+       (let* ([x (Output outp0)] [y (Output outp1)])
+         `((op . "into_coordinates") (point . ,inp) (outputs . ,(vector x y))))]
+      [(inv ,[* outp] ,[* inp])
+       `((op . "inv") (output . ,outp) (a . ,inp))]
       [(jubjub_scalar_from_native ,[* outp] ,[* inp])
        `((op . "jubjub_scalar_from_native") (output . ,outp) (native . ,inp))]
       [(keccak256 ,[* outp] (,alignment* ...) ,[* inp*] ...)
        `((op . "keccak256") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
+      [(sha512 ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "sha512") (output . ,outp)
          (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(less_than ,[* outp] ,[* inp0] ,[* inp1] ,imm)
        `((op . "less_than") (output . ,outp) (a . ,inp0) (b . ,inp1) (bits . ,imm))]
@@ -1035,6 +1295,8 @@
          (bits . ,imm))]
       [(test_eq ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "test_eq") (output . ,outp) (a . ,inp0) (b . ,inp1))]
+      [(to_bytes ,[* outp] ,[* inp])
+       `((op . "to_bytes") (output . ,outp) (input . ,inp))]
       [(transient_hash ,[* outp] ,[* inp*] ...)
        `((op . "transient_hash") (output . ,outp) (inputs . ,(list->vector inp*)))])
     (Input : Input (ir) -> * (json)

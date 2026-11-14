@@ -26,7 +26,7 @@ mod zswap;
 use midnight_base_crypto::cost_model::RunningCost;
 use midnight_base_crypto::fab::AlignedValue;
 use midnight_onchain_vm::ops::Op;
-use midnight_onchain_vm::result_mode::{GatherEvent, ResultModeVerify};
+use midnight_onchain_vm::result_mode::{GatherEvent, ResultModeGather, ResultModeVerify};
 
 use crate::CompactError;
 use crate::context::{CircuitContext, CircuitResult, WitnessReadMeter};
@@ -291,7 +291,90 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_checked_verify_program(program)
     }
 
-    fn apply_verify_program(
+    /// Record the public ShieldedSpend event and charge the ledger's VM cost.
+    pub fn emit_shielded_spend(
+        self,
+        nullifier: crate::FixedBytes<32>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_spend_program(nullifier)?)
+    }
+
+    /// Record a public ShieldedBurn event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_burn(self, payload: crate::FixedBytes<49>) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_burn_program(payload)?)
+    }
+
+    /// Record a public ShieldedMint event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_mint(self, payload: crate::FixedBytes<81>) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_mint_program(payload)?)
+    }
+
+    /// Record a public ShieldedReceive event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_shielded_receive(
+        self,
+        payload: crate::FixedBytes<578>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::shielded_receive_program(payload)?)
+    }
+
+    /// Record a public UnshieldedSpend event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_spend(
+        self,
+        payload: crate::FixedBytes<145>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unshielded_spend_program(payload)?)
+    }
+
+    /// Record a public UnshieldedReceive event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_receive(
+        self,
+        payload: crate::FixedBytes<145>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unshielded_receive_program(payload)?)
+    }
+
+    /// Record a public UnshieldedMint event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_mint(
+        self,
+        payload: crate::FixedBytes<80>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unshielded_mint_program(payload)?)
+    }
+
+    /// Record a public UnshieldedBurn event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unshielded_burn(
+        self,
+        payload: crate::FixedBytes<113>,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unshielded_burn_program(payload)?)
+    }
+
+    /// Record a public Misc event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_misc(self, payload: crate::FixedBytes<288>) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::misc_program(payload)?)
+    }
+
+    /// Record a public Paused event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_paused(self, payload: crate::FixedBytes<0>) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::paused_program(payload)?)
+    }
+
+    /// Record a public Unpaused event with its fixed-width wire payload.
+    #[doc(hidden)]
+    pub fn emit_unpaused(self, payload: crate::FixedBytes<0>) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::unpaused_program(payload)?)
+    }
+
+    pub(crate) fn apply_verify_program(
         mut self,
         program: Vec<Op<ResultModeVerify, D>>,
     ) -> Result<Self, CompactError> {
@@ -305,6 +388,7 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
                 &self.state.context.cost_model,
             )
             .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
+        self.state.context.append_events(result.events);
         self.state.context.query = result.context;
         self.state.observed_gas += result.gas_cost;
         self.state.verify_ops.extend(program);
@@ -481,6 +565,36 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
             ));
         };
         let program = ledger::map_lookup_program(path.as_slice(), key, observed.clone())?;
+        self.state.context.query = result.context;
+        self.state.observed_gas += result.gas_cost;
+        self.state.verify_ops.extend(program);
+        Ok((self, value))
+    }
+
+    pub(crate) fn lookup_map_child<K: CellValue + Clone, I: CellValue + Clone, V: CellValue>(
+        mut self,
+        path: &[u8],
+        outer: K,
+        inner: I,
+    ) -> Result<(Self, V), CompactError> {
+        let program = ledger::map_lookup_child_program::<_, _, ResultModeGather, D>(
+            path,
+            outer.clone(),
+            inner.clone(),
+            (),
+        )?;
+        let (result, value) = ledger::gather_map_lookup(
+            &self.state.context.query,
+            &program,
+            self.state.context.gas_limit,
+            &self.state.context.cost_model,
+        )?;
+        let Some(GatherEvent::Read(observed)) = result.events.last() else {
+            return Err(CompactError::InvalidLedgerCell(
+                "missing Map lookup event".into(),
+            ));
+        };
+        let program = ledger::map_lookup_child_program(path, outer, inner, observed.clone())?;
         self.state.context.query = result.context;
         self.state.observed_gas += result.gas_cost;
         self.state.verify_ops.extend(program);

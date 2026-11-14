@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! No-syntax child visitor and complete conversion-family contracts.
 use super::*;
@@ -291,4 +302,278 @@ fn coercion_reuses_actual_per_request_limit_after_checking_child() {
         })
     ));
     assert_eq!((children.visits, sink.conversions), (1, 0));
+}
+
+#[test]
+fn fixed_byte_operations_validate_carriers_and_slice_bounds() {
+    use super::FixedBytesConversion::{Slice, ToVector};
+
+    let input = Type::Bytes { length: 32 };
+    let slice = Slice {
+        start: 12,
+        length: 20,
+    };
+    assert_eq!(
+        slice.result_type(&input).unwrap(),
+        Type::Bytes { length: 20 }
+    );
+    assert_eq!(
+        Slice {
+            start: 32,
+            length: 0
+        }
+        .result_type(&input)
+        .unwrap(),
+        Type::Bytes { length: 0 }
+    );
+    assert_eq!(
+        ToVector { length: 32 }.result_type(&input).unwrap(),
+        Type::Vector {
+            length: 32,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        }
+    );
+
+    assert!(matches!(
+        ToVector { length: 31 }.result_type(&input),
+        Err(RenderError::TypeMismatch { .. })
+    ));
+    assert!(matches!(
+        slice.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+    for (start, length) in [(13, 20), (0, 33), (usize::MAX, 1), (33, 0)] {
+        assert!(matches!(
+            (Slice { start, length }).result_type(&input),
+            Err(RenderError::InvalidBytesSlice {
+                input_length: 32,
+                ..
+            })
+        ));
+    }
+}
+
+#[test]
+fn bytes_to_field_validates_the_input_carrier() {
+    let conversion = FixedBytesConversion::BytesToField;
+    assert_eq!(
+        conversion.result_type(&Type::Bytes { length: 32 }).unwrap(),
+        Type::Field
+    );
+    assert!(matches!(
+        conversion.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
+fn native_uint_byte_conversions_validate_source_and_maximum() {
+    use super::FixedBytesConversion::{BytesToUint, UintToBytes};
+
+    let uint = Type::Unsigned { max: "511".into() };
+    let bytes = Type::Bytes { length: 2 };
+    assert_eq!(UintToBytes { length: 2 }.result_type(&uint).unwrap(), bytes);
+    assert_eq!(
+        BytesToUint {
+            max: "511".into(),
+            bound: UnsignedMaximum::Small(511)
+        }
+        .result_type(&bytes)
+        .unwrap(),
+        uint
+    );
+    assert!(matches!(
+        UintToBytes { length: 2 }.result_type(&Type::Field),
+        Err(RenderError::ExpectedUnsigned(Type::Field))
+    ));
+    assert!(matches!(
+        BytesToUint {
+            max: "511".into(),
+            bound: UnsignedMaximum::Small(511)
+        }
+        .result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
+fn bytes_zero_padding_requires_fixed_bytes_and_can_only_widen() {
+    use super::FixedBytesConversion::ZeroPad;
+
+    let input = Type::Bytes { length: 2 };
+    for length in [2, 4] {
+        assert_eq!(
+            ZeroPad { length }.result_type(&input).unwrap(),
+            Type::Bytes { length }
+        );
+    }
+    assert!(matches!(
+        ZeroPad { length: 1 }.result_type(&input),
+        Err(RenderError::InvalidBytesPadding {
+            length: 1,
+            input_length: 2
+        })
+    ));
+    assert!(matches!(
+        ZeroPad { length: 4 }.result_type(&Type::Field),
+        Err(RenderError::ExpectedBytes(Type::Field))
+    ));
+}
+
+#[test]
+fn vector_to_bytes_requires_a_fixed_vector_of_bounded_bytes() {
+    let bytes = Type::Bytes { length: 32 };
+    let vector = FixedBytesConversion::ToVector { length: 32 }
+        .result_type(&bytes)
+        .unwrap();
+    let operation = FixedBytesConversion::FromVector { length: 32 };
+    assert_eq!(operation.result_type(&vector).unwrap(), bytes);
+
+    for invalid in [
+        Type::Bytes { length: 32 },
+        Type::Vector {
+            length: 31,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        },
+        Type::Vector {
+            length: 32,
+            element: Box::new(Type::Unsigned { max: "256".into() }),
+        },
+    ] {
+        assert!(matches!(
+            operation.result_type(&invalid),
+            Err(RenderError::TypeMismatch { .. })
+        ));
+    }
+}
+
+#[test]
+fn bytes_from_chunks_checks_carriers_arity_and_total_width() {
+    use super::FixedBytesConversion::FromChunks;
+
+    let bytes = |length| Type::Bytes { length };
+    let tuple = |elements| Type::Tuple { elements };
+    let op = FromChunks {
+        length: 3,
+        chunk_count: 2,
+    };
+    assert_eq!(
+        op.result_type(&tuple(vec![bytes(1), bytes(2)])).unwrap(),
+        bytes(3)
+    );
+    for input in [
+        bytes(3),
+        tuple(vec![bytes(3)]),
+        tuple(vec![bytes(1), Type::Boolean]),
+        tuple(vec![bytes(1), bytes(1)]),
+        tuple(vec![bytes(usize::MAX), bytes(4)]),
+    ] {
+        assert!(matches!(
+            op.result_type(&input),
+            Err(RenderError::InvalidByteChunks {
+                length: 3,
+                chunk_count: 2
+            })
+        ));
+    }
+    let length = crate::resource_limits::recording_byte_payload_limit() + 1;
+    assert!(matches!(
+        (FromChunks {
+            length,
+            chunk_count: 1
+        })
+        .result_type(&tuple(vec![bytes(length)])),
+        Err(RenderError::InvalidByteChunks { .. })
+    ));
+}
+
+#[test]
+fn enum_cast_checks_direction_and_ordinal_carriers() {
+    use super::{EnumCast, EnumOrdinalSource};
+    use crate::pure_semantics::numeric::UnsignedCastStrategy;
+
+    let color = Type::Enum {
+        name: "Color".into(),
+        variants: vec!["Red".into(), "Green".into(), "Blue".into()],
+    };
+    let uint = Type::Unsigned { max: "1".into() };
+    assert!(matches!(
+        EnumCast::check(&color, &Type::Field),
+        Ok(EnumCast::ToField)
+    ));
+    assert!(matches!(
+        EnumCast::check(&color, &uint),
+        Ok(EnumCast::ToUnsigned {
+            max_ordinal: 2,
+            strategy: UnsignedCastStrategy::SmallToSmall {
+                source: 2,
+                target: 1
+            },
+        })
+    ));
+    assert!(matches!(
+        EnumCast::check(&uint, &color),
+        Ok(EnumCast::FromNumber {
+            source: EnumOrdinalSource::Small,
+            ..
+        })
+    ));
+    assert!(matches!(
+        EnumCast::check(&Type::Field, &color),
+        Ok(EnumCast::FromNumber {
+            source: EnumOrdinalSource::Field,
+            ..
+        })
+    ));
+    for (source, target) in [(&color, &color), (&uint, &uint), (&Type::Boolean, &color)] {
+        assert!(matches!(
+            EnumCast::check(source, target),
+            Err(RenderError::InvalidEnumCast { .. })
+        ));
+    }
+    let empty = Type::Enum {
+        name: "Empty".into(),
+        variants: Vec::new(),
+    };
+    assert!(matches!(
+        EnumCast::check(&uint, &empty),
+        Err(RenderError::InvalidEnumCast { .. })
+    ));
+}
+
+#[test]
+fn wide_wire_conversion_preserves_canonical_bound_and_checks_carrier() {
+    use super::FixedBytesConversion::{BytesToUint, WideUintToBytes};
+    const MAX: &str = "680564733841876926926749214863536422911";
+    let wide = Type::Unsigned { max: MAX.into() };
+    let bytes = Type::Bytes { length: 17 };
+    let bound = UnsignedMaximum::Wide {
+        high: 1,
+        low: u128::MAX,
+    };
+    assert_eq!(
+        WideUintToBytes { length: 17 }.result_type(&wide).unwrap(),
+        bytes,
+    );
+    assert_eq!(
+        BytesToUint {
+            max: MAX.into(),
+            bound
+        }
+        .result_type(&bytes)
+        .unwrap(),
+        wide,
+    );
+    assert!(matches!(
+        WideUintToBytes { length: 17 }.result_type(&Type::Unsigned { max: "255".into() }),
+        Err(RenderError::UnsupportedUintBytesWidth)
+    ));
+    assert!(matches!(
+        (BytesToUint {
+            max: "255".into(),
+            bound
+        })
+        .result_type(&bytes),
+        Err(RenderError::InvalidUnsignedMaximum(_))
+    ));
 }

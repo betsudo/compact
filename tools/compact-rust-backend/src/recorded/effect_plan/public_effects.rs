@@ -35,10 +35,10 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                     blocks.push(otherwise);
                     blocks.push(then);
                 }
-                Operation::KernelSelf | Operation::KernelClaim { .. } | Operation::KernelMintShielded { .. }
+                Operation::EmitShieldedSpend(_) | Operation::EmitShieldedBurn(_) | Operation::EmitShieldedMint(_) | Operation::EmitShieldedReceive(_) | Operation::EmitUnshieldedSpend(_) | Operation::EmitUnshieldedReceive(_) | Operation::EmitUnshieldedMint(_) | Operation::EmitUnshieldedBurn(_) | Operation::EmitMisc(_) | Operation::EmitPaused(_) | Operation::EmitUnpaused(_) | Operation::KernelSelf | Operation::KernelClaim { .. } | Operation::KernelMintShielded { .. }
                 | Operation::List { .. } | Operation::Merkle { .. } | Operation::CellRead(_) | Operation::CellWrite { .. }
-                | Operation::CellWriteCoin { .. } | Operation::MapMember { .. } | Operation::MapLookup { .. }
-                | Operation::MapInsert { .. } | Operation::MapRemove { .. }
+                | Operation::CellWriteCoin { .. } | Operation::MapMember { .. } | Operation::MapLookup { .. } | Operation::NestedMapLookup { .. }
+                | Operation::NestedMapInsert { .. } | Operation::MapInitChild { .. } | Operation::MapInsert { .. } | Operation::MapRemove { .. }
                 | Operation::MapInsertDefault { .. } | Operation::MapReset { .. } | Operation::MapSize { .. } | Operation::MapIsEmpty { .. } | Operation::SetMember { .. }
                 | Operation::SetInsert { .. } | Operation::SetInsertCoin { .. } | Operation::SetRemove { .. }
                 | Operation::SetReset { .. } | Operation::SetSize { .. } | Operation::SetIsEmpty { .. }
@@ -54,14 +54,15 @@ pub(in crate::recorded) fn has_public_program(plan: &CheckedPlan) -> bool {
                 | Operation::TupleProject { .. }
                 | Operation::VectorProject { .. } | Operation::Tuple { .. } | Operation::Vector { .. }
                 | Operation::PersistentCommit { .. } | Operation::FieldToBytes32(_)
-                | Operation::PersistentHash(_) | Operation::Keccak256(_) | Operation::HashToCurve(_)
+                | Operation::PersistentHash(_) | Operation::Keccak256(..) | Operation::Sha512(_) | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_) | Operation::UpgradeFromTransient(_) | Operation::TransientHash(_)
                 | Operation::TransientCommit { .. } | Operation::Add(_, _) | Operation::Subtract(_, _) | Operation::Multiply(_, _)
                 | Operation::UnsignedAdd(_, _) | Operation::UnsignedSubtract(_, _) | Operation::UnsignedMultiply(_, _)
                 | Operation::Compare { .. } | Operation::Equal(_, _) | Operation::NotEqual(_, _)
                 | Operation::JubjubPointX(_) | Operation::JubjubPointY(_) | Operation::JubjubScalarFromNative(_)
                 | Operation::EcMulGenerator(_) | Operation::EcNeg(_) | Operation::ConstructJubjubPoint { .. }
-                | Operation::EcMul { .. } | Operation::EcAdd { .. } | Operation::Convert { .. } => {}
+                | Operation::EcMul { .. } | Operation::EcAdd { .. }
+                | Operation::Secp256k1Unary { .. } | Operation::Convert { .. } => {}
             }
         }
     }

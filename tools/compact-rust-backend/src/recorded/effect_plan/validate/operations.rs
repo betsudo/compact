@@ -15,6 +15,7 @@
 
 //! Nonrecursive operation signatures stay off nested block traversal frames.
 use super::*;
+use crate::pure_semantics::jubjub::Curve;
 
 pub(super) fn validate(
     binding: &Binding,
@@ -64,9 +65,45 @@ pub(super) fn validate(
             *ty == crate::ir::NativeWitnessBuiltin::OwnPublicKey.result_type()
         }
         Operation::KernelSelf => *ty == crate::ir::contract_address_type(),
-        Operation::KernelClaim { value, .. } => {
+        Operation::EmitShieldedSpend(value) | Operation::KernelClaim { value, .. } => {
             use_value(value)?;
             value.ty == (Type::Bytes { length: 32 }) && *ty == Type::Unit
+        }
+        Operation::EmitShieldedBurn(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 49 }) && *ty == Type::Unit
+        }
+        Operation::EmitShieldedMint(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 81 }) && *ty == Type::Unit
+        }
+        Operation::EmitShieldedReceive(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 578 }) && *ty == Type::Unit
+        }
+        Operation::EmitUnshieldedSpend(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 145 }) && *ty == Type::Unit
+        }
+        Operation::EmitUnshieldedReceive(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 145 }) && *ty == Type::Unit
+        }
+        Operation::EmitUnshieldedMint(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 80 }) && *ty == Type::Unit
+        }
+        Operation::EmitUnshieldedBurn(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 113 }) && *ty == Type::Unit
+        }
+        Operation::EmitMisc(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 288 }) && *ty == Type::Unit
+        }
+        Operation::EmitPaused(value) | Operation::EmitUnpaused(value) => {
+            use_value(value)?;
+            value.ty == (Type::Bytes { length: 0 }) && *ty == Type::Unit
         }
         Operation::KernelMintShielded { domain, amount } => {
             use_value(domain)?;
@@ -111,14 +148,20 @@ pub(super) fn validate(
             use_value(value)?;
             fixed_aligned_fab_type(&value.ty) && *ty == (Type::Bytes { length: 32 })
         }
-        Operation::Keccak256(value) => {
+        Operation::Keccak256(value, encoding) => {
             use_value(value)?;
-            keccak_input_type(&value.ty) && *ty == (Type::Bytes { length: 32 })
+            keccak_input_type(&value.ty, *encoding) && *ty == (Type::Bytes { length: 32 })
+        }
+        Operation::Sha512(value) => {
+            use_value(value)?;
+            fixed_aligned_fab_type(&value.ty) && *ty == (Type::Bytes { length: 64 })
         }
         Operation::Add(a, b) | Operation::Subtract(a, b) | Operation::Multiply(a, b) => {
             use_value(a)?;
             use_value(b)?;
-            a.ty == Type::Field && b.ty == Type::Field && *ty == Type::Field
+            *ty == a.ty
+                && crate::pure_semantics::arithmetic::check_field_arithmetic_pair(&a.ty, &b.ty)
+                    .is_ok()
         }
         Operation::UnsignedAdd(a, b) => {
             use_value(a)?;
@@ -155,7 +198,8 @@ pub(super) fn validate(
         }
         Operation::EcMulGenerator(scalar) => {
             use_value(scalar)?;
-            scalar.ty == Type::Field && *ty == Type::JubjubPoint
+            let curve = Curve::for_scalar(&scalar.ty);
+            scalar.ty == curve.scalar() && *ty == curve.point()
         }
         Operation::EcNeg(value) => {
             use_value(value)?;
@@ -169,14 +213,19 @@ pub(super) fn validate(
         Operation::EcMul { point, scalar } => {
             use_value(point)?;
             use_value(scalar)?;
-            point.ty == Type::JubjubPoint && scalar.ty == Type::Field && *ty == Type::JubjubPoint
+            let curve = Curve::for_point(&point.ty);
+            point.ty == curve.point() && scalar.ty == curve.scalar() && *ty == curve.point()
         }
         Operation::EcAdd { left, right } => {
             use_value(left)?;
             use_value(right)?;
-            left.ty == Type::JubjubPoint
-                && right.ty == Type::JubjubPoint
-                && *ty == Type::JubjubPoint
+            let point = Curve::for_point(&left.ty).point();
+            left.ty == point && right.ty == point && *ty == point
+        }
+        Operation::Secp256k1Unary { kind, value } => {
+            use_value(value)?;
+            kind.result_type(&value.ty)
+                .is_ok_and(|expected| expected == *ty)
         }
         Operation::Convert { value, kind } => {
             use_value(value)?;
@@ -184,6 +233,19 @@ pub(super) fn validate(
                 Conversion::Coerce => coercible(&value.ty, ty),
                 Conversion::UnsignedCast => {
                     unsigned_bound(&value.ty).is_some() && unsigned_bound(ty).is_some()
+                }
+                Conversion::FixedBytes(operation) => operation
+                    .result_type(&value.ty)
+                    .is_ok_and(|expected| expected == *ty),
+                Conversion::JubjubCast => {
+                    crate::pure_semantics::conversion::JubjubCast::check(&value.ty, ty).is_ok()
+                }
+                Conversion::EnumCast => {
+                    crate::pure_semantics::conversion::EnumCast::check(&value.ty, ty).is_ok()
+                }
+                Conversion::Secp256k1BytesCast => {
+                    crate::pure_semantics::conversion::Secp256k1BytesCast::check(&value.ty, ty)
+                        .is_ok()
                 }
             }
         }
@@ -225,6 +287,9 @@ pub(super) fn validate(
         }
         Operation::MapMember { .. }
         | Operation::MapLookup { .. }
+        | Operation::NestedMapLookup { .. }
+        | Operation::NestedMapInsert { .. }
+        | Operation::MapInitChild { .. }
         | Operation::MapInsert { .. }
         | Operation::MapRemove { .. }
         | Operation::MapInsertDefault { .. }

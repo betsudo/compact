@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "d75c0da65102cdced50da17e24f2ea4cb511f659",
+  "scope": "Reverse only the new fixed byte operation cases in the retained exhaustive matchers.",
+  "predecessor_manifest": {
+    "path": "secp256k1-point-accessor-expression.json",
+    "sha256": "61f0176a053d08fd3ca08f12127998b3e4fc99113ed7d62fd59bff4a8028ece8"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "24244e2884165559a160fab1c9ee4d56498474051b5f65929958f97da4e92f2f",
+      "previous_sha256": "6d9761aa642d7d64c6274f6ca7a48e9f58319f2a027f7da415d47257ee3ecd51",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToVector { value, .. }\n        | Expr::BytesSlice { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "d98b5e0d2059457ceb6121a3b519a52aaf337f4dce275849eb84cbbd461121ff",
+      "previous_sha256": "5b836cf72b9e5ac9a3b6e516c20a277b6d1e665c82659fc5aa7f8833b9dc46f5",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToVector { value, .. }\n        | Expr::BytesSlice { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "166ba3c20b13e61554406e58eb4a0540067a07633d2a0ce429d2ca7ffe9fb21e",
+      "previous_sha256": "a49cce075ecc33e9b2cce9353bd31db9cd6b79bb2ea1ed925f24bb5049de5feb",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToVector { value, .. }\n        | Expr::BytesSlice { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "057bfd3ac9f8cac96300627ec8e2101d4918c29370ff65cd07ad85506b4d37be",
+      "previous_sha256": "cd127a3b86d77fbccbaecda2494659bc597e9b4ceb63c515dfaf950389ce53d8",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

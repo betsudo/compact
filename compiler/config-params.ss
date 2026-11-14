@@ -38,6 +38,7 @@
 
   ; default source path
   (export-parameter compact-path (split-search-path (or (getenv "COMPACT_PATH") "")))
+  (export-parameter contract-dependency-directory #f)
 
   ; formatter
   (export-parameter format-line-length 100)

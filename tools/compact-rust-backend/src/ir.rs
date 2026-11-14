@@ -458,6 +458,18 @@ pub enum StateAction {
         field: String,
         index: u8,
     },
+    NestedMapInsert {
+        field: String,
+        index: u8,
+        outer: Expr,
+        inner: Expr,
+        value: Expr,
+    },
+    MapInitChild {
+        field: String,
+        index: u8,
+        key: Expr,
+    },
     HistoricMerkleInsertIndexDefault {
         field: String,
         index: u8,
@@ -589,6 +601,16 @@ pub enum Type {
     Boolean,
     Field,
     JubjubPoint,
+    JubjubScalar,
+    Secp256k1Base,
+    Secp256r1Base,
+    Curve25519Base,
+    Secp256k1Scalar,
+    Secp256r1Scalar,
+    Curve25519Scalar,
+    Secp256k1Point,
+    Secp256r1Point,
+    Curve25519Point,
     OpaqueString,
     OpaqueBytes,
     Bytes {
@@ -618,6 +640,18 @@ pub enum Type {
         key: Box<Type>,
         value: Box<Type>,
     },
+    /// A nested Merkle ADT, which has a ledger shape and no scalar value codec.
+    LedgerMerkle {
+        historic: bool,
+        depth: u8,
+        ty: Box<Type>,
+    },
+}
+
+impl Type {
+    pub(crate) fn is_ledger_adt(&self) -> bool {
+        matches!(self, Self::LedgerMap { .. } | Self::LedgerMerkle { .. })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -633,6 +667,22 @@ pub enum KernelClaimKind {
     Nullifier,
     CoinSpend,
     CoinReceive,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KeccakEncoding {
+    /// Historical schema 20 contracts concatenate the normalized FAB atoms.
+    #[default]
+    NormalizedAtoms,
+    /// Ledger 9 ZKIR uses the declared width of each FAB atom.
+    Aligned,
+}
+
+impl KeccakEncoding {
+    pub(crate) fn is_normalized_atoms(&self) -> bool {
+        *self == Self::NormalizedAtoms
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -663,6 +713,67 @@ pub enum Expr {
         value: Box<Expr>,
     },
     FieldToBytes32 {
+        value: Box<Expr>,
+    },
+    VectorToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
+    BytesToVector {
+        value: Box<Expr>,
+        length: usize,
+    },
+    UintToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
+    WideUintToBytes {
+        value: Box<Expr>,
+        length: usize,
+    },
+    BytesToField {
+        value: Box<Expr>,
+    },
+    BytesToUint {
+        value: Box<Expr>,
+        max: String,
+    },
+    BytesZeroPad {
+        value: Box<Expr>,
+        length: usize,
+    },
+    BytesFromChunks {
+        value: Box<Expr>,
+        length: usize,
+        chunk_count: usize,
+    },
+    BytesSlice {
+        value: Box<Expr>,
+        start: usize,
+        length: usize,
+    },
+    JubjubCast {
+        value: Box<Expr>,
+        ty: Type,
+    },
+    EnumCast {
+        value: Box<Expr>,
+        ty: Type,
+    },
+    Secp256k1BytesCast {
+        value: Box<Expr>,
+        ty: Type,
+    },
+    Secp256k1Neg {
+        value: Box<Expr>,
+    },
+    Secp256k1Inv {
+        value: Box<Expr>,
+    },
+    Secp256k1PointX {
+        value: Box<Expr>,
+    },
+    Secp256k1PointY {
         value: Box<Expr>,
     },
     Coerce {
@@ -703,6 +814,12 @@ pub enum Expr {
         field: String,
         index: u8,
         key: Box<Expr>,
+    },
+    NestedMapLookup {
+        field: String,
+        index: u8,
+        outer: Box<Expr>,
+        inner: Box<Expr>,
     },
     ListLength {
         field: String,
@@ -836,6 +953,11 @@ pub enum Expr {
     },
     Keccak256 {
         value: Box<Expr>,
+        #[serde(default, skip_serializing_if = "KeccakEncoding::is_normalized_atoms")]
+        encoding: KeccakEncoding,
+    },
+    Sha512 {
+        value: Box<Expr>,
     },
     PersistentCommit {
         value: Box<Expr>,
@@ -880,6 +1002,39 @@ pub enum Expr {
     WitnessCall {
         name: String,
         arguments: Vec<Expr>,
+    },
+    EmitShieldedSpend {
+        value: Box<Expr>,
+    },
+    EmitShieldedBurn {
+        value: Box<Expr>,
+    },
+    EmitShieldedMint {
+        value: Box<Expr>,
+    },
+    EmitShieldedReceive {
+        value: Box<Expr>,
+    },
+    EmitUnshieldedSpend {
+        value: Box<Expr>,
+    },
+    EmitUnshieldedReceive {
+        value: Box<Expr>,
+    },
+    EmitUnshieldedMint {
+        value: Box<Expr>,
+    },
+    EmitUnshieldedBurn {
+        value: Box<Expr>,
+    },
+    EmitMisc {
+        value: Box<Expr>,
+    },
+    EmitPaused {
+        value: Box<Expr>,
+    },
+    EmitUnpaused {
+        value: Box<Expr>,
     },
     KernelClaim {
         claim: KernelClaimKind,

@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Kernel invariants verified independently of source lowering.
 use super::*;
 fn bytes_type() -> Type {
@@ -34,6 +46,151 @@ fn plan(operation: Operation) -> Plan {
 fn validate(plan: Plan) -> Result<CheckedPlan, RecordingGap> {
     validate::check(plan, declarations::Declarations::default())
 }
+
+#[test]
+fn mint_event_requires_exact_bytes81_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitShieldedMint(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 81 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 80 },
+        Type::Bytes { length: 82 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn receive_event_requires_exact_bytes578_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitShieldedReceive(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 578 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 577 },
+        Type::Bytes { length: 579 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn unshielded_spend_event_requires_exact_bytes145_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedSpend(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 145 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn pause_events_require_zero_byte_payloads_in_the_checked_plan() {
+    for event in [
+        Operation::EmitPaused as fn(Value) -> Operation,
+        Operation::EmitUnpaused,
+    ] {
+        let event_plan = |ty| {
+            let input = value(0, ty);
+            let mut plan = plan(event(input.clone()));
+            plan.parameters[0] = input;
+            plan
+        };
+        validate(event_plan(Type::Bytes { length: 0 })).unwrap();
+        assert!(validate(event_plan(Type::Bytes { length: 1 })).is_err());
+        assert!(validate(event_plan(Type::Field)).is_err());
+    }
+}
+
+#[test]
+fn misc_event_requires_exact_bytes288_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitMisc(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 288 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 287 },
+        Type::Bytes { length: 289 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn unshielded_burn_event_requires_exact_bytes113_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedBurn(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 113 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 112 },
+        Type::Bytes { length: 114 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn unshielded_receive_event_requires_exact_bytes145_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedReceive(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 145 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
+#[test]
+fn unshielded_mint_event_requires_exact_bytes80_in_the_checked_plan() {
+    let event_plan = |ty: Type| {
+        let input = value(0, ty);
+        let mut plan = plan(Operation::EmitUnshieldedMint(input.clone()));
+        plan.parameters[0] = input;
+        plan
+    };
+    validate(event_plan(Type::Bytes { length: 80 })).unwrap();
+    for ty in [
+        Type::Bytes { length: 79 },
+        Type::Bytes { length: 81 },
+        Type::Field,
+    ] {
+        assert!(validate(event_plan(ty)).is_err());
+    }
+}
+
 #[test]
 fn all_closed_claim_kinds_require_bytes32_live_input_and_unit_output() {
     for kind in [

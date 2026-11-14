@@ -1,11 +1,22 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Independent old owned Type checks and syntax prevent shared-helper drift.
 use super::*;
 use crate::pure_semantics::{
-    jubjub::{Axis, CheckedJubjub, JubjubOperands, check_jubjub},
+    jubjub::{Axis, CheckedCurve, Curve, CurveOperands, check_curve},
     sink::Typed,
 };
 fn operand(ty: Type) -> (syn::Expr, Type) {
@@ -65,7 +76,7 @@ fn generic_jubjub_checks_move_actual_types_and_preserve_both_output_positions() 
     let first = Type::Unsigned { max: "bad".into() };
     let second = map(Type::OpaqueString);
     assert_eq!(
-        check_jubjub(JubjubOperands::Multiply(
+        check_curve(CurveOperands::Multiply(
             generic(first.clone(), ()),
             generic(second, ())
         ))
@@ -76,7 +87,7 @@ fn generic_jubjub_checks_move_actual_types_and_preserve_both_output_positions() 
         })
     );
     assert_eq!(
-        check_jubjub(JubjubOperands::Construct(
+        check_curve(CurveOperands::Construct(
             generic(Type::Field, ()),
             generic(Type::Boolean, ())
         ))
@@ -86,14 +97,17 @@ fn generic_jubjub_checks_move_actual_types_and_preserve_both_output_positions() 
             actual: Type::Boolean
         })
     );
-    let checked = check_jubjub(JubjubOperands::Add(
+    let checked = check_curve(CurveOperands::Add(
         generic(Type::JubjubPoint, 7),
         generic(Type::JubjubPoint, 11),
     ))
     .unwrap();
     assert_eq!(checked.ty, Type::JubjubPoint);
-    assert!(matches!(checked.output, CheckedJubjub::Add(7, 11)));
-    let checked = check_jubjub(JubjubOperands::Coordinate(
+    assert!(matches!(
+        checked.output,
+        CheckedCurve::Add(Curve::Jubjub, 7, 11)
+    ));
+    let checked = check_curve(CurveOperands::Coordinate(
         Axis::Y,
         generic(Type::JubjubPoint, 13),
     ))
@@ -101,8 +115,8 @@ fn generic_jubjub_checks_move_actual_types_and_preserve_both_output_positions() 
     assert_eq!(checked.ty, Type::Field);
     assert!(matches!(
         checked.output,
-        CheckedJubjub::Coordinate(Axis::Y, 13)
+        CheckedCurve::Coordinate(Axis::Y, 13)
     ));
-    let checked = check_jubjub(JubjubOperands::Negate(generic(Type::JubjubPoint, 17))).unwrap();
-    assert!(matches!(checked.output, CheckedJubjub::Negate(17)));
+    let checked = check_curve(CurveOperands::Negate(generic(Type::JubjubPoint, 17))).unwrap();
+    assert!(matches!(checked.output, CheckedCurve::Negate(17)));
 }

@@ -15,8 +15,13 @@
 
 //! Exhaustive source classification. Every family retains its single checked owner.
 use super::super::{
-    aggregate::AggregateSource, arithmetic::ArithmeticSource, control::ControlSource,
-    conversion::ConversionSource, crypto::CryptoSource, leaf::LeafSource, numeric::ArithmeticKind,
+    aggregate::AggregateSource,
+    arithmetic::{ArithmeticSource, Secp256k1Unary},
+    control::ControlSource,
+    conversion::ConversionSource,
+    crypto::CryptoSource,
+    leaf::LeafSource,
+    numeric::ArithmeticKind,
 };
 use crate::ir::Expr;
 pub(super) enum Source<'a> {
@@ -57,6 +62,17 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::EnumVariant { ty, variant } => Source::Leaf(LeafSource::EnumVariant { ty, variant }),
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
+        | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
+        | Expr::EmitUnshieldedMint { .. }
+        | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -64,6 +80,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
         | Expr::SetIsEmpty { .. }
@@ -80,6 +97,28 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::FieldCast { value } => Source::Conversion(ConversionSource::FieldCast { value }),
         Expr::FieldToBytes32 { value } => {
             Source::Conversion(ConversionSource::FieldToBytes32 { value })
+        }
+        Expr::VectorToBytes { .. }
+        | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
+        | Expr::BytesToField { .. }
+        | Expr::BytesToUint { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
+        | Expr::BytesSlice { .. } => {
+            let (value, operation) =
+                super::super::conversion::FixedBytesConversion::from_expression(expr);
+            Source::Conversion(ConversionSource::FixedBytes { value, operation })
+        }
+        Expr::JubjubCast { value, ty } => {
+            Source::Conversion(ConversionSource::JubjubCast { value, ty })
+        }
+        Expr::EnumCast { value, ty } => {
+            Source::Conversion(ConversionSource::EnumCast { value, ty })
+        }
+        Expr::Secp256k1BytesCast { value, ty } => {
+            Source::Conversion(ConversionSource::Secp256k1BytesCast { value, ty })
         }
         Expr::Coerce { value, ty } => Source::Conversion(ConversionSource::Coerce { value, ty }),
         Expr::UnsignedCast { max, value } => {
@@ -146,10 +185,13 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
             Source::Crypto(CryptoSource::TransientCommit(value, opening))
         }
         Expr::PersistentHash { value } => Source::Crypto(CryptoSource::PersistentHash(value)),
+        Expr::Sha512 { value } => Source::Crypto(CryptoSource::Sha512(value)),
         Expr::PersistentCommit { value, opening } => {
             Source::Crypto(CryptoSource::PersistentCommit(value, opening))
         }
-        Expr::Keccak256 { value } => Source::Crypto(CryptoSource::Keccak256(value)),
+        Expr::Keccak256 { value, encoding } => {
+            Source::Crypto(CryptoSource::Keccak256(value, *encoding))
+        }
         Expr::DegradeToTransient { value } => {
             Source::Crypto(CryptoSource::DegradeToTransient(value))
         }
@@ -164,6 +206,13 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         }
         Expr::EcAdd { left, right } => Source::Crypto(CryptoSource::EcAdd(left, right)),
         Expr::EcNeg { value } => Source::Crypto(CryptoSource::EcNeg(value)),
+        Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => {
+            let (kind, value) = Secp256k1Unary::from_expression(expr).unwrap();
+            Source::Crypto(CryptoSource::Secp256k1Unary(kind, value))
+        }
         Expr::EcMul { point, scalar } => Source::Crypto(CryptoSource::EcMul(point, scalar)),
         Expr::EcMulGenerator { scalar } => Source::Crypto(CryptoSource::EcMulGenerator(scalar)),
         Expr::JubjubScalarFromNative { value } => {

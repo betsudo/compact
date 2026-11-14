@@ -31,18 +31,32 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::EnumVariant { .. } => true,
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
+        | Expr::BytesToVector { value, .. }
+        | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
+        | Expr::BytesToField { value }
+        | Expr::BytesToUint { value, .. }
+        | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
         | Expr::Coerce { value, .. }
         | Expr::StructField { value, .. }
         | Expr::TupleIndex { value, .. }
         | Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
         | Expr::JubjubPointX { value }
         | Expr::JubjubPointY { value }
+        | Expr::Secp256k1Neg { value }
+        | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => local_expr(value, witnesses),
         Expr::Tuple { elements } | Expr::Vector { elements, .. } => {
@@ -101,6 +115,17 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::VectorFoldCall { .. }
         | Expr::VectorMap { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
+        | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
+        | Expr::EmitUnshieldedMint { .. }
+        | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -108,6 +133,7 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::ListLength { .. }
         | Expr::ListIsEmpty { .. }
         | Expr::ListHead { .. }
@@ -121,6 +147,9 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::SetIsEmpty { .. }
         | Expr::MapSize { .. }
         | Expr::MapIsEmpty { .. }
+        | Expr::JubjubCast { .. }
+        | Expr::Secp256k1BytesCast { .. }
+        | Expr::EnumCast { .. }
         | Expr::PersistentCommit { .. } => false,
     }
 }

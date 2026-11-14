@@ -74,8 +74,17 @@ fn action_call_site<'source>(
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_call_site(value, name),
         StateAction::Assert { condition, .. } => expression_call_site(condition, name),
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => expression_call_site(inner, name)
+            .or_else(|| expression_call_site(value, name))
+            .or_else(|| expression_call_site(outer, name)),
         StateAction::MapInsert { key, value, .. } => {
             expression_call_site(key, name).or_else(|| expression_call_site(value, name))
         }
@@ -260,11 +269,22 @@ fn action_emits_native_private_output(action: &StateAction) -> bool {
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_contains_native_witness(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(expression_contains_native_witness)
         }
         StateAction::Assert { condition, .. } => expression_contains_native_witness(condition),
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            expression_contains_native_witness(inner)
+                || expression_contains_native_witness(value)
+                || expression_contains_native_witness(outer)
+        }
         StateAction::MapInsert { key, value, .. } => {
             expression_contains_native_witness(key) || expression_contains_native_witness(value)
         }
@@ -453,9 +473,22 @@ fn expression_contains_with_actions<'source>(
             bindings.iter().any(|binding| visit(&binding.value)) || visit(body)
         }
         Expr::Sequence { steps, value } => steps.iter().any(visit) || visit(value),
+        Expr::NestedMapLookup { inner, outer, .. } => visit(inner) || visit(outer),
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
+        | Expr::BytesToVector { value, .. }
+        | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
+        | Expr::BytesToField { value }
+        | Expr::BytesToUint { value, .. }
+        | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value }
+        | Expr::JubjubCast { value, .. }
+        | Expr::Secp256k1BytesCast { value, .. }
+        | Expr::EnumCast { value, .. }
         | Expr::Coerce { value, .. }
         | Expr::StructField { value, .. }
         | Expr::TupleIndex { value, .. }
@@ -469,12 +502,17 @@ fn expression_contains_with_actions<'source>(
         }
         | Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
         | Expr::JubjubPointX { value }
         | Expr::JubjubPointY { value }
+        | Expr::Secp256k1Neg { value }
+        | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::EcMulGenerator { scalar: value }
         | Expr::JubjubScalarFromNative { value } => visit(value),
@@ -502,7 +540,18 @@ fn expression_contains_with_actions<'source>(
         | Expr::UnsignedSubtract { left, right, .. }
         | Expr::UnsignedMultiply { left, right, .. } => visit(left) || visit(right),
         Expr::CounterLessThan { threshold, .. } => visit(threshold),
-        Expr::KernelClaim { value, .. } => visit(value),
+        Expr::EmitShieldedSpend { value }
+        | Expr::EmitShieldedBurn { value }
+        | Expr::EmitShieldedMint { value }
+        | Expr::EmitShieldedReceive { value }
+        | Expr::EmitUnshieldedSpend { value }
+        | Expr::EmitUnshieldedReceive { value }
+        | Expr::EmitUnshieldedMint { value }
+        | Expr::EmitUnshieldedBurn { value }
+        | Expr::EmitMisc { value }
+        | Expr::EmitPaused { value }
+        | Expr::EmitUnpaused { value }
+        | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
@@ -616,6 +665,7 @@ fn action_contains_witness(action: &StateAction) -> bool {
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => expression_contains_witness(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(expression_contains_witness)
@@ -626,6 +676,16 @@ fn action_contains_witness(action: &StateAction) -> bool {
                 .iter()
                 .any(|binding| expression_contains_witness(&binding.value))
                 || action_contains_witness(action)
+        }
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            expression_contains_witness(inner)
+                || expression_contains_witness(value)
+                || expression_contains_witness(outer)
         }
         StateAction::MapInsert { key, value, .. } => {
             expression_contains_witness(key) || expression_contains_witness(value)
@@ -729,6 +789,7 @@ fn action_contains_expressions<'source>(
             position: value, ..
         }
         | StateAction::MapInsertDefault { key: value, .. }
+        | StateAction::MapInitChild { key: value, .. }
         | StateAction::MapRemove { key: value, .. } => visit(value),
         StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {
             arguments.iter().any(visit)
@@ -737,6 +798,12 @@ fn action_contains_expressions<'source>(
         StateAction::Let { bindings, action } => {
             bindings.iter().any(|binding| visit(&binding.value)) || action_visit(action)
         }
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => visit(inner) || visit(value) || visit(outer),
         StateAction::MapInsert { key, value, .. } => visit(key) || visit(value),
         StateAction::SetInsertCoin {
             coin, recipient, ..

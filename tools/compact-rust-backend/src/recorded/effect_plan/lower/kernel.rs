@@ -1,11 +1,54 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! Ordered kernel effects use exact official ledger8 operand signatures.
+//! Ordered kernel and event effects use the exact Ledger VM operand types.
 use super::*;
 
 impl Lowerer<'_> {
+    pub(super) fn emit_event(
+        &mut self,
+        expression: &Expr,
+        scope: &Scope,
+        bindings: &mut Vec<Binding>,
+        path: &str,
+    ) -> Result<(Operation, Type), RecordingGap> {
+        let (value, length, operation): (_, _, fn(Value) -> Operation) = match expression {
+            Expr::EmitShieldedSpend { value } => (value, 32, Operation::EmitShieldedSpend),
+            Expr::EmitShieldedBurn { value } => (value, 49, Operation::EmitShieldedBurn),
+            Expr::EmitShieldedMint { value } => (value, 81, Operation::EmitShieldedMint),
+            Expr::EmitShieldedReceive { value } => (value, 578, Operation::EmitShieldedReceive),
+            Expr::EmitUnshieldedSpend { value } => (value, 145, Operation::EmitUnshieldedSpend),
+            Expr::EmitUnshieldedReceive { value } => (value, 145, Operation::EmitUnshieldedReceive),
+            Expr::EmitUnshieldedMint { value } => (value, 80, Operation::EmitUnshieldedMint),
+            Expr::EmitUnshieldedBurn { value } => (value, 113, Operation::EmitUnshieldedBurn),
+            Expr::EmitMisc { value } => (value, 288, Operation::EmitMisc),
+            Expr::EmitPaused { value } => (value, 0, Operation::EmitPaused),
+            Expr::EmitUnpaused { value } => (value, 0, Operation::EmitUnpaused),
+            _ => return Err(invalid(path, "expected an event expression")),
+        };
+        let path = format!("{path}.value");
+        let value = self.expression(value, scope, bindings, &path)?;
+        if value.ty != (Type::Bytes { length }) {
+            return Err(invalid(
+                &path,
+                format!("event payload must have type Bytes<{length}>"),
+            ));
+        }
+        Ok((operation(value), Type::Unit))
+    }
+
     pub(super) fn kernel(
         &mut self,
         expression: &Expr,

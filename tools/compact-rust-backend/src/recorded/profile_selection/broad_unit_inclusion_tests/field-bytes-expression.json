@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "78ec997f27d23f45ce4d65217c92e8da11843bf29da96a3c16a45df844a14216"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "65e07e9035bcc7bf09711fc4a220d909b02262dedce9cd74a0da344677dbef64",
+      "previous_sha256": "19c1f894048bd4e19907fad53a615e7415151a70f9fa4ac8922b0551f2274105",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToField { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "3a5d10c1cf94e50e4fc31486231d1d61c6f0d1542b9f5e8b9c12c6fd49d90f1a",
+      "previous_sha256": "bad9fb68a3ce0f00f0396ea6a8a194203de46222caf76a669449bb03a2aa04c5",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToField { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "251e2ec3bb245f990cfacfa9bc96722b74d933dbbad2ac88ce241c5aed8816ad",
+      "previous_sha256": "13ba3fe119d4d03b2b806338df8f53a76552ac2963b1673d7432d891e86c252e",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToField { .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "3097fd1390c6e8b58ab9708841a518ac70455ff59e3658a5b2f5be9f0430c328",
+      "previous_sha256": "938fb1f0126c25601ad2f6637fc40aa4bdf3e7be1a0a0a2284c8582fddceda41",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesToField { value }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

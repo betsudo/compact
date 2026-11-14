@@ -93,7 +93,11 @@ fn checked_path_operand<D: DB>(length: usize, extra: u8) -> Result<u8, Transcrip
 // Idx uses four bits for (length - 1). Empty paths are the upstream
 // no-op root selection, while nonempty paths encode at most sixteen keys.
 fn checked_index_path<D: DB>(path: &[u8]) -> Result<(), TranscriptRejected<D>> {
-    if path.len() > 16 {
+    checked_index_path_length(path.len())
+}
+
+fn checked_index_path_length<D: DB>(length: usize) -> Result<(), TranscriptRejected<D>> {
+    if length > 16 {
         Err(midnight_onchain_vm::error::OnchainProgramError::BoundsExceeded.into())
     } else {
         Ok(())
@@ -237,7 +241,26 @@ macro_rules! primitive_cell_value {
     )* };
 }
 
-primitive_cell_value!(bool, u8, u16, u32, u64, u128, Field, JubjubPoint);
+primitive_cell_value!(
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    Field,
+    JubjubPoint,
+    crate::JubjubScalar,
+    crate::Secp256k1Base,
+    crate::Secp256k1Point,
+    crate::Secp256r1Point,
+    crate::Secp256k1Scalar,
+    crate::Secp256r1Base,
+    crate::Curve25519Base,
+    crate::Curve25519Scalar,
+    crate::Curve25519Point,
+    crate::Secp256r1Scalar,
+);
 
 impl<const MAX: u128> CellValue for BoundedUint<MAX> {
     fn decode_cell_value(value: &ValueSlice) -> Result<Self, CompactError> {
@@ -372,8 +395,14 @@ fn field_at_path<'a, D: DB>(
 mod cell;
 mod collections;
 mod counter;
+mod event;
 mod merkle;
 mod vm;
+pub(crate) use event::{
+    misc_program, paused_program, shielded_burn_program, shielded_mint_program,
+    shielded_receive_program, shielded_spend_program, unpaused_program, unshielded_burn_program,
+    unshielded_mint_program, unshielded_receive_program, unshielded_spend_program,
+};
 
 pub(crate) use cell::{
     aligned_cell_value, cell_read_program, cell_write_program, decode_last_read,
@@ -393,10 +422,12 @@ pub use collections::{
     set_view_at_path, size_map, size_set,
 };
 pub(crate) use collections::{
-    list_head_program, list_is_empty_program, list_length_program, list_pop_front_program,
-    list_push_front_program, list_reset_program, map_insert_program, map_lookup_program,
-    qualified_coin_set_insert_program, set_insert_program, set_is_empty_program,
-    set_member_program, set_remove_program, set_reset_program, set_size_program,
+    gather_map_lookup, list_head_program, list_is_empty_program, list_length_program,
+    list_pop_front_program, list_push_front_program, list_reset_program, map_init_child_program,
+    map_insert_child_program, map_insert_merkle_default_program, map_insert_program,
+    map_lookup_child_program, map_lookup_program, qualified_coin_set_insert_program,
+    set_insert_program, set_is_empty_program, set_member_program, set_remove_program,
+    set_reset_program, set_size_program,
 };
 pub use counter::{constructor_counter, decrement_counter, increment_counter, read_counter};
 pub(crate) use counter::{
@@ -466,7 +497,9 @@ pub fn empty_query_context() -> QueryContext<DefaultDB> {
 
 mod kernel;
 pub use kernel::{KernelClaim, query_kernel_claim, query_kernel_mint_shielded};
-pub(crate) use kernel::{kernel_claim_program, kernel_mint_shielded_program};
+pub(crate) use kernel::{
+    kernel_claim_contract_call_program, kernel_claim_program, kernel_mint_shielded_program,
+};
 
 #[cfg(test)]
 mod program_path_tests;

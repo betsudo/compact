@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Map identity and active operand types come from immutable declarations.
 use super::*;
 
@@ -55,7 +67,61 @@ pub(in super::super) fn types<'a>(
     Ok((key, value))
 }
 
+pub(in super::super) fn child_slot_types<'a>(
+    declarations: &'a Declarations,
+    slot: MapSlot,
+    path: &str,
+) -> Result<(&'a Type, &'a Type, &'a Type), RecordingGap> {
+    let (outer, value) = types(declarations, slot, false, path)?;
+    let Type::LedgerMap { key: inner, value } = value else {
+        return Err(invalid(path, "expected nested Map declaration"));
+    };
+    declarations.types().validate_at(inner, path)?;
+    if !map_key_type(inner) {
+        return Err(invalid(path, "unsupported nested Map key type"));
+    }
+    Ok((outer, inner, value))
+}
+
 /// Each plan is checked independently of lowering and its inferred annotations.
+pub(in super::super) fn child_types(
+    declarations: &Declarations,
+    slot: MapSlot,
+    path: &str,
+) -> Result<(Type, Type, Type), RecordingGap> {
+    let (outer, inner, value) = child_slot_types(declarations, slot, path)?;
+    declarations.types().validate_at(value, path)?;
+    if !scalar_value_type(value) {
+        return Err(invalid(path, "unsupported nested Map value type"));
+    }
+    Ok((outer.clone(), inner.clone(), value.clone()))
+}
+
+pub(in super::super) fn has_merkle_value(declarations: &Declarations, slot: MapSlot) -> bool {
+    declarations.field(slot.declaration).is_some_and(|field| {
+        matches!(
+            &field.declaration,
+            LedgerFieldKind::Map {
+                value: Type::LedgerMerkle { .. },
+                ..
+            }
+        )
+    })
+}
+
+pub(in super::super) fn default_insert_value(
+    declarations: &Declarations,
+    value: &Type,
+    path: &str,
+) -> Result<bool, RecordingGap> {
+    if let Type::LedgerMerkle { depth, ty, .. } = value {
+        declarations.types().validate_at(ty, path)?;
+        Ok((2..=32).contains(depth) && merkle_leaf_type(ty))
+    } else {
+        Ok(default_value_type(value))
+    }
+}
+
 pub(super) fn validate(
     operation: &Operation,
     result: &Type,
@@ -64,18 +130,43 @@ pub(super) fn validate(
     path: &str,
 ) -> Result<bool, RecordingGap> {
     Ok(match operation {
+        Operation::NestedMapLookup { slot, outer, inner } => {
+            used(inner, scope, declarations, path)?;
+            used(outer, scope, declarations, path)?;
+            let (outer_ty, inner_ty, value) = child_types(declarations, *slot, path)?;
+            outer.ty == outer_ty && inner.ty == inner_ty && *result == value
+        }
+        Operation::NestedMapInsert {
+            slot,
+            outer,
+            inner,
+            value,
+        } => {
+            used(inner, scope, declarations, path)?;
+            used(value, scope, declarations, path)?;
+            used(outer, scope, declarations, path)?;
+            let (outer_ty, inner_ty, value_ty) = child_types(declarations, *slot, path)?;
+            outer.ty == outer_ty
+                && inner.ty == inner_ty
+                && value.ty == value_ty
+                && *result == Type::Unit
+        }
+        Operation::MapInitChild { slot, key } => {
+            used(key, scope, declarations, path)?;
+            let (outer, _, _) = child_slot_types(declarations, *slot, path)?;
+            key.ty == *outer && *result == Type::Unit
+        }
         Operation::MapMember { slot, key }
         | Operation::MapLookup { slot, key }
         | Operation::MapRemove { slot, key }
         | Operation::MapInsertDefault { slot, key } => {
             used(key, scope, declarations, path)?;
-            let scalar = matches!(
-                operation,
-                Operation::MapLookup { .. } | Operation::MapInsertDefault { .. }
-            );
+            let is_default = matches!(operation, Operation::MapInsertDefault { .. });
+            let scalar = matches!(operation, Operation::MapLookup { .. })
+                || (is_default && !has_merkle_value(declarations, *slot));
             let (declared_key, declared_value) = types(declarations, *slot, scalar, path)?;
-            let default_valid = !matches!(operation, Operation::MapInsertDefault { .. })
-                || default_value_type(declared_value);
+            let default_valid =
+                !is_default || default_insert_value(declarations, declared_value, path)?;
             key.ty == *declared_key
                 && default_valid
                 && *result

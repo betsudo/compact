@@ -25,6 +25,22 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_verify_program(program)
     }
 
+    /// Record the Kernel claim for a callee's address, entry point and
+    /// communication commitment. The ledger matches it against another call
+    /// in the same transaction.
+    pub fn kernel_claim_contract_call(
+        self,
+        address: ledger::ContractAddress,
+        entry_point_hash: ledger::HashOutput,
+        communication_commitment: crate::Field,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_claim_contract_call_program(
+            address,
+            entry_point_hash,
+            communication_commitment,
+        ))
+    }
+
     /// Record a shielded mint effect, without fabricating a coin or a balance.
     pub fn kernel_mint_shielded(
         self,
@@ -50,6 +66,70 @@ mod tests {
             )),
         )
         .into_circuit_context(ContractAddress::default())
+    }
+
+    #[test]
+    fn contract_claim_matches_generated_typescript_and_replays_in_order() {
+        use midnight_onchain_state::state::EntryPointBuf;
+
+        // The v3 TypeScript compiler emitted this program for the explicit
+        // kernel claim in the EntryPoint transfer adapter.
+        let oracle: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/kernel-entrypoint-claim-oracle.json"
+        ))
+        .unwrap();
+        let address = ContractAddress(ledger::HashOutput(
+            serde_json::from_value(oracle["calleeAddress"].clone()).unwrap(),
+        ));
+        let entry_point = EntryPointBuf(oracle["entryPoint"].as_str().unwrap().as_bytes().to_vec());
+        let hash = entry_point.ep_hash();
+        let args = (
+            oracle["argument"].as_u64().unwrap(),
+            oracle["result"].as_u64().unwrap(),
+        );
+        let commitment = crate::transient_commit(
+            args,
+            crate::Field::from(oracle["randomness"].as_u64().unwrap()),
+        );
+        let recorded = RecordingFrame::new(context())
+            .kernel_claim_contract_call(address, hash, commitment)
+            .unwrap()
+            .kernel_claim_contract_call(address, hash, commitment)
+            .unwrap()
+            .finish(());
+        let (first, second) = recorded.public.verify_ops().split_at(9);
+        assert_eq!(serde_json::to_value(first).unwrap(), oracle["operations"]);
+        assert_eq!(first, second);
+
+        let replay = recorded
+            .public
+            .initial()
+            .query(
+                recorded.public.verify_ops(),
+                None,
+                &recorded.execution.context.cost_model,
+            )
+            .unwrap();
+        assert_eq!(
+            replay.context.effects,
+            recorded.execution.context.query.effects
+        );
+        assert_eq!(replay.context.state, recorded.public.initial().state);
+        let mut claims: Vec<_> = replay
+            .context
+            .effects
+            .claimed_contract_calls
+            .iter()
+            .map(|claim| claim.into_inner())
+            .collect();
+        claims.sort_by_key(|claim| claim.0);
+        assert_eq!(
+            claims,
+            [
+                (0, address, hash, commitment),
+                (1, address, hash, commitment)
+            ]
+        );
     }
 
     #[test]
@@ -102,6 +182,16 @@ mod tests {
         ctx.gas_limit = Some(RunningCost::ZERO);
         assert!(matches!(
             RecordingFrame::new(ctx).kernel_mint_shielded(ledger::HashOutput([1; 32]), 7),
+            Err(CompactError::LedgerQueryRejected(_))
+        ));
+        let mut ctx = context();
+        ctx.gas_limit = Some(RunningCost::ZERO);
+        assert!(matches!(
+            RecordingFrame::new(ctx).kernel_claim_contract_call(
+                ContractAddress(ledger::HashOutput([1; 32])),
+                ledger::HashOutput([2; 32]),
+                crate::Field::from(3),
+            ),
             Err(CompactError::LedgerQueryRejected(_))
         ));
     }

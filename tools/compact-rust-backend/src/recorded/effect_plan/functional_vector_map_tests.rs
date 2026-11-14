@@ -238,6 +238,7 @@ fn context_free_keccak_does_not_gain_pinned_zkir_v2_admission() {
         Type::Bytes { length: 32 },
         0,
         Expr::Keccak256 {
+            encoding: Default::default(),
             value: Box::new(input("item")),
         },
     );
@@ -249,7 +250,7 @@ fn context_free_keccak_does_not_gain_pinned_zkir_v2_admission() {
     let hash = body
         .bindings
         .iter()
-        .find(|b| matches!(b.operation, Operation::Keccak256(_)))
+        .find(|b| matches!(b.operation, Operation::Keccak256(..)))
         .unwrap();
     assert!(
         matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),Err(ProjectionRefusal::OutsideFunctionalSubset {path}) if path==hash.path)

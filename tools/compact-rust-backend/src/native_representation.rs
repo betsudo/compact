@@ -1,11 +1,26 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Operation-specific tuple traits, separate from ordinary value ownership.
 //! This bounded borrowed policy constructs no Rust syntax or replacement types.
 //! It corrects proven unbuildable native operations, not general source typing.
-use crate::{RenderError, ir::Type, resource_limits::recording_type_nodes};
+use crate::{
+    RenderError,
+    ir::{KeccakEncoding, Type},
+    resource_limits::recording_type_nodes,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum Operation {
@@ -15,7 +30,8 @@ pub(crate) enum Operation {
     TransientCommit,
     PersistentHash,
     PersistentCommit,
-    Keccak256,
+    Keccak256(KeccakEncoding),
+    Sha512,
     HashToCurve,
 }
 
@@ -28,7 +44,8 @@ impl Operation {
             Self::TransientCommit => "transientCommit",
             Self::PersistentHash => "persistentHash",
             Self::PersistentCommit => "persistentCommit",
-            Self::Keccak256 => "keccak256",
+            Self::Keccak256(_) => "keccak256",
+            Self::Sha512 => "sha512",
             Self::HashToCurve => "hashToCurve",
         }
     }
@@ -43,7 +60,7 @@ impl Operation {
     fn required_trait(self, contains_opaque: bool) -> &'static str {
         match self {
             Self::Equal | Self::NotEqual => "PartialEq",
-            Self::Keccak256 => "Into<Value>",
+            Self::Keccak256(KeccakEncoding::NormalizedAtoms) => "Into<Value>",
             Self::TransientHash | Self::TransientCommit | Self::HashToCurve if contains_opaque => {
                 // ExactHashInput adapts HashInputValue, whose supertrait is Aligned.
                 "HashInputValue"
@@ -64,6 +81,16 @@ pub(crate) fn check_tuple_traits(operation: Operation, ty: &Type) -> Result<(), 
     let contains_opaque = nodes
         .iter()
         .any(|ty| matches!(ty, Type::OpaqueString | Type::OpaqueBytes));
+    if contains_opaque
+        && matches!(
+            operation,
+            Operation::Keccak256(KeccakEncoding::Aligned) | Operation::Sha512
+        )
+    {
+        return Err(RenderError::UnsupportedOpaqueHashInput {
+            operation: operation.name(),
+        });
+    }
     for node in nodes {
         if let Type::Tuple { elements } = node
             && elements.len() > limit

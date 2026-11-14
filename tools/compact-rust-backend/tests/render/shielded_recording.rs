@@ -22,6 +22,306 @@ use compact_rust_backend::ir::{
 };
 use compact_rust_backend::{RenderError, render, render_with_capabilities};
 
+#[test]
+fn shielded_mint_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_mint".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 81 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitShieldedMint {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_shielded_mint("));
+    assert!(rendered.source.contains("frame.emit_shielded_mint("));
+    for ty in [
+        Type::Bytes { length: 80 },
+        Type::Bytes { length: 82 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 81 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn shielded_receive_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_receive".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 578 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitShieldedReceive {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_shielded_receive("));
+    assert!(rendered.source.contains("frame.emit_shielded_receive("));
+    for ty in [
+        Type::Bytes { length: 577 },
+        Type::Bytes { length: 579 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 578 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn unshielded_spend_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_spend".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 145 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedSpend {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_spend("));
+    assert!(rendered.source.contains("frame.emit_unshielded_spend("));
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 145 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn paused_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_paused".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 0 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitPaused {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_paused("));
+    assert!(rendered.source.contains("frame.emit_paused("));
+    for ty in [Type::Bytes { length: 1 }, Type::Field] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 0 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn misc_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_misc".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 288 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitMisc {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_misc("));
+    assert!(rendered.source.contains("frame.emit_misc("));
+    for ty in [
+        Type::Bytes { length: 287 },
+        Type::Bytes { length: 289 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 288 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn unshielded_burn_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_burn".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 113 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedBurn {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_burn("));
+    assert!(rendered.source.contains("frame.emit_unshielded_burn("));
+    for ty in [
+        Type::Bytes { length: 112 },
+        Type::Bytes { length: 114 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 113 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn unshielded_receive_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_receive".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 145 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedReceive {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_receive("));
+    assert!(rendered.source.contains("frame.emit_unshielded_receive("));
+    for ty in [
+        Type::Bytes { length: 144 },
+        Type::Bytes { length: 146 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 145 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
+#[test]
+fn unshielded_mint_emission_requires_the_exact_byte_width() {
+    let mut contract = identity(Type::Unit, Expr::Unit);
+    contract.stateful_circuits.push(StatefulCircuit {
+        source: None,
+        name: "emit_unshielded_mint".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "payload".into(),
+            ty: Type::Bytes { length: 80 },
+        }],
+        actions: vec![StateAction::Expression {
+            value: Expr::EmitUnshieldedMint {
+                value: Box::new(Expr::Parameter {
+                    name: "payload".into(),
+                }),
+            },
+        }],
+        result: Type::Unit,
+        return_value: StateReturn::Unit,
+    });
+    let rendered = render_with_capabilities(&contract).unwrap();
+    assert!(rendered.source.contains("context.emit_unshielded_mint("));
+    assert!(rendered.source.contains("frame.emit_unshielded_mint("));
+    for ty in [
+        Type::Bytes { length: 79 },
+        Type::Bytes { length: 81 },
+        Type::Field,
+    ] {
+        contract.stateful_circuits[0].parameters[0].ty = ty.clone();
+        assert!(matches!(
+            render_with_capabilities(&contract),
+            Err(RenderError::TypeMismatch { expected: Type::Bytes { length: 80 }, actual })
+                if actual == ty
+        ));
+    }
+}
+
 // Optional raw-output gate for compositional expansions, separate from frozen
 // whole-oracle inclusion and funded proof qualification. Requires a fresh root.
 fn export_zswap_expansion(name: &str, contract: &Contract, generated: &str) {

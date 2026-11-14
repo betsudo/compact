@@ -14,6 +14,7 @@
 // limitations under the License.
 
 import { describe, expect, test } from 'vitest';
+import { keccak_256 } from '@noble/hashes/sha3.js';
 import * as compactRuntime from '../src/index.js';
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 
@@ -65,7 +66,7 @@ describe('__compact.assert', () => {
   };
 
   test('Check for success', () => {
-    compactRuntime.assert(true, msg);
+    expect(compactRuntime.assert(true, msg)).toEqual([]);
   });
 
   test('Check for error type', () => {
@@ -174,6 +175,61 @@ describe('builtin hash functions', () => {
     expect(compactRuntime.keccak256(compactRuntime.CompactTypeField, 5n)).toEqual(res);
     // distinct inputs must produce distinct outputs
     expect(compactRuntime.keccak256(compactRuntime.CompactTypeField, 6n)).not.toEqual(res);
+  });
+
+  // Cases from upstream test-contracts/stdlib/keccak256/trailing_zero at
+  // 672bd0f226f47a7d036c5c074ce71fbe1af1925e.
+  test.each([
+    {
+      label: 'no trailing zero',
+      input: Uint8Array.from({ length: 12 }, (_, i) => i + 1),
+      pinned: 'e232c64e7136218f5a7d8d41b16bf3f22e74085032aaca77baa5c6c50cc4ca0e',
+    },
+    {
+      label: 'one trailing zero',
+      input: Uint8Array.from({ length: 12 }, (_, i) => (i === 11 ? 0 : i + 1)),
+      pinned: 'ed6e483c71bb1e667911203acc659782cc5ad0fb03f78a57febbe599b6a21e8d',
+    },
+    {
+      label: 'four trailing zeros',
+      input: Uint8Array.from({ length: 12 }, (_, i) => (i < 8 ? i + 1 : 0)),
+    },
+    {
+      label: 'eleven trailing zeros',
+      input: Uint8Array.from({ length: 12 }, (_, i) => (i === 0 ? 1 : 0)),
+    },
+    {
+      label: 'all twelve bytes zero',
+      input: new Uint8Array(12),
+      pinned: '30e2bfdaad2f3c218a1a8cc54fa1c4e6182b6b7f3bca273390cf587b50b47311',
+    },
+    {
+      label: 'interior zero only',
+      input: Uint8Array.from({ length: 12 }, (_, i) => (i === 3 ? 0 : i + 1)),
+    },
+    {
+      label: 'eleven leading zeros',
+      input: Uint8Array.from({ length: 12 }, (_, i) => (i === 11 ? 0xff : 0)),
+    },
+  ])('keccak256Aligned retains $label', ({ input, pinned }) => {
+    const rtType = new compactRuntime.CompactTypeBytes(12);
+    const expected = keccak_256(input);
+    if (pinned !== undefined) {
+      expect(Buffer.from(expected).toString('hex')).toBe(pinned);
+    }
+    if (input[input.length - 1] === 0) {
+      expect(compactRuntime.keccak256(rtType, input)).not.toEqual(expected);
+    }
+    expect(compactRuntime.keccak256Aligned(rtType, input)).toEqual(expected);
+  });
+
+  test('keccak256Aligned uses a full little-endian Field and refuses opaque atoms', () => {
+    const input = new Uint8Array(32);
+    input[1] = 1;
+    expect(compactRuntime.keccak256Aligned(compactRuntime.CompactTypeField, 256n)).toEqual(keccak_256(input));
+    expect(() => compactRuntime.keccak256Aligned(compactRuntime.CompactTypeOpaqueString, 'opaque')).toThrow(
+      'invalid Compact hash input',
+    );
   });
 
   test('transientCommit', () => {

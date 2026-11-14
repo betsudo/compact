@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Rules over already checked children; no traversal or syntax dependency.
 use super::{Binary, CheckedCrypto, Unary};
@@ -10,15 +21,15 @@ use crate::{
     native_representation::{Operation, check_tuple_traits},
     pure_semantics::{
         hash_encoding::DynamicInputEncoding,
-        jubjub::{Axis, JubjubOperands, check_jubjub},
+        jubjub::{Axis, CurveOperands, check_curve},
         sink::Typed,
     },
 };
 
-fn jubjub<V>(input: JubjubOperands<V>) -> Result<Typed<CheckedCrypto<V>>, RenderError> {
-    let checked = check_jubjub(input)?;
+fn curve<V>(input: CurveOperands<V>) -> Result<Typed<CheckedCrypto<V>>, RenderError> {
+    let checked = check_curve(input)?;
     Ok(Typed {
-        output: CheckedCrypto::Jubjub(checked.output),
+        output: CheckedCrypto::Curve(checked.output),
         ty: checked.ty,
     })
 }
@@ -52,11 +63,18 @@ pub(super) fn unary<V>(
                 Type::Bytes { length: 32 },
             )
         }
-        Unary::Keccak256 => {
-            check_tuple_traits(Operation::Keccak256, &value.ty)?;
+        Unary::Keccak256(encoding) => {
+            check_tuple_traits(Operation::Keccak256(encoding), &value.ty)?;
             (
-                CheckedCrypto::Keccak256(value.output),
+                CheckedCrypto::Keccak256(value.output, encoding),
                 Type::Bytes { length: 32 },
+            )
+        }
+        Unary::Sha512 => {
+            check_tuple_traits(Operation::Sha512, &value.ty)?;
+            (
+                CheckedCrypto::Sha512(value.output),
+                Type::Bytes { length: 64 },
             )
         }
         Unary::Degrade => {
@@ -81,11 +99,15 @@ pub(super) fn unary<V>(
                 Type::JubjubPoint,
             )
         }
-        Unary::PointX => return jubjub(JubjubOperands::Coordinate(Axis::X, value)),
-        Unary::PointY => return jubjub(JubjubOperands::Coordinate(Axis::Y, value)),
-        Unary::Negate => return jubjub(JubjubOperands::Negate(value)),
-        Unary::Generator => return jubjub(JubjubOperands::Generator(value)),
-        Unary::Reduce => return jubjub(JubjubOperands::Reduce(value)),
+        Unary::PointX => return curve(CurveOperands::Coordinate(Axis::X, value)),
+        Unary::PointY => return curve(CurveOperands::Coordinate(Axis::Y, value)),
+        Unary::Negate => return curve(CurveOperands::Negate(value)),
+        Unary::Secp256k1(kind) => {
+            let ty = kind.result_type(&value.ty)?;
+            (CheckedCrypto::Secp256k1Unary(kind, value.output), ty)
+        }
+        Unary::Generator => return curve(CurveOperands::Generator(value)),
+        Unary::Reduce => return curve(CurveOperands::Reduce(value)),
     };
     Ok(Typed { output, ty })
 }
@@ -120,9 +142,9 @@ pub(super) fn binary<V>(
                 Type::Bytes { length: 32 },
             )
         }
-        Binary::Construct => return jubjub(JubjubOperands::Construct(left, right)),
-        Binary::Add => return jubjub(JubjubOperands::Add(left, right)),
-        Binary::Multiply => return jubjub(JubjubOperands::Multiply(left, right)),
+        Binary::Construct => return curve(CurveOperands::Construct(left, right)),
+        Binary::Add => return curve(CurveOperands::Add(left, right)),
+        Binary::Multiply => return curve(CurveOperands::Multiply(left, right)),
     };
     Ok(Typed { output, ty })
 }

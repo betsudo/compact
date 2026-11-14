@@ -24,6 +24,8 @@ use midnight_compact_runtime::ledger::{
 };
 use midnight_compact_runtime::recording::{RecordedCircuitResult, RecordingFrame};
 use midnight_compact_runtime::transaction::{CallSpec, PrepareCallError, prepare_call};
+use midnight_ledger_v9::construct::{PreTranscript, partition_transcripts};
+use midnight_ledger_v9::structure::INITIAL_PARAMETERS;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 
 fn context() -> CircuitContext<()> {
@@ -76,6 +78,55 @@ fn untouched_recording_prepares_with_the_original_program_and_output() {
     assert_eq!(transcript.program, expected_program.into());
     assert_eq!(transcript.effects, expected_effects);
     assert_eq!(prepared.output, AlignedValue::from(true));
+}
+
+#[test]
+fn single_call_keeps_exact_ledger_partition_and_proof_inputs() {
+    let (frame, witness) = RecordingFrame::new(context()).witness(|_| ((), Field::from(17)));
+    let recorded = frame.write_cell(0_u8, true).unwrap().finish(true);
+    let (guaranteed, fallible) = partition_transcripts(
+        &[PreTranscript {
+            context: recorded.public.initial().clone(),
+            program: recorded.public.verify_ops().to_vec(),
+            comm_comm: None,
+        }],
+        &INITIAL_PARAMETERS,
+    )
+    .unwrap()
+    .pop()
+    .unwrap();
+
+    let mut spec = spec().with_key_location("different-key-location");
+    spec.input = AlignedValue::from(false);
+    spec.communication_commitment_rand = Field::from(19);
+    let prepared = prepare_call(recorded, spec).unwrap();
+
+    assert_eq!(prepared.guaranteed_public_transcript, guaranteed);
+    assert_eq!(prepared.fallible_public_transcript, fallible);
+    assert_eq!(prepared.input, AlignedValue::from(false));
+    assert_eq!(prepared.output, AlignedValue::from(true));
+    assert_eq!(
+        prepared.private_transcript_outputs,
+        [AlignedValue::from(witness)]
+    );
+    assert_eq!(prepared.communication_commitment_rand, Field::from(19));
+    assert_eq!(prepared.key_location.0, "different-key-location");
+}
+
+#[test]
+fn single_call_preparation_refuses_a_recorded_contract_claim() {
+    let recorded = RecordingFrame::new(context())
+        .kernel_claim_contract_call(
+            ContractAddress(HashOutput([3; 32])),
+            HashOutput([4; 32]),
+            Field::from(5),
+        )
+        .unwrap()
+        .finish(());
+    assert!(matches!(
+        prepare_call(recorded, spec()),
+        Err(PrepareCallError::CrossContractClaimsRequireJointPreparation)
+    ));
 }
 
 #[test]

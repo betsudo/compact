@@ -536,6 +536,8 @@ impl Lowerer<'_> {
                 self.borrowed_assertion(action, condition, message, scope, bindings, path)?;
             }
             StateAction::MapInsert { .. }
+            | StateAction::NestedMapInsert { .. }
+            | StateAction::MapInitChild { .. }
             | StateAction::MapRemove { .. }
             | StateAction::MapInsertDefault { .. }
             | StateAction::MapReset { .. } => {

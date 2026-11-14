@@ -23,6 +23,8 @@ use crate::RenderError;
 use crate::ir::{Expr, Type};
 use proc_macro2::Span;
 
+use crate::pure_semantics::arithmetic::Secp256k1Unary;
+use crate::pure_semantics::conversion::{FixedBytesConversion, JubjubCast, Secp256k1BytesCast};
 use crate::pure_semantics::numeric::{
     ArithmeticKind, UnsignedArithmeticStrategy, checked_unsigned_arithmetic, checked_unsigned_cast,
 };
@@ -53,6 +55,209 @@ pub(crate) fn field_to_bytes_32_syntax(value: syn::Expr) -> syn::Expr {
     syn::parse_quote!(runtime::FixedBytes::<32>::new(
         (#value).as_le_bytes().try_into().expect("canonical Field is 32 bytes")
     ))
+}
+
+pub(crate) fn fixed_bytes_conversion_syntax(
+    value: syn::Expr,
+    operation: &FixedBytesConversion,
+) -> syn::Expr {
+    match *operation {
+        FixedBytesConversion::ToVector { .. } => syn::parse_quote!(runtime::FixedVector::new(
+            (#value).into_array().map(|byte| runtime::BoundedUint::<255>::new(u128::from(byte)).expect("byte fits Uint<8>"))
+        )),
+        FixedBytesConversion::FromVector { .. } => syn::parse_quote!(runtime::FixedBytes::new(
+            (#value).into_array().map(|byte| u8::try_from(byte.value()).expect("Uint<8> fits a byte"))
+        )),
+        FixedBytesConversion::UintToBytes { length } => syn::parse_quote!({
+            let bytes = (#value).value().to_le_bytes();
+            let len = #length.min(bytes.len());
+            if bytes[len..].iter().any(|&byte| byte != 0) {
+                Err(runtime::CompactError::InvalidUnsignedValue)
+            } else {
+                let mut output = [0u8; #length];
+                output[..len].copy_from_slice(&bytes[..len]);
+                Ok(runtime::FixedBytes::new(output))
+            }?
+        }),
+        FixedBytesConversion::BytesToField => syn::parse_quote!({
+            let input = (#value).into_array();
+            let mut bytes = [0u8; 32];
+            let len = input.len().min(bytes.len());
+            let field = if input[len..].iter().any(|&byte| byte != 0) {
+                None
+            } else {
+                bytes[..len].copy_from_slice(&input[..len]);
+                runtime::Field::from_le_bytes(&bytes)
+            };
+            field.ok_or_else(|| runtime::CompactError::AssertionFailed(
+                "byte vector exceeds maximum value of Field type".into()
+            ))?
+        }),
+        FixedBytesConversion::WideUintToBytes { length } => syn::parse_quote!({
+            let value = #value;
+            let bytes = value.as_le_bytes();
+            let len = #length.min(bytes.len());
+            if bytes[len..].iter().any(|&byte| byte != 0) {
+                Err(runtime::CompactError::InvalidUnsignedValue)
+            } else {
+                let mut output = [0u8; #length];
+                output[..len].copy_from_slice(&bytes[..len]);
+                Ok(runtime::FixedBytes::new(output))
+            }?
+        }),
+        FixedBytesConversion::BytesToUint {
+            bound: UnsignedMaximum::Wide { high, low },
+            ..
+        } => {
+            let target = wide_uint_type(high, low);
+            syn::parse_quote!({
+                let input = (#value).into_array();
+                let len = input.len().min(32);
+                if input[len..].iter().any(|&byte| byte != 0) {
+                    Err(runtime::CompactError::InvalidUnsignedValue)
+                } else {
+                    <#target>::from_le_bytes(&input[..len])
+                }?
+            })
+        }
+        FixedBytesConversion::BytesToUint {
+            bound: UnsignedMaximum::Small(max),
+            ..
+        } => {
+            let max = syn::LitInt::new(&format!("{max}u128"), Span::call_site());
+            syn::parse_quote!({
+                let input = (#value).into_array();
+                let mut bytes = [0u8; 16];
+                let len = input.len().min(bytes.len());
+                if input[len..].iter().any(|&byte| byte != 0) {
+                    Err(runtime::CompactError::InvalidUnsignedValue)
+                } else {
+                    bytes[..len].copy_from_slice(&input[..len]);
+                    runtime::BoundedUint::<#max>::new(u128::from_le_bytes(bytes))
+                }?
+            })
+        }
+        FixedBytesConversion::ZeroPad { length } => syn::parse_quote!({
+            let input = (#value).into_array();
+            let mut output = [0u8; #length];
+            output[..input.len()].copy_from_slice(&input);
+            runtime::FixedBytes::new(output)
+        }),
+        FixedBytesConversion::FromChunks {
+            length,
+            chunk_count,
+        } => {
+            let indices = (0..chunk_count).map(syn::Index::from);
+            syn::parse_quote!({
+                let chunks = #value;
+                let mut output = [0u8; #length];
+                let mut remaining = output.as_mut_slice();
+                #(
+                    let chunk = chunks.#indices.into_array();
+                    let (destination, suffix) = remaining.split_at_mut(chunk.len());
+                    destination.copy_from_slice(&chunk);
+                    remaining = suffix;
+                )*
+                debug_assert!(remaining.is_empty());
+                runtime::FixedBytes::new(output)
+            })
+        }
+        FixedBytesConversion::Slice { start, length } => {
+            let end = start + length;
+            syn::parse_quote!(runtime::FixedBytes::<#length>::new(
+                (#value).into_array()[#start..#end].try_into().expect("checked Bytes slice length")
+            ))
+        }
+    }
+}
+
+pub(crate) fn jubjub_cast_syntax(value: syn::Expr, cast: JubjubCast) -> syn::Expr {
+    use crate::pure_semantics::numeric::UnsignedMaximum;
+    match cast {
+        JubjubCast::Scalar => {
+            syn::parse_quote!(runtime::JubjubScalar::from_field_reduced(#value))
+        }
+        JubjubCast::Field => syn::parse_quote!((#value).as_field()),
+        JubjubCast::Unsigned(UnsignedMaximum::Small(max)) => {
+            syn::parse_quote!((#value).try_to_uint::<#max>()?)
+        }
+        JubjubCast::Unsigned(UnsignedMaximum::Wide { high, low }) => {
+            syn::parse_quote!((#value).try_to_wide_uint::<#high, #low>()?)
+        }
+    }
+}
+
+pub(crate) fn enum_cast_syntax(
+    value: syn::Expr,
+    cast: crate::pure_semantics::conversion::EnumCast,
+) -> syn::Expr {
+    use crate::pure_semantics::conversion::{EnumCast, EnumOrdinalSource};
+    match cast {
+        EnumCast::ToField => syn::parse_quote!(runtime::FieldRepr::field_vec(&(#value))[0]),
+        EnumCast::ToUnsigned {
+            max_ordinal,
+            strategy,
+        } => {
+            let bound = syn::LitInt::new(&format!("{max_ordinal}u128"), Span::call_site());
+            let ordinal = syn::parse_quote!({
+                let field = runtime::FieldRepr::field_vec(&(#value))[0];
+                let ordinal = <u128 as runtime::FromFieldRepr>::from_field_repr(&[field])
+                    .ok_or(runtime::CompactError::InvalidUnsignedValue)?;
+                runtime::BoundedUint::<#bound>::new(ordinal)?
+            });
+            coercion::render_unsigned_cast(ordinal, strategy)
+        }
+        EnumCast::FromNumber { name, source } => {
+            let name = crate::naming::checked_ident(&name);
+            let field: syn::Expr = match source {
+                EnumOrdinalSource::Field => value,
+                EnumOrdinalSource::Small => {
+                    syn::parse_quote!(runtime::Field::from((#value).value()))
+                }
+                EnumOrdinalSource::Wide => syn::parse_quote!((#value).as_field()),
+            };
+            syn::parse_quote!(<crate::types::#name as runtime::FromFieldRepr>::from_field_repr(&[#field])
+                .ok_or(runtime::CompactError::InvalidUnsignedValue)?)
+        }
+    }
+}
+
+pub(crate) fn secp256k1_bytes_cast_syntax(value: syn::Expr, cast: Secp256k1BytesCast) -> syn::Expr {
+    match cast {
+        Secp256k1BytesCast::ToBase => {
+            syn::parse_quote!(runtime::Secp256k1Base::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToScalar => {
+            syn::parse_quote!(runtime::Secp256k1Scalar::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToSecp256r1Base => {
+            syn::parse_quote!(runtime::Secp256r1Base::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToSecp256r1Scalar => {
+            syn::parse_quote!(runtime::Secp256r1Scalar::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToCurve25519Base => {
+            syn::parse_quote!(runtime::Curve25519Base::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToCurve25519Scalar => {
+            syn::parse_quote!(runtime::Curve25519Scalar::from_le_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::WideToCurve25519Scalar => {
+            syn::parse_quote!(runtime::Curve25519Scalar::from_le_wide_bytes_reduced((#value).into_array()))
+        }
+        Secp256k1BytesCast::ToBytes => {
+            syn::parse_quote!(runtime::FixedBytes::<32>::new((#value).to_le_bytes()))
+        }
+    }
+}
+
+pub(crate) fn secp256k1_unary_syntax(kind: Secp256k1Unary, value: syn::Expr) -> syn::Expr {
+    match kind {
+        Secp256k1Unary::Negate => syn::parse_quote!(-(#value)),
+        Secp256k1Unary::Invert => syn::parse_quote!((#value).inverse()?),
+        Secp256k1Unary::PointX => syn::parse_quote!((#value).x()?),
+        Secp256k1Unary::PointY => syn::parse_quote!((#value).y()?),
+    }
 }
 
 pub(crate) fn unsigned_cast_syntax(
@@ -145,6 +350,20 @@ fn map_slot_value_type(value: &Type) -> Result<Option<syn::Type>, RenderError> {
         };
         return Ok(Some(
             syn::parse_quote!(runtime::slots::MapNode<#key, #value>),
+        ));
+    }
+    if let Type::LedgerMerkle {
+        historic,
+        depth,
+        ty,
+    } = value
+    {
+        if !(2..=32).contains(depth) {
+            return Err(RenderError::UnsupportedLedgerValueType(value.clone()));
+        }
+        let leaf = rust_type(ty)?;
+        return Ok(Some(
+            syn::parse_quote!(runtime::slots::MerkleNode<#leaf, #depth, #historic>),
         ));
     }
     match rust_type(value) {

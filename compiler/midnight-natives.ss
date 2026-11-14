@@ -53,6 +53,130 @@
   ([value A (discloses "a hash of")])
   (Bytes 32))
 
+(declare-native-entry circuit sha512 [A]
+  "__compactRuntime.sha512"
+  ([value A (discloses "a hash of")])
+  (Bytes 64))
+
+;; ==== Secp256k1 unary field operations
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256k1BaseNeg"
+  ([s (TypeRef Secp256k1Base) (discloses "the negation of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256k1BaseInv"
+  ([s (TypeRef Secp256k1Base) (discloses "the inverse of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256k1ScalarNeg"
+  ([s (TypeRef Secp256k1Scalar) (discloses "the negation of")])
+  (TypeRef Secp256k1Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256k1ScalarInv"
+  ([s (TypeRef Secp256k1Scalar) (discloses "the inverse of")])
+  (TypeRef Secp256k1Scalar))
+
+;; -- Curve25519Base
+(declare-native-entry circuit neg
+  "__compactRuntime.curve25519BaseNeg"
+  ([s (TypeRef Curve25519Base) (discloses "the negation of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.curve25519BaseInv"
+  ([s (TypeRef Curve25519Base) (discloses "the inverse of")])
+  (TypeRef Curve25519Base))
+
+;; -- Curve25519Scalar
+(declare-native-entry circuit neg
+  "__compactRuntime.curve25519ScalarNeg"
+  ([s (TypeRef Curve25519Scalar) (discloses "the negation of")])
+  (TypeRef Curve25519Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.curve25519ScalarInv"
+  ([s (TypeRef Curve25519Scalar) (discloses "the inverse of")])
+  (TypeRef Curve25519Scalar))
+
+;; ==== Secp256r1 unary field operations
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256r1BaseNeg"
+  ([s (TypeRef Secp256r1Base) (discloses "the negation of")])
+  (TypeRef Secp256r1Base))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256r1BaseInv"
+  ([s (TypeRef Secp256r1Base) (discloses "the inverse of")])
+  (TypeRef Secp256r1Base))
+
+;; -- Secp256r1Scalar
+(declare-native-entry circuit neg
+  "__compactRuntime.secp256r1ScalarNeg"
+  ([s (TypeRef Secp256r1Scalar) (discloses "the negation of")])
+  (TypeRef Secp256r1Scalar))
+
+(declare-native-entry circuit inv
+  "__compactRuntime.secp256r1ScalarInv"
+  ([s (TypeRef Secp256r1Scalar) (discloses "the inverse of")])
+  (TypeRef Secp256r1Scalar))
+
+(declare-native-entry circuit secp256k1PointX
+  "__compactRuntime.secp256k1PointX"
+  ([pt (TypeRef Secp256k1Point) (discloses "the x-coordinate of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit secp256k1PointY
+  "__compactRuntime.secp256k1PointY"
+  ([pt (TypeRef Secp256k1Point) (discloses "the y-coordinate of")])
+  (TypeRef Secp256k1Base))
+
+(declare-native-entry circuit secp256r1PointX
+  "__compactRuntime.secp256r1PointX"
+  ([pt (TypeRef Secp256r1Point) (discloses "the x-coordinate of")])
+  (TypeRef Secp256r1Base))
+
+(declare-native-entry circuit secp256r1PointY
+  "__compactRuntime.secp256r1PointY"
+  ([pt (TypeRef Secp256r1Point) (discloses "the y-coordinate of")])
+  (TypeRef Secp256r1Base))
+
+(declare-native-entry circuit ecAdd
+  "__compactRuntime.secp256k1Add"
+  ([a (TypeRef Secp256k1Point) (discloses "an elliptic curve sum including")]
+   [b (TypeRef Secp256k1Point) (discloses "an elliptic curve sum including")])
+  (TypeRef Secp256k1Point))
+
+(declare-native-entry circuit ecMul
+  "__compactRuntime.secp256k1Mul"
+  ([a (TypeRef Secp256k1Point) (discloses "an elliptic curve product including")]
+   [b (TypeRef Secp256k1Scalar) (discloses "an elliptic curve product including")])
+  (TypeRef Secp256k1Point))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.secp256k1MulGenerator"
+  ([b (TypeRef Secp256k1Scalar) (discloses "the product of the group generator with")])
+  (TypeRef Secp256k1Point))
+
+(declare-native-entry circuit ecAdd
+  "__compactRuntime.secp256r1Add"
+  ([a (TypeRef Secp256r1Point) (discloses "an elliptic curve sum including")]
+   [b (TypeRef Secp256r1Point) (discloses "an elliptic curve sum including")])
+  (TypeRef Secp256r1Point))
+
+(declare-native-entry circuit ecMul
+  "__compactRuntime.secp256r1Mul"
+  ([a (TypeRef Secp256r1Point) (discloses "an elliptic curve product including")]
+   [b (TypeRef Secp256r1Scalar) (discloses "an elliptic curve product including")])
+  (TypeRef Secp256r1Point))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.secp256r1MulGenerator"
+  ([b (TypeRef Secp256r1Scalar) (discloses "the product of the group generator with")])
+  (TypeRef Secp256r1Point))
+
 ;; ====
 (declare-native-entry circuit jubjubPointX
   "__compactRuntime.jubjubPointX"
@@ -86,6 +210,17 @@
   ([b Field (discloses "the product of the embedded group generator with")])
   (TypeRef JubjubPoint))
 
+(declare-native-entry circuit ecMul
+  "__compactRuntime.ecMulJubjubScalar"
+  ([a (TypeRef JubjubPoint) (discloses "an elliptic curve product including")]
+   [b (TypeRef JubjubScalar) (discloses "an elliptic curve product including")])
+  (TypeRef JubjubPoint))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.ecMulGeneratorJubjubScalar"
+  ([b (TypeRef JubjubScalar) (discloses "the product of the embedded group generator with")])
+  (TypeRef JubjubPoint))
+
 (declare-native-entry circuit hashToCurve [A]
   "__compactRuntime.hashToCurve"
   ([value A (discloses "a hash of")])
@@ -117,3 +252,31 @@
   ([coin (TypeRef ShieldedCoinInfo) (discloses nothing)]
    [recipient (TypeRef Either (TypeRef ZswapCoinPublicKey) (TypeRef ContractAddress)) (discloses nothing)])
   Void)
+
+;; -- Curve25519Point
+(declare-native-entry circuit curve25519PointX
+  "__compactRuntime.curve25519PointX"
+  ([pt (TypeRef Curve25519Point) (discloses "the x-coordinate of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit curve25519PointY
+  "__compactRuntime.curve25519PointY"
+  ([pt (TypeRef Curve25519Point) (discloses "the y-coordinate of")])
+  (TypeRef Curve25519Base))
+
+(declare-native-entry circuit ecAdd
+  "__compactRuntime.curve25519Add"
+  ([a (TypeRef Curve25519Point) (discloses "an elliptic curve sum including")]
+   [b (TypeRef Curve25519Point) (discloses "an elliptic curve sum including")])
+  (TypeRef Curve25519Point))
+
+(declare-native-entry circuit ecMul
+  "__compactRuntime.curve25519Mul"
+  ([a (TypeRef Curve25519Point) (discloses "an elliptic curve product including")]
+   [b (TypeRef Curve25519Scalar) (discloses "an elliptic curve product including")])
+  (TypeRef Curve25519Point))
+
+(declare-native-entry circuit ecMulGenerator
+  "__compactRuntime.curve25519MulGenerator"
+  ([b (TypeRef Curve25519Scalar) (discloses "the product of the group generator with")])
+  (TypeRef Curve25519Point))

@@ -14,7 +14,17 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import {
+  MAX_CURVE25519_BASE,
+  MAX_CURVE25519_SCALAR,
+  MAX_JUBJUB_SCALAR,
+  MAX_SECP256K1_BASE,
+  MAX_SECP256K1_SCALAR,
+  MAX_SECP256R1_BASE,
+  MAX_SECP256R1_SCALAR,
+} from './constants.js';
 import { CompactError } from './error.js';
+import { isValidCurve25519Point } from './utils.js';
 
 /**
  * A runtime representation of a type in Compact
@@ -46,6 +56,20 @@ export interface CompactType<A> {
 export interface JubjubPoint {
   readonly x: bigint;
   readonly y: bigint;
+}
+
+/** The TypeScript representation of the Compact secp256k1 point type. */
+export interface Secp256k1Point {
+  readonly x: bigint;
+  readonly y: bigint;
+  readonly identity: boolean;
+}
+
+/** The TypeScript representation of the Compact secp256r1 point type. */
+export interface Secp256r1Point {
+  readonly x: bigint;
+  readonly y: bigint;
+  readonly identity: boolean;
 }
 
 /**
@@ -239,6 +263,163 @@ export const CompactTypeField: CompactType<bigint> = {
   },
   toValue(value: bigint): ocrt.Value {
     return ocrt.bigIntToValue(value);
+  },
+};
+
+/** A Jubjub scalar has the same FAB alignment as a Compact Field. */
+export const CompactTypeJubjubScalar: CompactType<bigint> = {
+  alignment: CompactTypeField.alignment,
+  fromValue(value: ocrt.Value): bigint {
+    const atom = value[0];
+    if (atom === undefined || atom.length > 32 || (atom.length > 0 && atom[atom.length - 1] === 0)) {
+      throw new CompactError('expected a canonical JubjubScalar');
+    }
+    return checkedJubjubScalar(CompactTypeField.fromValue(value));
+  },
+  toValue(value: bigint): ocrt.Value {
+    return CompactTypeField.toValue(checkedJubjubScalar(value));
+  },
+};
+
+function checkedJubjubScalar(value: bigint): bigint {
+  if (typeof value !== 'bigint' || value < 0n || value > MAX_JUBJUB_SCALAR) {
+    throw new CompactError('expected a canonical JubjubScalar');
+  }
+  return value;
+}
+
+// Foreign field values are shifted by one in the field and split into
+// two little-endian FAB atoms.
+class ForeignField implements CompactType<bigint> {
+  constructor(
+    readonly max: bigint,
+    readonly name: string,
+    readonly lowBits = 192n,
+    readonly highBits = 64n,
+  ) {}
+
+  alignment(): ocrt.Alignment {
+    return [
+      { tag: 'atom', value: { tag: 'bytes', length: Math.ceil(Number(this.lowBits) / 8) } },
+      { tag: 'atom', value: { tag: 'bytes', length: Math.ceil(Number(this.highBits) / 8) } },
+    ];
+  }
+
+  fromValue(value: ocrt.Value): bigint {
+    if (value[0] == undefined || value[1] == undefined) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const [low, high] = value.splice(0, 2);
+    const lowLimb = ocrt.valueToBigInt([low]);
+    const highLimb = ocrt.valueToBigInt([high]);
+    if (lowLimb >= 1n << this.lowBits || highLimb >= 1n << this.highBits) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const shifted = (highLimb << this.lowBits) | lowLimb;
+    if (shifted > this.max) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    return shifted === this.max ? 0n : shifted + 1n;
+  }
+
+  toValue(value: bigint): ocrt.Value {
+    if (value < 0n || value > this.max) {
+      throw new CompactError(`expected ${this.name}`);
+    }
+    const shifted = value === 0n ? this.max : value - 1n;
+    return ocrt.bigIntToValue(shifted & ((1n << this.lowBits) - 1n)).concat(
+      ocrt.bigIntToValue(shifted >> this.lowBits),
+    );
+  }
+}
+
+/**
+ * Runtime type of the standard library's `Secp256k1Base` type.
+ */
+export const CompactTypeSecp256k1Base: CompactType<bigint> = new ForeignField(MAX_SECP256K1_BASE, 'Secp256k1Base');
+
+/**
+ * Runtime type of the standard library's `Secp256k1Scalar` type.
+ */
+export const CompactTypeSecp256k1Scalar: CompactType<bigint> = new ForeignField(MAX_SECP256K1_SCALAR, 'Secp256k1Scalar');
+
+/**
+ * Runtime type of a secp256r1 base field element
+ */
+export const CompactTypeSecp256r1Base: CompactType<bigint> = new ForeignField(MAX_SECP256R1_BASE, 'Secp256r1Base');
+
+/**
+ * Runtime type of a secp256r1 scalar field element
+ */
+export const CompactTypeSecp256r1Scalar: CompactType<bigint> = new ForeignField(MAX_SECP256R1_SCALAR, 'Secp256r1Scalar');
+
+/** Runtime type of a Curve25519 base field element. */
+export const CompactTypeCurve25519Base: CompactType<bigint> = new ForeignField(MAX_CURVE25519_BASE, 'Curve25519Base');
+
+/** Runtime type of a Curve25519 scalar field element. */
+export const CompactTypeCurve25519Scalar: CompactType<bigint> = new ForeignField(MAX_CURVE25519_SCALAR, 'Curve25519Scalar', 204n, 51n);
+
+/** Runtime type of the standard library's `Secp256k1Point` type. */
+export const CompactTypeSecp256k1Point: CompactType<Secp256k1Point> = {
+  alignment(): ocrt.Alignment {
+    return [
+      ...CompactTypeSecp256k1Base.alignment(),
+      ...CompactTypeSecp256k1Base.alignment(),
+      {
+        tag: 'atom',
+        value: { tag: 'field' },
+      },
+    ];
+  },
+  fromValue(value: ocrt.Value): Secp256k1Point {
+    if (value.length < 5) {
+      throw new CompactError('expected Secp256k1Point');
+    }
+    const x = CompactTypeSecp256k1Base.fromValue(value);
+    const y = CompactTypeSecp256k1Base.fromValue(value);
+    const flag = CompactTypeField.fromValue(value);
+    if (flag !== 0n && flag !== 1n) {
+      throw new CompactError('expected Secp256k1Point identity flag');
+    }
+    return { x, y, identity: flag === 1n };
+  },
+  toValue(value: Secp256k1Point): ocrt.Value {
+    return CompactTypeSecp256k1Base.toValue(value.identity ? 0n : value.x).concat(
+      CompactTypeSecp256k1Base.toValue(value.identity ? 0n : value.y),
+      CompactTypeField.toValue(value.identity ? 1n : 0n),
+    );
+  },
+};
+
+/** Runtime type of the standard library's `Secp256r1Point` type. */
+export const CompactTypeSecp256r1Point: CompactType<Secp256r1Point> = {
+  alignment(): ocrt.Alignment {
+    return [
+      ...CompactTypeSecp256r1Base.alignment(),
+      ...CompactTypeSecp256r1Base.alignment(),
+      {
+        tag: 'atom',
+        value: { tag: 'field' },
+      },
+    ];
+  },
+  fromValue(value: ocrt.Value): Secp256r1Point {
+    if (value.length < 5) {
+      throw new CompactError('expected Secp256r1Point');
+    }
+    const x = CompactTypeSecp256r1Base.fromValue(value);
+    const y = CompactTypeSecp256r1Base.fromValue(value);
+    const flag = CompactTypeField.fromValue(value);
+    if (flag !== 0n && flag !== 1n) {
+      throw new CompactError('expected Secp256r1Point');
+    }
+    return { x, y, identity: flag === 1n };
+  },
+  toValue(value: Secp256r1Point): ocrt.Value {
+    return CompactTypeSecp256r1Base.toValue(value.identity ? 0n : value.x).concat(
+      CompactTypeSecp256r1Base.toValue(value.identity ? 0n : value.y),
+      CompactTypeField.toValue(value.identity ? 1n : 0n),
+    );
   },
 };
 
@@ -439,7 +620,8 @@ export const CompactTypeOpaqueString: CompactType<string> = {
     return [{ tag: 'atom', value: { tag: 'compress' } }];
   },
   fromValue(value: ocrt.Value): string {
-    return new TextDecoder('utf-8').decode(value.shift());
+    // A leading U+FEFF is part of the stored value.
+    return new TextDecoder('utf-8', { ignoreBOM: true }).decode(value.shift());
   },
   toValue(value: string): ocrt.Value {
     return [new TextEncoder().encode(value)];
@@ -520,5 +702,31 @@ export const ShieldedCoinRecipientDescriptor = {
     return CompactTypeBoolean.toValue(value.is_left).concat(
       ZswapCoinPublicKeyDescriptor.toValue(value.left).concat(ContractAddressDescriptor.toValue(value.right)),
     );
+  },
+};
+
+/** A canonical affine Curve25519 point. Identity is (0, 1). */
+export interface Curve25519Point {
+  readonly x: bigint;
+  readonly y: bigint;
+}
+
+/** Runtime type of a Curve25519 prime-order subgroup point. */
+export const CompactTypeCurve25519Point: CompactType<Curve25519Point> = {
+  alignment(): ocrt.Alignment {
+    return CompactTypeCurve25519Base.alignment().concat(CompactTypeCurve25519Base.alignment());
+  },
+  fromValue(value: ocrt.Value): Curve25519Point {
+    const point = {x: CompactTypeCurve25519Base.fromValue(value), y: CompactTypeCurve25519Base.fromValue(value)};
+    if (!isValidCurve25519Point(point)) {
+      throw new CompactError('expected Curve25519Point');
+    }
+    return point;
+  },
+  toValue(point: Curve25519Point): ocrt.Value {
+    if (!isValidCurve25519Point(point)) {
+      throw new CompactError('expected Curve25519Point');
+    }
+    return CompactTypeCurve25519Base.toValue(point.x).concat(CompactTypeCurve25519Base.toValue(point.y));
   },
 };

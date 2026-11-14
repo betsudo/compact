@@ -92,6 +92,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::ExecutionIdentity => "execution_identity",
         Capability::KernelAddress => "kernel_address",
         Capability::KernelClaims => "kernel_claims",
+        Capability::EventEmission => "event_emission",
         Capability::ShieldedMint => "shielded_mint",
         Capability::ZswapInput => "zswap_input",
         Capability::ZswapOutput => "zswap_output",

@@ -332,6 +332,7 @@ fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
         vec![],
         Type::Bytes { length: 32 },
         Expr::Keccak256 {
+            encoding: Default::default(),
             value: Box::new(Expr::FieldLiteral { value: "7".into() }),
         },
     );
@@ -349,7 +350,7 @@ fn unsupported_operations_inside_call_bodies_are_not_hidden_by_composition() {
     let unsupported = body
         .bindings
         .iter()
-        .find(|binding| matches!(binding.operation, Operation::Keccak256(_)))
+        .find(|binding| matches!(binding.operation, Operation::Keccak256(..)))
         .unwrap();
     let authority = Authority::new();
     assert!(matches!(

@@ -34,6 +34,18 @@ pub(super) fn expression(mut expression: syn::Expr) -> syn::Expr {
 
 struct AbsoluteRuntime;
 impl VisitMut for AbsoluteRuntime {
+    fn visit_expr_path_mut(&mut self, expression: &mut syn::ExprPath) {
+        // QSelf stores the number of trait segments before the associated item.
+        // Keep that boundary when qualification inserts a leading segment.
+        let original_len = expression.path.segments.len();
+        visit_mut::visit_expr_path_mut(self, expression);
+        if let Some(qself) = &mut expression.qself
+            && qself.position != 0
+        {
+            qself.position += expression.path.segments.len() - original_len;
+        }
+    }
+
     fn visit_path_mut(&mut self, path: &mut syn::Path) {
         if path.segments.len() > 1
             && path
@@ -60,6 +72,20 @@ mod tests {
         assert_eq!(
             expression.to_token_stream().to_string(),
             "crate :: runtime :: Field :: from (crate :: types :: runtime)"
+        );
+    }
+
+    #[test]
+    fn qualified_trait_calls_keep_the_associated_item_outside_the_trait_path() {
+        let original: syn::Expr = syn::parse_quote!(
+            <crate::types::Color as runtime::FromFieldRepr>::from_field_repr(&fields)
+        );
+        let expected: syn::Expr = syn::parse_quote!(
+            <crate::types::Color as crate::runtime::FromFieldRepr>::from_field_repr(&fields)
+        );
+        assert_eq!(
+            expression(original).to_token_stream().to_string(),
+            expected.to_token_stream().to_string()
         );
     }
 

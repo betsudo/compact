@@ -20,6 +20,7 @@
   (import (except (chezscheme) errorf)
           (utils)
           (datatype)
+          (only (config-params) feature-zkir-v3)
           (nanopass)
           (langs)
           (pass-helpers)
@@ -316,12 +317,22 @@
            "CompactError"
            "typeError"
            "assert"
+           "convertBytesToSecp256k1Field"
+           "convertBytesToSecp256r1Field"
+           "convertBytesToCurve25519Field"
+           "convertNumericToJubjubScalar"
            "convertFieldToBytes"
            "convertBytesToField"
            "convertBytesToUint"
            "addField"
            "subField"
            "mulField"
+           "secp256k1BaseAdd" "secp256k1BaseSub" "secp256k1BaseMul"
+           "secp256k1ScalarAdd" "secp256k1ScalarSub" "secp256k1ScalarMul"
+           "secp256r1BaseAdd" "secp256r1BaseSub" "secp256r1BaseMul"
+           "secp256r1ScalarAdd" "secp256r1ScalarSub" "secp256r1ScalarMul"
+           "curve25519BaseAdd" "curve25519BaseSub" "curve25519BaseMul"
+           "curve25519ScalarAdd" "curve25519ScalarSub" "curve25519ScalarMul"
            ))
       (define (compact-stdlib name)
         (unless (member name compact-stdlib-entries)
@@ -799,9 +810,7 @@
               contract-name))
       (define (get-contract-dependencies)
         (define (contract-info-filename contract-name)
-          (format "~a/~a/compiler/contract-info.json"
-            (path-parent (target-directory))
-            contract-name))
+          (contract-info-pathname contract-name))
         (define (malformed msg contract-name . args)
           (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                            (contract-info-filename contract-name)
@@ -1272,6 +1281,16 @@
                      [("string") (format "__compactRuntime.CompactTypeOpaqueString")]
                      [("Uint8Array") (format "__compactRuntime.CompactTypeOpaqueUint8Array")]
                      [("JubjubPoint") (format "__compactRuntime.CompactTypeJubjubPoint")]
+                     [("JubjubScalar") "__compactRuntime.CompactTypeJubjubScalar"]
+                     [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
+                     [("Secp256r1Point") "__compactRuntime.CompactTypeSecp256r1Point"]
+                     [("Curve25519Point") "__compactRuntime.CompactTypeCurve25519Point"]
+                     [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
+                     [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
+                     [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
+                     [("Secp256r1Scalar") "__compactRuntime.CompactTypeSecp256r1Scalar"]
+                     [("Curve25519Base") "__compactRuntime.CompactTypeCurve25519Base"]
+                     [("Curve25519Scalar") "__compactRuntime.CompactTypeCurve25519Scalar"]
                      ; FIXME: what should happen with other opaque types?
                      [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                   [(tvector ,src ,len ,type)
@@ -1352,7 +1371,28 @@
                     [(tfield ,src) (format "typeof(~a) === 'bigint' && ~:*~a >= 0 && ~:*~a <= __compactRuntime.MAX_FIELD" var)]
                     [(tunsigned ,src ,nat) (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= ~dn" var nat)]
                     [(tbytes ,src ,len) (format "~a.buffer instanceof ArrayBuffer && ~:*~a.BYTES_PER_ELEMENT === 1 && ~:*~a.length === ~s" var len)]
-                    [(topaque ,src ,opaque-type) "true"]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256k1Point"))
+                     (format "__compactRuntime.isValidSecp256k1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256r1Point"))
+                     (format "__compactRuntime.isValidSecp256r1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Curve25519Point"))
+                     (format "__compactRuntime.isValidCurve25519Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (let ([max (case opaque-type
+                                  [("JubjubScalar") "MAX_JUBJUB_SCALAR"]
+                                  [("Secp256k1Base") "MAX_SECP256K1_BASE"]
+                                  [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
+                                  [("Secp256r1Base") "MAX_SECP256R1_BASE"]
+                                  [("Secp256r1Scalar") "MAX_SECP256R1_SCALAR"]
+                                  [("Curve25519Base") "MAX_CURVE25519_BASE"]
+                                  [("Curve25519Scalar") "MAX_CURVE25519_SCALAR"]
+                                  [else #f])])
+                       (if max
+                           (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= __compactRuntime.~a" var max)
+                           "true"))]
                     [(tvector ,src ,len ,type)
                      (format "Array.isArray(~a) && ~:*~a.length === ~d && ~2:*~a.every((t) => ~*~a)"
                              var len (typeof type "t"))]
@@ -1379,7 +1419,8 @@
                 [(tboolean ,src) "Boolean"]
                 [(tfield ,src) "Field"]
                 [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
-                [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+                [(topaque ,src ,opaque-type)
+                 (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
                 [(tunknown) "Unknown"]
                 [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
                 [(tbytes ,src ,len) (format "Bytes<~s>" len)]
@@ -2073,7 +2114,13 @@
                       0 "{")
                     2 (format "const ~a = " result)
                     (make-Qconcat
-                      (native-entry-function native-entry)
+                      (let ([runtime-name (native-entry-function native-entry)])
+                        (case runtime-name
+                          [("__compactRuntime.ecMulJubjubScalar") "__compactRuntime.ecMul"]
+                          [("__compactRuntime.ecMulGeneratorJubjubScalar") "__compactRuntime.ecMulGenerator"]
+                          [("__compactRuntime.keccak256")
+                           (if (feature-zkir-v3) "__compactRuntime.keccak256Aligned" runtime-name)]
+                          [else runtime-name]))
                       "("
                       (apply (make-Qsep ",")
                              (fold-right
@@ -2714,7 +2761,12 @@
             (with-output-to-string
               (lambda ()
                 (let f ([type type] [i 0] [indent 4])
-                  (nanopass-case (Ltypescript Type) (de-alias type)
+                  (nanopass-case (Ltypescript Type) (subst-tcontract (de-alias type))
+                    [(topaque ,src ,opaque-type) (guard (string=? opaque-type "Uint8Array"))
+                     (print-indent indent)
+                     (printf "if (x~s.length !== y~:*~s.length) { return false; }\n" i)
+                     (print-indent indent)
+                     (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
                     [(tbytes ,src ,len)
                      (print-indent indent)
                      (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
@@ -2760,7 +2812,12 @@
                        elt-name*
                        type*)]
                     [(topaque ,src ,opaque-type)
-                     (guard (string=? opaque-type "JubjubPoint"))
+                     (guard (and (foreign-point-base opaque-type) (not (string=? opaque-type "Curve25519Point"))))
+                     (print-indent indent)
+                     (printf "if (x~s.identity !== y~s.identity || (!x~s.identity && (x~s.x !== y~s.x || x~s.y !== y~s.y))) { return false; }\n"
+                             i i i i i i i)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (member opaque-type '("JubjubPoint" "Curve25519Point")))
                      (for-each
                        (lambda (elt-name)
                          (print-indent indent)
@@ -2815,6 +2872,9 @@
                   [("string") "''"]
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
+                  [("Curve25519Point") "({x: 0n, y: 1n})"]
+                  [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
+                  [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                [(tvector ,src ,len ,type)
@@ -2907,6 +2967,23 @@
            (format "((e, i) => e.slice(i, i+~d))(" len)
            ((make-Qsep ",") expr (make-Qconcat "Number(" index ")"))
            ")"))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type
+                             ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1]
+                             ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
+       (let ([stem (nanopass-case (Ltypescript Type) type
+                     [(topaque ,src^ ,opaque-type)
+                      (case opaque-type
+                        [("Secp256k1Base") "secp256k1Base"]
+                        [("Secp256k1Scalar") "secp256k1Scalar"]
+                        [("Secp256r1Base") "secp256r1Base"]
+                        [("Secp256r1Scalar") "secp256r1Scalar"]
+                        [("Curve25519Base") "curve25519Base"]
+                        [("Curve25519Scalar") "curve25519Scalar"]
+                        [else (assert cannot-happen)])]
+                     [else (assert cannot-happen)])]
+             [suffix (case arithmetic-op [(+) "Add"] [(-) "Sub"] [(*) "Mul"] [else (assert cannot-happen)])])
+         (parenthesize level (precedence call)
+           (make-Qconcat (compact-stdlib (string-append stem suffix)) "(" ((make-Qsep ",") expr1 expr2) ")")))]
       [(+ ,src ,mbits ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1] ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
        (guard (not mbits))
        (parenthesize level (precedence call)
@@ -2959,7 +3036,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -2982,7 +3060,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3118,6 +3197,31 @@
              expr
              (format-javascript-string mesg))
            ")"))]
+      [(jubjub-cast ,src ,type ,expr)
+       (nanopass-case (Ltypescript Type) type
+         [(tfield ,src) (Expr expr level outer-pure?)]
+         [(topaque ,src ,opaque-type)
+          (parenthesize level (precedence call)
+            (make-Qconcat (compact-stdlib "convertNumericToJubjubScalar") "("
+              (Expr expr (precedence add1 comma) outer-pure?) ")"))])]
+      [(secp256k1-bytes-cast ,src ,type ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (parenthesize level (precedence call)
+         (nanopass-case (Ltypescript Type) (de-alias type)
+           [(tbytes ,src^ ,len)
+            (make-Qconcat (compact-stdlib "convertFieldToBytes") "(32, " expr ", "
+              (format-javascript-string (format-source-object src)) ")")]
+           [(topaque ,src^ ,opaque-type)
+            (let-values ([(convert maximum)
+                          (case opaque-type
+                            [("Secp256k1Base") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_BASE")]
+                            [("Secp256k1Scalar") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_SCALAR")]
+                            [("Secp256r1Base") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_BASE")]
+                            [("Secp256r1Scalar") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_SCALAR")]
+                            [("Curve25519Base") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_BASE")]
+                            [("Curve25519Scalar") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_SCALAR")]
+                            [else (assert cannot-happen)])])
+              (make-Qconcat (compact-stdlib convert) "(__compactRuntime." maximum ", " expr ")"))]
+           [else (assert cannot-happen)]))]
       [(field->bytes ,src ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
        (parenthesize level (precedence call)
          (make-Qconcat
@@ -3210,24 +3314,33 @@
       [(safe-cast ,src ,type ,type^ ,expr)
        ; no checks needed for safe casts
        (Expr expr level outer-pure?)]
+      [(emit-log ,src ,nat ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (make-Qconcat
+         (case nat
+           [(0) "__compactRuntime.emitShieldedSpend"]
+           [(1) "__compactRuntime.emitShieldedReceive"]
+           [(2) "__compactRuntime.emitShieldedMint"]
+           [(3) "__compactRuntime.emitShieldedBurn"]
+           [(4) "__compactRuntime.emitUnshieldedSpend"]
+           [(5) "__compactRuntime.emitUnshieldedReceive"]
+           [(6) "__compactRuntime.emitUnshieldedMint"]
+           [(7) "__compactRuntime.emitUnshieldedBurn"]
+           [(8) "__compactRuntime.emitPaused"]
+           [(9) "__compactRuntime.emitUnpaused"]
+           [(10) "__compactRuntime.emitMisc"]
+           [else (assert cannot-happen)])
+         "(context, partialProofData, " expr ")")]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (nanopass-case (Ltypescript ADT-Op) adt-op
          [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
           ; this should be caught by ledger meta-type checks or by propagate-ledger-paths
           (when (public-adt? type) (source-errorf src "incomplete reference to nested ADT"))
-          (let ([descriptor-name? (and (eq? op-class 'read) (type->maybe-descriptor-name type))])
+          (let ([descriptor-name? (and (eq? op-class 'read)
+                                       (type->maybe-descriptor-name (subst-tcontract type)))])
             (let ([q (construct-query src path-elt* adt-formal* adt-arg* adt-op expr*)])
-              (nanopass-case (Ltypescript Type) (de-alias type)
-                [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
-                 (assert not-implemented)]
-                [else
-                 (if descriptor-name?
-                     (make-Qconcat
-                       descriptor-name?
-                       ".fromValue("
-                       q
-                       ".value)")
-                     q)])))])]
+              (if descriptor-name?
+                  (make-Qconcat descriptor-name? ".fromValue(" q ".value)")
+                  q)))])]
       [(contract-call ,src ,elt-name (,[Expr : expr (precedence add1 comma) outer-pure? -> * expr] ,type) ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (source-errorf src "contract types are not yet implemented")])
     (Map-Argument : Map-Argument (ir level outer-pure?) -> * (Q byte-ref?)
@@ -3329,6 +3442,10 @@
        (case opaque-type
          [("string" "Uint8Array") opaque-type]
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
+         [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
+         [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
+         [("Curve25519Point") "__compactRuntime.Curve25519Point"]
+         [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
       [(tvector ,src ,len ,[Type : type -> * type])

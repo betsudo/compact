@@ -14,13 +14,364 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+import { ed25519 } from '@noble/curves/ed25519.js';
+import { secp256k1 } from '@noble/curves/secp256k1.js';
+import { p256 } from '@noble/curves/nist.js';
+import { sha512 as nobleSha512 } from '@noble/hashes/sha2.js';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import { randomBytes } from '@noble/hashes/utils.js';
-import { MAX_FIELD, JUBJUB_SCALAR_MODULUS } from './constants.js';
+import {
+  MAX_FIELD, JUBJUB_SCALAR_MODULUS, SECP256K1_BASE_MODULUS, SECP256K1_SCALAR_MODULUS,
+  SECP256R1_BASE_MODULUS, SECP256R1_SCALAR_MODULUS,
+  CURVE25519_BASE_MODULUS, CURVE25519_SCALAR_MODULUS,
+} from './constants.js';
 import { CompactType, CompactTypeJubjubPoint, JubjubPoint, JubjubSchnorrSignature } from './compact-types.js';
+import type { Curve25519Point, Secp256k1Point, Secp256r1Point } from './compact-types.js';
 import { CompactError } from './error.js';
+import {
+  curve25519FromProjective, curve25519ToProjective,
+  secp256k1FromProjective, secp256k1ToProjective, secp256r1FromProjective, secp256r1ToProjective,
+} from './utils.js';
 
 const FIELD_MODULUS: bigint = MAX_FIELD + 1n;
+
+function subModulo(x: bigint, y: bigint, modulus: bigint): bigint {
+  const difference = x - y;
+  return difference >= 0n ? difference : difference + modulus;
+}
+
+/** Add two canonical secp256k1 base field elements. */
+export function secp256k1BaseAdd(x: bigint, y: bigint): bigint {
+  return (x + y) % SECP256K1_BASE_MODULUS;
+}
+
+/** Subtract two canonical secp256k1 base field elements. */
+export function secp256k1BaseSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256K1_BASE_MODULUS);
+}
+
+/** Multiply two canonical secp256k1 base field elements. */
+export function secp256k1BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256K1_BASE_MODULUS;
+}
+
+/** Negate a canonical secp256k1 base field element. */
+export function secp256k1BaseNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256K1_BASE_MODULUS);
+}
+
+/** Invert a nonzero canonical secp256k1 base field element. */
+export function secp256k1BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256k1 base field has no inverse for 0');
+  }
+  return inverseModuloPrime(x, SECP256K1_BASE_MODULUS);
+}
+
+/** Add two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarAdd(x: bigint, y: bigint): bigint {
+  return (x + y) % SECP256K1_SCALAR_MODULUS;
+}
+
+/** Subtract two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Multiply two canonical secp256k1 scalar field elements. */
+export function secp256k1ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256K1_SCALAR_MODULUS;
+}
+
+/** Negate a canonical secp256k1 scalar field element. */
+export function secp256k1ScalarNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256K1_SCALAR_MODULUS);
+}
+
+/** Invert a nonzero canonical secp256k1 scalar field element. */
+export function secp256k1ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256k1 scalar field has no inverse for 0');
+  }
+  return inverseModuloPrime(x, SECP256K1_SCALAR_MODULUS);
+}
+
+// -- Curve25519Base
+/**
+ * Curve25519 base field addition
+ *
+ * This function returns x + y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseAdd(x: bigint, y: bigint): bigint {
+  const t = x + y;
+  return t < CURVE25519_BASE_MODULUS ? t : t - CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field negation
+ *
+ * This function returns the negation of x in the Curve25519 base field.  That
+ * is, a value y such that x + y = 0 (modulo CURVE25519_BASE_MODULUS).  x is
+ * assumed to be in the range [0, CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseNeg(x: bigint): bigint {
+  return x == 0n ? x : CURVE25519_BASE_MODULUS - x;
+}
+
+/**
+ * Curve25519 base field subtraction
+ *
+ * This function returns x - y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseSub(x: bigint, y: bigint): bigint {
+  const t = x - y;
+  return t >= 0n ? t : t + CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field multiplication
+ *
+ * This function returns x * y in the Curve25519 base field (modulo
+ * CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % CURVE25519_BASE_MODULUS;
+}
+
+/**
+ * Curve25519 base field inverse
+ *
+ * This function returns the multiplicative inverse of x in the Curve25519 base
+ * field.  That is, a value y such that x * y = 1 (modulo CURVE25519_BASE_MODULUS).
+ * x is assumed to be in the range (0, CURVE25519_BASE_MODULUS).
+ */
+export function curve25519BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('Curve25519 base field has no inverse for 0');
+  }
+  return ed25519.Point.Fp.inv(x);
+}
+
+// -- Curve25519Scalar
+/**
+ * Curve25519 scalar field addition
+ *
+ * This function returns x + y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarAdd(x: bigint, y: bigint): bigint {
+  const t = x + y;
+  return t < CURVE25519_SCALAR_MODULUS ? t : t - CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field negation
+ *
+ * This function returns the negation of x in the Curve25519 scalar field.  That
+ * is, a value y such that x + y = 0 (modulo CURVE25519_SCALAR_MODULUS).  x is
+ * assumed to be in the range [0, CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarNeg(x: bigint): bigint {
+  return x == 0n ? x : CURVE25519_SCALAR_MODULUS - x;
+}
+
+/**
+ * Curve25519 scalar field subtraction
+ *
+ * This function returns x - y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarSub(x: bigint, y: bigint): bigint {
+  const t = x - y;
+  return t >= 0n ? t : t + CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field multiplication
+ *
+ * This function returns x * y in the Curve25519 scalar field (modulo
+ * CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % CURVE25519_SCALAR_MODULUS;
+}
+
+/**
+ * Curve25519 scalar field inverse
+ *
+ * This function returns the multiplicative inverse of x in the Curve25519 scalar
+ * field.  That is, a value y such that x * y = 1 (modulo CURVE25519_SCALAR_MODULUS).
+ * x is assumed to be in the range (0, CURVE25519_SCALAR_MODULUS).
+ */
+export function curve25519ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('Curve25519 scalar field has no inverse for 0');
+  }
+  return ed25519.Point.Fn.inv(x);
+}
+
+/** Add two canonical P-256 base field elements. */
+export function secp256r1BaseAdd(x: bigint, y: bigint): bigint {
+  const sum = x + y;
+  return sum < SECP256R1_BASE_MODULUS ? sum : sum - SECP256R1_BASE_MODULUS;
+}
+
+/** Subtract two canonical P-256 base field elements. */
+export function secp256r1BaseSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256R1_BASE_MODULUS);
+}
+
+/** Multiply two canonical P-256 base field elements. */
+export function secp256r1BaseMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256R1_BASE_MODULUS;
+}
+
+/** Negate a canonical P-256 base field element. */
+export function secp256r1BaseNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256R1_BASE_MODULUS);
+}
+
+/** Invert a nonzero canonical P-256 base field element. */
+export function secp256r1BaseInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256r1 base field has no inverse for 0');
+  }
+  return p256.Point.Fp.inv(x);
+}
+
+/** Add two canonical P-256 scalar field elements. */
+export function secp256r1ScalarAdd(x: bigint, y: bigint): bigint {
+  const sum = x + y;
+  return sum < SECP256R1_SCALAR_MODULUS ? sum : sum - SECP256R1_SCALAR_MODULUS;
+}
+
+/** Subtract two canonical P-256 scalar field elements. */
+export function secp256r1ScalarSub(x: bigint, y: bigint): bigint {
+  return subModulo(x, y, SECP256R1_SCALAR_MODULUS);
+}
+
+/** Multiply two canonical P-256 scalar field elements. */
+export function secp256r1ScalarMul(x: bigint, y: bigint): bigint {
+  return (x * y) % SECP256R1_SCALAR_MODULUS;
+}
+
+/** Negate a canonical P-256 scalar field element. */
+export function secp256r1ScalarNeg(x: bigint): bigint {
+  return subModulo(0n, x, SECP256R1_SCALAR_MODULUS);
+}
+
+/** Invert a nonzero canonical P-256 scalar field element. */
+export function secp256r1ScalarInv(x: bigint): bigint {
+  if (x === 0n) {
+    throw new CompactError('secp256r1 scalar field has no inverse for 0');
+  }
+  return p256.Point.Fn.inv(x);
+}
+
+/** Extract the affine x-coordinate of a finite secp256k1 point. */
+export function secp256k1PointX(pt: Secp256k1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the x-coordinate of the secp256k1 identity point');
+  }
+  return pt.x;
+}
+
+/** Extract the affine y-coordinate of a finite secp256k1 point. */
+export function secp256k1PointY(pt: Secp256k1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the y-coordinate of the secp256k1 identity point');
+  }
+  return pt.y;
+}
+
+/**
+ * The Compact builtin `secp256r1PointX` function
+ *
+ * This function extracts the affine x-coordinate of a Compact `Secp256r1Point`.
+ */
+export function secp256r1PointX(pt: Secp256r1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the x-coordinate of the secp256r1 identity point');
+  }
+  return pt.x;
+}
+
+/**
+ * The Compact builtin `secp256r1PointY` function
+ *
+ * This function extracts the affine y-coordinate of a Compact `Secp256r1Point`.
+ */
+export function secp256r1PointY(pt: Secp256r1Point): bigint {
+  if (pt.identity) {
+    throw new CompactError('cannot extract the y-coordinate of the secp256r1 identity point');
+  }
+  return pt.y;
+}
+
+/**
+ * The Compact builtin `ecAdd` function for secp256r1 points.
+ *
+ * This function adds two elliptic curve points. The points are assumed to be
+ * valid, points passed from compiler-generated code are always valid ones.
+ * @internal
+ */
+export function secp256r1Add(a: Secp256r1Point, b: Secp256r1Point): Secp256r1Point {
+  return secp256r1FromProjective(secp256r1ToProjective(a).add(secp256r1ToProjective(b)));
+}
+
+/**
+ * The Compact builtin `ecMul` function for secp256r1 points.
+ *
+ * The point is assumed to be valid, points passed from compiler-generated code
+ * are always valid ones.
+ * @internal
+ */
+export function secp256r1Mul(a: Secp256r1Point, b: bigint): Secp256r1Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return secp256r1FromProjective(secp256r1ToProjective(a).multiplyUnsafe(b));
+}
+
+/**
+ * The Compact builtin `ecMulGenerator` function for secp256r1 points.
+ */
+export function secp256r1MulGenerator(b: bigint): Secp256r1Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return secp256r1FromProjective(p256.Point.BASE.multiplyUnsafe(b));
+}
+
+/** Add two secp256k1 points. */
+export function secp256k1Add(a: Secp256k1Point, b: Secp256k1Point): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1ToProjective(a).add(secp256k1ToProjective(b)));
+}
+
+/** Multiply a secp256k1 point by a canonical scalar, including zero. */
+export function secp256k1Mul(a: Secp256k1Point, b: bigint): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1ToProjective(a).multiplyUnsafe(b));
+}
+
+/** Multiply the standard secp256k1 generator by a canonical scalar. */
+export function secp256k1MulGenerator(b: bigint): Secp256k1Point {
+  return secp256k1FromProjective(secp256k1.Point.BASE.multiplyUnsafe(b));
+}
+
+function inverseModuloPrime(value: bigint, modulus: bigint): bigint {
+  // Fermat's little theorem for nonzero elements. The exponent is public and fixed per field.
+  let result = 1n;
+  let power = value;
+  for (let exponent = modulus - 2n; exponent > 0n; exponent >>= 1n) {
+    if ((exponent & 1n) !== 0n) {
+      result = (result * power) % modulus;
+    }
+    power = (power * power) % modulus;
+  }
+  return result;
+}
 
 /**
  * Field addition
@@ -167,9 +518,7 @@ export function upgradeFromTransient(x: bigint): Uint8Array {
 /**
  * The Compact builtin `keccak256` function
  *
- * Hashes `value` using Keccak-256 and returns the 32-byte digest.
- *
- * @throws If `rtType` encodes a type containing Compact 'Opaque' types
+ * Hashes normalized FAB atoms for historical generated contracts.
  */
 export function keccak256<A>(rtType: CompactType<A>, value: A): Uint8Array {
   const chunks = rtType.toValue(value);
@@ -181,6 +530,44 @@ export function keccak256<A>(rtType: CompactType<A>, value: A): Uint8Array {
     offset += chunk.length;
   }
   return keccak_256(bytes);
+}
+
+/**
+ * Hash the aligned binary representation used by Ledger 9 ZKIR.
+ * Each atom occupies its declared byte width. Field atoms occupy 32 bytes.
+ */
+export function keccak256Aligned<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  return keccak_256(alignedHashInput(rtType, value));
+}
+
+/** Hash an aligned Compact value and return the 64-byte SHA-512 digest. */
+export function sha512<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  return nobleSha512(alignedHashInput(rtType, value));
+}
+
+function alignedHashInput<A>(rtType: CompactType<A>, value: A): Uint8Array {
+  const atoms = rtType.toValue(value);
+  const alignment = rtType.alignment();
+  if (atoms.length !== alignment.length) {
+    throw new CompactError('invalid Compact hash input');
+  }
+  const widths = alignment.map((segment, index) => {
+    if (segment.tag !== 'atom' || segment.value.tag === 'compress') {
+      throw new CompactError('invalid Compact hash input');
+    }
+    const width = segment.value.tag === 'field' ? 32 : segment.value.length;
+    if (atoms[index].length > width) {
+      throw new CompactError('invalid Compact hash input');
+    }
+    return width;
+  });
+  const bytes = new Uint8Array(widths.reduce((length, width) => length + width, 0));
+  let offset = 0;
+  for (const [index, atom] of atoms.entries()) {
+    bytes.set(atom, offset);
+    offset += widths[index];
+  }
+  return bytes;
 }
 
 export function jubjubPointX(pt: JubjubPoint): bigint {
@@ -392,4 +779,58 @@ export function jubjubSchnorrVerify<A>(
   const rhs = ecAdd(announcement, ecMul(verifyingKey, c));
 
   return lhs.x === rhs.x && lhs.y === rhs.y;
+}
+
+// -- Curve25519Point
+/**
+ * The Compact builtin `curve25519PointX` function
+ *
+ * This function extracts the x-coordinate of a Compact `Curve25519Point`.
+ */
+export function curve25519PointX(pt: Curve25519Point): bigint {
+  return pt.x;
+}
+
+/**
+ * The Compact builtin `curve25519PointY` function
+ *
+ * This function extracts the y-coordinate of a Compact `Curve25519Point`.
+ */
+export function curve25519PointY(pt: Curve25519Point): bigint {
+  return pt.y;
+}
+
+/**
+ * The Compact builtin `ecAdd` function for Curve25519 points.
+ *
+ * This function adds two elliptic curve points. The points are assumed to be
+ * valid, points passed from compiler-generated code are always valid ones.
+ * @internal
+ */
+export function curve25519Add(a: Curve25519Point, b: Curve25519Point): Curve25519Point {
+  return curve25519FromProjective(curve25519ToProjective(a).add(curve25519ToProjective(b)));
+}
+
+/**
+ * The Compact builtin `ecMul` function for Curve25519 points.
+ *
+ * The points are assumed to be valid, points passed from
+ * compiler-generated code are always valid ones.
+ * @internal
+ */
+export function curve25519Mul(a: Curve25519Point, b: bigint): Curve25519Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return curve25519FromProjective(curve25519ToProjective(a).multiplyUnsafe(b));
+}
+
+/**
+ * The Compact builtin `ecMulGenerator` function for Curve25519 points.
+ */
+export function curve25519MulGenerator(b: bigint): Curve25519Point {
+  // `multiplyUnsafe` is used, instead of `multiply`, because the latter rejects
+  // a zero scalar; the "unsafe" is due to non-constant time operations, which
+  // we don't guarantee anyways.
+  return curve25519FromProjective(ed25519.Point.BASE.multiplyUnsafe(b));
 }

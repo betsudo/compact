@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Canonical named definitions retained from bounded authoritative source IR.
 //! Lowered annotations cannot create or change a named type. Native collectors
@@ -115,6 +126,16 @@ impl TypeEnvironment {
                 | Type::Boolean
                 | Type::Field
                 | Type::JubjubPoint
+                | Type::Secp256k1Base
+                | Type::Secp256r1Base
+                | Type::Curve25519Base
+                | Type::Secp256k1Scalar
+                | Type::JubjubScalar
+                | Type::Secp256r1Scalar
+                | Type::Curve25519Scalar
+                | Type::Secp256k1Point
+                | Type::Secp256r1Point
+                | Type::Curve25519Point
                 | Type::Bytes { .. }
                 | Type::OpaqueString
                 | Type::OpaqueBytes
@@ -145,7 +166,7 @@ impl TypeEnvironment {
                     }
                 }
                 Type::Tuple { .. } => {}
-                Type::LedgerMap { .. } => {
+                Type::LedgerMap { .. } | Type::LedgerMerkle { .. } => {
                     refused(observer, RefusalSite::node(Owner::Type(ty)));
                     return Err(invalid(
                         path,

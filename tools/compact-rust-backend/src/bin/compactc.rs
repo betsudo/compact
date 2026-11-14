@@ -490,14 +490,21 @@ fn run() -> Result<i32, Box<dyn Error>> {
     let staging = StagedOutput::new(&output)?;
     // The invocation owns an exclusive child inside our existing locked stage.
     args.truncate(args.len() - 2);
+    // Resolve sibling contracts beside the requested output directory.
+    let dependency_directory = StagedOutput::output_parent(&output);
     if !targets.ts {
         args.push(OsString::from("--skip-ts"));
     }
-    let artifacts = match ConfiguredFrontend::new(compiler.as_os_str()).invoke(FrontendRequest {
-        source: source.clone(),
-        arguments: args,
-        stage_parent: staging.path().to_path_buf(),
-    }) {
+    let artifacts = match ConfiguredFrontend::new(compiler.as_os_str())
+        .with_environment(
+            "COMPACT_INTERNAL_CONTRACT_DEPENDENCY_DIRECTORY",
+            dependency_directory.as_os_str(),
+        )
+        .invoke(FrontendRequest {
+            source: source.clone(),
+            arguments: args,
+            stage_parent: staging.path().to_path_buf(),
+        }) {
         Ok(artifacts) => artifacts,
         Err(FrontendError::ProcessExit { code }) => return Ok(code.unwrap_or(1)),
         Err(error) => return Err(error.into()),

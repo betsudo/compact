@@ -61,6 +61,7 @@ pub(super) fn render(
         | Operation::UnsignedAdd(..)
         | Operation::UnsignedSubtract(..)
         | Operation::UnsignedMultiply(..)
+        | Operation::Secp256k1Unary { .. }
         | Operation::Convert { .. } => pure::expression(binding, &ty, value, |input| {
             let source = name(input);
             syn::parse_quote!(#source)
@@ -72,6 +73,61 @@ pub(super) fn render(
         }
         Operation::CreateZswapOutput { coin, recipient } => {
             steps.push(zswap::output(coin, recipient));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedSpend(input) => {
+            let nullifier = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_spend(#nullifier)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedBurn(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_burn(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedMint(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_mint(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedReceive(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_receive(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedSpend(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_spend(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedReceive(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_receive(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedMint(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_mint(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedBurn(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_burn(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitMisc(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_misc(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitPaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_paused(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnpaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unpaused(#payload)?;));
             syn::parse_quote!(())
         }
         Operation::KernelClaim { kind, value: input } => {
@@ -107,7 +163,8 @@ pub(super) fn render(
         | Operation::FieldToBytes32(_)
         | Operation::PersistentHash(_)
         | Operation::HashToCurve(_)
-        | Operation::Keccak256(_)
+        | Operation::Keccak256(..)
+        | Operation::Sha512(_)
         | Operation::JubjubPointX(_)
         | Operation::JubjubPointY(_)
         | Operation::JubjubScalarFromNative(_)
@@ -159,6 +216,9 @@ pub(super) fn render(
         }
         Operation::MapMember { .. }
         | Operation::MapLookup { .. }
+        | Operation::NestedMapLookup { .. }
+        | Operation::NestedMapInsert { .. }
+        | Operation::MapInitChild { .. }
         | Operation::MapInsert { .. }
         | Operation::MapRemove { .. }
         | Operation::MapInsertDefault { .. }

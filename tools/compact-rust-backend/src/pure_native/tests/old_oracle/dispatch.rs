@@ -45,6 +45,7 @@ fn expression_with_calls(
         Expr::TransientCommit { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::PersistentHash { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::Keccak256 { .. } => pure_crypto_expression(expr, parameters, circuits),
+        Expr::Sha512 { .. } => Err(RenderError::EffectfulExpression),
         Expr::PersistentCommit { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::DegradeToTransient { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::UpgradeFromTransient { .. } => pure_crypto_expression(expr, parameters, circuits),
@@ -60,6 +61,17 @@ fn expression_with_calls(
         Expr::JubjubScalarFromNative { .. } => pure_crypto_expression(expr, parameters, circuits),
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
+        | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
+        | Expr::EmitUnshieldedMint { .. }
+        | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -67,6 +79,7 @@ fn expression_with_calls(
         | Expr::SetMember { .. }
         | Expr::MapMember { .. }
         | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
         | Expr::SetIsEmpty { .. }
@@ -82,6 +95,22 @@ fn expression_with_calls(
         | Expr::KernelSelf { .. } => pure_leaf_expression(expr, parameters, circuits),
         Expr::FieldCast { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::FieldToBytes32 { .. } => pure_conversion_expression(expr, parameters, circuits),
+        Expr::VectorToBytes { .. } => Err(RenderError::EffectfulExpression),
+        Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
+        | Expr::BytesToField { .. }
+        | Expr::BytesToUint { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
+        | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),
+        Expr::JubjubCast { .. } => Err(RenderError::EffectfulExpression),
+        Expr::EnumCast { .. } => Err(RenderError::EffectfulExpression),
+        Expr::Secp256k1BytesCast { .. } => Err(RenderError::EffectfulExpression),
+        Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => Err(RenderError::EffectfulExpression),
         Expr::Coerce { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::UnsignedCast { .. } => pure_conversion_expression(expr, parameters, circuits),
         Expr::UnsignedAdd { .. }

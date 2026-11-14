@@ -27,7 +27,13 @@ use crate::ir::{
     StatefulCircuit, StructField, Type, WitnessDeclaration,
 };
 use crate::native_representation;
+use crate::pure_semantics::arithmetic::{
+    Secp256k1Unary, check_field_arithmetic_operand, check_field_arithmetic_pair,
+};
+use crate::pure_semantics::conversion::{FixedBytesConversion, JubjubCast, Secp256k1BytesCast};
+use crate::pure_semantics::jubjub::Curve;
 use crate::source_diagnostics::{Owner, RefusalSite};
+use crate::value_lowering::{secp256k1_bytes_cast_syntax, secp256k1_unary_syntax};
 use crate::{
     RenderError, UnsignedMaximum, coerce_expression, condition_needs_statement, discard_expression,
     expression_with_calls, field_to_bytes_32_syntax, ident, ledger_path_expr,
@@ -496,12 +502,19 @@ fn render_operation_expression(
     environment: &StateExpressionContext<'_, '_>,
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
+        Expr::MapMember { .. } | Expr::MapLookup { .. } => render_map_observation(
+            value,
+            parameters,
+            statements,
+            next_temp,
+            query_effect,
+            environment,
+        ),
         Expr::CellRead { .. }
         | Expr::CounterLessThan { .. }
         | Expr::CounterRead { .. }
         | Expr::SetMember { .. }
-        | Expr::MapMember { .. }
-        | Expr::MapLookup { .. }
+        | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
         | Expr::ListLength { .. }
@@ -528,6 +541,17 @@ fn render_operation_expression(
         ),
         Expr::KernelSelf { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
+        | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
+        | Expr::EmitUnshieldedMint { .. }
+        | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -542,6 +566,18 @@ fn render_operation_expression(
         Expr::Coerce { .. }
         | Expr::FieldCast { .. }
         | Expr::FieldToBytes32 { .. }
+        | Expr::VectorToBytes { .. }
+        | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
+        | Expr::BytesToField { .. }
+        | Expr::BytesToUint { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
+        | Expr::BytesSlice { .. }
+        | Expr::JubjubCast { .. }
+        | Expr::Secp256k1BytesCast { .. }
+        | Expr::EnumCast { .. }
         | Expr::UnsignedCast { .. } => render_conversion_operation(
             value,
             parameters,
@@ -558,7 +594,11 @@ fn render_operation_expression(
         | Expr::Multiply { .. }
         | Expr::Equal { .. }
         | Expr::NotEqual { .. }
-        | Expr::Compare { .. } => render_arithmetic_operation(
+        | Expr::Compare { .. }
+        | Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => render_arithmetic_operation(
             value,
             parameters,
             statements,
@@ -577,6 +617,7 @@ fn render_operation_expression(
         Expr::TransientHash { .. }
         | Expr::PersistentHash { .. }
         | Expr::Keccak256 { .. }
+        | Expr::Sha512 { .. }
         | Expr::DegradeToTransient { .. }
         | Expr::UpgradeFromTransient { .. }
         | Expr::HashToCurve { .. }
@@ -601,6 +642,73 @@ fn render_operation_expression(
             .pure_expression(value, parameters)
             .map(|(rendered, ty)| (rendered, ty, false)),
     }
+}
+
+// Keep recursive map keys off the larger observation-operation stack frame.
+fn render_map_observation(
+    value: &Expr,
+    parameters: &HashMap<&str, (&Type, syn::Ident)>,
+    statements: &mut Vec<syn::Stmt>,
+    next_temp: &mut usize,
+    query_effect: &mut bool,
+    environment: &StateExpressionContext<'_, '_>,
+) -> Result<(syn::Expr, Type, bool), RenderError> {
+    let (field, index, key) = match value {
+        Expr::MapMember { field, index, key } | Expr::MapLookup { field, index, key } => {
+            (field, index, key)
+        }
+        _ => unreachable!("map observation selected by dispatcher"),
+    };
+    let declaration = environment
+        .ledger_fields
+        .get(field.as_str())
+        .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
+    if declaration.index != *index {
+        return Err(RenderError::InvalidLedgerIndex(*index));
+    }
+    let LedgerFieldKind::Map {
+        key: key_ty,
+        value: value_ty,
+    } = &declaration.declaration
+    else {
+        return Err(RenderError::UnknownLedgerField(field.clone()));
+    };
+    let (key, actual, witness_effect) = render_state_expression_observed(
+        key,
+        parameters,
+        statements,
+        next_temp,
+        query_effect,
+        environment,
+    )?;
+    if actual != *key_ty {
+        return Err(RenderError::TypeMismatch {
+            expected: key_ty.clone(),
+            actual,
+        });
+    }
+    let step = syn::Ident::new(
+        &format!("__compact_query_{}", *next_temp),
+        Span::call_site(),
+    );
+    *next_temp += 1;
+    let slot = ident(&declaration.id)?;
+    let key = retained_value(key, key_ty);
+    let result_ty = if matches!(value, Expr::MapMember { .. }) {
+        statements.push(syn::parse_quote!(
+            let #step = crate::ledger_slots::#slot.member(context, #key)?;
+        ));
+        Type::Boolean
+    } else {
+        statements.push(syn::parse_quote!(
+            let #step = crate::ledger_slots::#slot.lookup(context, #key)?;
+        ));
+        value_ty.clone()
+    };
+    statements.push(syn::parse_quote!(context = #step.context;));
+    statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
+    *query_effect = true;
+    Ok((syn::parse_quote!(#step.result), result_ty, witness_effect))
 }
 
 // Same-owner operation family; recursive operands return through the small dispatcher.
@@ -752,7 +860,12 @@ fn render_observation_operation(
                 witness_effect,
             ))
         }
-        Expr::MapMember { field, index, key } | Expr::MapLookup { field, index, key } => {
+        Expr::NestedMapLookup {
+            field,
+            index,
+            outer,
+            inner,
+        } => {
             let declaration = ledger_fields
                 .get(field.as_str())
                 .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
@@ -760,48 +873,69 @@ fn render_observation_operation(
                 return Err(RenderError::InvalidLedgerIndex(*index));
             }
             let LedgerFieldKind::Map {
-                key: key_ty,
-                value: value_ty,
+                key: outer_ty,
+                value: child,
             } = &declaration.declaration
             else {
                 return Err(RenderError::UnknownLedgerField(field.clone()));
             };
-            let (key, actual, witness_effect) = render_state_expression_observed(
-                key,
-                parameters,
-                statements,
-                next_temp,
-                query_effect,
-                environment,
-            )?;
-            if actual != *key_ty {
-                return Err(RenderError::TypeMismatch {
-                    expected: key_ty.clone(),
-                    actual,
-                });
+            let Type::LedgerMap {
+                key: inner_ty,
+                value: leaf,
+            } = child
+            else {
+                return Err(RenderError::UnknownLedgerField(field.clone()));
+            };
+            for ty in [outer_ty, inner_ty, leaf] {
+                if !crate::recorded::map_cell_type(ty) {
+                    environment.refused(value);
+                    return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
+                }
             }
+            // Lnodisclose binds complex terminal arguments before path
+            // arguments. Keep that order if an IR caller supplies effects.
+            let mut render_key = |source, expected: &Type| {
+                let (key, actual, witness) = render_state_expression_observed(
+                    source,
+                    parameters,
+                    statements,
+                    next_temp,
+                    query_effect,
+                    environment,
+                )?;
+                if actual != *expected {
+                    environment.refused(source);
+                    return Err(RenderError::TypeMismatch {
+                        expected: expected.clone(),
+                        actual,
+                    });
+                }
+                let name =
+                    syn::Ident::new(&format!("__compact_key_{}", *next_temp), Span::call_site());
+                *next_temp += 1;
+                let key = retained_value(key, expected);
+                statements.push(syn::parse_quote!(let #name = #key;));
+                Ok((name, witness))
+            };
+            let (inner, inner_witness) = render_key(inner, inner_ty)?;
+            let (outer, outer_witness) = render_key(outer, outer_ty)?;
             let step = syn::Ident::new(
                 &format!("__compact_query_{}", *next_temp),
                 Span::call_site(),
             );
             *next_temp += 1;
             let slot = ident(&declaration.id)?;
-            let key = retained_value(key, key_ty);
-            let result_ty = if matches!(value, Expr::MapMember { .. }) {
-                statements.push(syn::parse_quote!(
-                    let #step = crate::ledger_slots::#slot.member(context, #key)?;
-                ));
-                Type::Boolean
-            } else {
-                statements.push(syn::parse_quote!(
-                    let #step = crate::ledger_slots::#slot.lookup(context, #key)?;
-                ));
-                value_ty.clone()
-            };
+            statements.push(syn::parse_quote!(
+                let #step = crate::ledger_slots::#slot.lookup_child(context, #outer, #inner)?;
+            ));
             statements.push(syn::parse_quote!(context = #step.context;));
             statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
             *query_effect = true;
-            Ok((syn::parse_quote!(#step.result), result_ty, witness_effect))
+            Ok((
+                syn::parse_quote!(#step.result),
+                leaf.as_ref().clone(),
+                inner_witness || outer_witness,
+            ))
         }
         Expr::MerkleCheckRoot { field, index, root }
         | Expr::HistoricMerkleCheckRoot { field, index, root } => {
@@ -1256,7 +1390,18 @@ fn render_effect_operation(
                 false,
             ))
         }
-        Expr::KernelClaim {
+        Expr::EmitShieldedSpend { value: argument }
+        | Expr::EmitShieldedBurn { value: argument }
+        | Expr::EmitShieldedMint { value: argument }
+        | Expr::EmitShieldedReceive { value: argument }
+        | Expr::EmitUnshieldedSpend { value: argument }
+        | Expr::EmitUnshieldedReceive { value: argument }
+        | Expr::EmitUnshieldedMint { value: argument }
+        | Expr::EmitUnshieldedBurn { value: argument }
+        | Expr::EmitMisc { value: argument }
+        | Expr::EmitPaused { value: argument }
+        | Expr::EmitUnpaused { value: argument }
+        | Expr::KernelClaim {
             value: argument, ..
         }
         | Expr::KernelMintShielded {
@@ -1270,7 +1415,19 @@ fn render_effect_operation(
                 query_effect,
                 environment,
             )?;
-            let expected = Type::Bytes { length: 32 };
+            let length = match value {
+                Expr::EmitShieldedBurn { .. } => 49,
+                Expr::EmitShieldedMint { .. } => 81,
+                Expr::EmitShieldedReceive { .. } => 578,
+                Expr::EmitUnshieldedSpend { .. } => 145,
+                Expr::EmitUnshieldedReceive { .. } => 145,
+                Expr::EmitUnshieldedMint { .. } => 80,
+                Expr::EmitUnshieldedBurn { .. } => 113,
+                Expr::EmitMisc { .. } => 288,
+                Expr::EmitPaused { .. } | Expr::EmitUnpaused { .. } => 0,
+                _ => 32,
+            };
+            let expected = Type::Bytes { length };
             if actual != expected {
                 return Err(RenderError::TypeMismatch { expected, actual });
             }
@@ -1281,6 +1438,39 @@ fn render_effect_operation(
             *next_temp += 1;
             statements.push(syn::parse_quote!(let #name = #rendered;));
             let call: syn::Expr = match value {
+                Expr::EmitShieldedSpend { .. } => {
+                    syn::parse_quote!(context.emit_shielded_spend(#name)?)
+                }
+                Expr::EmitShieldedBurn { .. } => {
+                    syn::parse_quote!(context.emit_shielded_burn(#name)?)
+                }
+                Expr::EmitShieldedMint { .. } => {
+                    syn::parse_quote!(context.emit_shielded_mint(#name)?)
+                }
+                Expr::EmitShieldedReceive { .. } => {
+                    syn::parse_quote!(context.emit_shielded_receive(#name)?)
+                }
+                Expr::EmitUnshieldedSpend { .. } => {
+                    syn::parse_quote!(context.emit_unshielded_spend(#name)?)
+                }
+                Expr::EmitUnshieldedReceive { .. } => {
+                    syn::parse_quote!(context.emit_unshielded_receive(#name)?)
+                }
+                Expr::EmitUnshieldedMint { .. } => {
+                    syn::parse_quote!(context.emit_unshielded_mint(#name)?)
+                }
+                Expr::EmitUnshieldedBurn { .. } => {
+                    syn::parse_quote!(context.emit_unshielded_burn(#name)?)
+                }
+                Expr::EmitMisc { .. } => {
+                    syn::parse_quote!(context.emit_misc(#name)?)
+                }
+                Expr::EmitPaused { .. } => {
+                    syn::parse_quote!(context.emit_paused(#name)?)
+                }
+                Expr::EmitUnpaused { .. } => {
+                    syn::parse_quote!(context.emit_unpaused(#name)?)
+                }
                 Expr::KernelClaim { claim, .. } => {
                     use crate::ir::KernelClaimKind;
                     let (method, carrier) = match claim {
@@ -1469,6 +1659,80 @@ fn render_conversion_operation(
                 effect,
             ))
         }
+        Expr::VectorToBytes { .. }
+        | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
+        | Expr::BytesToField { .. }
+        | Expr::BytesToUint { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
+        | Expr::BytesSlice { .. } => {
+            let (value, operation) = FixedBytesConversion::from_expression(value);
+            let operation = operation?;
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let ty = operation.result_type(&actual)?;
+            Ok((
+                crate::value_lowering::fixed_bytes_conversion_syntax(rendered, &operation),
+                ty,
+                effect,
+            ))
+        }
+        Expr::JubjubCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let cast = JubjubCast::check(&actual, ty)?;
+            Ok((
+                crate::value_lowering::jubjub_cast_syntax(rendered, cast),
+                ty.clone(),
+                effect,
+            ))
+        }
+        Expr::EnumCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let cast = crate::pure_semantics::conversion::EnumCast::check(&actual, ty)?;
+            Ok((
+                crate::value_lowering::enum_cast_syntax(rendered, cast),
+                ty.clone(),
+                effect,
+            ))
+        }
+        Expr::Secp256k1BytesCast { value, ty } => {
+            let (rendered, actual, effect) = render_state_expression_observed(
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let cast = Secp256k1BytesCast::check(&actual, ty)?;
+            Ok((
+                secp256k1_bytes_cast_syntax(rendered, cast),
+                ty.clone(),
+                effect,
+            ))
+        }
         Expr::UnsignedCast { max, value } => {
             unsigned_maximum(max)?;
             let (rendered, actual, effect) = render_state_expression_observed(
@@ -1507,6 +1771,25 @@ fn render_arithmetic_operation(
     environment: &StateExpressionContext<'_, '_>,
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
+        Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => {
+            let (kind, input) = Secp256k1Unary::from_expression(value).unwrap();
+            let (rendered, ty, effect) = render_state_expression_observed(
+                input,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            Ok((
+                secp256k1_unary_syntax(kind, rendered),
+                kind.result_type(&ty)?,
+                effect,
+            ))
+        }
         Expr::UnsignedAdd { max, left, right }
         | Expr::UnsignedSubtract { max, left, right }
         | Expr::UnsignedMultiply { max, left, right } => {
@@ -1574,12 +1857,7 @@ fn render_arithmetic_operation(
                 query_effect,
                 environment,
             )?;
-            if left_ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: left_ty,
-                });
-            }
+            check_field_arithmetic_operand(&left_ty)?;
             let left_name = syn::Ident::new(
                 &format!("__compact_value_{}", *next_temp),
                 Span::call_site(),
@@ -1594,12 +1872,7 @@ fn render_arithmetic_operation(
                 query_effect,
                 environment,
             )?;
-            if right_ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: right_ty,
-                });
-            }
+            check_field_arithmetic_pair(&left_ty, &right_ty)?;
             let right_name = syn::Ident::new(
                 &format!("__compact_value_{}", *next_temp),
                 Span::call_site(),
@@ -1612,7 +1885,7 @@ fn render_arithmetic_operation(
                 Expr::Multiply { .. } => syn::parse_quote!(#left_name * #right_name),
                 _ => unreachable!(),
             };
-            Ok((rendered, Type::Field, left_effect || right_effect))
+            Ok((rendered, left_ty, left_effect || right_effect))
         }
         Expr::Equal { left, right } | Expr::NotEqual { left, right } => {
             let (left, left_ty, left_effect) = render_state_expression_observed(
@@ -1661,10 +1934,20 @@ fn render_arithmetic_operation(
                 // evaluations still precede the constant comparison result.
                 statements.push(syn::parse_quote!(let _: () = #right;));
                 syn::parse_quote!(#result)
-            } else if !negated {
-                syn::parse_quote!(#left_name == #right)
             } else {
-                syn::parse_quote!(#left_name != #right)
+                // A nested comparison is a valid Boolean operand, but parsing
+                // interpolated tokens as a new expression treats it as a
+                // chained comparison. Keep the child's syntax tree intact.
+                syn::Expr::Binary(syn::ExprBinary {
+                    attrs: vec![],
+                    left: Box::new(syn::parse_quote!(#left_name)),
+                    op: if negated {
+                        syn::BinOp::Ne(syn::token::Ne::default())
+                    } else {
+                        syn::BinOp::Eq(syn::token::EqEq::default())
+                    },
+                    right: Box::new(right),
+                })
             };
             Ok((rendered, Type::Boolean, left_effect || right_effect))
         }
@@ -1786,7 +2069,8 @@ fn render_crypto_operation(
     match value {
         Expr::TransientHash { value: input }
         | Expr::PersistentHash { value: input }
-        | Expr::Keccak256 { value: input }
+        | Expr::Keccak256 { value: input, .. }
+        | Expr::Sha512 { value: input }
         | Expr::DegradeToTransient { value: input }
         | Expr::UpgradeFromTransient { value: input }
         | Expr::HashToCurve { value: input }
@@ -1820,15 +2104,27 @@ fn render_crypto_operation(
                         Type::Bytes { length: 32 },
                     )
                 }
-                Expr::Keccak256 { .. } => {
+                Expr::Keccak256 { encoding, .. } => {
                     native_representation::check_tuple_traits(
-                        native_representation::Operation::Keccak256,
+                        native_representation::Operation::Keccak256(*encoding),
                         &actual,
                     )?;
-                    (
-                        syn::parse_quote!(runtime::keccak256),
+                    return Ok((
+                        crate::pure_native::crypto::render_keccak(rendered, *encoding),
                         Type::Bytes { length: 32 },
-                    )
+                        effect,
+                    ));
+                }
+                Expr::Sha512 { .. } => {
+                    native_representation::check_tuple_traits(
+                        native_representation::Operation::Sha512,
+                        &actual,
+                    )?;
+                    return Ok((
+                        syn::parse_quote!(runtime::sha512(#rendered)?),
+                        Type::Bytes { length: 64 },
+                        effect,
+                    ));
                 }
                 Expr::DegradeToTransient { .. } => {
                     if actual != (Type::Bytes { length: 32 }) {
@@ -1972,17 +2268,9 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
-            if actual != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual,
-                });
-            }
-            Ok((
-                syn::parse_quote!(runtime::ec_mul_generator(#scalar)?),
-                Type::JubjubPoint,
-                effect,
-            ))
+            let (scalar, ty) =
+                crate::jubjub_value::Operation::Generator((scalar, actual)).lower()?;
+            Ok((scalar, ty, effect))
         }
         Expr::ConstructJubjubPoint { x: left, y: right }
         | Expr::EcAdd { left, right }
@@ -1998,10 +2286,11 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
+            let curve = Curve::for_point(&actual);
             let expected_left = if matches!(value, Expr::ConstructJubjubPoint { .. }) {
                 Type::Field
             } else {
-                Type::JubjubPoint
+                curve.point()
             };
             if actual != expected_left {
                 return Err(RenderError::TypeMismatch {
@@ -2023,27 +2312,32 @@ fn render_crypto_operation(
                 query_effect,
                 environment,
             )?;
-            let (expected, operation, fallible): (Type, syn::Path, bool) = match value {
-                Expr::ConstructJubjubPoint { .. } => (
-                    Type::Field,
-                    syn::parse_quote!(runtime::construct_jubjub_point),
-                    true,
-                ),
-                Expr::EcAdd { .. } => {
-                    (Type::JubjubPoint, syn::parse_quote!(runtime::ec_add), false)
+            let (rendered, ty) = match value {
+                Expr::ConstructJubjubPoint { .. } => {
+                    if actual != Type::Field {
+                        return Err(RenderError::TypeMismatch {
+                            expected: Type::Field,
+                            actual,
+                        });
+                    }
+                    (
+                        syn::parse_quote!(runtime::construct_jubjub_point(#left_name, #right)?),
+                        Type::JubjubPoint,
+                    )
                 }
-                Expr::EcMul { .. } => (Type::Field, syn::parse_quote!(runtime::ec_mul), true),
+                Expr::EcAdd { .. } => crate::jubjub_value::Operation::Add(
+                    (syn::parse_quote!(#left_name), curve.point()),
+                    (right, actual),
+                )
+                .lower()?,
+                Expr::EcMul { .. } => crate::jubjub_value::Operation::Multiply(
+                    (syn::parse_quote!(#left_name), curve.point()),
+                    (right, actual),
+                )
+                .lower()?,
                 _ => unreachable!(),
             };
-            if actual != expected {
-                return Err(RenderError::TypeMismatch { expected, actual });
-            }
-            let rendered = if fallible {
-                syn::parse_quote!(#operation(#left_name, #right)?)
-            } else {
-                syn::parse_quote!(#operation(#left_name, #right))
-            };
-            Ok((rendered, Type::JubjubPoint, left_effect || right_effect))
+            Ok((rendered, ty, left_effect || right_effect))
         }
         _ => environment
             .pure_expression(value, parameters)

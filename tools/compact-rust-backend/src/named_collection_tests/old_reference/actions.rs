@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Literal H197 old traversal bodies; headers permit test-only sibling calls.
 use super::*;
 
@@ -78,11 +93,23 @@ pub(in crate::named_collection_tests) fn collect_action_types<'ir>(
             collect_expression_types(value, structs, enums, origins)?;
             collect_expression_types(position, structs, enums, origins)?;
         }
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            for operand in [inner, value, outer] {
+                collect_expression_types(operand, structs, enums, origins)?;
+            }
+        }
         StateAction::MapInsert { key, value, .. } => {
             collect_expression_types(key, structs, enums, origins)?;
             collect_expression_types(value, structs, enums, origins)?;
         }
-        StateAction::MapInsertDefault { key, .. } | StateAction::MapRemove { key, .. } => {
+        StateAction::MapInitChild { key, .. }
+        | StateAction::MapInsertDefault { key, .. }
+        | StateAction::MapRemove { key, .. } => {
             collect_expression_types(key, structs, enums, origins)?;
         }
         StateAction::MerkleInsertIndexDefault { position, .. }

@@ -1,0 +1,60 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export circuit serialize_uint8(x: Uint<8>): Bytes<1> {
+  return serialize<Uint<8>, 1>(x);
+}
+export circuit serialize_uint64(x: Uint<64>): Bytes<8> {
+  return serialize<Uint<64>, 8>(x);
+}
+export circuit serialize_uint128(x: Uint<128>): Bytes<16> {
+  return serialize<Uint<128>, 16>(x);
+}
+export circuit deserialize_uint8(x: Bytes<1>): Uint<8> {
+  return deserialize<Uint<8>, 1>(x);
+}
+export circuit deserialize_uint64(x: Bytes<8>): Uint<64> {
+  return deserialize<Uint<64>, 8>(x);
+}
+export circuit deserialize_uint128(x: Bytes<16>): Uint<128> {
+  return deserialize<Uint<128>, 16>(x);
+}
+
+new type Word = Uint<9>;
+
+export circuit encode_word(x: Word): Bytes<4> {
+  return serialize<Word, 4>(x);
+}
+
+export circuit decode_word(x: Bytes<4>): Word {
+  return deserialize<Word, 4>(x);
+}
+
+export circuit zero_encoding(x: Uint<0..1>): Bytes<2> {
+  return serialize<Uint<0..1>, 2>(x);
+}
+
+export circuit zero_decoding(x: Bytes<2>): Uint<0..1> {
+  return deserialize<Uint<0..1>, 2>(x);
+}
+
+export circuit narrow_cast(x: Uint<16>): Bytes<1> {
+  return x as Bytes<1>;
+}
+
+export circuit extended_cast(x: Bytes<17>): Uint<128> {
+  return x as Uint<128>;
+}

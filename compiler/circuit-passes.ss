@@ -850,6 +850,12 @@
          (let ([type (Care expr)])
            (for-each unset-idtype! var-name*)
            type))]
+      [(emit-log ,src ,nat ,len ,[Care : expr -> * type])
+       (unless (nanopass-case (Linlined Type) type
+                 [(tbytes ,src^ ,len^) (= len^ len)]
+                 [else #f])
+         (source-errorf src "event payload must have type Bytes<~d>" len))
+       (with-output-language (Linlined Type) `(ttuple ,src))]
       [(assert ,src ,[Care : expr -> * type] ,mesg)
        (unless (nanopass-case (Linlined Type) type
                  [(tboolean ,src1) #t]
@@ -909,6 +915,36 @@
                               len
                               (format-type type))])
        (with-output-language (Linlined Type) `(tfield ,src))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[Care : expr1 -> * type1] ,[Care : expr2 -> * type2])
+       (unless (and (memq arithmetic-op '(+ - *))
+                    (T type [(topaque ,src ,opaque-type) (foreign-field-max opaque-type)])
+                    (sametype? type1 type)
+                    (sametype? type2 type))
+         (source-errorf src "invalid operands for foreign field arithmetic"))
+       type]
+      [(jubjub-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Linlined Type) type
+           [(tfield ,src) 'field]
+           [(topaque ,src ,opaque-type) (and (string=? opaque-type "JubjubScalar") 'scalar)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eq? from 'field) (eq? to 'scalar))
+                     (and (eq? from 'scalar) (eq? to 'field)))
+           (source-errorf src "invalid JubjubScalar cast")))
+       type]
+      [(secp256k1-bytes-cast ,src ,[type] ,[Care : expr -> * source-type])
+       (define (kind type)
+         (nanopass-case (Linlined Type) type
+           [(tbytes ,src ,len) len]
+           [(topaque ,src ,opaque-type) (and (foreign-field-max opaque-type) opaque-type)]
+           [else #f]))
+       (let ([from (kind source-type)] [to (kind type)])
+         (unless (or (and (eqv? from 32) (string? to))
+                     (and (string? from) (eqv? to 32))
+                     (and (eqv? from 64) (equal? to "Curve25519Scalar")))
+           (source-errorf src "invalid foreign field byte cast")))
+       type]
       [(field->bytes ,src ,len ,[Care : expr -> * type])
        (check-tfield src "argument to field->bytes" type)
        (when (= len 0) (source-errorf src "invalid cast from field to Bytes<0>"))
@@ -1506,6 +1542,14 @@
        (values
          `(assert ,src ,expr ,mesg)
          (CTV-tuple no-var-name '()))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,[expr1 ctv1] ,[expr2 ctv2])
+       ;; A native numeric literal cannot represent a foreign field zero.
+       (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (CTV-unknown no-var-name))]
+      [(jubjub-cast ,src ,[type] ,[expr ctv])
+       (values `(jubjub-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
+      [(secp256k1-bytes-cast ,src ,[type] ,[expr ctv])
+       ;; Keep the field kind attached to the conversion even for constant bytes.
+       (values `(secp256k1-bytes-cast ,src ,type ,expr) (CTV-unknown no-var-name))]
       [(field->bytes ,src ,len ,[expr ctv])
        (assert (not (= len 0)))
        (cond
@@ -1568,6 +1612,8 @@
          [else (values
                  `(downcast-unsigned ,src ,nat? ,nat ,expr)
                  (CTV-unknown no-var-name))])]
+      [(emit-log ,src ,nat ,len ,[expr ctv])
+       (values `(emit-log ,src ,nat ,len ,expr) (CTV-tuple no-var-name '()))]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,[path-elt] ...) ,src^ ,[adt-op] ,[expr* ctv*] ...)
        (values
          `(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt ...) ,src^ ,adt-op ,expr* ...)
@@ -1732,6 +1778,12 @@
              `(tuple ,src)
              `(assert ,src ,expr ,mesg))
          idset)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Value : expr1 idset1] ,[Value : expr2 idset2])
+       (values `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) (idset-union idset1 idset2))]
+      [(jubjub-cast ,src ,type ,[Value : expr idset])
+       (values `(jubjub-cast ,src ,type ,expr) idset)]
+      [(secp256k1-bytes-cast ,src ,type ,[Value : expr idset])
+       (values `(secp256k1-bytes-cast ,src ,type ,expr) idset)]
       [(field->bytes ,src ,len ,[Value : expr idset])
        (values
          `(field->bytes ,src ,len ,expr)
@@ -1752,6 +1804,8 @@
        (values
          `(downcast-unsigned ,src ,nat? ,nat ,expr)
          idset)]
+      [(emit-log ,src ,nat ,len ,[Value : expr idset])
+       (values `(emit-log ,src ,nat ,len ,expr) idset)]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,[path-elt idset^*] ...) ,src^ ,adt-op ,[Value : expr* idset*] ...)
        (values
          `(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt ...) ,src^ ,adt-op ,expr* ...)
@@ -1826,6 +1880,10 @@
        (values
          (make-seq #t src expr* expr)
          (idset-union-all (cons idset idset*)))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Effect : expr1 idset1] ,[Effect : expr2 idset2])
+       (values (make-seq #t src (list expr1) expr2) (idset-union idset1 idset2))]
+      [(jubjub-cast ,src ,type ,expr) (Effect expr)]
+      [(secp256k1-bytes-cast ,src ,type ,expr) (Effect expr)]
       [(field->bytes ,src ,len ,expr)
        (if (> len (field-bytes))
            (Effect expr)
@@ -1875,7 +1933,7 @@
     (Program-Element : Program-Element (ir pelt*) -> * (pelt*)
       [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
        (if (and (id-exported? function-name)
-                (guard (c [(eq? c 'ledger) #t])
+                (guard (c [(memq c '(ledger emit)) #t])
                   (Expression expr)
                   #f))
            (begin
@@ -1884,6 +1942,8 @@
            pelt*)]
       [else (cons ir pelt*)])
     (Expression : Expression (ir) -> Expression ()
+      [(emit-log ,src ,nat ,len ,expr)
+       (raise 'emit)]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[expr*] ...)
        (raise 'ledger)]))
 
@@ -2031,6 +2091,12 @@
          (lambda (triv*)
            (k (with-output-language (Lcircuit Rhs)
                 `(call ,src ,function-name ,triv* ...)))))]
+      [(emit-log ,src ,nat ,len ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (cons (with-output-language (Lcircuit Statement)
+                   `(emit-log ,src ,nat ,len ,test ,triv))
+                 (k (with-output-language (Lcircuit Rhs) `(tuple))))))]
       [(assert ,src ,expr ,mesg)
        (Triv expr test
          (lambda (triv)
@@ -2119,6 +2185,23 @@
          (lambda (triv)
            (k (with-output-language (Lcircuit Rhs)
                 `(bytes->field ,src ,len ,triv)))))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,[type] ,expr1 ,expr2)
+       (Triv expr1 test
+         (lambda (triv1)
+           (Triv expr2 test
+             (lambda (triv2)
+               (k (with-output-language (Lcircuit Rhs)
+                    `(secp256k1-arithmetic ,src ,arithmetic-op ,type ,triv1 ,triv2)))))))]
+      [(jubjub-cast ,src ,[type] ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (k (with-output-language (Lcircuit Rhs)
+                `(jubjub-cast ,src ,type ,triv)))))]
+      [(secp256k1-bytes-cast ,src ,[type] ,expr)
+       (Triv expr test
+         (lambda (triv)
+           (k (with-output-language (Lcircuit Rhs)
+                `(secp256k1-bytes-cast ,src ,type ,triv)))))]
       [(field->bytes ,src ,len ,expr)
        (Triv expr test
          (lambda (triv)
@@ -2234,14 +2317,14 @@
                     (if (feature-zkir-v3)
                         (cons `(anative ,opaque-type) a*)
                         (cons* `(afield) `(afield) a*))]
-                   [else (cons `(acompress) a*)])]
+                   [else
+                    (cons (if (foreign-native-type? opaque-type) `(anative ,opaque-type) `(acompress)) a*)])]
                 [(tvector ,src ,len ,type)
                  (let ([a^* (f type '())])
                    (do ([len len (- len 1)] [a* a* (append a^* a*)])
                        ((eqv? len 0) a*)))]
                 [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ... )
-                 ; FIXME: acontract?
-                 (cons `(acontract) a*)]
+                 (cons (if (feature-zkir-v3) `(abytes 32) `(acontract)) a*)]
                 [(ttuple ,src ,type* ...)
                  (fold-right f a* type*)]
                 [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
@@ -2252,6 +2335,11 @@
         (with-output-language (Lflattened Type)
           `(ty (,(type->alignments original-type) ...)
                (,pt* ...))))
+      (define (bytes->primitive-types len)
+        (with-output-language (Lflattened Primitive-Type)
+          (let-values ([(q r) (div-and-mod len (field-bytes))])
+            (let ([full (make-list q `(tfield ,(- (expt 2 (* (field-bytes) 8)) 1)))])
+              (if (fx= r 0) full (cons `(tfield ,(- (expt 2 (* r 8)) 1)) full))))))
       (define (do-argument var-name original-type wump)
         (let-values ([(wump vn.pt*)
                       (wump-fold-right
@@ -2324,11 +2412,10 @@
       [(tvector ,src ,len ,[Type->Wump : type -> * wump])
        (Wump-vector (make-list len wump))]
       [(tbytes ,src ,len)
-       (Wump-bytes
-         (with-output-language (Lflattened Primitive-Type)
-           (let-values ([(q r) (div-and-mod len (field-bytes))])
-             (let ([ls (make-list q `(tfield ,(- (expt 2 (* (field-bytes) 8)) 1)))])
-               (if (fx= r 0) ls (cons `(tfield ,(max 0 (- (expt 2 (* r 8)) 1))) ls))))))]
+       (Wump-bytes (bytes->primitive-types len))]
+      [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+       (guard (feature-zkir-v3))
+       (Wump-bytes (bytes->primitive-types 32))]
       [(ttuple ,src ,[Type->Wump : type* -> * wump*] ...)
        (Wump-vector wump*)]
       [(tstruct ,src ,struct-name (,elt-name* ,[Type->Wump : type -> * wump*]) ...)
@@ -2346,13 +2433,20 @@
       [(tboolean ,src) `(tfield 1)]
       [(tfield ,src) `(tfield)]
       [(tunsigned ,src ,nat) `(tfield ,nat)]
-      [(topaque ,src ,opaque-type) `(topaque ,opaque-type)]
+      [(topaque ,src ,opaque-type)
+       (when (and (foreign-native-type? opaque-type) (not (feature-zkir-v3)))
+         (source-errorf src "~a requires ZKIR v3; recompile with --feature-zkir-v3" opaque-type))
+       `(topaque ,opaque-type)]
       [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,[Type : type**] ...) ,[Type : type*]) ...)
        `(tcontract ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)]
       [(tadt ,src ,adt-name ([,adt-formal* ,[adt-arg*]] ...) ,vm-expr (,[adt-op*] ...))
        `(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...))])
     (Statement : Statement (ir) -> * (stmt*)
       [(= ,[Single-Triv : test] ,var-name ,rhs) (Rhs rhs test var-name)]
+      [(emit-log ,src ,nat ,len ,[Single-Triv : test] ,triv)
+       (let ([triv* (wump->elts (Triv triv))])
+         (with-output-language (Lflattened Statement)
+           (list `(emit-log ,src ,nat ,len ,test ,triv* ...))))]
       [(assert ,src ,[Single-Triv : test] ,mesg)
        (with-output-language (Lflattened Statement)
          (list `(assert ,src ,test ,mesg)))])
@@ -2384,6 +2478,10 @@
                                  (values
                                    (Wump-vector (list (Wump-single t1) (Wump-single t2)))
                                    (list `(= ,test (,t1 ,t2) (default ,opaque-type))))))))]
+                      [(topaque ,src ,opaque-type) (guard (foreign-native-type? opaque-type))
+                       (with-output-language (Lflattened Statement)
+                         (let ([temp (make-new-id var-name)])
+                           (values (Wump-single temp) (list `(= ,test (,temp) (default ,opaque-type))))))]
                       [(topaque ,src ,opaque-type) (trivial (Wump-single 0))]
                       [(tvector ,src ,len ,type)
                        (let-values ([(wump stmt*) (do-type type)])
@@ -2510,6 +2608,42 @@
                     (with-output-language (Lflattened Statement)
                       (list `(= ,test ,var-name (bytes->field ,src ,len ,triv1 ,triv2)))))
                   (list-head triv* n)))])))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,[Single-Triv : triv1] ,[Single-Triv : triv2])
+       (nanopass-case (Lcircuit Type) type
+         [(topaque ,src^ ,opaque-type)
+          (unless (feature-zkir-v3)
+            (source-errorf src "~a field arithmetic requires ZKIR v3"
+              (if (secp256k1-field-max opaque-type) "secp256k1" "secp256r1")))
+          (hashtable-set! var-ht var-name (Wump-single var-name))
+          (with-output-language (Lflattened Statement)
+            (list `(= ,test ,var-name (secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2))))]
+         [else (assert cannot-happen)])]
+      [(jubjub-cast ,src ,type ,[Single-Triv : triv])
+       (unless (feature-zkir-v3)
+         (source-errorf src "JubjubScalar requires ZKIR v3; recompile with --feature-zkir-v3"))
+       (hashtable-set! var-ht var-name (Wump-single var-name))
+       (let ([target (nanopass-case (Lcircuit Type) type
+                       [(tfield ,src) "Field"]
+                       [(topaque ,src ,opaque-type) opaque-type])])
+         (with-output-language (Lflattened Statement)
+           (list `(= ,test (,var-name) (jubjub-cast ,src ,target ,triv)))))]
+      [(secp256k1-bytes-cast ,src ,type ,[* wump])
+       (unless (feature-zkir-v3)
+         (source-errorf src "secp256k1 byte casts require ZKIR v3; recompile with --feature-zkir-v3"))
+       (nanopass-case (Lcircuit Type) type
+         [(tbytes ,src^ ,len)
+          (assert (= len 32))
+          (let ([high (make-new-id var-name)] [low (make-new-id var-name)])
+            (hashtable-set! var-ht var-name (Wump-bytes (list high low)))
+            (with-output-language (Lflattened Statement)
+              (list `(= ,test (,high ,low) (secp256k1-bytes-cast ,src "Bytes<32>" ,(car (wump->elts wump)))))))]
+         [(topaque ,src^ ,opaque-type)
+          (assert (foreign-field-max opaque-type))
+          (hashtable-set! var-ht var-name (Wump-single var-name))
+          (let ([triv* (wump->elts wump)])
+            (with-output-language (Lflattened Statement)
+              (list `(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)))))]
+         [else (assert cannot-happen)])]
       [(field->bytes ,src ,len ,[Single-Triv : triv])
        (assert (not (= len 0)))
        (let ([var-name1 (make-new-id var-name)]
@@ -2586,9 +2720,9 @@
              (list `(= ,test
                        (,var-name* ...)
                        (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op^ ,triv* ...))))))]
-      ; NB: the uses of Single-Triv and Single-Type will probably have to change with the
-      ; replacement of abstract contract values with contract addresses, since a contract address
-      ; might not fit into one field
+      [(contract-call ,src ,elt-name (,triv ,type) ,triv* ...)
+       (guard (feature-zkir-v3))
+       (source-errorf src "cross-contract calls are not yet supported")]
       [(contract-call ,src ,elt-name (,[Single-Triv : triv] ,type) ,[* wump*] ...)
        (let-values ([(wump var-name*)
                      (wump-fold-right
@@ -2701,6 +2835,11 @@
                     [(* ,mbits ,triv1 ,triv2) (* ,mbits^ ,triv1^ ,triv2^)
                      (and (eqv? mbits mbits^)
                           (commutative-trivs-equal? triv1 triv1^ triv2 triv2^))]
+                    [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+                     (secp256k1-arithmetic ,src^ ,arithmetic-op^ ,opaque-type^ ,triv1^ ,triv2^)
+                     (and (eq? arithmetic-op arithmetic-op^)
+                          (string=? opaque-type opaque-type^)
+                          (trivs-equal? triv1 triv1^ triv2 triv2^))]
                     [(< ,bits ,triv1 ,triv2) (< ,bits^ ,triv1^ ,triv2^)
                      (and (eqv? bits bits^)
                           (trivs-equal? triv1 triv1^ triv2 triv2^))]
@@ -2755,6 +2894,8 @@
               [(+ ,mbits ,triv1 ,triv2) (mbits-hash mbits (commutative-triv-hash triv1 triv2 119001092))]
               [(- ,mbits ,triv1 ,triv2) (mbits-hash mbits (triv-hash triv1 (triv-hash triv2 410225874)))]
               [(* ,mbits ,triv1 ,triv2) (mbits-hash mbits (commutative-triv-hash triv1 triv2 513566316))]
+              [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+               (triv-hash triv1 (triv-hash triv2 (update (symbol-hash arithmetic-op) (string-hash opaque-type))))]
               [(< ,bits ,triv1 ,triv2) (bits-hash bits (triv-hash triv1 (triv-hash triv2 730407)))]
               [(== ,triv1 ,triv2) (commutative-triv-hash triv1 triv2 45862114)]
               [(select ,triv0 ,triv1 ,triv2)
@@ -2878,6 +3019,11 @@
              (for-each (lambda (var-name) (hashtable-set! var->triv var-name 0) (undefined! var-name)) var-name*)
              rstmt*)
            (FWD-Multiple multiple test var-name* rstmt*))]
+      [(emit-log ,src ,nat ,len ,[FWD-Triv : test] ,[FWD-Triv : triv*] ...)
+       (if (eqv? test 0)
+           rstmt*
+           (with-output-language (Lflattened Statement)
+             (cons `(emit-log ,src ,nat ,len ,test ,triv* ...) rstmt*)))]
       [(assert ,src ,[FWD-Triv : test] ,mesg)
        (if (or (eqv? test 1) (undefined? test))
            rstmt*
@@ -2899,6 +3045,12 @@
       [(default ,opaque-type)
        (with-output-language (Lflattened Statement)
          (cons `(= ,test (,var-name* ...) (default ,opaque-type)) rstmt*))]
+      [(jubjub-cast ,src ,opaque-type ,[FWD-Triv : triv])
+       (with-output-language (Lflattened Statement)
+         (cons `(= ,test (,var-name* ...) (jubjub-cast ,src ,opaque-type ,triv)) rstmt*))]
+      [(secp256k1-bytes-cast ,src ,opaque-type ,[FWD-Triv : triv*] ...)
+       (with-output-language (Lflattened Statement)
+         (cons `(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)) rstmt*))]
       [(field->bytes ,src ,len ,[FWD-Triv : triv])
        (assert (fx= (length var-name*) 2))
        (assert (not (= len 0)))
@@ -3140,6 +3292,8 @@
                           '()
                           triv*)])
              `(vector->bytes ,triv ,triv* ...)))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,[FWD-Triv : triv1] ,[FWD-Triv : triv2])
+       `(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)]
       [(downcast-unsigned ,src ,safe ,nat? ,nat ,[FWD-Triv : triv])
        (or (ifconstant triv
              (lambda (nat^)
@@ -3164,6 +3318,7 @@
             [(== ,triv1 ,triv2) #t]
             [(select ,triv0 ,triv1 ,triv2) #t]
             [(bytes-ref ,triv ,nat) #t]
+            [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2) #t]
             [(bytes->field ,src ,len ,triv1 ,triv2) (<= len (field-bytes))]
             [(vector->bytes ,triv ,triv* ...) #t]
             [(downcast-unsigned ,src ,safe ,nat? ,nat ,triv) #f])))
@@ -3184,6 +3339,16 @@
        stmt*]
       [(= ,[BWD-Triv : test] (,var-name* ...) (default ,opaque-type))
        (cons `(= ,test (,var-name* ...) (default ,opaque-type)) stmt*)]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv))
+       (guard (not (hashtable-contains? ref-ht var-name)))
+       stmt*]
+      [(= ,[BWD-Triv : test] (,var-name) (jubjub-cast ,src ,opaque-type ,[BWD-Triv : triv]))
+       (cons `(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv)) stmt*)]
+      [(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...))
+       (guard (not (ormap (lambda (var-name) (hashtable-contains? ref-ht var-name)) var-name*)))
+       stmt*]
+      [(= ,[BWD-Triv : test] (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,[BWD-Triv : triv*] ...))
+       (cons `(= ,test (,var-name* ...) (secp256k1-bytes-cast ,src ,opaque-type ,triv* ...)) stmt*)]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,triv))
        (guard
          (>= len (field-bytes))
@@ -3211,6 +3376,9 @@
                  (,var-name* ...)
                  (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,triv* ...))
              stmt*)]
+      [(emit-log ,src ,nat ,len ,[BWD-Triv : test] ,[BWD-Triv : triv*] ...)
+       (with-output-language (Lflattened Statement)
+         (cons `(emit-log ,src ,nat ,len ,test ,triv* ...) stmt*))]
       [(assert ,src ,[BWD-Triv : test] ,mesg)
        (cons `(assert ,src ,test ,mesg) stmt*)]
       [else (internal-errorf 'BWD-Statement "unexpected ir ~s" ir)])
@@ -3228,6 +3396,8 @@
        `(bytes->field ,src ,len ,triv1 ,triv2)]
       [(vector->bytes ,[BWD-Triv : triv] ,[BWD-Triv : triv*] ...)
        `(vector->bytes ,triv ,triv* ...)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,[BWD-Triv : triv1] ,[BWD-Triv : triv2])
+       `(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)]
       [(downcast-unsigned ,src ,safe ,nat? ,nat ,[BWD-Triv : triv])
        `(downcast-unsigned ,src ,safe ,nat? ,nat ,triv)]
       [else (internal-errorf 'BWD-Single "unexpected ir ~s" ir)])
@@ -3307,6 +3477,7 @@
       [(= ,test (,var-name* ...) ,multiple)
        (when (eqv? test 1) (for-each defined! var-name*))
        (list ir)]
+      [(emit-log ,src ,nat ,len ,test ,triv* ...) (list ir)]
       [(assert ,src ,test ,mesg) (list ir)])
     (Single : Single (ir test var-name) -> * (stmt*)
       [(< ,bits ,triv1 ,triv2)
@@ -3653,6 +3824,11 @@
                       (loop (cdr elt-name*) (cdr type**) (cdr type*)))))]
            [else (source-errorf src "expected primitive type tcontract for contract call, received ~a"
                                 (format-primitive-type primitive-type))]))]
+      [(= ,test (,var-name) (default ,opaque-type))
+       (guard (foreign-native-type? opaque-type))
+       (verify-test program-src test)
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
       [(= ,test (,var-name* ...) (default ,opaque-type))
        (guard (string=? opaque-type "JubjubPoint"))
        (verify-test program-src test)
@@ -3665,6 +3841,53 @@
                (assert (= (length var-name*) 2))
                (set-idtype! (car var-name*) (Idtype-Base `(tfield)))
                (set-idtype! (cadr var-name*) (Idtype-Base `(tfield))))))]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,[* type]))
+       (verify-test src test)
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name
+           (Idtype-Base
+             (case opaque-type
+               [("Field")
+                (unless (nanopass-case (Lflattened Primitive-Type) type
+                          [(topaque ,opaque-type^) (string=? opaque-type^ "JubjubScalar")]
+                          [else #f])
+                  (source-errorf src "expected JubjubScalar for cast to Field"))
+                `(tfield)]
+               [("JubjubScalar")
+                (check-tfield "argument to JubjubScalar cast" type)
+                `(topaque ,opaque-type)]))))]
+      [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,[* type]))
+       (guard (string=? opaque-type "Bytes<32>"))
+       (verify-test src test)
+       (unless (nanopass-case (Lflattened Primitive-Type) type
+                 [(topaque ,opaque-type^) (foreign-field-max opaque-type^)]
+                 [else #f])
+         (source-errorf src "expected a foreign field for a Bytes<32> cast"))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name1 (Idtype-Base `(tfield 255)))
+         (set-idtype! var-name2 (Idtype-Base `(tfield ,(- (expt 256 (field-bytes)) 1)))))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,[* type1] ,[* type2]))
+       (guard (foreign-field-max opaque-type))
+       (verify-test src test)
+       (unless (and (nanopass-case (Lflattened Primitive-Type) type1
+                      [(tfield ,nat) (<= nat 255)] [else #f])
+                    (nanopass-case (Lflattened Primitive-Type) type2
+                      [(tfield ,nat) (<= nat (- (expt 256 (field-bytes)) 1))] [else #f]))
+         (source-errorf src "expected Bytes<32> limbs for a foreign field cast"))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,[* high] ,[* mid] ,[* low]))
+       (guard (string=? opaque-type "Curve25519Scalar"))
+       (verify-test src test)
+       (for-each
+         (lambda (type bits)
+           (unless (nanopass-case (Lflattened Primitive-Type) type
+                     [(tfield ,nat) (< nat (expt 2 bits))]
+                     [else #f])
+             (source-errorf src "expected Bytes<64> limbs for a Curve25519Scalar cast")))
+         (list high mid low) '(16 248 248))
+       (with-output-language (Lflattened Primitive-Type)
+         (set-idtype! var-name (Idtype-Base `(topaque ,opaque-type))))]
       [(= ,test (,var-name1 ,var-name2) (field->bytes ,src ,len ,[* type]))
        (verify-test src test)
        (check-tfield (format "argument to field->bytes at ~a" (format-source-object src)) type)
@@ -3713,6 +3936,11 @@
                 (set-idtype! var-name (Idtype-Base type)))
               var-name*
               type*))])]
+      [(emit-log ,src ,nat ,len ,test ,[Triv : triv* -> * type*] ...)
+       (verify-test src test)
+       (unless (= (length type*) (div (+ len (- (field-bytes) 1)) (field-bytes)))
+         (source-errorf src "invalid flattened event payload"))
+       (for-each (lambda (type) (check-tfield "event payload" type)) type*)]
       [(assert ,src ,test ,mesg)
        (verify-test src test)]
       [else (internal-errorf 'Statement "unhandled form ~s" ir)])
@@ -3724,6 +3952,17 @@
        (arithmetic-binop "-" mbits triv1 triv2)]
       [(* ,mbits ,triv1 ,triv2)
        (arithmetic-binop "*" mbits triv1 triv2)]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+       (let* ([type1 (Triv triv1)] [type2 (Triv triv2)])
+         (define (same-field? type)
+           (nanopass-case (Lflattened Primitive-Type) type
+             [(topaque ,opaque-type^) (string=? opaque-type opaque-type^)]
+             [else #f]))
+         (unless (and (memq arithmetic-op '(+ - *))
+                      (foreign-field-max opaque-type)
+                      (same-field? type1) (same-field? type2))
+           (source-errorf src "invalid operands for foreign field arithmetic"))
+         type1)]
       [(< ,bits ,triv1 ,triv2)
        (let* ([type1 (Triv triv1)] [type2 (Triv triv2)])
          (let ([maybe-nat1 (check-tfield (format "first argument ~s to relational operator" triv1) type1)]

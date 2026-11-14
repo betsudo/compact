@@ -237,7 +237,7 @@
 
           packages.compactc = pkgs.stdenv.mkDerivation {
             name = "compactc";
-            version = "0.31.211"; # NB: also update compiler-version in compiler/compiler-version.ss
+            version = "0.31.212"; # NB: also update compiler-version in compiler/compiler-version.ss
             src = inclusive.lib.inclusive ./. [
               ./compiler
               ./examples
@@ -246,6 +246,8 @@
               ./runtime/package.json
               ./srcMaps
               ./test-center
+              ./test-contracts/stdlib/historic_merkle_tree/deep_default
+              ./test-contracts/stdlib/merkle_tree/deep_default
               ./third_party/compiler
             ];
 

@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -228,6 +229,116 @@ def snapshot(path: Path) -> dict[str, str]:
         item.relative_to(path).as_posix(): hashlib.sha256(item.read_bytes()).hexdigest()
         for item in path.rglob("*") if item.is_file()
     }
+
+
+def check_vector_spread_disclosure(compactc: str, directory: Path) -> list[str]:
+    """Exercise the pinned upstream witness disclosure refusal on both targets."""
+    source = ROOT / ("test-contracts/keywords/disclose/vector_element_condition/"
+                     "disclose_vector_element_condition.compact")
+    expected = re.compile(
+        r"line 22 char 3:\s+potential witness-value disclosure must be declared but is not:"
+        r".*the return value of witness secret"
+        r".*the value returned from exported circuit disclose_vector_element_condition might"
+        r"\s+disclose the witness value",
+        re.DOTALL,
+    )
+    failures = []
+    for target in ("ts", "rust"):
+        output = directory / f"vector-spread-disclosure-{target}"
+        result = subprocess.run(
+            [compactc, "--target", target, "--skip-zk", str(source), str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        if result.returncode == 0 or not expected.search(result.stderr):
+            failures.append(f"vector-spread disclosure {target}: wrong refusal:\n{result.stderr}")
+        if output.exists() or any(directory.glob(f".{output.name}.compactc-stage-*")):
+            failures.append(f"vector-spread disclosure {target}: published output or staging debris")
+    return failures
+
+
+def check_contract_dependency_publication(compactc: str, directory: Path) -> list[str]:
+    """Check sibling interface metadata through the public compiler's Rust stage."""
+    directory = directory / "contract dependencies"
+    directory.mkdir()
+    fixtures = ROOT / "test-center/composable/EntryPoint"
+    dependency = directory / "Callee.compact"
+    dependency.write_bytes((fixtures / dependency.name).read_bytes())
+    caller = directory / "InterfaceOnly.compact"
+    caller.write_text(
+        "contract Callee { circuit transfer(value: Uint<64>): Uint<64>; }\n"
+        "export pure circuit unchanged(value: Uint<64>): Uint<64> { return value; }\n"
+    )
+
+    def compile_source(source: Path, output: str, *targets: str):
+        target_args = [arg for target in targets for arg in ("--target", target)]
+        return subprocess.run(
+            [compactc, *target_args, "--feature-zkir-v3", "--skip-zk", source.name, output],
+            cwd=directory, capture_output=True, text=True, check=False,
+        )
+
+    dependency_result = compile_source(dependency, "Callee", "ts")
+    metadata = directory / "Callee/compiler/contract-info.json"
+    if dependency_result.returncode or not metadata.is_file():
+        return [f"contract dependency baseline failed:\n{dependency_result.stderr}"]
+
+    failures = []
+    for output, targets, files in (
+        ("ts", ("ts",), ("index.js",)),
+        ("rust", ("rust",), ("lib.rs",)),
+        ("both", ("ts", "rust"), ("index.js", "lib.rs")),
+    ):
+        result = compile_source(caller, output, *targets)
+        if result.returncode or not all((directory / output / "contract" / name).is_file()
+                                        for name in files):
+            failures.append(f"contract dependency {output}: valid interface failed:\n{result.stderr}")
+    if failures:
+        return failures
+
+    before = snapshot(directory / "both")
+    metadata_bytes = metadata.read_bytes()
+    metadata_stat = metadata.stat()
+    relative_path = str(metadata.relative_to(directory))
+    for mode, expected in (
+        ("missing", "error opening"),
+        ("malformed", 'missing association for "contracts"'),
+        ("stale", "has been modified more recently than"),
+    ):
+        if mode == "missing":
+            metadata.unlink()
+        elif mode == "malformed":
+            metadata.write_text("{}")
+        else:
+            os.utime(metadata, (1, 1))
+        result = compile_source(caller, "both", "ts", "rust")
+        diagnostic = " ".join(result.stderr.split())
+        if result.returncode == 0 or expected not in diagnostic or relative_path not in diagnostic:
+            failures.append(f"contract dependency {mode}: wrong refusal:\n{result.stderr}")
+        metadata.write_bytes(metadata_bytes)
+        os.utime(metadata, ns=(metadata_stat.st_atime_ns, metadata_stat.st_mtime_ns))
+    caller.write_text(caller.read_text().replace("transfer(value: Uint<64>)", "transfer(value: Boolean)"))
+    mismatch = compile_source(caller, "both", "ts", "rust")
+    if mismatch.returncode == 0 or "but in the actual contract definition it is" not in " ".join(mismatch.stderr.split()):
+        failures.append(f"contract dependency mismatch: wrong refusal:\n{mismatch.stderr}")
+    if snapshot(directory / "both") != before or any(directory.glob(".both.compactc-stage-*")):
+        failures.append("contract dependency refusal changed or left debris beside complete output")
+
+    compare = directory / "AddressCompare.compact"
+    compare.write_bytes((fixtures / compare.name).read_bytes())
+    caller = directory / "Caller.compact"
+    caller.write_bytes((fixtures / caller.name).read_bytes())
+    compiled = compile_source(compare, "addresses", "ts", "rust")
+    address_output = directory / "addresses"
+    address_files = ("contract/index.js", "contract/lib.rs", "zkir/same_address.zkir")
+    if compiled.returncode or not all((address_output / path).is_file() for path in address_files):
+        failures.append(f"contract address comparison failed:\n{compiled.stderr}")
+    for target in ("ts", "rust"):
+        name = f"caller-{target}"
+        result = compile_source(caller, name, target)
+        if result.returncode == 0 or "cross-contract calls are not yet supported" not in result.stderr:
+            failures.append(f"contract invocation {target}: wrong refusal:\n{result.stderr}")
+        if (directory / name).exists() or any(directory.glob(f".{name}.compactc-stage-*")):
+            failures.append(f"contract invocation {target}: published output or staging debris")
+    return failures
 
 
 def check_output_publication(compactc: str, directory: Path) -> list[str]:
@@ -584,10 +695,12 @@ def check_proof_capabilities(compactc: str, directory: Path) -> list[str]:
 
 
 def main() -> int:
-    compactc = os.environ.get("COMPACTC")
-    if not compactc or shutil.which(compactc) is None:
-        print("Set COMPACTC to a ledger-8 compiler before running this gate", file=sys.stderr)
+    compiler = os.environ.get("COMPACTC")
+    compactc = shutil.which(compiler) if compiler else None
+    if not compactc:
+        print("Set COMPACTC to a Compact compiler before running this gate", file=sys.stderr)
         return 1
+    compactc = os.path.abspath(compactc)
     failures = []
     with tempfile.TemporaryDirectory(prefix="compact-rust-rejections-") as temp:
         directory = Path(temp)
@@ -648,11 +761,14 @@ def main() -> int:
         failures.extend(check_proof_capabilities(compactc, directory))
         failures.extend(check_context_locations(compactc, directory))
         failures.extend(check_boolean_typing(compactc, directory))
+        failures.extend(check_vector_spread_disclosure(compactc, directory))
+        failures.extend(check_contract_dependency_publication(compactc, directory))
 
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     print(f"Checked {len(CASES)} source rejections, {len(CONTEXT_CASES)} source contexts, "
-          f"output publication, proof capabilities and shared Boolean typing; {len(failures)} failed")
+          f"output publication, proof capabilities, shared typing, witness disclosure and contract dependencies; "
+          f"{len(failures)} failed")
     return 1 if failures else 0
 
 

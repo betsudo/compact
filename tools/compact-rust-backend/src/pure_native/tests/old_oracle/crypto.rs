@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 fn pure_crypto_expression(
     expr: &Expr,
@@ -50,14 +61,21 @@ fn pure_crypto_expression(
                 Type::Bytes { length: 32 },
             ))
         }
-        Expr::Keccak256 { value } => {
+        Expr::Keccak256 { value, encoding } => {
             let (value, value_type) = expression_with_calls(value, parameters, circuits)?;
             native_representation::check_tuple_traits(
-                native_representation::Operation::Keccak256,
+                native_representation::Operation::Keccak256(*encoding),
                 &value_type,
             )?;
             Ok((
-                syn::parse_quote!(runtime::keccak256(#value)),
+                match encoding {
+                    crate::ir::KeccakEncoding::NormalizedAtoms => {
+                        syn::parse_quote!(runtime::keccak256(#value))
+                    }
+                    crate::ir::KeccakEncoding::Aligned => {
+                        syn::parse_quote!(runtime::keccak256_aligned(#value)?)
+                    }
+                },
                 Type::Bytes { length: 32 },
             ))
         }

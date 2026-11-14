@@ -116,7 +116,7 @@ node runtime-rs/tests/fixtures/capture-effect-plan-prototype.mjs \
 ```
 
 The command above records the historical Ledger 8 capture. For the
-current Ledger 9 Rust acceptance tests, compile with Compact 0.31.211,
+current Ledger 9 Rust acceptance tests, compile with Compact 0.31.212,
 resolve the generated module against Compact Runtime 0.17.0, and use
 the same capture command with output
 `runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json`.

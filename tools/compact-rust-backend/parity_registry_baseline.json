@@ -499,8 +499,8 @@
     "source": "examples/rust_backend/effect_plan_composite.compact",
     "module_path": [],
     "kind": "circuit",
-    "name": "emit",
-    "signature": "circuit emit(coin: ShieldedCoinInfo, recipient: Either<ZswapCoinPublicKey, ContractAddress>): []",
+    "name": "register_output",
+    "signature": "circuit register_output(coin: ShieldedCoinInfo, recipient: Either<ZswapCoinPublicKey, ContractAddress>): []",
     "visibility": "internal"
   },
   {

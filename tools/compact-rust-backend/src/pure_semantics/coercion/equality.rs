@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Exact structural equality on borrowed Types with charged iterative work.
 //! This compares declarations, rather than checking whether they are valid.
@@ -39,7 +50,17 @@ pub(super) fn equivalent(
                 (Type::Unit, Type::Unit)
                 | (Type::Boolean, Type::Boolean)
                 | (Type::Field, Type::Field)
+                | (Type::JubjubScalar, Type::JubjubScalar)
                 | (Type::JubjubPoint, Type::JubjubPoint)
+                | (Type::Secp256k1Base, Type::Secp256k1Base)
+                | (Type::Secp256k1Scalar, Type::Secp256k1Scalar)
+                | (Type::Secp256r1Base, Type::Secp256r1Base)
+                | (Type::Curve25519Base, Type::Curve25519Base)
+                | (Type::Secp256r1Scalar, Type::Secp256r1Scalar)
+                | (Type::Curve25519Scalar, Type::Curve25519Scalar)
+                | (Type::Secp256k1Point, Type::Secp256k1Point)
+                | (Type::Secp256r1Point, Type::Secp256r1Point)
+                | (Type::Curve25519Point, Type::Curve25519Point)
                 | (Type::OpaqueString, Type::OpaqueString)
                 | (Type::OpaqueBytes, Type::OpaqueBytes) => {}
                 (Type::Bytes { length: left }, Type::Bytes { length: right }) => {
@@ -122,6 +143,23 @@ pub(super) fn equivalent(
                     )?;
                     push(work, &mut pending, Comparison::Type(left_key, right_key))?;
                 }
+                (
+                    Type::LedgerMerkle {
+                        historic: left_historic,
+                        depth: left_depth,
+                        ty: left,
+                    },
+                    Type::LedgerMerkle {
+                        historic: right_historic,
+                        depth: right_depth,
+                        ty: right,
+                    },
+                ) => {
+                    if left_historic != right_historic || left_depth != right_depth {
+                        return Ok(false);
+                    }
+                    push(work, &mut pending, Comparison::Type(left, right))?;
+                }
                 // Exhaustiveness belongs to the exhaustive Type match below;
                 // unequal variant pairs are structurally different.
                 (left, _) => match left {
@@ -129,6 +167,16 @@ pub(super) fn equivalent(
                     | Type::Boolean
                     | Type::Field
                     | Type::JubjubPoint
+                    | Type::Secp256k1Base
+                    | Type::Secp256k1Scalar
+                    | Type::Secp256r1Base
+                    | Type::Curve25519Base
+                    | Type::JubjubScalar
+                    | Type::Secp256r1Scalar
+                    | Type::Curve25519Scalar
+                    | Type::Secp256k1Point
+                    | Type::Secp256r1Point
+                    | Type::Curve25519Point
                     | Type::OpaqueString
                     | Type::OpaqueBytes
                     | Type::Bytes { .. }
@@ -137,7 +185,8 @@ pub(super) fn equivalent(
                     | Type::Unsigned { .. }
                     | Type::Tuple { .. }
                     | Type::Vector { .. }
-                    | Type::LedgerMap { .. } => return Ok(false),
+                    | Type::LedgerMap { .. }
+                    | Type::LedgerMerkle { .. } => return Ok(false),
                 },
             },
             Comparison::Tuple(left, right) => {

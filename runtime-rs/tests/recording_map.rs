@@ -13,18 +13,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use midnight_compact_runtime::Field;
 use midnight_compact_runtime::context::{ConstructorContext, ConstructorResult};
 use midnight_compact_runtime::fab::AlignedValue;
 use midnight_compact_runtime::ledger::{
     ChargedState, ContractAddress, DefaultDB, StateValue, constructor_map,
 };
 use midnight_compact_runtime::recording::RecordingFrame;
-use midnight_compact_runtime::slots::MapSlot;
+use midnight_compact_runtime::slots::{MapNode, MapSlot};
+use midnight_compact_runtime::{BoundedUint, Field, JubjubPoint, ec_mul_generator};
 use midnight_ledger_v9::construct::{PreTranscript, partition_transcripts};
 use midnight_ledger_v9::structure::INITIAL_PARAMETERS;
 use midnight_onchain_vm::cost_model::INITIAL_COST_MODEL;
-use midnight_onchain_vm::ops::Op;
+use midnight_onchain_vm::ops::{Key, Op};
 use midnight_serialize::tagged_serialize;
 
 const TABLE: MapSlot<bool, Field> = MapSlot::new(&[0]);
@@ -141,6 +141,89 @@ fn tampered_map_lookup_read_is_rejected() {
         cached: false,
         result: AlignedValue::from(Field::from(10_u64)),
     };
+    assert!(
+        recorded
+            .public
+            .initial()
+            .query(&program, None, &INITIAL_COST_MODEL)
+            .is_err()
+    );
+}
+
+#[test]
+fn keyed_child_map_uses_typed_paths_in_native_and_recorded_queries() {
+    type InnerKey = BoundedUint<255>;
+    const NESTED: MapSlot<bool, MapNode<InnerKey, JubjubPoint>> = MapSlot::new(&[0]);
+    let inner = InnerKey::new(7).unwrap();
+    let absent = InnerKey::new(8).unwrap();
+    let point = ec_mul_generator(Field::from(42_u64)).unwrap();
+
+    assert!(NESTED.lookup_child(context(), true, inner).is_err());
+    assert!(NESTED.insert_child(context(), true, inner, point).is_err());
+    let init = NESTED.init_child(context(), true).unwrap();
+    assert!(NESTED.lookup_child(init.context, true, inner).is_err());
+    let init = NESTED.init_child(context(), true).unwrap();
+    let insert = NESTED
+        .insert_child(init.context, true, inner, point)
+        .unwrap();
+    let read = NESTED.lookup_child(insert.context, true, inner).unwrap();
+    assert_eq!(read.result, point);
+    assert!(NESTED.lookup_child(read.context, true, absent).is_err());
+
+    let init = NESTED.init_child(context(), true).unwrap();
+    let insert = NESTED
+        .insert_child(init.context, true, inner, point)
+        .unwrap();
+    let read = NESTED.lookup_child(insert.context, true, inner).unwrap();
+    let frame = NESTED
+        .record_init_child(RecordingFrame::new(context()), true)
+        .unwrap();
+    let frame = NESTED
+        .record_insert_child(frame, true, inner, point)
+        .unwrap();
+    let (frame, result) = NESTED.record_lookup_child(frame, true, inner).unwrap();
+    let recorded = frame.finish(result);
+    assert_eq!(recorded.execution.result, read.result);
+    assert_eq!(
+        recorded.execution.gas_cost,
+        init.gas_cost + insert.gas_cost + read.gas_cost
+    );
+    let original = recorded.public.verify_ops();
+    let replay = recorded
+        .public
+        .initial()
+        .query(original, None, &INITIAL_COST_MODEL)
+        .unwrap();
+    assert_eq!(
+        replay.context.state.get_ref(),
+        read.context.query.state.get_ref()
+    );
+    assert_eq!(replay.context.effects, read.context.query.effects);
+
+    let mut program = original.to_vec();
+    let outer_index = program.len() - 3;
+    let Op::Idx { path, .. } = &mut program[outer_index] else {
+        panic!("expected the root/outer key query path");
+    };
+    assert_eq!(path.len(), 2);
+    let missing_outer = AlignedValue::from(false).try_into().unwrap();
+    *path = vec![Key::Value(0u8.into()), Key::Value(missing_outer)].into();
+    assert!(
+        recorded
+            .public
+            .initial()
+            .query(&program, None, &INITIAL_COST_MODEL)
+            .is_err()
+    );
+
+    let mut program = original.to_vec();
+    let inner_index = program.len() - 2;
+    let Op::Idx { path, .. } = &mut program[inner_index] else {
+        panic!("expected the inner key query path");
+    };
+    assert_eq!(path.len(), 1);
+    let missing_inner = AlignedValue::from(absent).try_into().unwrap();
+    *path = vec![Key::Value(missing_inner)].into();
     assert!(
         recorded
             .public
