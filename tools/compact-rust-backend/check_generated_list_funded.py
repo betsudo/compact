@@ -31,6 +31,7 @@ from collection_gate_binding import (
     compiler_recipe, generated_manifest as bind_generated_manifest,
     verify_standalone_proof,
 )
+from check_upstream_ledger9_bytes_map_funded import validate_generated_contract_files
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -159,7 +160,9 @@ def main() -> None:
         ('wrong-key/first_item.verifier', 'wrong_same_k_verifier_sha256'),
     ):
         require(sha(gate / relative) == proof[key], f'proof gate artifact changed: {relative}')
-    generated_manifest = gate / 'fresh-dual/contract/Cargo.toml'
+    generated_contract = gate / 'fresh-dual/contract'
+    validate_generated_contract_files(generated_contract)
+    generated_manifest = generated_contract / 'Cargo.toml'
     canonical_manifest, runtime_checkout = bind_generated_manifest(
         generated_manifest, expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA256,
         source_head=proof['head'])
