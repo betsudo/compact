@@ -136,6 +136,86 @@ test('a Vector logical length does not enlarge the unrelated implementation budg
   });
 });
 
+test('a large Vector can conform to a matching explicit Tuple without lending its budget to another argument', () => {
+  const length = 12_000;
+  const expected: SignatureType = { tag: 'Vector', length, type: field };
+  const expanded: SignatureType = { tag: 'Tuple', types: Array<SignatureType>(length).fill(field) };
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [expected, field], resultType: field } };
+  const matching: CircuitSignatures = {
+    use: { pure: false, provable: true, argumentTypes: [expanded, field], resultType: field },
+  };
+  expect(checkConformance(declared, matching)).toEqual({ outcome: 'Conformant' });
+  const changed = [...expanded.types];
+  changed[length - 1] = { tag: 'Boolean' };
+  expect(
+    checkConformance(declared, {
+      use: { pure: false, provable: true, argumentTypes: [{ tag: 'Tuple', types: changed }, field], resultType: field },
+    }),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+
+  const unrelated = malformed({
+    tag: 'Contract',
+    name: 'Nested',
+    circuits: { c: { argumentTypes: Array<SignatureType>(20_000).fill(field), resultType: field } },
+  });
+  expect(
+    checkConformance(declared, {
+      use: { pure: false, provable: true, argumentTypes: [expanded, unrelated], resultType: field },
+    }),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 1 });
+  expect(
+    checkConformance(declared, {
+      use: { pure: false, provable: true, argumentTypes: [unrelated, field], resultType: field },
+    }),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
+  expect(
+    checkConformance(declared, {
+      use: {
+        pure: false,
+        provable: true,
+        argumentTypes: [malformed({ tag: 'Tuple', types: [...expanded.types.slice(0, -1), null] }), field],
+        resultType: field,
+      },
+    }),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
+  const cycle: { tag: string; name: string; type?: unknown } = { tag: 'Alias', name: 'Loop' };
+  cycle.type = cycle;
+  expect(
+    checkConformance(declared, {
+      use: {
+        pure: false,
+        provable: true,
+        argumentTypes: [{ tag: 'Tuple', types: [...expanded.types.slice(0, -1), malformed(cycle)] }, field],
+        resultType: field,
+      },
+    }),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', unreadableTag: 'Alias', argumentIndex: 0 });
+});
+
+test('shared explicit Tuples cannot turn a small Vector declaration into exponential validation work', () => {
+  let declaredType: SignatureType = field;
+  let implementedType: SignatureType = field;
+  for (let i = 0; i < 25; i += 1) {
+    declaredType = { tag: 'Vector', length: 2, type: declaredType };
+    implementedType = { tag: 'Tuple', types: [implementedType, implementedType] };
+  }
+  expect(
+    checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
+});
+
+test('a large expanded result Vector conforms under its own validation allowance', () => {
+  const length = 12_000;
+  const expected: SignatureType = { tag: 'Vector', length, type: field };
+  const expanded: SignatureType = { tag: 'Tuple', types: Array<SignatureType>(length).fill(field) };
+  expect(
+    checkConformance(
+      { use: { argumentTypes: [], resultType: expected } },
+      { use: { pure: false, provable: true, argumentTypes: [], resultType: expanded } },
+    ),
+  ).toEqual({ outcome: 'Conformant' });
+});
+
 test('nested contract arguments stop at the validation budget', () => {
   const argumentTypes = Array<SignatureType>(20_000).fill(field);
   const nested = malformed({ tag: 'Contract', name: 'Nested', circuits: { c: { argumentTypes, resultType: field } } });

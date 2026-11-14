@@ -148,6 +148,12 @@ const declarationCircuitCost = (circuit: InterfaceCircuitDeclaration, active: Se
     declarationTypeCost(circuit.resultType, active, depth + 1),
   );
 
+// The declaration is trusted compiler output. Each argument gets its own encoded-shape allowance,
+// so an unrelated argument or circuit cannot borrow a large declaration's validation budget.
+const validationBudget = (declared: SignatureType): ValidationBudget => ({
+  remaining: Math.min(Number.MAX_SAFE_INTEGER, MAX_SIGNATURE_NODES + declarationTypeCost(declared, new Set<object>())),
+});
+
 /** `value` as a readable record, or `undefined` if it is not one. */
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
@@ -437,6 +443,36 @@ export function signatureTypesEqual(a: SignatureType, b: SignatureType): boolean
   }
 }
 
+// A Vector<N,T> can be implemented by an explicit N-tuple. Validate each element against T with its
+// own allowance. Reuse the outcome for shared objects, so a short tuple full of repeated references
+// cannot force repeated walks of the same large or cyclic implementation subtree.
+const checkExpandedVector = (
+  declared: SignatureType,
+  implemented: SignatureType,
+): { readonly unreadableTag?: string; readonly equal: boolean } | undefined => {
+  if (
+    declared.tag !== 'Vector' ||
+    implemented?.tag !== 'Tuple' ||
+    !Array.isArray(implemented.types) ||
+    implemented.types.length !== declared.length
+  )
+    return undefined;
+  const seen = new Map<object, { readonly unreadableTag?: string; readonly equal: boolean }>();
+  let equal = true;
+  for (const element of implemented.types) {
+    const record = asRecord(element);
+    let result = record === undefined ? undefined : seen.get(record);
+    if (result === undefined) {
+      const unreadableTag = firstUnreadableTag(element, new Set<object>(), 1, validationBudget(declared.type));
+      result = { unreadableTag, equal: unreadableTag === undefined && signatureTypesEqual(declared.type, element) };
+      if (record !== undefined) seen.set(record, result);
+    }
+    if (result.unreadableTag !== undefined) return { unreadableTag: result.unreadableTag, equal: false };
+    if (!result.equal) equal = false;
+  }
+  return { equal };
+};
+
 /**
  * Check a resolved module against the contract type its caller declared, returning the first thing
  * that went wrong, or `Conformant`.
@@ -454,9 +490,6 @@ export function signatureTypesEqual(a: SignatureType, b: SignatureType): boolean
 export function checkConformance(declaration: InterfaceDescriptor, implementation: CircuitSignatures): ConformanceResult {
   for (const circuitId of Object.keys(declaration)) {
     const declared = declaration[circuitId];
-    const budget: ValidationBudget = {
-      remaining: Math.min(Number.MAX_SAFE_INTEGER, MAX_SIGNATURE_NODES + declarationCircuitCost(declared, new Set<object>())),
-    };
     // Own-property, not `in` or a bare index: `constructor` and `toString` are legal circuit names,
     // and `Object.prototype`'s members would otherwise read as implementations.
     if (!Object.prototype.hasOwnProperty.call(implementation, circuitId)) {
@@ -475,7 +508,20 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
     }
     for (let i = 0; i < declared.argumentTypes.length; i += 1) {
       // Per position, so the report can name the argument rather than just the circuit.
-      const unreadableTag = firstUnreadableTag(implemented.argumentTypes[i], new Set<object>(), 0, budget);
+      const expanded = checkExpandedVector(declared.argumentTypes[i], implemented.argumentTypes[i]);
+      if (expanded !== undefined) {
+        if (expanded.unreadableTag !== undefined) {
+          return { outcome: 'Unreadable', circuitId, unreadableTag: expanded.unreadableTag, argumentIndex: i };
+        }
+        if (!expanded.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
+        continue;
+      }
+      const unreadableTag = firstUnreadableTag(
+        implemented.argumentTypes[i],
+        new Set<object>(),
+        0,
+        validationBudget(declared.argumentTypes[i]),
+      );
       if (unreadableTag !== undefined) {
         return { outcome: 'Unreadable', circuitId, unreadableTag, argumentIndex: i };
       }
@@ -483,7 +529,14 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
         return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
       }
     }
-    const unreadableTag = firstUnreadableTag(implemented.resultType, new Set<object>(), 0, budget);
+    const expandedResult = checkExpandedVector(declared.resultType, implemented.resultType);
+    if (expandedResult !== undefined) {
+      if (expandedResult.unreadableTag !== undefined)
+        return { outcome: 'Unreadable', circuitId, unreadableTag: expandedResult.unreadableTag };
+      if (!expandedResult.equal) return { outcome: 'Violation', circuitId, check: 'ResultType' };
+      continue;
+    }
+    const unreadableTag = firstUnreadableTag(implemented.resultType, new Set<object>(), 0, validationBudget(declared.resultType));
     if (unreadableTag !== undefined) {
       return { outcome: 'Unreadable', circuitId, unreadableTag };
     }
