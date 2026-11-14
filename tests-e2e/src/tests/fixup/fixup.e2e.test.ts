@@ -22,6 +22,16 @@ import fs from 'fs';
 const contractsDir = buildPathTo('/camelCase/old');
 const oracleDir = buildPathTo('/camelCase/new');
 const inputContracts = fs.readdirSync(contractsDir);
+const overloadedCurveWarnings = [
+    'Warning: standard.compact line 32 char 19:',
+    '  not renaming reference of ec_add to ecAdd because ecAdd has other bindings in scope',
+    'Warning: standard.compact line 33 char 19:',
+    '  not renaming reference of ec_mul to ecMul because ecMul has other bindings in scope',
+    'Warning: standard.compact line 34 char 19:',
+    '  not renaming reference of ec_mul_generator to ecMulGenerator because ecMulGenerator has other',
+    '  bindings in scope',
+    '',
+].join('\n');
 
 describe('[E2E] Example contract tests for fixup tool', () => {
     inputContracts.forEach((fileName) => {
@@ -35,7 +45,7 @@ describe('[E2E] Example contract tests for fixup tool', () => {
 
             const result: Result = await fixup([filePath, fixedContract]);
 
-            expectCommandResult(result).toBeSuccess('', '');
+            expectCommandResult(result).toBeSuccess('', fileName === 'standard.compact' ? overloadedCurveWarnings : '');
             expect(getFileContent(fixedContract)).toEqual(oracleContent);
         });
     });
