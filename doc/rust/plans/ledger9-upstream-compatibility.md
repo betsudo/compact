@@ -441,23 +441,24 @@ rules. Preserve upstream vector exclusions with reasons and test malformed
 encodings at the decoder boundary. Use SHA-512 and canonical scalar
 conversion for Ed25519.
 
-The local 0.18.0 runtime now exports the pinned `signatureTypesEqual` and
+The local 0.18.0 runtime exports the pinned `signatureTypesEqual` and
 `checkConformance` helpers. The original 58 upstream conformance tests remain
 unchanged and cover all emitted curve tags, nested contract signatures,
 nominal names, exact unsigned bounds, proof availability, prototype-shaped
-circuit names and unreadable external descriptors. Nine local guard cases
-add strict proof flags, known-tag payload checks including sparse enums,
-cycle and depth refusal, bounded traversal of shared acyclic types and nested
-contract argument lists and names, inherited-name handling, and constant-time
-equal vector shapes. All 296
-runtime tests pass on macOS arm64. The fresh 0.18.0 generated Counter
-descriptor conforms to a matching declaration and refuses a mismatched result
-type. This is a standalone descriptor check; generated call sites
-do not invoke it yet, and the held EntryPoint and funded two-contract lanes
-remain separate qualifications. Native Linux integration is still required.
-The per-entry validation budget cannot cap memory already consumed to construct
-or enumerate an arbitrary JavaScript module object; module loading and resource
-limits remain a separate boundary.
+circuit names and unreadable external descriptors. Forty-two local guard tests
+cover strict proof flags, malformed payloads, cycles and depth, large
+Vector/Tuple and Struct shapes, shared DAGs, unreadable precedence, and
+accessor/Proxy refusal. Snapshots read only declared circuits and bound each
+detached graph to 100,000 node/property entries and an 8 MiB string, key and
+buffer budget.
+All 330 runtime tests pass locally on macOS arm64. The fresh 0.18.0 generated
+Counter descriptor conforms to a matching declaration and refuses a mismatched
+result type. This is a standalone descriptor check; generated call sites do not
+invoke it yet, and the held EntryPoint and funded two-contract lanes remain
+separate qualifications. Native Linux integration is still required. Snapshot
+limits cannot cap memory already consumed to construct or enumerate an arbitrary
+JavaScript module object; module loading and resource limits remain a separate
+boundary.
 
 Start cross-contract calls with the pinned EntryPoint caller and callee
 fixtures and one provable fixed callee. Bind the address, compile-time
