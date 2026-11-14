@@ -107,7 +107,6 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             mock.patch.object(gate, 'original_cases', return_value={
                 'k1': (self.body, self.callback),
             }),
-            mock.patch.object(gate, 'PREFLIGHT_GATE_SHA', gate.sha(producer)),
             mock.patch.object(gate, 'PREFLIGHT_CAPTURE_SHA', gate.sha(capture_source)),
             mock.patch.object(gate, 'AGGREGATE_CONTRACT_EXTRA_SHA', {'k1': extra}),
             mock.patch.object(gate, 'AGGREGATE_ORIGINS_CANONICAL_SHA',
@@ -161,6 +160,12 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
         self.preflight_path.write_text('{}')
         with self.assertRaisesRegex(RuntimeError, 'independently supplied SHA-256 pin'):
             self.validate(preflight_sha=pin)
+
+    def test_refuses_changed_preflight_producer_source(self) -> None:
+        producer = self.root / 'tools/compact-rust-backend/check_upstream_ledger9_mixed_original_preflight.py'
+        self.write(producer, b'changed preflight producer\n')
+        with self.assertRaisesRegex(RuntimeError, 'mixed aggregate preflight producer'):
+            self.validate()
 
     def test_refuses_changed_original_callback(self) -> None:
         self.write(self.preflight / 'original/k1.callback.js', b'changed callback\n')
