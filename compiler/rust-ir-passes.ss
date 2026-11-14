@@ -429,6 +429,100 @@
               [else (void)]))
           tuple-arg*))
 
+      (define (literal-has-spread? tuple-arg*)
+        (exists (lambda (arg)
+                  (nanopass-case (Lnodisclose Tuple-Argument) arg
+                    [(spread ,src ,nat ,expr) #t]
+                    [else #f]))
+                tuple-arg*))
+
+      ;; The source compiler has already checked every spread's width and
+      ;; element type. Bind each argument in source order, then project each
+      ;; spread exactly once into the flat literal expected by Rust IR. This
+      ;; also evaluates a zero-width spread, which can carry a witness call.
+      (define (expanded-spread-literal src tuple-arg* expected-type)
+        (define (split-types type* count)
+          (let loop ([type* type*] [count count] [front '()])
+            (if (= count 0)
+                (values (reverse front) type*)
+                (if (null? type*)
+                    (source-errorf src "Rust spread literal length does not match its type")
+                    (loop (cdr type*) (- count 1) (cons (car type*) front))))))
+        (let-values ([(target-type* vector-element)
+                     (nanopass-case (Lnodisclose Type) expected-type
+                       [(tvector ,src^ ,len ,type) (values (make-list len type) type)]
+                       [(ttuple ,src^ ,type* ...) (values type* #f)]
+                       [else (source-errorf src "Rust spread literal needs an aggregate type")])])
+          (let loop ([arg* tuple-arg*] [type* target-type*]
+                     [rbindings '()] [relements '()])
+            (if (null? arg*)
+                (begin
+                  (unless (null? type*)
+                    (source-errorf src "Rust spread literal length does not match its type"))
+                  (let ([body (with-output-language (Lnodisclose Expression)
+                                `(tuple ,src ,(reverse relements) ...))])
+                    (fold-right
+                      (lambda (binding expr^)
+                        (let ([var-name (car binding)] [type (cadr binding)]
+                              [expr (caddr binding)])
+                          (with-output-language (Lnodisclose Expression)
+                            `(let* ,src (((,var-name ,type) ,expr)) ,expr^))))
+                      body (reverse rbindings))))
+                (nanopass-case (Lnodisclose Tuple-Argument) (car arg*)
+                  [(single ,src1 ,expr)
+                   (let-values ([(slot rest) (split-types type* 1)])
+                     (let ([var-name (make-source-id src1 'spread_single)])
+                       (loop (cdr arg*) rest
+                             (cons (list var-name (car slot) expr) rbindings)
+                             (cons (with-output-language (Lnodisclose Tuple-Argument)
+                                     `(single ,src1 (var-ref ,src1 ,var-name)))
+                                   relements))))]
+                  [(spread ,src1 ,nat ,expr)
+                   (let-values ([(slots rest) (split-types type* nat)])
+                     (let* ([var-name (make-source-id src1 'spread_vector)]
+                            [type^ vector-element]
+                            [type^* slots]
+                            [type (if vector-element
+                                      (with-output-language (Lnodisclose Type)
+                                        `(tvector ,src1 ,nat ,type^))
+                                      (with-output-language (Lnodisclose Type)
+                                        `(ttuple ,src1 ,type^* ...)))]
+                            [rprojections
+                              (map (lambda (kindex)
+                                     (with-output-language (Lnodisclose Tuple-Argument)
+                                       `(single ,src1
+                                          (tuple-ref ,src1 (var-ref ,src1 ,var-name) ,kindex))))
+                                   (iota nat))])
+                       (loop (cdr arg*) rest
+                             (cons (list var-name type expr) rbindings)
+                             (append (reverse rprojections) relements))))])))))
+
+      ;; The pinned spread/slice fixture uses fixed slice positions. Keep the
+      ;; existing refusal for dynamic indices until their runtime bound check
+      ;; has a dedicated Rust IR operation.
+      (define (expanded-vector-slice src type expr start len)
+          (nanopass-case (Lnodisclose Type) type
+            [(tvector ,src^ ,len^ ,type^)
+             (unless (<= (+ start len) len^)
+               (source-errorf src "Rust Vector slice index and length exceed input length"))
+             (let* ([var-name (make-source-id src 'vector_slice_value)]
+                    [kindex* (map (lambda (offset) (+ start offset)) (iota len))]
+                    [tuple-arg*
+                      (map (lambda (kindex)
+                             (with-output-language (Lnodisclose Tuple-Argument)
+                               `(single ,src (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))
+                           kindex*)])
+               (with-output-language (Lnodisclose Expression)
+                 `(let* ,src (((,var-name ,type) ,expr))
+                    (tuple ,src ,tuple-arg* ...))))]
+            [else (source-errorf src "Rust Vector slice needs a Vector input")]))
+
+      (define (expanded-constant-vector-slice src type expr index len)
+        (let ([start (maybe-nonnegative-integer-literal index src)])
+          (unless start
+            (source-errorf src "Rust backend requires a constant Vector slice index"))
+          (expanded-vector-slice src type expr start len)))
+
       (define (maybe-nonnegative-integer-literal expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (maybe-nonnegative-integer-literal expr src)]
@@ -1581,6 +1675,24 @@
                  (expression-ir expr owner-src)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (let-expression-ir local* expr* expr expected-type src source-type)]
+          [(tuple-slice ,src ,type ,expr ,kindex ,len)
+           (typed-expression-ir
+             (expanded-vector-slice src type expr kindex len)
+             expected-type src source-type)]
+          [(vector-slice ,src ,type ,expr ,index ,len)
+           (typed-expression-ir
+             (expanded-constant-vector-slice src type expr index len)
+             expected-type src source-type)]
+          [(vector ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src source-type)]
+          [(tuple ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src source-type)]
           [(tuple ,src ,tuple-arg* ...)
            (let ([source-type* (if source-type
                                    (literal-source-types source-type (length tuple-arg*) src)
@@ -2818,6 +2930,24 @@
              src mbits expr1 expr2 owner-src witness-ids)]
           [(var-ref ,src ,var-name)
            (typed-expression-ir value-expr expected-type owner-src)]
+          [(tuple-slice ,src ,type ,expr ,kindex ,len)
+           (stateful-typed-expression-ir
+             (expanded-vector-slice src type expr kindex len)
+             expected-type src witness-ids)]
+          [(vector-slice ,src ,type ,expr ,index ,len)
+           (stateful-typed-expression-ir
+             (expanded-constant-vector-slice src type expr index len)
+             expected-type src witness-ids)]
+          [(vector ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (stateful-typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src witness-ids)]
+          [(tuple ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (stateful-typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src witness-ids)]
           [(tuple ,src ,tuple-arg* ...)
            (nanopass-case (Lnodisclose Type) expected-type
              [(tvector ,src^ ,len ,type)

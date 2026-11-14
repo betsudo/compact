@@ -44,19 +44,17 @@ CASES = {
         "Rust backend does not yet support this opaque type",
         None,
     ),
-    "vector-spread": (
-        'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
-        '  return [...v];\n'
-        '}\n',
-        "Rust backend does not yet support vector spreads",
-        (2, 10),
-    ),
     "tuple-spread": (
         'export pure circuit pair(v: [Field, Field]): [Field, Field] {\n'
         '  return [...v];\n'
         '}\n',
         "Rust backend does not yet support tuple spreads",
         (2, 10),
+    ),
+    "scalar-spread": (
+        'export pure circuit bad(): [] { return [...true]; }\n',
+        "expected tuple/vector spread expression to have a tuple, Vector, or Bytes type but received",
+        None,
     ),
 }
 
@@ -777,13 +775,13 @@ def main() -> int:
             before = snapshot(existing_output)
             rejected = subprocess.run(
                 [compactc, "--target", "rust", "--skip-zk",
-                 str(directory / "vector-spread.compact"), str(existing_output)],
+                 str(directory / "scalar-spread.compact"), str(existing_output)],
                 capture_output=True, text=True, env=os.environ.copy(), check=False,
             )
             if rejected.returncode == 0 or snapshot(existing_output) != before or any(
                 directory.glob(f".{existing_output.name}.compactc-stage-*")
             ):
-                failures.append("spread rejection changed a complete existing output")
+                failures.append("invalid spread changed a complete existing output")
         failures.extend(check_output_publication(compactc, directory))
         failures.extend(check_output_serialization(compactc, directory))
         failures.extend(check_proof_capabilities(compactc, directory))
