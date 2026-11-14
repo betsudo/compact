@@ -72,7 +72,7 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             'runner_sha256': gate.sha(baseline_gate),
             'typescript_runtime_version': '0.18.0',
             'typescript_runtime_nix_store': str(self.runtime_store),
-            'typescript_runtime_package_sha256': gate.sha(self.root / 'runtime/package.json'),
+            'typescript_runtime_package_sha256': gate.sha(runtime / 'package.json'),
             'typescript_runtime_dist_files': {'index.js': gate.sha(runtime / 'dist/index.js')},
             'typescript_runtime_recipe_log_sha256': gate.sha(recipe_log),
             'result': 'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed',

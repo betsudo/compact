@@ -158,7 +158,7 @@ def validate_aggregate_receipts(*, proof_path: Path, preflight_path: Path,
         runtime_store=Path(prior['runtime_store']), root=ROOT)
     require(prior.get('runtime_baseline_sha256') == runtime_baseline_sha and
             prior.get('runtime_manifest_sha256') ==
-                baseline['nix_runtime_package_sha256'] and
+                baseline['typescript_runtime_package_sha256'] and
             prior.get('runtime_dist_files') ==
                 baseline['typescript_runtime_dist_files'],
             'mixed aggregate preflight runtime differs from current-head baseline')

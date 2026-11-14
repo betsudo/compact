@@ -102,7 +102,7 @@ def validate_runtime_baseline(path: Path, expected_sha: str, *, head: str,
             source_package['dependencies'] == built_package['dependencies'] and
             baseline.get('typescript_runtime_nix_store') == str(store) and
             baseline.get('typescript_runtime_package_sha256') ==
-                sha(root / 'runtime/package.json') and
+                sha(runtime / 'package.json') and
             baseline.get('typescript_runtime_dist_files') == dist_hashes(runtime / 'dist') and
             bool(baseline.get('typescript_runtime_dist_files')) and
             baseline.get('typescript_runtime_recipe_log_sha256') ==
@@ -110,7 +110,7 @@ def validate_runtime_baseline(path: Path, expected_sha: str, *, head: str,
             baseline.get('result') ==
                 'Four original Bytes map cases passed generated TypeScript and ordinary/recorded Rust; checked Field-to-Uint and large-index regressions passed',
             'current-head Bytes map runtime baseline source, compiler, or artifacts changed')
-    return {**baseline, 'nix_runtime_package_sha256': sha(runtime / 'package.json')}
+    return baseline
 
 
 def original_cases() -> dict[str, tuple[bytes, bytes]]:
