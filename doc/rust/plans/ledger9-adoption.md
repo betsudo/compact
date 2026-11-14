@@ -77,7 +77,7 @@ The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the offic
 
 ## TypeScript package pairing
 
-The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. Draft PR #735 advances the local runtime source to `0.18.0`; the historical captures and exact version guards remain bound to `0.17.0`, and a separate regeneration path for the new pair remains open. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
+The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. Grouped draft PR #738 carries the local runtime source at `0.18.0`; the historical captures and exact version guards remain bound to `0.17.0`, and a separate regeneration path for the new pair remains open. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
 
 The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
 path. Run it with the current `compactc`, built 0.18.0 runtime directory and a

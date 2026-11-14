@@ -81,6 +81,22 @@ test('large valid interfaces are checked per declared circuit', () => {
   }
 });
 
+test('a matching 3400-field Struct fits its trusted snapshot allowance', () => {
+  const makeStruct = (count: number): SignatureType => ({
+    tag: 'Struct',
+    name: 'Large',
+    elements: Array.from({ length: count }, (_, i) => ({ name: `f${i}`, type: { tag: 'Field' } })),
+  });
+  const declaredType = makeStruct(3_400);
+  const declared: InterfaceDescriptor = { use: { argumentTypes: [declaredType], resultType: field } };
+  expect(checkConformance(declared, implementation(makeStruct(3_400)))).toEqual({ outcome: 'Conformant' });
+  expect(checkConformance(declared, implementation(makeStruct(8_000)))).toMatchObject({
+    outcome: 'Unreadable',
+    circuitId: 'use',
+    argumentIndex: 0,
+  });
+});
+
 test('a large caller declaration permits matching work but still refuses tampering and cycles', () => {
   const names = Array.from({ length: 12_000 }, (_, i) => `Variant${i}`);
   const largeEnum: SignatureType = { tag: 'Enum', name: 'Large', elements: names };
@@ -484,6 +500,30 @@ test('provable false short-circuits a pure accessor on the snapshot refusal path
   } as unknown as CircuitSignatures;
   expect(checkConformance(declaration, implemented)).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'Provability' });
   expect(reads).toEqual(0);
+});
+
+test('missing provability flags remain violations when a later circuit exceeds the snapshot budget', () => {
+  const declared: InterfaceDescriptor = {
+    first: { argumentTypes: [field], resultType: field },
+    later: { argumentTypes: [field], resultType: field },
+  };
+  const oversizedLater = {
+    pure: false,
+    provable: true,
+    argumentTypes: [field],
+    resultType: field,
+    extra: 'x'.repeat(9 * 1024 * 1024),
+  };
+  for (const first of [
+    { pure: false, argumentTypes: [field], resultType: field },
+    { provable: true, argumentTypes: [field], resultType: field },
+  ]) {
+    expect(checkConformance(declared, { first, later: oversizedLater } as unknown as CircuitSignatures)).toEqual({
+      outcome: 'Violation',
+      circuitId: 'first',
+      check: 'Provability',
+    });
+  }
 });
 
 test('an irrelevant huge buffer is refused before structuredClone can copy it', () => {

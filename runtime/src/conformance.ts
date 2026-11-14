@@ -184,6 +184,9 @@ const validationBudget = (declared: SignatureType, expandVectors = false): Valid
 // checks own descriptors first so ordinary accessors cannot run during cloning. Physical DAG
 // nodes are visited once, while array lengths and own properties consume the allowance.
 const MAX_SNAPSHOT_ENTRIES = 100_000;
+// A Struct field contributes an array slot, a named field record, its two properties, a type
+// record, and that type's tag. The declaration cost counts only the logical type node.
+const SNAPSHOT_ENTRIES_PER_DECLARATION_NODE = 6;
 const MAX_SNAPSHOT_BYTES = 8 * 1024 * 1024;
 const MAX_SNAPSHOT_CONTAINER_DEPTH = 1_024;
 const snapshotSignature = (
@@ -192,7 +195,8 @@ const snapshotSignature = (
 ): { value?: SignatureType; unreadableTag?: string } => {
   const allowance = Math.min(
     MAX_SNAPSHOT_ENTRIES,
-    MAX_SIGNATURE_NODES + boundedMultiply(3, declarationTypeCost(declared, new Set<object>(), 0, true)),
+    MAX_SIGNATURE_NODES +
+      boundedMultiply(SNAPSHOT_ENTRIES_PER_DECLARATION_NODE, declarationTypeCost(declared, new Set<object>(), 0, true)),
   );
   const budget: ValidationBudget = { remaining: allowance };
   const bytes: ValidationBudget = { remaining: MAX_SNAPSHOT_BYTES };
@@ -880,10 +884,16 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
           return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
         const argumentsValue = circuit.argumentTypes;
         if (!Array.isArray(argumentsValue)) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
-        if (!ownData(circuit, 'provable')) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
-        if (circuit.provable !== true) return { outcome: 'Violation', circuitId, check: 'Provability' };
-        if (!ownData(circuit, 'pure')) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
-        if (circuit.pure !== false) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        const provable = Object.getOwnPropertyDescriptor(circuit, 'provable');
+        if (provable === undefined) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        if (!Object.prototype.hasOwnProperty.call(provable, 'value'))
+          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (provable.value !== true) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        const pure = Object.getOwnPropertyDescriptor(circuit, 'pure');
+        if (pure === undefined) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        if (!Object.prototype.hasOwnProperty.call(pure, 'value'))
+          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (pure.value !== false) return { outcome: 'Violation', circuitId, check: 'Provability' };
         const expected = declaration[circuitId];
         if (expected.argumentTypes.length !== argumentsValue.length) return { outcome: 'Violation', circuitId, check: 'Arity' };
         for (let i = 0; i < Math.min(expected.argumentTypes.length, argumentsValue.length); i += 1) {
