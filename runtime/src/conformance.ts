@@ -178,6 +178,67 @@ const validationBudget = (declared: SignatureType, expandVectors = false): Valid
   ),
 });
 
+// Snapshot only a bounded amount of the untrusted signature graph before comparing it. A Proxy
+// can mutate a previously memoized node from a property read; structuredClone refuses Proxies,
+// and comparison against its detached result never reads the original graph again. Preflight
+// checks own descriptors first so ordinary accessors cannot run during cloning. Physical DAG
+// nodes are visited once, while array lengths and own properties consume the allowance.
+const MAX_SNAPSHOT_ENTRIES = 100_000;
+const snapshotSignature = (
+  declared: SignatureType,
+  implemented: SignatureType,
+): { value?: SignatureType; unreadableTag?: string } => {
+  const allowance = Math.min(
+    MAX_SNAPSHOT_ENTRIES,
+    MAX_SIGNATURE_NODES + boundedMultiply(3, declarationTypeCost(declared, new Set<object>(), 0, true)),
+  );
+  const budget: ValidationBudget = { remaining: allowance };
+  const active = new Set<object>();
+  const seen = new Set<object>();
+  const inspect = (value: unknown, depth: number, parentTag: string): string | undefined => {
+    if (typeof value !== 'object' || value === null) return undefined;
+    let tag = parentTag;
+    let entered = false;
+    try {
+      const ownTag = Object.getOwnPropertyDescriptor(value, 'tag');
+      if (ownTag !== undefined && Object.prototype.hasOwnProperty.call(ownTag, 'value') && typeof ownTag.value === 'string')
+        tag = ownTag.value;
+      if (depth > MAX_SIGNATURE_DEPTH || active.has(value) || budget.remaining-- <= 0) return tag;
+      if (seen.has(value)) return undefined;
+      active.add(value);
+      entered = true;
+      const keys = Reflect.ownKeys(value);
+      if (Array.isArray(value)) {
+        const length = Object.getOwnPropertyDescriptor(value, 'length');
+        if (length === undefined || !isEncodedLength(length.value) || length.value > budget.remaining) return tag;
+      }
+      for (const key of keys) {
+        if (budget.remaining-- <= 0) return tag;
+        const descriptor = Object.getOwnPropertyDescriptor(value, key);
+        if (descriptor === undefined || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return tag;
+        const unreadable = inspect(descriptor.value, depth + 1, tag);
+        if (unreadable !== undefined) return unreadable;
+      }
+      seen.add(value);
+      return undefined;
+    } catch {
+      return tag;
+    } finally {
+      if (entered) active.delete(value);
+    }
+  };
+  const unreadableTag = inspect(implemented, 0, MALFORMED);
+  if (unreadableTag !== undefined) return { unreadableTag };
+  if (typeof globalThis.structuredClone !== 'function') return { unreadableTag: MALFORMED };
+  try {
+    return { value: globalThis.structuredClone(implemented) };
+  } catch {
+    // DataCloneError covers any Proxy in the graph, including a nested one whose traps could
+    // otherwise alter a memoized signature between two uses.
+    return { unreadableTag: MALFORMED };
+  }
+};
+
 /** `value` as a readable record, or `undefined` if it is not one. */
 const asRecord = (value: unknown): Record<string, unknown> | undefined =>
   typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as Record<string, unknown>) : undefined;
@@ -771,13 +832,19 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
       return { outcome: 'Violation', circuitId, check: 'Arity' };
     }
     for (let i = 0; i < declared.argumentTypes.length; i += 1) {
-      const checked = inspectAgainstDeclaration(declared.argumentTypes[i], implemented.argumentTypes[i]);
+      const snapshot = snapshotSignature(declared.argumentTypes[i], implemented.argumentTypes[i]);
+      if (snapshot.unreadableTag !== undefined || snapshot.value === undefined)
+        return { outcome: 'Unreadable', circuitId, unreadableTag: snapshot.unreadableTag ?? MALFORMED, argumentIndex: i };
+      const checked = inspectAgainstDeclaration(declared.argumentTypes[i], snapshot.value);
       if (checked.unreadableTag !== undefined) {
         return { outcome: 'Unreadable', circuitId, unreadableTag: checked.unreadableTag, argumentIndex: i };
       }
       if (!checked.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
     }
-    const checkedResult = inspectAgainstDeclaration(declared.resultType, implemented.resultType);
+    const snapshotResult = snapshotSignature(declared.resultType, implemented.resultType);
+    if (snapshotResult.unreadableTag !== undefined || snapshotResult.value === undefined)
+      return { outcome: 'Unreadable', circuitId, unreadableTag: snapshotResult.unreadableTag ?? MALFORMED };
+    const checkedResult = inspectAgainstDeclaration(declared.resultType, snapshotResult.value);
     if (checkedResult.unreadableTag !== undefined) {
       return { outcome: 'Unreadable', circuitId, unreadableTag: checkedResult.unreadableTag };
     }
