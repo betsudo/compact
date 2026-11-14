@@ -880,9 +880,10 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
           return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
         const argumentsValue = circuit.argumentTypes;
         if (!Array.isArray(argumentsValue)) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
-        if (!ownData(circuit, 'pure') || !ownData(circuit, 'provable'))
-          return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
-        if (circuit.provable !== true || circuit.pure !== false) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        if (!ownData(circuit, 'provable')) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (circuit.provable !== true) return { outcome: 'Violation', circuitId, check: 'Provability' };
+        if (!ownData(circuit, 'pure')) return { outcome: 'Unreadable', circuitId, unreadableTag: MALFORMED };
+        if (circuit.pure !== false) return { outcome: 'Violation', circuitId, check: 'Provability' };
         const expected = declaration[circuitId];
         if (expected.argumentTypes.length !== argumentsValue.length) return { outcome: 'Violation', circuitId, check: 'Arity' };
         for (let i = 0; i < Math.min(expected.argumentTypes.length, argumentsValue.length); i += 1) {

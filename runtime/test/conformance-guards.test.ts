@@ -469,6 +469,23 @@ test('provability precedes an unreadable result getter on the snapshot refusal p
   expect(checkConformance(declaration, implemented)).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'Provability' });
 });
 
+test('provable false short-circuits a pure accessor on the snapshot refusal path', () => {
+  let reads = 0;
+  const implemented = {
+    use: {
+      provable: false,
+      get pure() {
+        reads += 1;
+        throw new Error('pure getter must not run');
+      },
+      argumentTypes: [field],
+      resultType: field,
+    },
+  } as unknown as CircuitSignatures;
+  expect(checkConformance(declaration, implemented)).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'Provability' });
+  expect(reads).toEqual(0);
+});
+
 test('an irrelevant huge buffer is refused before structuredClone can copy it', () => {
   const implemented = {
     use: {
