@@ -28,7 +28,8 @@ import subprocess
 import tomllib
 
 from collection_gate_binding import (
-    compiler_recipe, generated_manifest as bind_generated_manifest,
+    compiler_recipe, generated_contract_file_set,
+    generated_manifest as bind_generated_manifest,
     verify_standalone_proof,
 )
 
@@ -165,6 +166,7 @@ def main() -> None:
         ('wrong-key/remove.verifier', 'wrong_same_k_verifier_sha256'),
     ):
         require(sha(gate / relative) == proof[key], f'proof gate artifact changed: {relative}')
+    generated_contract_file_set(gate / 'fresh-dual/contract')
     generated_manifest = gate / 'fresh-dual/contract/Cargo.toml'
     canonical_manifest, runtime_checkout = bind_generated_manifest(
         generated_manifest, expected_canonical_sha256=GENERATED_MANIFEST_CANONICAL_SHA256,

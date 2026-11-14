@@ -30,6 +30,10 @@ ROOT = Path(__file__).resolve().parents[2]
 RUNNER_MAIN_SHA256 = '2846dd67da2916bcf3a15db93e91a1007cfb5d6b97a1d0070e08c6fe312194e9'
 RUNNER_MANIFEST_SHA256 = '1e7a8f3a18ff81ba8eacfb982f20501f0a320668d2e7947612deb4c6986367e0'
 RUNNER_LOCK_SHA256 = 'c66ac3ad4ad9e2291ce67a90d764af5f7573fbffacdc48953619df7b92ec2ce5'
+GENERATED_CONTRACT_FILES = frozenset({
+    'Cargo.toml', 'compact-rust-ir.json', 'compact-rust-origins.raw.json',
+    'index.d.ts', 'index.js', 'index.js.map', 'lib.rs', 'rust-capabilities.json',
+})
 
 
 def sha(path: Path) -> str:
@@ -43,6 +47,16 @@ def require(condition: bool, message: str) -> None:
 
 def git(*args: str) -> str:
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
+
+
+def generated_contract_file_set(contract: Path) -> None:
+    """Reject unqualified Cargo inputs in a fresh dual-target contract."""
+    require(contract.is_dir() and not contract.is_symlink(),
+            'generated contract directory missing or symlinked')
+    entries = list(contract.iterdir())
+    require({entry.name for entry in entries} == GENERATED_CONTRACT_FILES and
+            all(not entry.is_symlink() and entry.is_file() for entry in entries),
+            'generated contract contains an unexpected file, directory or symlink')
 
 
 def compiler_recipe(path: Path, compiler: Path, scheme: Path, *,
