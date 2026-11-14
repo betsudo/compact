@@ -499,9 +499,10 @@ export function signatureTypesEqual(a: SignatureType, b: SignatureType): boolean
 }
 
 type TypeCheck = { readonly unreadableTag?: string; readonly equal: boolean };
+type MemoizedTypeCheck = { readonly result: TypeCheck; readonly ancestors: ReadonlySet<object> };
 type TypeCheckState = {
   readonly active: Set<object>;
-  readonly memo: Map<object, Map<object, Map<number, TypeCheck>>>;
+  readonly memo: Map<object, Map<object, Map<number, MemoizedTypeCheck>>>;
   readonly budget: ValidationBudget;
   noCache: boolean;
 };
@@ -521,7 +522,14 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
     return { unreadableTag: tag, equal: false };
   if (depth > MAX_SIGNATURE_DEPTH || state.active.has(actual)) return { unreadableTag: tag, equal: false };
   const cached = state.noCache ? undefined : state.memo.get(declared)?.get(actual)?.get(depth);
-  if (cached !== undefined) return cached;
+  // A shared type can be inspected under a different ancestor path. A cached mismatch must not
+  // hide a cycle that is reachable only from that later path.
+  if (
+    cached !== undefined &&
+    cached.ancestors.size === state.active.size &&
+    [...cached.ancestors].every((ancestor) => state.active.has(ancestor))
+  )
+    return cached.result;
 
   let usedFallback = false;
   const fallback = (): TypeCheck => {
@@ -711,7 +719,11 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
   } finally {
     state.active.delete(actual);
   }
-  if (!usedFallback && !state.noCache && result.equal) {
+  // A fully inspected mismatch is reusable too. Without this, a shared Tuple DAG whose leaves
+  // differ from a declared Vector is traversed once per logical leaf (2^depth) even though each
+  // pair was already checked. Never memoize unreadability or a fallback that may have used a
+  // different local validation budget.
+  if (!usedFallback && !state.noCache && result.unreadableTag === undefined) {
     let byActual = state.memo.get(declared);
     if (byActual === undefined) {
       byActual = new Map();
@@ -722,7 +734,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
       byDepth = new Map();
       byActual.set(actual, byDepth);
     }
-    byDepth.set(depth, result);
+    byDepth.set(depth, { result, ancestors: new Set(state.active) });
   }
   return result;
 };
@@ -730,7 +742,7 @@ const inspectTypePair = (declared: SignatureType, implemented: SignatureType, st
 const inspectAgainstDeclaration = (declared: SignatureType, implemented: SignatureType): TypeCheck =>
   inspectTypePair(declared, implemented, {
     active: new Set<object>(),
-    memo: new Map<object, Map<object, Map<number, TypeCheck>>>(),
+    memo: new Map<object, Map<object, Map<number, MemoizedTypeCheck>>>(),
     budget: validationBudget(declared, true),
     noCache: false,
   });

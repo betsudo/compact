@@ -204,6 +204,31 @@ test('shared explicit Tuples compare once per type pair instead of expanding exp
   ).toEqual({ outcome: 'Conformant' });
 });
 
+test('a shared mismatching Tuple DAG is inspected once per type pair', () => {
+  let declaredType: SignatureType = field;
+  let implementedType: SignatureType = { tag: 'Boolean' };
+  let reads = 0;
+  for (let i = 0; i < 25; i += 1) {
+    declaredType = { tag: 'Vector', length: 2, type: declaredType };
+    const child = implementedType;
+    implementedType = malformed(
+      new Proxy(
+        { tag: 'Tuple', types: [child, child] },
+        {
+          get(target, key, receiver) {
+            if (key === 'types') reads += 1;
+            return Reflect.get(target, key, receiver);
+          },
+        },
+      ),
+    );
+  }
+  expect(
+    checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
+  ).toEqual({ outcome: 'Violation', circuitId: 'use', check: 'ArgumentType', argumentIndex: 0 });
+  expect(reads).toBeLessThan(200);
+});
+
 test('a large expanded result Vector conforms under its own validation allowance', () => {
   const length = 12_000;
   const expected: SignatureType = { tag: 'Vector', length, type: field };
