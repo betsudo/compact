@@ -28,14 +28,15 @@ import subprocess
 import tarfile
 
 from collection_gate_binding import compiler_recipe, git, require, sha
-from check_upstream_ledger9_bytes_map_proof import WASM_TGZ_SHA256, dist_hashes
+from check_upstream_ledger9_bytes_map_proof import (
+    WASM_TGZ_SHA256, dist_hashes, require_grouped_lineage,
+)
 
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / 'compiler/test.ss'
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-mixed-original-proofs.mjs'
 UPSTREAM = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
-BASE = 'f22ad3ff822171758ab87ec7c4b9696323f3f036'
 RUNTIME_BASE_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
 CASES = {
     'k1': {
@@ -113,8 +114,7 @@ def main() -> None:
     require(git('log', '-1', '--format=%G?') == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B'),
             'source head must be signed and DCO complete')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', BASE, head],
-                           cwd=ROOT).returncode == 0, 'source does not descend from qualified base')
+    require_grouped_lineage(head)
     compiler = args.compiler.resolve(strict=True)
     compiler_recipe(args.compiler_receipt.resolve(strict=True), compiler,
                     compiler.with_name('compactc-scheme'),

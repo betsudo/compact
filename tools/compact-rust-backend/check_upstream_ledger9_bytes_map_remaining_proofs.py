@@ -31,7 +31,8 @@ import tomllib
 from collection_gate_binding import compiler_recipe
 from check_upstream_ledger9_bytes_map_proof import (
     BASE, BASE_RECEIPT_SHA256, FAMILY, PINNED, ROOT, RUNNER_SOURCE_SHA256,
-    WASM_TGZ_SHA256, ZKIR_SHA256, dist_hashes, git, require, run, sha,
+    WASM_TGZ_SHA256, ZKIR_SHA256, BASE_TREE, dist_hashes, git, require,
+    require_grouped_lineage, run, sha,
 )
 
 
@@ -86,8 +87,7 @@ def main() -> None:
     require(git('log', '-1', '--format=%G?') == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B'),
             'source head must be signed and DCO complete')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', BASE, head],
-                           cwd=ROOT).returncode == 0, 'source is not stacked on Bytes map base')
+    require_grouped_lineage(head)
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     base = args.base_output.resolve(strict=True)
@@ -95,7 +95,7 @@ def main() -> None:
     require(sha(base_receipt) == BASE_RECEIPT_SHA256, 'base qualification receipt changed')
     prior = json.loads(base_receipt.read_text())
     require(prior['head'] == BASE and prior['upstream'] == PINNED and
-            prior['tree'] == git('rev-parse', f'{BASE}^{{tree}}') and
+            prior['tree'] == BASE_TREE and
             sha(FAMILY / 'check.mjs') == prior['adapter_sha256'],
             'base source or adapter binding changed')
     recipe_path = args.compiler_receipt.resolve(strict=True)

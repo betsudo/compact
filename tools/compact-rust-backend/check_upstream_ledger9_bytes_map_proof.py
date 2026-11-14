@@ -36,7 +36,11 @@ ROOT = Path(__file__).resolve().parents[2]
 FAMILY = ROOT / 'test-contracts/primitives/bytes/map'
 CAPTURE = ROOT / 'runtime-rs/tests/fixtures/capture-ledger9-bytes-map-transformation-proof.mjs'
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
+# The historical qualification receipt is immutable by SHA-256 below, even
+# when its retired slice commit is absent from a fresh grouped checkout.
 BASE = '7425aa72eeec8102e6180808042a52c3bf55f44a'
+BASE_TREE = 'b7f0917692f1ab0c550076a255371c5944a6652e'
+GROUPED_BASE = '5b9dd0374a03ff1e375b1423e67e344d4e4866a4'
 BASE_RECEIPT_SHA256 = '34bee302b30f1d87a4e04e3904891a452865d36f20ddd61613e39a36a02b4426'
 SOURCE_SHA256 = '38f12526a78734b8c93f4be6cffa0ef9efaae59db552d56b3cf36ecbbd924680'
 WASM_TGZ_SHA256 = 'bc3e69e37e452463c1b2f4c98fce1138eb04f8d3776fce704b9081989a699f19'
@@ -66,6 +70,14 @@ def git(*args: str) -> str:
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
 
 
+def require_grouped_lineage(head: str) -> None:
+    """Accept only descendants of the grouped collection PR, not retired slice commits."""
+    require(subprocess.run(['git', 'merge-base', '--is-ancestor', GROUPED_BASE, head],
+                           cwd=ROOT, stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL).returncode == 0,
+            'source does not descend from grouped collection base')
+
+
 def run(command: list[str], log: Path, *, cwd: Path = ROOT,
         env: dict[str, str] | None = None) -> str:
     with log.open('xb') as stream:
@@ -91,8 +103,7 @@ def main() -> None:
     require(git('log', '-1', '--format=%G?') == 'G' and
             'Signed-off-by:' in git('log', '-1', '--format=%B'),
             'source head must be signed and DCO complete')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', BASE, head],
-                           cwd=ROOT).returncode == 0, 'source does not extend qualified Bytes map')
+    require_grouped_lineage(head)
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
     base = args.base_output.resolve(strict=True)
@@ -100,7 +111,7 @@ def main() -> None:
     require(sha(base_receipt) == BASE_RECEIPT_SHA256, 'base qualification receipt changed')
     prior = json.loads(base_receipt.read_text())
     require(prior['head'] == BASE and prior['upstream'] == PINNED and
-            prior['tree'] == git('rev-parse', f'{BASE}^{{tree}}') and
+            prior['tree'] == BASE_TREE and
             prior['original_files'][
                 'test-contracts/primitives/bytes/map/transformation/bytes_map_transformation.compact'
             ] == SOURCE_SHA256, 'base qualification is not the pinned original')
