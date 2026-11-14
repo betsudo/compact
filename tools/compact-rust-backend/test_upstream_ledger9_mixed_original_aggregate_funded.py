@@ -17,7 +17,9 @@
 
 """Receipt and runtime-path refusals for aggregate mixed funded qualification."""
 
+import ast
 import hashlib
+import inspect
 import json
 from pathlib import Path
 import tempfile
@@ -333,6 +335,47 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'input changed during qualification'):
                 gate.require_final_binding(self.head, self.tree, admitted,
                                            [], [static], copied_hashes, [copied])
+
+    def test_refuses_unpinned_runtime_preview_before_admission(self) -> None:
+        pinned = self.preflight_path.read_bytes()
+        preview = json.loads(pinned)
+        preview['runtime_store'] = str(self.root / 'unqualified-runtime')
+        self.preflight_path.write_text(json.dumps(preview))
+        preview = json.loads(self.preflight_path.read_text())
+        self.preflight_path.write_bytes(pinned)
+        self.validate()
+        with self.assertRaisesRegex(RuntimeError, 'runtime preview differs'):
+            gate.require_runtime_preview_consistent(preview, self.prior)
+
+    def test_main_wires_early_snapshot_static_and_final_revalidation(self) -> None:
+        main = ast.parse(inspect.getsource(gate.main))
+        calls = [node for node in ast.walk(main) if isinstance(node, ast.Call) and
+                 isinstance(node.func, ast.Name)]
+        line = lambda name: min(node.lineno for node in calls if node.func.id == name)
+        self.assertLess(line('snapshot_inputs'), line('validate_aggregate_receipts'))
+        self.assertLess(line('validate_aggregate_receipts'),
+                        line('require_admission_stable'))
+        assignments = {
+            target.id: node.value for node in ast.walk(main)
+            if isinstance(node, ast.Assign) for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+        for name in ('initial_directories', 'admitted_directories'):
+            self.assertIn('static', {node.id for node in ast.walk(assignments[name])
+                                     if isinstance(node, ast.Name)})
+        final = next(node for node in calls if node.func.id == 'require_final_binding')
+        self.assertTrue({'allowed_directory_links', 'revalidate'} <=
+                        {keyword.arg for keyword in final.keywords})
+        revalidator = next(node for node in ast.walk(main)
+                           if isinstance(node, ast.FunctionDef) and
+                           node.name == 'revalidate_admission')
+        self.assertTrue({'validate_aggregate_receipts',
+                         'require_runtime_preview_consistent'} <=
+                        {node.func.id for node in ast.walk(revalidator)
+                         if isinstance(node, ast.Call) and
+                         isinstance(node.func, ast.Name)})
+        self.assertLess(line('require_runtime_preview_consistent'),
+                        line('require_admission_stable'))
 
     def test_refuses_generated_copy_mutated_after_admission(self) -> None:
         admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])

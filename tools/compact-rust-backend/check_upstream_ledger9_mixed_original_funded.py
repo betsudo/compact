@@ -128,6 +128,11 @@ def require_admission_stable(initial: dict[str, str], files: list[Path],
             'mixed aggregate input changed between validation and snapshot')
 
 
+def require_runtime_preview_consistent(preview: dict, validated: dict) -> None:
+    require(preview.get('runtime_store') == validated.get('runtime_store'),
+            'mixed aggregate runtime preview differs from pinned preflight receipt')
+
+
 def require_final_binding(head: str, tree: str, admitted: dict[str, str],
                           files: list[Path], directories: list[Path],
                           copies: dict[str, str], copy_directories: list[Path],
@@ -352,6 +357,7 @@ def main():
             preflight_sha=args.aggregate_preflight_receipt_sha256,
             compiler_sha=args.aggregate_compiler_receipt_sha256,
             head=head, tree=tree)
+        require_runtime_preview_consistent(preflight_preview, prior)
         recipe = json.loads(compiler_path.read_text())
         compiler = Path(recipe['compactc']['path']).resolve(strict=True)
         scheme = Path(recipe['compactc-scheme']['path']).resolve(strict=True)
@@ -595,7 +601,7 @@ def main():
                          'consumer_source_sha256': sha(consumer / 'main.rs')}
     if args.aggregate_head:
         def revalidate_admission() -> None:
-            validate_aggregate_receipts(
+            _, validated_prior = validate_aggregate_receipts(
                 proof_path=proof_path, preflight_path=preflight_path,
                 compiler_path=compiler_path,
                 runtime_baseline_path=runtime_baseline_path,
@@ -604,6 +610,7 @@ def main():
                 preflight_sha=args.aggregate_preflight_receipt_sha256,
                 compiler_sha=args.aggregate_compiler_receipt_sha256,
                 head=head, tree=tree)
+            require_runtime_preview_consistent(preflight_preview, validated_prior)
             compiler_recipe(compiler_path, compiler, scheme,
                             source_head=head, current_head=head)
             require(sha(material_receipt) == MATERIAL_RECEIPT_SHA and
