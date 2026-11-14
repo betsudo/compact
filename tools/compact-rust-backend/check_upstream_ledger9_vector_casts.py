@@ -28,7 +28,7 @@ import tomllib
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY = ROOT / "test-contracts/primitives/vector/casts"
 POSITIVES = (
-    "empty", "to_bytes_default", "to_bytes_narrow_element", "to_tuple",
+    "empty", "to_bytes", "to_bytes_default", "to_bytes_narrow_element", "to_tuple",
     "to_vector",
 )
 
@@ -140,7 +140,7 @@ def main() -> None:
     manifest_path = FAMILY / "original-source-sha256.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["upstream_commit"] != "672bd0f226f47a7d036c5c074ce71fbe1af1925e" \
-            or len(manifest["files"]) != 21:
+            or len(manifest["files"]) != 24:
         parser.error("pinned original fixture inventory changed")
     for source, digest in manifest["files"].items():
         if sha256(ROOT / source) != digest:
@@ -220,7 +220,7 @@ def main() -> None:
     rust_output = run(["cargo", "+1.99.0", "run", "--locked", "--offline",
                        "--manifest-path", str(consumer / "Cargo.toml")],
                       output / "rust-run.log", env=cargo_env)
-    if "five original Vector cast assertions passed" not in rust_output:
+    if "six original Vector cast assertions passed" not in rust_output:
         raise RuntimeError("generated Rust assertion result missing")
     require_unchanged(initial_source, initial_runtime, recipe_identity,
                       runtime, args.compiler_recipe, compiler, scheme)
@@ -229,7 +229,7 @@ def main() -> None:
         "source_clean": True,
         "platform": os.uname().sysname + " " + os.uname().machine,
         "upstream_commit": manifest["upstream_commit"],
-        "original_files": 21,
+        "original_files": 24,
         "manifest_sha256": sha256(manifest_path),
         "compiler_sha256": sha256(compiler),
         "scheme_sha256": sha256(scheme),
@@ -243,7 +243,7 @@ def main() -> None:
         "rust_result": rust_output.strip(),
         "limitations": ["local Darwin arm64; native Linux qualification required",
                         "pure circuit values only; no proof or funded transaction applies",
-                        "The upstream to_bytes case depends on separately owned Vector slice lowering and is excluded from this independent base-head slice"],
+                        "Vector spread and slice lowering are local stacked prerequisites for the to_bytes case"],
     }
     (output / "receipt.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     print(json.dumps({"status": "passed", "head": receipt["head"], "output": str(output)}))

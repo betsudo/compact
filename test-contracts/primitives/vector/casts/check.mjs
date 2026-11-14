@@ -9,6 +9,7 @@ import { pathToFileURL } from 'node:url';
 const [contractPath, runtimePath, name] = process.argv.slice(2);
 const expected = {
   empty: [],
+  to_bytes: [10, 20, 30, 40],
   to_bytes_default: [0, 0, 0, 0],
   to_bytes_narrow_element: [1, 2, 3, 127],
   to_tuple: [100n, 200n],

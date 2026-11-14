@@ -8,6 +8,11 @@ fn main() {
         [] as [u8; 0],
     );
     assert_eq!(
+        to_bytes::pure_circuits::vector_casts_to_bytes()
+            .unwrap().into_array(),
+        [10, 20, 30, 40],
+    );
+    assert_eq!(
         to_bytes_default::pure_circuits::vector_casts_to_bytes_default()
             .unwrap().into_array(),
         [0, 0, 0, 0],
@@ -24,5 +29,5 @@ fn main() {
             .unwrap().into_array().map(|value| value.value()),
         [1, 2, 3, 4],
     );
-    println!("five original Vector cast assertions passed");
+    println!("six original Vector cast assertions passed");
 }
