@@ -287,6 +287,53 @@ class AggregateMixedAdmissionTests(unittest.TestCase):
                                        [self.proof_path], [self.preflight],
                                        copied_hashes, [copied])
 
+    def test_refuses_contract_swap_between_validation_and_snapshot(self) -> None:
+        initial = gate.snapshot_inputs([self.proof_path], [self.preflight])
+        self.validate()
+        self.write(self.preflight / 'k1/contract/index.d.ts', b'changed after validation\n')
+        with self.assertRaisesRegex(RuntimeError, 'between validation and snapshot'):
+            gate.require_admission_stable(initial, [self.proof_path],
+                                          [self.preflight], {})
+
+    def test_final_revalidation_refuses_late_receipt_snapshot(self) -> None:
+        pin = gate.sha(self.proof_path)
+        self.validate()
+        self.proof_path.write_text(self.proof_path.read_text() + ' ')
+        late = gate.snapshot_inputs([self.proof_path], [])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        with mock.patch.object(gate, 'git', side_effect=['', self.head, self.tree]):
+            with self.assertRaisesRegex(RuntimeError, 'independently supplied SHA-256 pin'):
+                gate.require_final_binding(
+                    self.head, self.tree, late, [self.proof_path], [],
+                    copied_hashes, [copied],
+                    revalidate=lambda: self.validate(proof_sha=pin))
+
+    def test_refuses_unapproved_nested_directory_symlink(self) -> None:
+        watched = self.root / 'watched'
+        target = self.root / 'outside'
+        self.write(target / 'statement.proof', b'proof\n')
+        watched.mkdir()
+        (watched / 'proof').symlink_to(target, target_is_directory=True)
+        with self.assertRaisesRegex(RuntimeError, 'unapproved directory symlink'):
+            gate.snapshot_inputs([], [watched])
+        self.assertIn(str(watched / 'proof') + '@link',
+                      gate.snapshot_inputs([], [watched], {watched / 'proof': target}))
+
+    def test_refuses_static_mutated_during_qualification(self) -> None:
+        static = self.root / 'midnight-ledger-v9-1.0.1/static'
+        self.write(static / 'genesis.bin', b'admitted static bytes\n')
+        admitted = gate.snapshot_inputs([], [static])
+        copied = self.root / 'copy'
+        self.write(copied / 'lib.rs', b'admitted generated copy\n')
+        copied_hashes = gate.snapshot_inputs([], [copied])
+        self.write(static / 'genesis.bin', b'changed static bytes\n')
+        with mock.patch.object(gate, 'git', side_effect=['', self.head, self.tree]):
+            with self.assertRaisesRegex(RuntimeError, 'input changed during qualification'):
+                gate.require_final_binding(self.head, self.tree, admitted,
+                                           [], [static], copied_hashes, [copied])
+
     def test_refuses_generated_copy_mutated_after_admission(self) -> None:
         admitted = gate.snapshot_inputs([self.proof_path], [self.preflight])
         copied = self.root / 'copy'

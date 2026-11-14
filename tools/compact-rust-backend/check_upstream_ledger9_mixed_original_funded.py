@@ -26,6 +26,7 @@ import platform
 import shutil
 import subprocess
 import tomllib
+from typing import Callable
 
 from collection_gate_binding import compiler_recipe, generated_manifest
 from check_upstream_ledger9_bytes_map_funded import (
@@ -84,8 +85,10 @@ def git(*args):
     return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
 
 
-def snapshot_inputs(files: list[Path], directories: list[Path]) -> dict[str, str]:
+def snapshot_inputs(files: list[Path], directories: list[Path],
+                    allowed_directory_links: dict[Path, Path] | None = None) -> dict[str, str]:
     """Fingerprint admitted external inputs, including directory membership."""
+    allowed_directory_links = allowed_directory_links or {}
     paths = set(files)
     membership = {}
     links = {}
@@ -98,24 +101,44 @@ def snapshot_inputs(files: list[Path], directories: list[Path]) -> dict[str, str
                 target = os.readlink(path)
                 links[str(path) + '@link'] = hashlib.sha256(target.encode()).hexdigest()
                 members.append(path.relative_to(directory).as_posix() + '@link')
+                if path.is_dir():
+                    require(path in allowed_directory_links and
+                            path.resolve(strict=True) ==
+                            allowed_directory_links[path].resolve(strict=True),
+                            f'mixed aggregate unapproved directory symlink: {path}')
+                else:
+                    require(path.is_file(), f'mixed aggregate broken input symlink: {path}')
+                    paths.add(path)
             elif path.is_file():
                 paths.add(path)
                 members.append(path.relative_to(directory).as_posix())
         membership[str(directory) + '/'] = hashlib.sha256(
             '\n'.join(sorted(members)).encode()).hexdigest()
-    require(all(path.is_file() and not path.is_symlink() for path in paths),
+    require(all(path.is_file() and
+                (not path.is_symlink() or not path.is_dir()) for path in paths),
             'mixed aggregate input missing or replaced')
     return {**membership, **links,
             **{str(path): sha(path) for path in sorted(paths)}}
 
 
+def require_admission_stable(initial: dict[str, str], files: list[Path],
+                             directories: list[Path],
+                             allowed_directory_links: dict[Path, Path]) -> None:
+    require(snapshot_inputs(files, directories, allowed_directory_links) == initial,
+            'mixed aggregate input changed between validation and snapshot')
+
+
 def require_final_binding(head: str, tree: str, admitted: dict[str, str],
                           files: list[Path], directories: list[Path],
-                          copies: dict[str, str], copy_directories: list[Path]) -> None:
+                          copies: dict[str, str], copy_directories: list[Path],
+                          *, allowed_directory_links: dict[Path, Path] | None = None,
+                          revalidate: Callable[[], None] | None = None) -> None:
     require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head and
             git('rev-parse', 'HEAD^{tree}') == tree,
             'mixed aggregate funded source changed during qualification')
-    require(snapshot_inputs(files, directories) == admitted,
+    if revalidate is not None:
+        revalidate()
+    require(snapshot_inputs(files, directories, allowed_directory_links) == admitted,
             'mixed aggregate funded input changed during qualification')
     require(snapshot_inputs([], copy_directories) == copies,
             'mixed aggregate funded generated copy changed during qualification')
@@ -300,10 +323,30 @@ def main():
         proof_path = args.proof_receipt.resolve(strict=True)
         preflight_path = preflight / 'receipt.json'
         compiler_path = args.compiler_receipt.resolve(strict=True)
+        runtime_baseline_path = args.runtime_baseline_receipt.resolve(strict=True)
+        generated_runner = args.proof_runner.resolve(strict=True)
+        runner_source = args.proof_runner_source.resolve(strict=True)
+        runner_receipt_path = args.proof_runner_receipt.resolve(strict=True)
+        preflight_preview = json.loads(preflight_path.read_text())
+        runtime_package = (Path(preflight_preview['runtime_store']) /
+                           'lib/node_modules/@midnight-ntwrk/compact-runtime')
+        allowed_directory_links = {
+            preflight / 'node_modules/@midnight-ntwrk/compact-runtime': runtime_package,
+        }
+        initial_files = [proof_path, preflight_path, compiler_path,
+                         runtime_baseline_path, runner_receipt_path,
+                         generated_runner, base / 'Cargo.toml',
+                         base / 'Cargo.lock', TEMPLATE]
+        initial_directories = [preflight, evidence, wrong_root, runner_source, static]
+        require(all(output != directory and directory not in output.parents
+                    for directory in initial_directories),
+                'mixed aggregate output overlaps an admitted input directory')
+        initial_hashes = snapshot_inputs(initial_files, initial_directories,
+                                         allowed_directory_links)
         proof, prior = validate_aggregate_receipts(
             proof_path=proof_path, preflight_path=preflight_path,
             compiler_path=compiler_path,
-            runtime_baseline_path=args.runtime_baseline_receipt.resolve(strict=True),
+            runtime_baseline_path=runtime_baseline_path,
             runtime_baseline_sha=args.aggregate_runtime_baseline_receipt_sha256,
             proof_sha=args.aggregate_proof_receipt_sha256,
             preflight_sha=args.aggregate_preflight_receipt_sha256,
@@ -317,9 +360,6 @@ def main():
         require(prior['compiler_sha256'] == sha(compiler),
                 'mixed aggregate preflight compiler binary changed')
         validate_proof_checker_source(proof, args.proof_verifier_source)
-        generated_runner = args.proof_runner.resolve(strict=True)
-        runner_source = args.proof_runner_source.resolve(strict=True)
-        runner_receipt_path = args.proof_runner_receipt.resolve(strict=True)
         runner_receipt = json.loads(runner_receipt_path.read_text())
         require(proof['runner_source_receipt_sha256'] == sha(runner_receipt_path) and
                 proof['runner_binary_sha256'] == sha(generated_runner) and
@@ -389,20 +429,21 @@ def main():
     copied_hashes: dict[str, str] = {}
     copied_directories: list[Path] = []
     if args.aggregate_head:
-        runtime_package = (Path(prior['runtime_store']) /
-                           'lib/node_modules/@midnight-ntwrk/compact-runtime')
+        require_admission_stable(initial_hashes, initial_files,
+                                 initial_directories, allowed_directory_links)
         admitted_files = [proof_path, compiler_path, runner_receipt_path,
-                          args.runtime_baseline_receipt.resolve(strict=True),
+                          runtime_baseline_path,
                           compiler, scheme, generated_runner,
                           base / 'Cargo.toml', base / 'Cargo.lock',
                           material_receipt, TEMPLATE,
                           runtime_package / 'package.json',
-                          args.runtime_baseline_receipt.resolve(strict=True).parent /
+                          runtime_baseline_path.parent /
                           'typescript-runtime-recipe.log',
                           *(material / name for name in material_files)]
         admitted_directories = [preflight, evidence, wrong_root, runner_source,
-                                runtime_package / 'dist']
-        admitted_hashes = snapshot_inputs(admitted_files, admitted_directories)
+                                runtime_package / 'dist', static]
+        admitted_hashes = snapshot_inputs(admitted_files, admitted_directories,
+                                          allowed_directory_links)
     output.mkdir(parents=True)
     env = {key: value for key, value in os.environ.items()
            if not key.startswith('CARGO_') and key not in
@@ -553,9 +594,29 @@ def main():
                          'ledger_sha256': sha(destination / 'ledger-after.bin'),
                          'consumer_source_sha256': sha(consumer / 'main.rs')}
     if args.aggregate_head:
+        def revalidate_admission() -> None:
+            validate_aggregate_receipts(
+                proof_path=proof_path, preflight_path=preflight_path,
+                compiler_path=compiler_path,
+                runtime_baseline_path=runtime_baseline_path,
+                runtime_baseline_sha=args.aggregate_runtime_baseline_receipt_sha256,
+                proof_sha=args.aggregate_proof_receipt_sha256,
+                preflight_sha=args.aggregate_preflight_receipt_sha256,
+                compiler_sha=args.aggregate_compiler_receipt_sha256,
+                head=head, tree=tree)
+            compiler_recipe(compiler_path, compiler, scheme,
+                            source_head=head, current_head=head)
+            require(sha(material_receipt) == MATERIAL_RECEIPT_SHA and
+                    all(sha(material / name) == row['sha256'] and
+                        (material / name).stat().st_size == row['bytes']
+                        for name, row in material_files.items()),
+                    'SDK material changed during mixed aggregate qualification')
+
         require_final_binding(head, tree, admitted_hashes, admitted_files,
                               admitted_directories, copied_hashes,
-                              copied_directories)
+                              copied_directories,
+                              allowed_directory_links=allowed_directory_links,
+                              revalidate=revalidate_admission)
     receipt = {'format': 'ledger9-mixed-original-funded/v1',
                'head': head, 'tree': tree, 'proof_head': proof_head,
                'proof_receipt_sha256': sha(proof_path),
