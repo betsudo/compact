@@ -1589,6 +1589,21 @@
       (define (typed-expression-ir-value expr expected-type owner-src source-type)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src source-type)]
+          [(bytes->vector ,src ,len ,expr)
+           ;; Bytes decode to Uint<8> elements. An explicit cast can then
+           ;; widen those elements; retain that checked Vector conversion in
+           ;; the Rust IR instead of assigning the narrow carrier directly to
+           ;; the widened binding.
+           (let* ([decoded (object (cons "kind" "bytes_to_vector")
+                                   (cons "value" (expression-ir expr src))
+                                   (cons "length" len))]
+                  [source (type-ir (byte-vector-type src len) src)]
+                  [target (type-ir expected-type src)])
+             (if (equal? source target)
+                 decoded
+                 (object (cons "kind" "coerce")
+                         (cons "value" decoded)
+                         (cons "ty" target))))]
           [(elt-ref ,src ,expr^ ,elt-name ,nat)
            (typed-projection-value-ir expr expected-type source-type owner-src)]
           [(tuple-ref ,src ,expr^ ,kindex)
