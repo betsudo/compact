@@ -37,6 +37,71 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def source_state(root: Path = ROOT) -> dict[str, str]:
+    def git(*args: str) -> str:
+        return subprocess.check_output(["git", *args], cwd=root, text=True).strip()
+
+    if git("status", "--porcelain"):
+        raise ValueError("clean committed source required for qualification")
+    return {"head": git("rev-parse", "HEAD"),
+            "tree": git("rev-parse", "HEAD^{tree}")}
+
+
+def runtime_identity(runtime: Path) -> dict:
+    runtime = runtime.resolve(strict=True)
+    dist = runtime / "dist"
+    if not (dist / "index.js").is_file():
+        raise ValueError("TypeScript runtime dist/index.js is missing")
+    files = {}
+    for path in sorted(dist.rglob("*")):
+        if path.is_symlink():
+            raise ValueError(f"runtime dist contains an unsupported entry: {path}")
+        if path.is_dir():
+            continue
+        if not path.is_file():
+            raise ValueError(f"runtime dist contains an unsupported entry: {path}")
+        files[str(path.relative_to(dist))] = sha256(path)
+    return {"path": str(runtime), "package_sha256": sha256(runtime / "package.json"),
+            "dist_files": files}
+
+
+def compiler_recipe_identity(recipe_path: Path, source: dict[str, str],
+                             compiler: Path, scheme: Path, root: Path = ROOT) -> dict:
+    recipe_path = recipe_path.resolve(strict=True)
+    recipe = json.loads(recipe_path.read_text())
+    if recipe.get("format") != "compact-original-existing-compiler-recipe/v1" \
+            or recipe.get("status") != "passed" \
+            or any(recipe.get(key) != source[key] for key in ("head", "tree")):
+        raise ValueError("compiler recipe does not bind this clean source head and tree")
+    for name, path in (("compactc", compiler), ("compactc-scheme", scheme)):
+        recorded = recipe.get(name, {})
+        if recorded.get("path") != str(path) or recorded.get("sha256") != sha256(path):
+            raise ValueError(f"compiler recipe {name} identity differs")
+    if recipe.get("store") != str(compiler.parent.parent):
+        raise ValueError("compiler recipe store differs from supplied package")
+    pins = recipe.get("inputs_before_use", {})
+    for name in ("flake.nix", "flake.lock", "Cargo.lock",
+                 "tools/compact-rust-backend/Cargo.lock", "compiler/compiler-version.ss",
+                 "tools/compact-rust-backend/record_compiler_recipe.py"):
+        path = (root / name).resolve(strict=True)
+        if pins.get(str(path)) != sha256(path):
+            raise ValueError(f"compiler recipe source pin differs: {name}")
+    return {"path": str(recipe_path), "sha256": sha256(recipe_path),
+            "head": source["head"], "tree": source["tree"],
+            "store": recipe["store"]}
+
+
+def require_unchanged(source: dict[str, str], runtime_snapshot: dict,
+                      recipe_snapshot: dict, runtime: Path, recipe_path: Path,
+                      compiler: Path, scheme: Path, root: Path = ROOT) -> None:
+    if source_state(root) != source:
+        raise ValueError("source head or tree changed during qualification")
+    if runtime_identity(runtime) != runtime_snapshot:
+        raise ValueError("TypeScript runtime dist changed during qualification")
+    if compiler_recipe_identity(recipe_path, source, compiler, scheme, root) != recipe_snapshot:
+        raise ValueError("compiler recipe changed during qualification")
+
+
 def run(command: list[str], log: Path, *, env: dict[str, str]) -> str:
     result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
     log.write_text(result.stdout + result.stderr)
@@ -49,6 +114,7 @@ def run(command: list[str], log: Path, *, env: dict[str, str]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
+    parser.add_argument("--compiler-recipe", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo-target", type=Path,
@@ -59,13 +125,18 @@ def main() -> None:
     output = args.output.resolve()
     if args.output.is_symlink() or output.exists():
         parser.error("output must be absent")
-    if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT):
-        parser.error("clean committed source required for qualification")
+    initial_source = source_state()
     source_package = json.loads((ROOT / "runtime/package.json").read_text())
     runtime_package = json.loads((runtime / "package.json").read_text())
     if any(source_package[key] != runtime_package[key]
            for key in ("name", "version", "dependencies")):
         parser.error("TypeScript runtime package does not match this source tree")
+    initial_runtime = runtime_identity(runtime)
+    scheme = compiler.with_name("compactc-scheme")
+    if not scheme.is_file():
+        parser.error("paired Scheme compiler is missing")
+    recipe_identity = compiler_recipe_identity(args.compiler_recipe, initial_source,
+                                               compiler, scheme)
     manifest_path = FAMILY / "original-source-sha256.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["upstream_commit"] != "672bd0f226f47a7d036c5c074ce71fbe1af1925e" \
@@ -80,9 +151,6 @@ def main() -> None:
     link.parent.mkdir(parents=True)
     link.symlink_to(runtime, target_is_directory=True)
     env = os.environ.copy()
-    scheme = compiler.with_name("compactc-scheme")
-    if not scheme.is_file():
-        parser.error("paired Scheme compiler is missing")
     env["COMPACTC_SCHEME"] = str(scheme)
     generated = {}
     for name in POSITIVES:
@@ -154,17 +222,19 @@ def main() -> None:
                       output / "rust-run.log", env=cargo_env)
     if "five original Vector cast assertions passed" not in rust_output:
         raise RuntimeError("generated Rust assertion result missing")
+    require_unchanged(initial_source, initial_runtime, recipe_identity,
+                      runtime, args.compiler_recipe, compiler, scheme)
     receipt = {
-        "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-        "tree": subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=ROOT, text=True).strip(),
-        "source_clean": not subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT),
+        **initial_source,
+        "source_clean": True,
         "platform": os.uname().sysname + " " + os.uname().machine,
         "upstream_commit": manifest["upstream_commit"],
         "original_files": 21,
         "manifest_sha256": sha256(manifest_path),
         "compiler_sha256": sha256(compiler),
         "scheme_sha256": sha256(scheme),
-        "runtime_package_sha256": sha256(runtime / "package.json"),
+        "runtime": initial_runtime,
+        "compiler_recipe": recipe_identity,
         "cargo_target": str(cargo_target),
         "generated": generated,
         "original_refusals_on_both_targets": sorted(refusals),
