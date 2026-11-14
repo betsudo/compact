@@ -378,6 +378,26 @@ test('a shared cyclic Tuple still reports unreadability before using a memoized 
   });
 });
 
+test('snapshot preflight counts signature depth without counting Tuple arrays', () => {
+  for (const [levels, outcome] of [
+    [100, 'Conformant'],
+    [129, 'Unreadable'],
+  ] as const) {
+    let declaredType: SignatureType = field;
+    let implementedType: SignatureType = { tag: 'Field' };
+    for (let i = 0; i < levels; i += 1) {
+      declaredType = { tag: 'Tuple', types: [declaredType] };
+      implementedType = { tag: 'Tuple', types: [implementedType] };
+    }
+    const result = checkConformance(
+      { use: { argumentTypes: [declaredType], resultType: field } },
+      implementation(implementedType),
+    );
+    expect(result.outcome, `depth ${levels}`).toEqual(outcome);
+    if (outcome === 'Unreadable') expect(result).toMatchObject({ unreadableTag: 'Field', argumentIndex: 0 });
+  }
+});
+
 test('a large expanded result Vector conforms under its own validation allowance', () => {
   const length = 12_000;
   const expected: SignatureType = { tag: 'Vector', length, type: field };

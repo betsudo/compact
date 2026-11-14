@@ -184,6 +184,7 @@ const validationBudget = (declared: SignatureType, expandVectors = false): Valid
 // checks own descriptors first so ordinary accessors cannot run during cloning. Physical DAG
 // nodes are visited once, while array lengths and own properties consume the allowance.
 const MAX_SNAPSHOT_ENTRIES = 100_000;
+const MAX_SNAPSHOT_CONTAINER_DEPTH = 1_024;
 const snapshotSignature = (
   declared: SignatureType,
   implemented: SignatureType,
@@ -195,15 +196,23 @@ const snapshotSignature = (
   const budget: ValidationBudget = { remaining: allowance };
   const active = new Set<object>();
   const seen = new Set<object>();
-  const inspect = (value: unknown, depth: number, parentTag: string): string | undefined => {
+  const inspect = (value: unknown, typeDepth: number, containerDepth: number, parentTag: string): string | undefined => {
     if (typeof value !== 'object' || value === null) return undefined;
     let tag = parentTag;
     let entered = false;
     try {
       const ownTag = Object.getOwnPropertyDescriptor(value, 'tag');
-      if (ownTag !== undefined && Object.prototype.hasOwnProperty.call(ownTag, 'value') && typeof ownTag.value === 'string')
-        tag = ownTag.value;
-      if (depth > MAX_SIGNATURE_DEPTH || active.has(value) || budget.remaining-- <= 0) return tag;
+      const hasOwnTypeTag =
+        ownTag !== undefined && Object.prototype.hasOwnProperty.call(ownTag, 'value') && typeof ownTag.value === 'string';
+      if (hasOwnTypeTag) tag = ownTag.value;
+      const nextTypeDepth = hasOwnTypeTag ? typeDepth + 1 : typeDepth;
+      if (
+        nextTypeDepth > MAX_SIGNATURE_DEPTH ||
+        containerDepth > MAX_SNAPSHOT_CONTAINER_DEPTH ||
+        active.has(value) ||
+        budget.remaining-- <= 0
+      )
+        return tag;
       if (seen.has(value)) return undefined;
       active.add(value);
       entered = true;
@@ -216,7 +225,7 @@ const snapshotSignature = (
         if (budget.remaining-- <= 0) return tag;
         const descriptor = Object.getOwnPropertyDescriptor(value, key);
         if (descriptor === undefined || !Object.prototype.hasOwnProperty.call(descriptor, 'value')) return tag;
-        const unreadable = inspect(descriptor.value, depth + 1, tag);
+        const unreadable = inspect(descriptor.value, nextTypeDepth, containerDepth + 1, tag);
         if (unreadable !== undefined) return unreadable;
       }
       seen.add(value);
@@ -227,7 +236,7 @@ const snapshotSignature = (
       if (entered) active.delete(value);
     }
   };
-  const unreadableTag = inspect(implemented, 0, MALFORMED);
+  const unreadableTag = inspect(implemented, -1, 0, MALFORMED);
   if (unreadableTag !== undefined) return { unreadableTag };
   if (typeof globalThis.structuredClone !== 'function') return { unreadableTag: MALFORMED };
   try {
