@@ -1,0 +1,27 @@
+{
+  "format": "compact-passport-ledger9-capture-binding/v1",
+  "compiler_sha256": "ae663ba2ea9c22e7403a45209240948e212346e50bf28d2a7b8adec984ce5a7a",
+  "compiler_scheme_sha256": "6a878d2b141ca63035c07c50fd65bd5fa7869d2dad66434bc25e147b370fd576",
+  "compact_runtime": "0.18.0",
+  "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
+  "onchain_runtime": "4.0.1",
+  "source_manifest_sha256": "f122c9c890e841d50f2f2980df4229de584333a9eb6c9a4525794f8ce8a77f78",
+  "generated_rust_sha256": "aa87431e9778970a739221f88fbb83970412576e1a72819d7183613db2621009",
+  "generated_javascript_sha256": "9d64614640f2bf1b081d307dfdc19ee0920278e193d92db6b9e1b055c38c3541",
+  "generated_rust_ir_sha256": "5dc3614472862139020ceae5224dc683dfa0a4720d2b9ec36f183816d8136ad6",
+  "ledger8_generated_rust_record_sha256": "27633ea54526a6c4ffecef8d1102e554a89071df64628e96e0b798dcf44e22c1",
+  "captures": {
+    "branch-age-capture.json": "d6d7a98c7be6ad25906730abdcac7c71d94bd21645c06462b7800a499a83a1bd",
+    "branch-authorization-capture.json": "f081e74e96822dd0ce7efc173b2a2daceb9bb4063da99c5eb06ebcdb69845512",
+    "branch-bindings-capture.json": "6bded5b5cc65761c7cd2c6354c918fc69a68b3e7922f1d592186b6dd88c34405",
+    "branch-codec-capture.json": "1f23c951062669f09d59207a0552e1b8894b5ec53cc420a71bfeb392d50e9385",
+    "branch-complete-flow-capture.json": "147bd0fa19da7c8025e0d808cefe8ede2ec75a221822a41683678d5289360452",
+    "branch-private-parts-capture.json": "816779d150ad9d7181542d0d1d87cf8940cb066cdbb5420273e4a6cfbdc8f5f2",
+    "branch-protocol-capture.json": "3843364354e4d2ae0f01594f8e79649e144055ab51e2a1efed3a2232b8dfe83c",
+    "branch-protocol-roundtrip-capture.json": "e0148d85c348de6d6c3d1d45c66a403cd087213aa992bee9be850ba3b4ea0b96",
+    "branch-request-capture.json": "6c7963b96ae2cbffb816c1aa83bcaa35558d4559e9bbf72aba50138949835e27",
+    "branch-roots-capture.json": "84ce6f183016f506ae072c36dc9372929b5ae4ae7f3a0e50be9e60c8f9c98bf7",
+    "branch-signed-flow-capture.json": "b02795be61472c22fa1618d8b1da9803980a73b443a33fdc8be3430d26f6e3d9",
+    "branch-ts-capture.json": "43ecdf24460736a8ee3facca07e183e6a7d8c804c82b12c75b74ff96f4ff6046"
+  }
+}

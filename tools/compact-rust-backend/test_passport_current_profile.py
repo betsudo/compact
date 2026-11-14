@@ -45,6 +45,59 @@ class PassportControlTests(unittest.TestCase):
             with self.subTest(capture=change), self.assertRaises(ValueError):
                 gate.compare_capture(change, expected, "current")
 
+    def test_runtime_018_reviewed_cohort_retains_all_202_historical_cases(self):
+        current = gate.ORACLE / "ledger9-runtime0.18.0"
+        historical = gate.ORACLE / "ledger9"
+        total = 0
+        for family in gate.FAMILIES:
+            name = f"branch-{family}-capture.json"
+            old = json.loads((historical / name).read_text())
+            new = json.loads((current / name).read_text())
+            upstream = json.loads((gate.ORACLE / f"upstream-{family}-capture.json").read_text())
+            self.assertEqual(old.pop("profile"), "branch-ledger9-runtime0.17.0-onchain4.0.1")
+            self.assertEqual(new.pop("profile"), "branch-ledger9-runtime0.18.0-onchain4.0.1")
+            upstream.pop("profile")
+            self.assertEqual(new, old, family)
+            self.assertEqual(new, upstream, family)
+            total += len(new.get("rows", []))
+        self.assertEqual(total, 202)
+
+    def test_current_reviewed_binding_rejects_capture_and_artifact_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "reviewed"
+            shutil.copytree(gate.ORACLE / "ledger9-runtime0.18.0", directory)
+            generated = root / "generated"
+            generated.mkdir()
+            files = {name: root / name for name in
+                     ("package.json", "source-manifest.json", "formatted.rs", "ledger8.json")}
+            files.update({name: generated / name for name in ("index.js", "compact-rust-ir.json")})
+            for name, path in files.items():
+                path.write_text(name)
+            binding_path = directory / "binding.json"
+            binding = json.loads(binding_path.read_text())
+            for key, name in (("runtime_package_sha256", "package.json"),
+                              ("source_manifest_sha256", "source-manifest.json"),
+                              ("generated_rust_sha256", "formatted.rs"),
+                              ("generated_javascript_sha256", "index.js"),
+                              ("generated_rust_ir_sha256", "compact-rust-ir.json"),
+                              ("ledger8_generated_rust_record_sha256", "ledger8.json")):
+                binding[key] = gate.digest(files[name])
+            binding_path.write_text(json.dumps(binding))
+            def validate():
+                return gate.reviewed_capture_binding(directory, files["package.json"],
+                    files["source-manifest.json"], generated, files["formatted.rs"],
+                    files["ledger8.json"], "0.18.0")
+            self.assertEqual(validate(), gate.digest(binding_path))
+            capture = directory / "branch-ts-capture.json"
+            capture.write_bytes(capture.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "capture binding differs"):
+                validate()
+            shutil.copyfile(gate.ORACLE / "ledger9-runtime0.18.0/branch-ts-capture.json", capture)
+            files["index.js"].write_text("tampered")
+            with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                validate()
+
     def test_original_import_closure_rejects_missing_extra_or_changed_source(self):
         with tempfile.TemporaryDirectory() as temporary:
             source = Path(temporary) / "source"

@@ -90,6 +90,31 @@ def compare_capture(actual, expected, profile):
             raise ValueError(f"Passport capture behavior differs: {key}")
 
 
+def reviewed_capture_binding(directory, runtime_package, source_manifest, generated,
+                             formatted_rust, ledger8_record, runtime_version):
+    """Bind the reviewed current cohort without changing the historical 0.17 record."""
+    binding_path = directory / "binding.json"
+    binding = json.loads(binding_path.read_text())
+    expected = {
+        "compact_runtime": runtime_version,
+        "onchain_runtime": ONCHAIN_VERSION,
+        "runtime_package_sha256": digest(runtime_package),
+        "source_manifest_sha256": digest(source_manifest),
+        "generated_rust_sha256": digest(formatted_rust),
+        "generated_javascript_sha256": digest(generated / "index.js"),
+        "generated_rust_ir_sha256": digest(generated / "compact-rust-ir.json"),
+        "ledger8_generated_rust_record_sha256": digest(ledger8_record),
+    }
+    if (binding.get("format") != "compact-passport-ledger9-capture-binding/v1"
+            or any(binding.get(key) != value for key, value in expected.items())):
+        raise ValueError("current Passport reviewed source/artifact binding differs")
+    names = {f"branch-{family}-capture.json" for family in FAMILIES}
+    if (set(binding.get("captures", {})) != names
+            or any(binding["captures"][name] != digest(directory / name) for name in names)):
+        raise ValueError("current Passport reviewed capture binding differs")
+    return digest(binding_path)
+
+
 def validate_dependencies(metadata, lock_path, allowed, qualified, required=()):
     """Existing consumer cohort policy, with every local manifest isolated."""
     resolved = set()
@@ -451,6 +476,11 @@ def main(argv=None):
             contract / "lib.rs", output / "formatted-generated-lib.rs", run)
         if receipt["formatted_generated_rust_sha256"] != digest(FIXTURE / "lib.rs"):
             raise ValueError("complete generated Passport Rust differs from the reviewed fixture")
+        reviewed_dir = ORACLE / f"ledger9-runtime{ts_package['version']}"
+        receipt["reviewed_capture_binding_sha256"] = reviewed_capture_binding(
+            reviewed_dir, runtime / "package.json", manifest, contract,
+            output / "formatted-generated-lib.rs", FIXTURE / "generated-rust.json",
+            ts_package["version"])
         link = contract / "node_modules/@midnight-ntwrk/compact-runtime"
         link.parent.mkdir(parents=True)
         link.symlink_to(runtime, target_is_directory=True)
@@ -471,7 +501,7 @@ def main(argv=None):
             run(f"typescript-{family}", [*command, profile, capture])
             actual = json.loads(capture.read_text())
             compare_capture(actual, json.loads((ORACLE / f"upstream-{family}-capture.json").read_text()), profile)
-            reviewed = json.loads((ORACLE / "ledger9" / f"branch-{family}-capture.json").read_text())
+            reviewed = json.loads((reviewed_dir / f"branch-{family}-capture.json").read_text())
             compare_capture(reviewed, actual, reviewed_profile)
             receipt["typescript"].append({"family": family, "cases": len(actual.get("rows", [])), "sha256": digest(capture)})
         if not link.is_symlink() or link.resolve() != runtime:
