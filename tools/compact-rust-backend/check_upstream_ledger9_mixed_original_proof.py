@@ -28,7 +28,9 @@ import shutil
 import subprocess
 import tomllib
 
-from collection_gate_binding import compiler_recipe, generated_contract_file_set
+from collection_gate_binding import (
+    GENERATED_CONTRACT_FILES, compiler_recipe, generated_contract_file_set,
+)
 from check_upstream_ledger9_bytes_map_proof import (
     RUNNER_SOURCE_SHA256, WASM_TGZ_SHA256, ZKIR_SHA256, require_grouped_lineage,
 )
@@ -203,6 +205,73 @@ def validate_verification_output(output: str, *, case: str) -> None:
             f'{case} independent verification or refusal controls changed')
 
 
+def bytes_baseline_artifacts(path: Path) -> list[Path]:
+    """Admit the Bytes qualification files named by the runtime baseline."""
+    baseline = json.loads(path.read_text())
+    families = ('field_to_uint', 'large_index', 'reordering',
+                'transformation', 'slice_composition', 'to_bytes')
+    expected = {f'{family}/{mode}/typescript' for family in families
+                for mode in ('default', 'paired')}
+    expected.update(f'{family}/paired/{kind}' for family in families
+                    for kind in ('rust', 'rust_ir'))
+    artifacts = baseline.get('artifacts', {})
+    require(set(artifacts) == expected, 'Bytes runtime baseline artifact inventory changed')
+    names = {'typescript': 'index.js', 'rust': 'lib.rs',
+             'rust_ir': 'compact-rust-ir.json'}
+    paths = []
+    for key, digest in artifacts.items():
+        family, mode, kind = key.split('/')
+        file = path.parent / mode / family / 'contract' / names[kind]
+        require(sha(file) == digest, f'Bytes runtime baseline artifact changed: {key}')
+        paths.append(file)
+    for file, key in ((path.parent / 'cargo-test.log', 'cargo_test_log_sha256'),
+                      (path.parent / 'rust-consumer/Cargo.lock',
+                       'rust_consumer_lock_sha256')):
+        require(sha(file) == baseline.get(key),
+                f'Bytes runtime baseline evidence changed: {key}')
+        paths.append(file)
+    return paths
+
+
+def external_input_paths(*, preflight_path: Path, baseline_path: Path,
+                         compiler_path: Path, compiler: Path, scheme: Path,
+                         runner_source: Path, runner_receipt: Path, material: Path,
+                         wrong_root: Path, zkir: Path, prior: dict) -> list[Path]:
+    """List the admitted external bytes that proof and receipt creation may read."""
+    paths = [preflight_path, baseline_path, compiler_path, compiler, scheme,
+             runner_receipt, zkir, material.parent / 'material-receipt.json',
+             wrong_root / 'receipt.json',
+             preflight_path.parent / 'runtime-recipe.log',
+             baseline_path.parent / 'typescript-runtime-recipe.log']
+    paths.extend(runner_source / name for name in RUNNER_SOURCE_SHA256)
+    paths.extend(bytes_baseline_artifacts(baseline_path))
+    runtime = (Path(prior['runtime_store']) /
+               'lib/node_modules/@midnight-ntwrk/compact-runtime')
+    paths.append(runtime / 'package.json')
+    paths.extend(runtime / 'dist' / name for name in prior['runtime_dist_files'])
+    for case, pins in CASES.items():
+        paths.extend((preflight_path.parent / 'original' / f'{case}.{suffix}')
+                     for suffix in ('compact', 'callback.js'))
+        contract = preflight_path.parent / case / 'contract'
+        paths.extend(contract / name for name in GENERATED_CONTRACT_FILES)
+        paths.extend((preflight_path.parent / case / 'zkir/test.zkir',
+                      preflight_path.parent / f'{case}-capture/capture.json',
+                      preflight_path.parent / f'{case}-capture/honest.preimage',
+                      preflight_path.parent / f'{case}-capture/changed-key.preimage',
+                      material / f'bls_midnight_2p{pins["k"]}',
+                      wrong_root / pins['wrong'] / 'statement.verifier'))
+    return paths
+
+
+def fingerprint_inputs(paths: list[Path]) -> dict[str, str]:
+    return {str(path): sha(path) for path in paths}
+
+
+def require_inputs_unchanged(paths: list[Path], initial: dict[str, str]) -> None:
+    require(fingerprint_inputs(paths) == initial,
+            'externally mutable mixed proof input changed during qualification')
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('preflight-receipt', 'compiler-receipt', 'runtime-baseline-receipt',
@@ -244,6 +313,12 @@ def main() -> None:
         extracted=original_cases())
     validate_runner_source(runner_source, runner_receipt)
     validate_material_and_wrong(material, wrong_root)
+    input_paths = external_input_paths(
+        preflight_path=preflight_path, baseline_path=baseline_path,
+        compiler_path=compiler_path, compiler=compiler, scheme=scheme,
+        runner_source=runner_source, runner_receipt=runner_receipt,
+        material=material, wrong_root=wrong_root, zkir=zkir, prior=prior)
+    admitted_inputs = fingerprint_inputs(input_paths)
     rustc = subprocess.check_output(['rustc', '+1.99.0', '-vV'], text=True)
     require('release: 1.99.0' in rustc.splitlines() and
             'commit-hash: b940084d7eb6a299eb4bfeb8e34901bc051e7ac4'
@@ -267,6 +342,7 @@ def main() -> None:
         output / 'runner-build.log', cwd=runner_source, env=clean_env)
     runner = output / 'runner-target/debug/secp256k1-unary-proof'
     require(runner.is_file() and not runner.is_symlink(), 'source-built proof runner missing')
+    runner_sha = sha(runner)
     cases = {}
     for case, pins in CASES.items():
         raw = preflight_path.parent / case / 'zkir/test.zkir'
@@ -299,14 +375,42 @@ def main() -> None:
             'independent_verification': True,
             'wrong_verifier_changed_binding_corrupt_proof_refused': True,
         }
-    require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head,
+    require_inputs_unchanged(input_paths, admitted_inputs)
+    require(not git('status', '--porcelain') and git('rev-parse', 'HEAD') == head and
+            git('rev-parse', 'HEAD^{tree}') == tree,
             'source checkout changed during mixed proof gate')
+    compiler_recipe(compiler_path, compiler, scheme,
+                    source_head=head, current_head=head)
+    require(validate_preflight(
+                preflight_path, args.preflight_receipt_sha256, head=head, tree=tree,
+                compiler_receipt=compiler_path, compiler=compiler,
+                runtime_baseline=baseline_path,
+                baseline_pin=args.runtime_baseline_receipt_sha256,
+                extracted=original_cases()) == prior,
+            'mixed preflight changed during proof gate')
+    validate_runner_source(runner_source, runner_receipt)
+    validate_material_and_wrong(material, wrong_root)
+    require(sha(zkir) == ZKIR_SHA256 and sha(runner) == runner_sha,
+            'ZKIR or source-built proof runner changed during qualification')
+    for case in CASES:
+        proof_dir = output / 'proof' / case
+        qualified = cases[case]
+        for filename, digest in (
+            ('statement.proof', qualified['proof_sha256']),
+            ('statement.prover', qualified['prover_sha256']),
+            ('statement.verifier', qualified['verifier_sha256']),
+        ):
+            require(sha(proof_dir / filename) == digest,
+                    f'{case} proof output changed after independent verification')
+        require(sha(output / f'{case}-prove.log') == qualified['prove_log_sha256'] and
+                sha(output / f'{case}-verify.log') == qualified['verification_log_sha256'],
+                f'{case} proof log changed after independent verification')
     receipt = {
         'format': 'ledger9-mixed-original-proofs/v1',
         'source_head': head, 'source_tree': tree,
         'preflight_receipt_sha256': sha(preflight_path),
         'compiler_receipt_sha256': sha(compiler_path),
-        'runner_binary_sha256': sha(runner),
+        'runner_binary_sha256': runner_sha,
         'runner_source_receipt_sha256': sha(runner_receipt),
         'verifier_source_sha256': sha(Path(__file__)),
         'zkir_binary_sha256': sha(zkir),

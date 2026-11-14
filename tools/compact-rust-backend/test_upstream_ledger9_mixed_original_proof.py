@@ -196,6 +196,51 @@ class MixedProofAdmissionTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'verification or refusal'):
             gate.validate_verification_output('verified', case='k1')
 
+    def test_refuses_preimage_mutated_after_initial_admission(self) -> None:
+        artifacts = {}
+        for family in ('field_to_uint', 'large_index', 'reordering',
+                       'transformation', 'slice_composition', 'to_bytes'):
+            for mode in ('default', 'paired'):
+                path = self.write(self.baseline.parent / mode / family / 'contract/index.js',
+                                  f'{family} {mode} TypeScript\n')
+                artifacts[f'{family}/{mode}/typescript'] = gate.sha(path)
+            for kind, filename in (('rust', 'lib.rs'),
+                                   ('rust_ir', 'compact-rust-ir.json')):
+                path = self.write(self.baseline.parent / 'paired' / family / 'contract' / filename,
+                                  f'{family} {kind}\n')
+                artifacts[f'{family}/paired/{kind}'] = gate.sha(path)
+        cargo_log = self.write(self.baseline.parent / 'cargo-test.log', 'tests passed\n')
+        lock = self.write(self.baseline.parent / 'rust-consumer/Cargo.lock', 'lock\n')
+        self.write(self.baseline, json.dumps({
+            'artifacts': artifacts, 'cargo_test_log_sha256': gate.sha(cargo_log),
+            'rust_consumer_lock_sha256': gate.sha(lock)}))
+        self.prior['runtime_baseline_sha256'] = gate.sha(self.baseline)
+        self.validate()
+        scheme = self.write(self.root.parent / 'compactc-scheme', 'scheme\n')
+        zkir = self.write(self.root.parent / 'zkir', 'zkir\n')
+        runner_source = self.root.parent / 'runner-source'
+        for name in gate.RUNNER_SOURCE_SHA256:
+            self.write(runner_source / name, name + '\n')
+        runner_receipt = self.write(self.root.parent / 'runner-receipt.json', '{}\n')
+        material = self.root.parent / 'material-root/material'
+        self.write(material.parent / 'material-receipt.json', '{}\n')
+        self.write(material / 'bls_midnight_2p17', 'params\n')
+        wrong = self.root.parent / 'wrong'
+        self.write(wrong / 'receipt.json', '{}\n')
+        self.write(wrong / 'two/statement.verifier', 'verifier\n')
+        self.write(self.baseline.parent / 'typescript-runtime-recipe.log', 'runtime\n')
+        self.write(self.runtime / 'dist/index.js', 'runtime dist\n')
+        paths = gate.external_input_paths(
+            preflight_path=self.path, baseline_path=self.baseline,
+            compiler_path=self.compiler_receipt, compiler=self.compiler, scheme=scheme,
+            runner_source=runner_source, runner_receipt=runner_receipt,
+            material=material, wrong_root=wrong, zkir=zkir, prior=self.prior)
+        self.assertIn(self.preflight / 'k1-capture/honest.preimage', paths)
+        admitted = gate.fingerprint_inputs(paths)
+        self.write(self.preflight / 'k1-capture/honest.preimage', 'mutated after admission\n')
+        with self.assertRaisesRegex(RuntimeError, 'input changed during qualification'):
+            gate.require_inputs_unchanged(paths, admitted)
+
 
 if __name__ == '__main__':
     unittest.main()
