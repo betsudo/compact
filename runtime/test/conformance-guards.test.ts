@@ -192,7 +192,7 @@ test('a large Vector can conform to a matching explicit Tuple without lending it
   ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', unreadableTag: 'Alias', argumentIndex: 0 });
 });
 
-test('shared explicit Tuples cannot turn a small Vector declaration into exponential validation work', () => {
+test('shared explicit Tuples compare once per type pair instead of expanding exponentially', () => {
   let declaredType: SignatureType = field;
   let implementedType: SignatureType = field;
   for (let i = 0; i < 25; i += 1) {
@@ -201,7 +201,7 @@ test('shared explicit Tuples cannot turn a small Vector declaration into exponen
   }
   expect(
     checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
-  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
+  ).toEqual({ outcome: 'Conformant' });
 });
 
 test('a large expanded result Vector conforms under its own validation allowance', () => {
@@ -214,6 +214,84 @@ test('a large expanded result Vector conforms under its own validation allowance
       { use: { pure: false, provable: true, argumentTypes: [], resultType: expanded } },
     ),
   ).toEqual({ outcome: 'Conformant' });
+});
+
+test('large Vector/Tuple pairs remain conformant inside aliases, structs and contracts', () => {
+  const length = 12_000;
+  const vector: SignatureType = { tag: 'Vector', length, type: field };
+  const tuple: SignatureType = { tag: 'Tuple', types: Array.from({ length }, (): SignatureType => ({ tag: 'Field' })) };
+  const cases: readonly (readonly [string, SignatureType, SignatureType])[] = [
+    ['Alias', { tag: 'Alias', name: 'Values', type: vector }, { tag: 'Alias', name: 'Values', type: tuple }],
+    [
+      'Struct',
+      { tag: 'Struct', name: 'Values', elements: [{ name: 'items', type: vector }] },
+      { tag: 'Struct', name: 'Values', elements: [{ name: 'items', type: tuple }] },
+    ],
+    [
+      'Contract',
+      { tag: 'Contract', name: 'Declared', circuits: { read: { argumentTypes: [vector], resultType: vector } } },
+      { tag: 'Contract', name: 'Implemented', circuits: { read: { argumentTypes: [tuple], resultType: tuple } } },
+    ],
+  ];
+  for (const [name, expected, received] of cases) {
+    expect(checkConformance({ use: { argumentTypes: [expected], resultType: field } }, implementation(received)), name).toEqual({
+      outcome: 'Conformant',
+    });
+  }
+});
+
+test('the first mismatching tuple element stops work on later untrusted elements', () => {
+  const fields = Array.from({ length: 5_000 }, (_, i) => ({ name: `f${i}`, type: field }));
+  let inspected = 0;
+  const elements = Array.from({ length: 2_000 }, () =>
+    malformed({
+      tag: 'Struct',
+      name: 'Unrelated',
+      get elements() {
+        inspected += 1;
+        return fields;
+      },
+    }),
+  );
+  const expected: SignatureType = { tag: 'Vector', length: elements.length, type: field };
+  const received: SignatureType = { tag: 'Tuple', types: elements };
+  expect(checkConformance({ use: { argumentTypes: [expected], resultType: field } }, implementation(received))).toEqual({
+    outcome: 'Violation',
+    circuitId: 'use',
+    check: 'ArgumentType',
+    argumentIndex: 0,
+  });
+  expect(inspected).toBeLessThan(10);
+});
+
+test('a matching expanded struct field cannot lend its allowance to another field', () => {
+  const length = 12_000;
+  const vector: SignatureType = { tag: 'Vector', length, type: field };
+  const tuple: SignatureType = { tag: 'Tuple', types: Array<SignatureType>(length).fill(field) };
+  const declaredType: SignatureType = {
+    tag: 'Struct',
+    name: 'Pair',
+    elements: [
+      { name: 'items', type: vector },
+      { name: 'other', type: field },
+    ],
+  };
+  const unrelated = malformed({
+    tag: 'Contract',
+    name: 'Nested',
+    circuits: { c: { argumentTypes: Array<SignatureType>(20_000).fill(field), resultType: field } },
+  });
+  const implementedType: SignatureType = {
+    tag: 'Struct',
+    name: 'Pair',
+    elements: [
+      { name: 'items', type: tuple },
+      { name: 'other', type: unrelated },
+    ],
+  };
+  expect(
+    checkConformance({ use: { argumentTypes: [declaredType], resultType: field } }, implementation(implementedType)),
+  ).toMatchObject({ outcome: 'Unreadable', circuitId: 'use', argumentIndex: 0 });
 });
 
 test('nested contract arguments stop at the validation budget', () => {

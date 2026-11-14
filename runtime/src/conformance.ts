@@ -113,8 +113,10 @@ type ValidationBudget = { remaining: number };
 // how much malformed implementation metadata can make us inspect per declared circuit.
 const MAX_DECLARATION_COST = Number.MAX_SAFE_INTEGER - MAX_SIGNATURE_NODES;
 const boundedAdd = (a: number, b: number): number => Math.min(MAX_DECLARATION_COST, a + b);
+const boundedMultiply = (a: number, b: number): number =>
+  a === 0 || b === 0 ? 0 : a > MAX_DECLARATION_COST / b ? MAX_DECLARATION_COST : a * b;
 
-const declarationTypeCost = (type: SignatureType, active: Set<object>, depth = 0): number => {
+const declarationTypeCost = (type: SignatureType, active: Set<object>, depth = 0, expandVectors = false): number => {
   if (depth > MAX_SIGNATURE_DEPTH || active.has(type)) return 0;
   active.add(type);
   try {
@@ -122,16 +124,27 @@ const declarationTypeCost = (type: SignatureType, active: Set<object>, depth = 0
       case 'Enum':
         return boundedAdd(1, type.elements.length);
       case 'Alias':
-        return boundedAdd(1, declarationTypeCost(type.type, active, depth + 1));
+        return boundedAdd(1, declarationTypeCost(type.type, active, depth + 1, expandVectors));
       case 'Vector':
-        return boundedAdd(1, declarationTypeCost(type.type, active, depth + 1));
+        return boundedAdd(
+          1,
+          expandVectors
+            ? boundedMultiply(type.length, declarationTypeCost(type.type, active, depth + 1, true))
+            : declarationTypeCost(type.type, active, depth + 1),
+        );
       case 'Tuple':
-        return type.types.reduce((cost, element) => boundedAdd(cost, declarationTypeCost(element, active, depth + 1)), 1);
+        return type.types.reduce(
+          (cost, element) => boundedAdd(cost, declarationTypeCost(element, active, depth + 1, expandVectors)),
+          1,
+        );
       case 'Struct':
-        return type.elements.reduce((cost, element) => boundedAdd(cost, declarationTypeCost(element.type, active, depth + 1)), 1);
+        return type.elements.reduce(
+          (cost, element) => boundedAdd(cost, declarationTypeCost(element.type, active, depth + 1, expandVectors)),
+          1,
+        );
       case 'Contract':
         return Object.values(type.circuits).reduce(
-          (cost, circuit) => boundedAdd(cost, declarationCircuitCost(circuit, active, depth + 1)),
+          (cost, circuit) => boundedAdd(cost, declarationCircuitCost(circuit, active, depth + 1, expandVectors)),
           1,
         );
       default:
@@ -142,16 +155,27 @@ const declarationTypeCost = (type: SignatureType, active: Set<object>, depth = 0
   }
 };
 
-const declarationCircuitCost = (circuit: InterfaceCircuitDeclaration, active: Set<object>, depth = 0): number =>
+const declarationCircuitCost = (
+  circuit: InterfaceCircuitDeclaration,
+  active: Set<object>,
+  depth = 0,
+  expandVectors = false,
+): number =>
   boundedAdd(
-    circuit.argumentTypes.reduce((cost, type) => boundedAdd(cost, declarationTypeCost(type, active, depth + 1)), 1),
-    declarationTypeCost(circuit.resultType, active, depth + 1),
+    circuit.argumentTypes.reduce(
+      (cost, type) => boundedAdd(cost, declarationTypeCost(type, active, depth + 1, expandVectors)),
+      1,
+    ),
+    declarationTypeCost(circuit.resultType, active, depth + 1, expandVectors),
   );
 
 // The declaration is trusted compiler output. Each argument gets its own encoded-shape allowance,
 // so an unrelated argument or circuit cannot borrow a large declaration's validation budget.
-const validationBudget = (declared: SignatureType): ValidationBudget => ({
-  remaining: Math.min(Number.MAX_SAFE_INTEGER, MAX_SIGNATURE_NODES + declarationTypeCost(declared, new Set<object>())),
+const validationBudget = (declared: SignatureType, expandVectors = false): ValidationBudget => ({
+  remaining: Math.min(
+    Number.MAX_SAFE_INTEGER,
+    MAX_SIGNATURE_NODES + declarationTypeCost(declared, new Set<object>(), 0, expandVectors),
+  ),
 });
 
 /** `value` as a readable record, or `undefined` if it is not one. */
@@ -443,35 +467,188 @@ export function signatureTypesEqual(a: SignatureType, b: SignatureType): boolean
   }
 }
 
-// A Vector<N,T> can be implemented by an explicit N-tuple. Validate each element against T with its
-// own allowance. Reuse the outcome for shared objects, so a short tuple full of repeated references
-// cannot force repeated walks of the same large or cyclic implementation subtree.
-const checkExpandedVector = (
-  declared: SignatureType,
-  implemented: SignatureType,
-): { readonly unreadableTag?: string; readonly equal: boolean } | undefined => {
-  if (
-    declared.tag !== 'Vector' ||
-    implemented?.tag !== 'Tuple' ||
-    !Array.isArray(implemented.types) ||
-    implemented.types.length !== declared.length
-  )
-    return undefined;
-  const seen = new Map<object, { readonly unreadableTag?: string; readonly equal: boolean }>();
-  let equal = true;
-  for (const element of implemented.types) {
-    const record = asRecord(element);
-    let result = record === undefined ? undefined : seen.get(record);
-    if (result === undefined) {
-      const unreadableTag = firstUnreadableTag(element, new Set<object>(), 1, validationBudget(declared.type));
-      result = { unreadableTag, equal: unreadableTag === undefined && signatureTypesEqual(declared.type, element) };
-      if (record !== undefined) seen.set(record, result);
-    }
-    if (result.unreadableTag !== undefined) return { unreadableTag: result.unreadableTag, equal: false };
-    if (!result.equal) equal = false;
-  }
-  return { equal };
+type TypeCheck = { readonly unreadableTag?: string; readonly equal: boolean };
+type TypeCheckState = {
+  readonly active: Set<object>;
+  readonly memo: Map<object, Map<object, Map<number, TypeCheck>>>;
+  readonly budget: ValidationBudget;
 };
+
+// Compare within the shape declared by the caller. A matching expanded Vector is visited element
+// by element; a mismatch falls back to the fixed local validation allowance and stops at once.
+// The total allowance is derived from the trusted declaration's logical shape, while memoization
+// prevents a shared implementation DAG from multiplying the amount of work.
+const inspectTypePair = (declared: SignatureType, implemented: SignatureType, state: TypeCheckState, depth = 0): TypeCheck => {
+  const actual = asRecord(implemented);
+  if (actual === undefined || typeof actual.tag !== 'string') return { unreadableTag: MALFORMED, equal: false };
+  const tag = actual.tag;
+  if (!Object.prototype.hasOwnProperty.call(KNOWN_SIGNATURE_TAGS, tag)) return { unreadableTag: tag, equal: false };
+  if (depth > MAX_SIGNATURE_DEPTH || state.active.has(actual)) return { unreadableTag: tag, equal: false };
+  const cached = state.memo.get(declared)?.get(actual)?.get(depth);
+  if (cached !== undefined) return cached;
+
+  const fallback = (): TypeCheck => {
+    // The fallback validates this node again, so replace the entry charge rather than counting it twice.
+    state.budget.remaining += 1;
+    const local = validationBudget(declared);
+    local.remaining = Math.min(local.remaining, state.budget.remaining);
+    const before = local.remaining;
+    const unreadableTag = firstUnreadableTag(implemented, new Set<object>(), depth, local);
+    state.budget.remaining -= before - local.remaining;
+    return unreadableTag === undefined ? { equal: signatureTypesEqual(declared, implemented) } : { unreadableTag, equal: false };
+  };
+  const inspectChildren = (
+    length: number,
+    expectedAt: (index: number) => SignatureType,
+    receivedAt: (index: number) => SignatureType,
+    childDepth: number,
+  ): TypeCheck => {
+    for (let i = 0; i < length; i += 1) {
+      const child = inspectTypePair(expectedAt(i), receivedAt(i), state, childDepth);
+      if (child.unreadableTag !== undefined || !child.equal) return child;
+    }
+    return { equal: true };
+  };
+  state.active.add(actual);
+  const compute = (): TypeCheck => {
+    if (state.budget.remaining-- <= 0) return { unreadableTag: tag, equal: false };
+    if (
+      declared.tag === 'Vector' &&
+      implemented.tag === 'Vector' &&
+      isEncodedLength(implemented.length) &&
+      asRecord(implemented.type) !== undefined &&
+      declared.length === implemented.length
+    ) {
+      const child = inspectTypePair(declared.type, implemented.type, state, depth + 1);
+      return child.unreadableTag === undefined && declared.length === 0 ? { equal: true } : child;
+    }
+    if (
+      declared.tag === 'Vector' &&
+      implemented.tag === 'Tuple' &&
+      Array.isArray(implemented.types) &&
+      implemented.types.length === declared.length
+    ) {
+      return inspectChildren(
+        implemented.types.length,
+        () => declared.type,
+        (i) => implemented.types[i],
+        depth + 1,
+      );
+    }
+    if (
+      declared.tag === 'Tuple' &&
+      implemented.tag === 'Tuple' &&
+      Array.isArray(implemented.types) &&
+      implemented.types.length === declared.types.length
+    ) {
+      return inspectChildren(
+        declared.types.length,
+        (i) => declared.types[i],
+        (i) => implemented.types[i],
+        depth + 1,
+      );
+    }
+    if (
+      declared.tag === 'Tuple' &&
+      implemented.tag === 'Vector' &&
+      isEncodedLength(implemented.length) &&
+      asRecord(implemented.type) !== undefined &&
+      declared.types.length === implemented.length &&
+      declared.types.length > 0
+    ) {
+      return inspectChildren(
+        declared.types.length,
+        (i) => declared.types[i],
+        () => implemented.type,
+        depth + 1,
+      );
+    }
+    if (
+      declared.tag === 'Alias' &&
+      implemented.tag === 'Alias' &&
+      typeof implemented.name === 'string' &&
+      declared.name === implemented.name &&
+      asRecord(implemented.type) !== undefined
+    ) {
+      return inspectTypePair(declared.type, implemented.type, state, depth + 1);
+    }
+    if (
+      declared.tag === 'Struct' &&
+      implemented.tag === 'Struct' &&
+      typeof implemented.name === 'string' &&
+      declared.name === implemented.name &&
+      Array.isArray(implemented.elements) &&
+      declared.elements.length === implemented.elements.length
+    ) {
+      for (let i = 0; i < declared.elements.length; i += 1) {
+        const field = asRecord(implemented.elements[i]);
+        if (field === undefined || field.name !== declared.elements[i].name || asRecord(field.type) === undefined)
+          return fallback();
+        const child = inspectTypePair(declared.elements[i].type, field.type as SignatureType, state, depth + 1);
+        if (child.unreadableTag !== undefined || !child.equal) return child;
+      }
+      return { equal: true };
+    }
+    if (
+      declared.tag === 'Contract' &&
+      implemented.tag === 'Contract' &&
+      typeof implemented.name === 'string' &&
+      asRecord(implemented.circuits) !== undefined
+    ) {
+      const expectedNames = Object.keys(declared.circuits);
+      let actualCount = 0;
+      for (const name in implemented.circuits) {
+        if (!Object.prototype.hasOwnProperty.call(implemented.circuits, name)) continue;
+        actualCount += 1;
+        if (actualCount > expectedNames.length || !Object.prototype.hasOwnProperty.call(declared.circuits, name))
+          return fallback();
+      }
+      if (actualCount !== expectedNames.length) return fallback();
+      for (const name of expectedNames) {
+        const expected = declared.circuits[name];
+        const received = implemented.circuits[name];
+        if (!Array.isArray(asRecord(received)?.argumentTypes) || received.argumentTypes.length !== expected.argumentTypes.length)
+          return fallback();
+        const argumentsResult = inspectChildren(
+          expected.argumentTypes.length,
+          (i) => expected.argumentTypes[i],
+          (i) => received.argumentTypes[i],
+          depth + 2,
+        );
+        if (argumentsResult.unreadableTag !== undefined || !argumentsResult.equal) return argumentsResult;
+        const result = inspectTypePair(expected.resultType, received.resultType, state, depth + 2);
+        if (result.unreadableTag !== undefined || !result.equal) return result;
+      }
+      return { equal: true };
+    }
+    return fallback();
+  };
+  let result: TypeCheck;
+  try {
+    result = compute();
+  } finally {
+    state.active.delete(actual);
+  }
+  let byActual = state.memo.get(declared);
+  if (byActual === undefined) {
+    byActual = new Map();
+    state.memo.set(declared, byActual);
+  }
+  let byDepth = byActual.get(actual);
+  if (byDepth === undefined) {
+    byDepth = new Map();
+    byActual.set(actual, byDepth);
+  }
+  byDepth.set(depth, result);
+  return result;
+};
+
+const inspectAgainstDeclaration = (declared: SignatureType, implemented: SignatureType): TypeCheck =>
+  inspectTypePair(declared, implemented, {
+    active: new Set<object>(),
+    memo: new Map<object, Map<object, Map<number, TypeCheck>>>(),
+    budget: validationBudget(declared, true),
+  });
 
 /**
  * Check a resolved module against the contract type its caller declared, returning the first thing
@@ -507,42 +684,17 @@ export function checkConformance(declaration: InterfaceDescriptor, implementatio
       return { outcome: 'Violation', circuitId, check: 'Arity' };
     }
     for (let i = 0; i < declared.argumentTypes.length; i += 1) {
-      // Per position, so the report can name the argument rather than just the circuit.
-      const expanded = checkExpandedVector(declared.argumentTypes[i], implemented.argumentTypes[i]);
-      if (expanded !== undefined) {
-        if (expanded.unreadableTag !== undefined) {
-          return { outcome: 'Unreadable', circuitId, unreadableTag: expanded.unreadableTag, argumentIndex: i };
-        }
-        if (!expanded.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
-        continue;
+      const checked = inspectAgainstDeclaration(declared.argumentTypes[i], implemented.argumentTypes[i]);
+      if (checked.unreadableTag !== undefined) {
+        return { outcome: 'Unreadable', circuitId, unreadableTag: checked.unreadableTag, argumentIndex: i };
       }
-      const unreadableTag = firstUnreadableTag(
-        implemented.argumentTypes[i],
-        new Set<object>(),
-        0,
-        validationBudget(declared.argumentTypes[i]),
-      );
-      if (unreadableTag !== undefined) {
-        return { outcome: 'Unreadable', circuitId, unreadableTag, argumentIndex: i };
-      }
-      if (!signatureTypesEqual(declared.argumentTypes[i], implemented.argumentTypes[i])) {
-        return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
-      }
+      if (!checked.equal) return { outcome: 'Violation', circuitId, check: 'ArgumentType', argumentIndex: i };
     }
-    const expandedResult = checkExpandedVector(declared.resultType, implemented.resultType);
-    if (expandedResult !== undefined) {
-      if (expandedResult.unreadableTag !== undefined)
-        return { outcome: 'Unreadable', circuitId, unreadableTag: expandedResult.unreadableTag };
-      if (!expandedResult.equal) return { outcome: 'Violation', circuitId, check: 'ResultType' };
-      continue;
+    const checkedResult = inspectAgainstDeclaration(declared.resultType, implemented.resultType);
+    if (checkedResult.unreadableTag !== undefined) {
+      return { outcome: 'Unreadable', circuitId, unreadableTag: checkedResult.unreadableTag };
     }
-    const unreadableTag = firstUnreadableTag(implemented.resultType, new Set<object>(), 0, validationBudget(declared.resultType));
-    if (unreadableTag !== undefined) {
-      return { outcome: 'Unreadable', circuitId, unreadableTag };
-    }
-    if (!signatureTypesEqual(declared.resultType, implemented.resultType)) {
-      return { outcome: 'Violation', circuitId, check: 'ResultType' };
-    }
+    if (!checkedResult.equal) return { outcome: 'Violation', circuitId, check: 'ResultType' };
   }
   return { outcome: 'Conformant' };
 }
