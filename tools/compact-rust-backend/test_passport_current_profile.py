@@ -89,6 +89,16 @@ class PassportControlTests(unittest.TestCase):
                     files["source-manifest.json"], generated, files["formatted.rs"],
                     files["ledger8.json"], "0.18.0")
             self.assertEqual(validate(), gate.digest(binding_path))
+            for field in binding.keys() - {"captures"}:
+                with self.subTest(binding_field=field):
+                    changed = dict(binding, **{field: "unverified"})
+                    binding_path.write_text(json.dumps(changed))
+                    with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                        validate()
+            binding_path.write_text(json.dumps(dict(binding, compiler_sha256="unverified")))
+            with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                validate()
+            binding_path.write_text(json.dumps(binding))
             capture = directory / "branch-ts-capture.json"
             capture.write_bytes(capture.read_bytes() + b" ")
             with self.assertRaisesRegex(ValueError, "capture binding differs"):

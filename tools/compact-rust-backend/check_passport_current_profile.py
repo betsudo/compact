@@ -105,7 +105,8 @@ def reviewed_capture_binding(directory, runtime_package, source_manifest, genera
         "generated_rust_ir_sha256": digest(generated / "compact-rust-ir.json"),
         "ledger8_generated_rust_record_sha256": digest(ledger8_record),
     }
-    if (binding.get("format") != "compact-passport-ledger9-capture-binding/v1"
+    if (set(binding) != {"format", "captures", *expected}
+            or binding.get("format") != "compact-passport-ledger9-capture-binding/v2"
             or any(binding.get(key) != value for key, value in expected.items())):
         raise ValueError("current Passport reviewed source/artifact binding differs")
     names = {f"branch-{family}-capture.json" for family in FAMILIES}

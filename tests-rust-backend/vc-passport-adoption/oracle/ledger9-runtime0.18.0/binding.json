@@ -1,7 +1,5 @@
 {
-  "format": "compact-passport-ledger9-capture-binding/v1",
-  "compiler_sha256": "ae663ba2ea9c22e7403a45209240948e212346e50bf28d2a7b8adec984ce5a7a",
-  "compiler_scheme_sha256": "6a878d2b141ca63035c07c50fd65bd5fa7869d2dad66434bc25e147b370fd576",
+  "format": "compact-passport-ledger9-capture-binding/v2",
   "compact_runtime": "0.18.0",
   "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
   "onchain_runtime": "4.0.1",
