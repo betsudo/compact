@@ -82,7 +82,10 @@ fn original_to_uint_out_of_range() {
         to_uint_out_of_range::pure_circuits::field_casts_to_uint_out_of_range(Field::from(
             1u128 << 64
         )),
-        Err(CompactError::InvalidUnsignedValue),
+        Err(CompactError::UnsignedOutOfRange {
+            value: 18446744073709551616,
+            max: 18446744073709551615,
+        }),
     ));
 }
 
@@ -103,7 +106,10 @@ fn checked_bytes4_boundaries() {
     for value in [0x100000000u128, (1u128 << 40) + 0x01020304] {
         assert!(matches!(
             boundary::pure_circuits::field_casts_bytes4_boundary(Field::from(value)),
-            Err(CompactError::InvalidUnsignedValue),
+            Err(CompactError::UnsignedOutOfRange {
+                value: actual,
+                max: 4294967295,
+            }) if actual == value,
         ));
     }
 }
