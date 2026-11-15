@@ -353,7 +353,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "ts-results.json"
         run("ts", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                   "--version", "0.17.0", "--output", ts])
+                   "--version", "0.18.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == len(cases), "TS case count differs")
         consumer = output / "consumer"

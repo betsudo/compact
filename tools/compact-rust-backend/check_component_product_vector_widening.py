@@ -186,7 +186,7 @@ def main():
         (modules / 'compact-runtime').symlink_to(RT, target_is_directory=True)
         (O / 'package.json').write_text('{"type":"module"}\n')
         ts = O / 'ts-results.json'
-        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.17.0', '--output', ts])
+        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.18.0', '--output', ts])
         r = json.loads(ts.read_text())
         require(r['status'] == 'passed' and len(r['rows']) == 26, 'qualification invariant failed')
         bound[str(ts)] = sha(ts)
