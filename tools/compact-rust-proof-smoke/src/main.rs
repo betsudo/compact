@@ -19,6 +19,7 @@
 //! program and checks it against the fixture's known ZKIR encoding. The call
 //! commitment uses the value-field encoding from ledger-8's Intent::add_call.
 //! Deployment combines the generated constructor state with the emitted key.
+#![cfg_attr(feature = "bytes-equality-proof", allow(clippy::bool_comparison))]
 
 mod adt_list_bytes;
 mod adt_list_enum;
@@ -42,6 +43,19 @@ mod bboard;
 mod boolean_pair_assert;
 mod canonical_output_order;
 mod closed_pure_field;
+#[cfg(all(
+    any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
+    compact_bytes_remaining_proof_generated
+))]
+include!(concat!(
+    env!("COMPACT_BYTES_REMAINING_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
+    compact_bytes_remaining_proof_generated
+))]
+mod bytes_remaining_proof;
 #[cfg(feature = "component-product-vector-models")]
 mod component_product_vector_models;
 #[cfg(all(
