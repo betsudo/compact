@@ -27,6 +27,8 @@ class PublicGateTests(unittest.TestCase):
                     '.github/workflows/rust-backend-checks.yml').read_text()
         public = workflow.split('  public-python:\n', 1)[1].split('  required:\n', 1)[0]
         before, execution = public.split('      - name: Run public unit and sidecar controls\n', 1)
+        self.assertIn('git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git '
+                      '672bd0f226f47a7d036c5c074ce71fbe1af1925e', before)
         setup = before.split('      - name: Install pinned Rust for real Python Clippy regression\n', 1)[1]
         self.assertIn('uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7', setup)
         self.assertIn('toolchain: 1.99.0', setup)
