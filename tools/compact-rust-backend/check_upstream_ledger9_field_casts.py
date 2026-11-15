@@ -228,6 +228,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
     commit = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
@@ -277,12 +278,14 @@ def main() -> None:
             contract = destination / 'contract'
             rust = contract / 'lib.rs' if mode == 'both' else None
             generated_assertions(source_for(case), contract / 'index.js', rust)
+            runtime_log = output / f'{case}-{mode}-runtime.log'
             value = run(['node', str(ADAPTER), str(contract / 'index.js'), case],
-                        output / f'{case}-{mode}-runtime.log', env)
+                        runtime_log, env)
             require(value.strip() == f'{case}: original or boundary assertions passed',
                     f'Field cast adapter result changed: {case}')
             entry = {'typescript_sha256': sha256(contract / 'index.js'),
-                     'contract_info_sha256': sha256(info), 'runtime_result': value.strip()}
+                     'contract_info_sha256': sha256(info), 'runtime_result': value.strip(),
+                     'runtime_log_sha256': sha256(runtime_log)}
             if rust is not None:
                 entry['rust_sha256'] = sha256(rust)
                 entry['rust_ir_sha256'] = sha256(contract / 'compact-rust-ir.json')
@@ -324,7 +327,10 @@ def main() -> None:
     manifest.write_text('[workspace]\n[package]\nname = "ledger9-field-casts-consumer"\n'
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n' +
                         '\n'.join(dependencies) + '\n')
-    target = output / 'cargo-target'
+    require(args.cargo_target is None or
+            (args.cargo_target.is_absolute() and not args.cargo_target.is_symlink()),
+            'shared Cargo target must be an absolute non-symlink path')
+    target = args.cargo_target.resolve() if args.cargo_target else output / 'cargo-target'
     cargo_env = dict(env, CARGO_TARGET_DIR=str(target), CARGO_INCREMENTAL='0',
                      CARGO_PROFILE_DEV_DEBUG='0')
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
@@ -349,6 +355,10 @@ def main() -> None:
             destination = output / 'generated' / case / mode
             contract = destination / 'contract'
             entry = generated[case][mode]
+            runtime_log = output / f'{case}-{mode}-runtime.log'
+            require(sha256(runtime_log) == entry['runtime_log_sha256'] and
+                    runtime_log.read_text() == entry['runtime_result'] + '\n',
+                    f'Field cast runtime evidence changed: {case}/{mode}')
             require(sha256(contract / 'index.js') == entry['typescript_sha256'] and
                     sha256(destination / 'compiler/contract-info.json') ==
                     entry['contract_info_sha256'],
@@ -380,7 +390,9 @@ def main() -> None:
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
                'cargo_target': str(target),
                'result': 'seven pinned Field cast cases and checked Bytes<4> boundaries passed both targets; Bytes<16> Rust refusal preserved',
-               'limitations': ['local Darwin arm64; native Linux qualification required',
+               'limitations': [('native Linux generated semantics qualified' if
+                                os.uname().sysname == 'Linux' and os.uname().machine == 'x86_64'
+                                else 'local Darwin arm64; native Linux qualification required'),
                                'all seven originals are pure/proof=false; no proof or funded call applies',
                                'original Vitest harness was not run; pinned assertions and failures were replayed against generated APIs']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')

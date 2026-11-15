@@ -132,6 +132,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
     signature = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
@@ -190,12 +191,14 @@ def main() -> None:
             if mode == 'both':
                 generated_assertions(case_source(case), contract / 'index.js',
                                      contract / 'lib.rs', pure)
+            runtime_log = output / f'{case.replace("/", "-")}-{mode}-runtime.log'
             result = run(['node', str(ADAPTER), str(contract / 'index.js'), case],
-                         output / f'{case.replace("/", "-")}-{mode}-runtime.log', env)
+                         runtime_log, env)
             require(result.strip() == f'{case}: original assertion and state passed',
                     f'Bytes generated TypeScript result changed: {case}')
             entry = {'typescript_sha256': sha256(contract / 'index.js'),
-                     'contract_info_sha256': sha256(info), 'runtime_result': result.strip()}
+                     'contract_info_sha256': sha256(info), 'runtime_result': result.strip(),
+                     'runtime_log_sha256': sha256(runtime_log)}
             if mode == 'both':
                 entry['rust_sha256'] = sha256(contract / 'lib.rs')
                 entry['rust_ir_sha256'] = sha256(contract / 'compact-rust-ir.json')
@@ -219,7 +222,11 @@ def main() -> None:
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
                         'midnight-onchain-vm = "=4.0.1"\nmidnight-serialize = "=1.2.1"\n' +
                         '\n'.join(dependencies) + '\n')
-    cargo_env = dict(env, CARGO_TARGET_DIR=str(output / 'cargo-target'), CARGO_INCREMENTAL='0',
+    require(args.cargo_target is None or
+            (args.cargo_target.is_absolute() and not args.cargo_target.is_symlink()),
+            'shared Cargo target must be an absolute non-symlink path')
+    cargo_target = args.cargo_target.resolve() if args.cargo_target else output / 'cargo-target'
+    cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target), CARGO_INCREMENTAL='0',
                      CARGO_PROFILE_DEV_DEBUG='0')
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
                                '--format-version', '1', '--manifest-path', str(manifest)],
@@ -249,6 +256,10 @@ def main() -> None:
                         not (output / 'generated' / case / mode).exists(),
                         f'Bytes compile refusal artifact changed: {case}/{mode}')
                 continue
+            runtime_log = output / f'{case.replace("/", "-")}-{mode}-runtime.log'
+            require(sha256(runtime_log) == entry['runtime_log_sha256'] and
+                    runtime_log.read_text() == entry['runtime_result'] + '\n',
+                    f'Bytes runtime evidence changed: {case}/{mode}')
             contract = output / 'generated' / case / mode / 'contract'
             info = output / 'generated' / case / mode / 'compiler/contract-info.json'
             require(sha256(contract / 'index.js') == entry['typescript_sha256'] and
@@ -274,9 +285,12 @@ def main() -> None:
                'runtime_recipe': runtime_recipe, 'generated': generated,
                'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'cargo_target': str(cargo_target),
                'result': 'eleven pinned Bytes default/equality/indexing/pad/slice/spread positives and one compile refusal passed both targets',
-               'limitations': ['local Darwin arm64; native Linux qualification required',
-                               'nine stateful proof-required exports need fresh proof, funded and native Linux qualification',
+               'limitations': [('native Linux generated semantics qualified' if
+                                os.uname().sysname == 'Linux' and os.uname().machine == 'x86_64'
+                                else 'local Darwin arm64; native Linux qualification required'),
+                               'nine stateful proof-required exports need fresh proof and funded native Linux qualification',
                                'original Vitest harness was not run; its assertions and refusals were replayed against generated APIs']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'], 'output': str(output)}))
