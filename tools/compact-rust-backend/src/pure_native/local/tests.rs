@@ -2,7 +2,15 @@
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
 use super::*;
-use crate::pure_semantics::identifier::check_name;
+use crate::pure_semantics::identifier::{check_local_name, check_name};
+
+#[test]
+fn compact_underscore_local_is_addressable_without_admitting_other_underscore_identifiers() {
+    assert!(check_name("_").is_err());
+    let checked = check_local_name("_").unwrap();
+    assert_eq!(allocate(&checked, "_", []).to_string(), "__compact_local__");
+    assert_eq!(check_local_name(" _").unwrap_err(), crate::RenderError::InvalidIdentifier(" _".into()));
+}
 
 #[test]
 fn accepted_words_produce_safe_symbols_without_copying_source_trivia_or_raw_markers() {
