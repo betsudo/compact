@@ -65,7 +65,7 @@ def main() -> None:
     output = args.output.resolve()
     if args.output.is_symlink() or output.exists():
         parser.error("output must be absent")
-    source = source_state()
+    source_before = source_state()
     commit = subprocess.check_output(["git", "log", "-1", "--format=%G?%n%B"],
                                      cwd=ROOT, text=True)
     if not (commit.startswith("G\n") and "Signed-off-by:" in commit
@@ -82,7 +82,7 @@ def main() -> None:
     runtime_recipe = runtime_recipe_identity(runtime, Path(nix_executable).resolve(strict=True))
     runtime_before = runtime_identity(runtime)
     scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
-    recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
+    recipe = compiler_recipe_identity(args.compiler_recipe, source_before, compiler, scheme)
     manifest_path = FAMILY / "original-source-sha256.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["upstream_commit"] != "672bd0f226f47a7d036c5c074ce71fbe1af1925e" \
@@ -231,10 +231,10 @@ def main() -> None:
     if ("eight original vector slice assertions passed" not in rust_output
             or "local Field-to-Uint slice assertion passed" not in rust_output):
         raise RuntimeError("generated Rust assertion result missing")
-    require_unchanged(source, runtime_before, recipe, runtime,
+    require_unchanged(source_before, runtime_before, recipe, runtime,
                       args.compiler_recipe, compiler, scheme)
     receipt = {
-        **source, "source_clean": True,
+        **source_before, "source_clean": True,
         "platform": os.uname().sysname + " " + os.uname().machine,
         "upstream_commit": manifest["upstream_commit"],
         "original_files": 30,
