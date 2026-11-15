@@ -84,6 +84,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
     require(subprocess.check_output(['git', 'log', '-1', '--format=%G?'], cwd=ROOT,
@@ -171,7 +172,7 @@ def main() -> None:
         cargo.append(f'{name} = {{ package = {json.dumps(package)}, '
                      f'path = {json.dumps(str(contract))} }}')
     manifest.write_text('\n'.join(cargo) + '\n')
-    cargo_target = output / 'cargo-target'
+    cargo_target = args.cargo_target.resolve() if args.cargo_target else output / 'cargo-target'
     cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target))
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
                                '--format-version', '1', '--manifest-path', str(manifest)],

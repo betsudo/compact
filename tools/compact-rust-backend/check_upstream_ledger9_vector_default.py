@@ -129,6 +129,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
     commit = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
@@ -207,7 +208,7 @@ def main() -> None:
                         'midnight-onchain-vm = "=4.0.1"\nmidnight-serialize = "=1.2.1"\n'
                         f'basic = {{ package = {json.dumps(package_name)}, '
                         f'path = {json.dumps(str(contract))} }}\n')
-    target = output / 'cargo-target'
+    target = args.cargo_target.resolve() if args.cargo_target else output / 'cargo-target'
     cargo_env = dict(env, CARGO_TARGET_DIR=str(target), CARGO_INCREMENTAL='0',
                      CARGO_PROFILE_DEV_DEBUG='0')
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
