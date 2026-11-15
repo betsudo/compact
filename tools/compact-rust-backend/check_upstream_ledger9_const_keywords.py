@@ -127,6 +127,19 @@ def refused(result: subprocess.CompletedProcess[str], destination: Path,
     return diagnostic
 
 
+def valid_source_signature(signature: str, author: str, body: str) -> bool:
+    """Accept only a signed head with final, author-matching DCO/AI trailers."""
+    lines = body.rstrip().splitlines()
+    nonempty = [(index, line) for index, line in enumerate(lines) if line]
+    if signature != 'G' or len(nonempty) < 2:
+        return False
+    (dco_index, dco), (_, assisted) = nonempty[-2:]
+    return (dco == f'Signed-off-by: {author}' and assisted == 'Assisted-by: AI' and
+            dco_index > 0 and lines[dco_index - 1] == '' and
+            sum(line.startswith('Signed-off-by:') for line in lines) == 1 and
+            sum(line.startswith('Assisted-by:') for line in lines) == 1)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
@@ -134,10 +147,11 @@ def main() -> None:
     parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
-    signature = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
-                                        cwd=ROOT, text=True)
-    require(signature.startswith('G\n') and 'Signed-off-by:' in signature and
-            'Assisted-by: AI' in signature, 'signed DCO+Assisted head required')
+    identity = subprocess.check_output(
+        ['git', 'log', '-1', '--format=%G?%n%an <%ae>%n%B'], cwd=ROOT, text=True)
+    signature, author, body = identity.split('\n', 2)
+    require(valid_source_signature(signature, author, body),
+            'signed author-matching DCO+Assisted head required')
     compiler = args.compiler.resolve(strict=True)
     scheme = compiler.with_name('compactc-scheme').resolve(strict=True)
     runtime = args.ts_runtime.resolve(strict=True)
