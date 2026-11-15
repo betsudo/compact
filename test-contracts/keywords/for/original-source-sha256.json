@@ -1,0 +1,25 @@
+{
+  "files": {
+    "test-contracts/keywords/for/non_constant_bound/compile.fail.test.ts": "c5d7fc7e9f31e6bc375befb1ae1077dcc695b5e68f49cb6c6794b93121b80d4e",
+    "test-contracts/keywords/for/non_constant_bound/for_non_constant_bound.compact": "7e4b71ac3d62543a727cc7eecda0ed952998f9fa727fa2709d54580550b73d98",
+    "test-contracts/keywords/for/return_in_body/compile.fail.test.ts": "b82c9f9d77f0a7ca13d4b6c1cf1145bbb3f72d091fd6a6b341cbea4e4c2c15fa",
+    "test-contracts/keywords/for/return_in_body/for_return_in_body.compact": "9a64bf100c6e1796047cf687dbc28943b82cc2790a1a4381073dc2f8d6ff323a",
+    "test-contracts/keywords/for/return_in_body_of_constructor/compile.fail.test.ts": "b82c9f9d77f0a7ca13d4b6c1cf1145bbb3f72d091fd6a6b341cbea4e4c2c15fa",
+    "test-contracts/keywords/for/return_in_body_of_constructor/for_return_in_body_of_constructor.compact": "b0184d9c2707a66f08dee5a9770030038d694c09a6200163f35abe8b491a0677",
+    "test-contracts/keywords/for/return_in_body_of_fold_callback/compile.fail.test.ts": "aa780748c4df084b3b01faccac2843c5e20711254ce1799481654e8cd8223bb7",
+    "test-contracts/keywords/for/return_in_body_of_fold_callback/for_return_in_body_of_fold_callback.compact": "1bf9f6203a5689ffe77aa4b582abd46a534bf397f3711afeac06bb2487fb5036",
+    "test-contracts/keywords/for/return_in_body_of_generic_circuit/compile.fail.test.ts": "fc7fecb551a4c8c4746f3124337519b0536d0f1ffb2b0abd7841455403070041",
+    "test-contracts/keywords/for/return_in_body_of_generic_circuit/for_return_in_body_of_generic_circuit.compact": "7691ce9fff56249c487fa9ea47c19c8b6297fff954894adbf0778eb146a2d909",
+    "test-contracts/keywords/for/return_in_body_of_lambda/compile.fail.test.ts": "0e173036c28f828f8e13c0a17f41af4a4c31ca6dd8d6960e02f57ed9bc8a48f9",
+    "test-contracts/keywords/for/return_in_body_of_lambda/for_return_in_body_of_lambda.compact": "ee1484ef984d369bcf95f309391e77acf7ecd97a3a8b435526e334e7749ddf63",
+    "test-contracts/keywords/for/return_in_body_of_map_callback/compile.fail.test.ts": "e0b4a940b10739ec395ffe57dd16ff2418d906939cb6b824beb85a43a159c345",
+    "test-contracts/keywords/for/return_in_body_of_map_callback/for_return_in_body_of_map_callback.compact": "9b440fc37bca0a011d8a1ea7df3d8d1f0869e4715b27bec08966a29e71fde421",
+    "test-contracts/keywords/for/return_in_lambda_in_body/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/for/return_in_lambda_in_body/for_return_in_lambda_in_body.compact": "38318bad80de4e5346c27c76c995c562575576d99638ba6533e1f7fc1fce0c48",
+    "test-contracts/keywords/for/return_in_lambda_in_body/runtime.pass.test.ts": "a2de1885d89ed60a900d577022a3def55e716af545e58128614704709b01add6",
+    "test-contracts/keywords/for/zero_iteration/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/for/zero_iteration/for_zero_iteration.compact": "69abcc0ab375c7eb33d59fbe69520b6fbce6846f0cc85eaf2a57014214180a69",
+    "test-contracts/keywords/for/zero_iteration/runtime.pass.test.ts": "0955db35756a631992a0941a318ff57069686a0c795211050505f407d2759b4a"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}
