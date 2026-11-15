@@ -39,6 +39,14 @@ pub(super) fn try_run(
     let selector = first?.to_str()?;
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
+        #[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
+        ("--if-empty-else-proof", _) => Some((|| {
+            let root = arguments.next().ok_or("if/empty_else_branch proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected if/empty_else_branch proof argument".into());
+            }
+            crate::if_empty_else_proof::run(std::path::Path::new(&root))
+        })()),
         ("--positional-baseline-verify", _) => {
             Some(super::positional_suite::verify_baseline(arguments))
         }
