@@ -251,6 +251,8 @@ def main() -> None:
                         f'generated Rust changed: {case}')
     receipt = {**source, 'status': 'passed', 'source_clean': True,
                'platform': os.uname().sysname + ' ' + os.uname().machine,
+               'proof_execution': False, 'funded_application': False,
+               'constructor_execution_proved': False,
                'upstream_commit': PINNED, 'original_files': pinned,
                'local_sources': local, 'generated': generated,
                'generated_files_sha256': generated_before,
@@ -260,8 +262,12 @@ def main() -> None:
                'runtime_recipe': runtime_recipe, 'checker_sha256': sha256(Path(__file__)),
                'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'cargo_target': str(cargo_target),
                'result': 'three pinned Bytes loops and zero-length operand-order control passed generated TS/Rust ordinary/recorded replay',
-               'limitations': ['Darwin arm64 local; native Linux qualification required',
+               'limitations': [('native Linux generated semantics qualified'
+                                if os.uname().sysname == 'Linux' and
+                                os.uname().machine == 'x86_64' else
+                                'local Darwin arm64; native Linux qualification required'),
                                'three proof=true loop exports require fresh independent proofs and funded strict application/replay',
                                'original Vitest harness was not run; pinned assertions were replayed against generated APIs',
                                'static-loop Bytes indexed_access and large reconstruction remain open']}

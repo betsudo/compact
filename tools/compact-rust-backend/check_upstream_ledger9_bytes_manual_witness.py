@@ -58,6 +58,16 @@ def fixture(case: str) -> Path:
     return FAMILY / case / 'semantics' / f'bytes_{case}_semantics.compact'
 
 
+def generated_files(root: Path) -> dict[str, str]:
+    files = {}
+    for path in sorted(root.rglob('*')):
+        require(not path.is_symlink(), f'generated artifact symlink: {path}')
+        if path.is_file():
+            files[path.relative_to(root).as_posix()] = sha256(path)
+    require(files, 'empty generated artifact inventory')
+    return files
+
+
 def original_inventory(path: Path) -> dict[str, str]:
     record = json.loads(path.read_text())
     expected = {str((fixture(case).parent / name).relative_to(ROOT))
@@ -136,6 +146,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--cargo-target', type=Path,
+                        help='Existing shared Cargo target for serial qualification')
     args = parser.parse_args()
     source = source_state()
     signature = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
@@ -209,6 +221,7 @@ def main() -> None:
                     for key in ('typescript_sha256', 'contract_info_sha256',
                                 'runtime_log_sha256')),
                 f'paired compilation changed TypeScript behavior: {case}')
+    generated_before = generated_files(output / 'generated')
     consumer = output / 'rust-consumer'
     (consumer / 'tests').mkdir(parents=True)
     shutil.copyfile(CONSUMER, consumer / 'tests/bytes_manual_witness.rs')
@@ -226,7 +239,11 @@ def main() -> None:
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
                         'midnight-onchain-vm = "=4.0.1"\nmidnight-serialize = "=1.2.1"\n' +
                         '\n'.join(dependencies) + '\n')
-    cargo_env = dict(env, CARGO_TARGET_DIR=str(output / 'cargo-target'), CARGO_INCREMENTAL='0',
+    cargo_target = args.cargo_target.resolve(strict=True) if args.cargo_target else output / 'cargo-target'
+    require(not args.cargo_target or (cargo_target.is_dir() and
+                                     not args.cargo_target.is_symlink()),
+            'shared Cargo target must be an ordinary directory')
+    cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target), CARGO_INCREMENTAL='0',
                      CARGO_PROFILE_DEV_DEBUG='0')
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
                                '--format-version', '1', '--manifest-path', str(manifest)],
@@ -244,6 +261,7 @@ def main() -> None:
     require(source_state() == source and runtime_identity(runtime) == runtime_before and
             compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
             original_inventory(MANIFEST) == originals and
+            generated_files(output / 'generated') == generated_before and
             local_controls(ADAPTER, CONSUMER) is None and
             all(sha256(ROOT / name) == digest for name, digest in local.items()),
             'source, compiler, runtime or originals changed during qualification')
@@ -263,16 +281,23 @@ def main() -> None:
                         f'generated Rust artifact changed: {case}')
     receipt = {**source, 'status': 'passed', 'source_clean': True,
                'platform': os.uname().sysname + ' ' + os.uname().machine,
+               'proof_execution': False, 'funded_application': False,
+               'constructor_execution_proved': False,
                'upstream_commit': PINNED, 'original_files': originals,
                'local_sources': local, 'generated': generated,
+               'generated_files_sha256': generated_before,
                'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
                'scheme_sha256': sha256(scheme), 'runtime': runtime_before,
                'runtime_recipe': runtime_recipe,
                'checker_sha256': sha256(Path(__file__)),
                'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'cargo_target': str(cargo_target),
                'result': 'two original Bytes semantics passed generated TS and Rust ordinary/recorded APIs',
-               'limitations': ['local Darwin arm64; native Linux qualification required',
+               'limitations': [('native Linux generated semantics qualified'
+                                if os.uname().sysname == 'Linux' and
+                                os.uname().machine == 'x86_64' else
+                                'local Darwin arm64; native Linux qualification required'),
                                'manual update has proof=true: fresh independent proof and funded strict application/replay remain separate gates',
                                'witness return has proof=false: no proof/funded call applies',
                                'original Vitest harness was not run; pinned assertions were replayed against generated APIs']}
