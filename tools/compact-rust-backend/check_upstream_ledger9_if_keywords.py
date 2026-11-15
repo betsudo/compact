@@ -1,0 +1,279 @@
+#!/usr/bin/env python3
+
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+
+"""Qualify pinned if originals while preserving the nested Set.insert refusal."""
+
+import argparse
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tomllib
+
+from check_compactc_target import check_manifest
+from check_unit_mutation_initializers import validate_consumer_lock
+from check_upstream_ledger9_const_keywords import valid_source_signature
+from check_upstream_ledger9_field_casts import (
+    compiler_recipe_identity, require, run, runtime_identity,
+    runtime_recipe_identity, sha256, source_state,
+)
+
+
+ROOT = Path(__file__).resolve().parents[2]
+PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
+FAMILY = Path('test-contracts/keywords/if')
+MANIFEST = ROOT / FAMILY / 'original-source-sha256.json'
+ADAPTER = ROOT / FAMILY / 'check-original-results.mjs'
+CONSUMER = ROOT / FAMILY / 'empty_else_branch/consumer-original.rs'
+CASES = ('empty_else_branch', 'branches_write_ledger')
+RUST_REFUSAL = 'Rust backend does not yet support this nested ledger query: Set.insert'
+RUST_REFUSAL_LOCATION = 'line 38 char 17:'
+ORIGINAL_EXPECTATIONS = {
+    'empty_else_branch': ('if_empty_else_branch(ctx, true)',
+                          'if_empty_else_branch(ctx, false)',
+                          ').toEqual(1n);', ').toEqual(0n);'),
+    'branches_write_ledger': ('if_branches_write_ledger(',
+                              'expect(first.result).toBe(true);',
+                              'first.context',
+                              'expect(second.result).toBe(false);'),
+}
+
+
+def original_inventory():
+    record = json.loads(MANIFEST.read_text())
+    expected = {str(FAMILY / case / name) for case in CASES
+                for name in (f'if_{case}.compact', 'compile.pass.test.ts',
+                             'runtime.pass.test.ts')}
+    upstream = set(subprocess.check_output(
+        ['git', 'ls-tree', '-r', '--name-only', PINNED, str(FAMILY)],
+        cwd=ROOT, text=True).splitlines())
+    files = record.get('files')
+    require(record.get('upstream_commit') == PINNED and
+            isinstance(files, dict) and set(files) == expected == upstream and
+            len(files) == 6, 'if-keyword pinned roster changed')
+    for name, digest in files.items():
+        path = ROOT / name
+        original = subprocess.check_output(['git', 'show', f'{PINNED}:{name}'], cwd=ROOT)
+        require(path.is_file() and not path.is_symlink() and
+                re.fullmatch('[0-9a-f]{64}', digest) is not None and
+                sha256(path) == digest == hashlib.sha256(original).hexdigest(),
+                f'if-keyword original changed: {name}')
+    for case, snippets in ORIGINAL_EXPECTATIONS.items():
+        text = (ROOT / FAMILY / case / 'runtime.pass.test.ts').read_text()
+        require(all(snippet in text for snippet in snippets),
+                f'original if runtime assertion changed: {case}')
+    return files
+
+
+def generated_files(root):
+    files = {}
+    for path in sorted(root.rglob('*')):
+        require(not path.is_symlink(), f'generated symlink: {path}')
+        if path.is_file():
+            files[path.relative_to(root).as_posix()] = sha256(path)
+    require(files, 'no generated artifacts')
+    return files
+
+
+def check_capability(info, case):
+    circuits = info.get('circuits')
+    require(isinstance(circuits, list) and len(circuits) == 1 and
+            circuits[0].get('name') == f'if_{case}' and
+            circuits[0].get('pure') is False and circuits[0].get('proof') is True,
+            f'if original capability changed: {case}')
+
+
+def check_rust_refusal(result, destination):
+    diagnostic = result.stdout + result.stderr
+    require(result.returncode != 0 and result.stdout == '' and
+            RUST_REFUSAL_LOCATION in diagnostic and RUST_REFUSAL in diagnostic,
+            'nested Set.insert diagnostic changed or Rust accepted without qualification')
+    lock = destination.parent / f'.{destination.name}.compactc.lock'
+    require(not destination.exists() and
+            not list(destination.parent.glob(f'.{destination.name}.compactc-stage-*')) and
+            all(child == lock and child.is_file() and not child.is_symlink() and
+                child.stat().st_size == 0 for child in destination.parent.iterdir()),
+            'nested Set.insert refusal published output')
+    return diagnostic
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'cargo-target', 'output'):
+        parser.add_argument('--' + name, required=True, type=Path)
+    args = parser.parse_args()
+    source = source_state()
+    signature, author, body = subprocess.check_output(
+        ['git', 'log', '-1', '--format=%G?%n%an <%ae>%n%B'], cwd=ROOT,
+        text=True).split('\n', 2)
+    require(valid_source_signature(signature, author, body),
+            'signed author-matching DCO+Assisted head required')
+    compiler = args.compiler.resolve(strict=True)
+    scheme = compiler.with_name('compactc-scheme').resolve(strict=True)
+    runtime = args.ts_runtime.resolve(strict=True)
+    cargo_target = args.cargo_target.resolve(strict=True)
+    require(cargo_target.is_dir() and not args.cargo_target.is_symlink(),
+            'shared Cargo target must be an ordinary existing directory')
+    output = args.output.resolve()
+    require(not args.output.is_symlink() and not output.exists(),
+            'if gate output must be absent')
+    source_package = json.loads((ROOT / 'runtime/package.json').read_text())
+    installed_package = json.loads((runtime / 'package.json').read_text())
+    require(all(source_package[key] == installed_package[key]
+                for key in ('name', 'version', 'dependencies')),
+            'runtime package differs from source')
+    nix = shutil.which('nix')
+    require(nix is not None, 'Nix required for runtime source binding')
+    runtime_recipe = runtime_recipe_identity(runtime, Path(nix).resolve(strict=True))
+    runtime_before = runtime_identity(runtime)
+    recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
+    originals = original_inventory()
+    local_paths = (MANIFEST, ADAPTER, CONSUMER, Path(__file__))
+    local_sources = {str(path.relative_to(ROOT)): sha256(path) for path in local_paths}
+    output.mkdir(parents=True)
+    link = output / 'node_modules/@midnight-ntwrk/compact-runtime'
+    link.parent.mkdir(parents=True)
+    link.symlink_to(runtime, target_is_directory=True)
+    (output / 'package.json').write_text('{"type":"module"}\n')
+    env = dict(os.environ, COMPACTC_SCHEME=str(scheme), RUSTUP_TOOLCHAIN='1.99.0',
+               PYTHONDONTWRITEBYTECODE='1')
+    generated = {}
+    for case in CASES:
+        generated[case] = {}
+        original = ROOT / FAMILY / case / f'if_{case}.compact'
+        modes = ('typescript', 'both') if case == 'empty_else_branch' else ('typescript',)
+        for mode in modes:
+            destination = output / 'generated' / case / mode
+            command = [str(compiler), '--target', 'ts']
+            if mode == 'both':
+                command += ['--target', 'rust', '--rust-runtime-root', str(ROOT),
+                            '--rust-require-recording']
+            command += ['--feature-zkir-v3', '--skip-zk', '--compact-path',
+                        str(ROOT / 'compiler'), str(original), str(destination)]
+            run(command, output / f'{case}-{mode}-compile.log', env)
+            check_manifest(destination, require_zkir=True)
+            info = destination / 'compiler/contract-info.json'
+            check_capability(json.loads(info.read_text()), case)
+            contract = destination / 'contract'
+            runtime_log = output / f'{case}-{mode}-runtime.log'
+            actual = run(['node', str(ADAPTER), str(contract / 'index.js'), case],
+                         runtime_log, env)
+            require(actual.strip() == f'{case}: original if result passed',
+                    f'original if TS result changed: {case}/{mode}')
+            row = {'typescript_sha256': sha256(contract / 'index.js'),
+                   'contract_info_sha256': sha256(info),
+                   'manifest_sha256': sha256(destination / 'compiler/contract-manifest.json'),
+                   'runtime_log_sha256': sha256(runtime_log),
+                   'zkir_sha256': sha256(destination / f'zkir/if_{case}.zkir')}
+            if mode == 'both':
+                row['rust_sha256'] = sha256(contract / 'lib.rs')
+                row['rust_ir_sha256'] = sha256(contract / 'compact-rust-ir.json')
+            generated[case][mode] = row
+    modes = generated['empty_else_branch']
+    require(all(modes['typescript'][key] == modes['both'][key]
+                for key in ('typescript_sha256', 'contract_info_sha256',
+                            'runtime_log_sha256', 'zkir_sha256')),
+            'paired empty-else target changed TS result or raw ZKIR')
+    refused = output / 'refused/branches_write_ledger/both/product'
+    refused.parent.mkdir(parents=True)
+    command = [str(compiler), '--target', 'ts', '--target', 'rust',
+               '--rust-runtime-root', str(ROOT), '--feature-zkir-v3', '--skip-zk',
+               '--compact-path', str(ROOT / 'compiler'),
+               str(ROOT / FAMILY / 'branches_write_ledger/if_branches_write_ledger.compact'),
+               str(refused)]
+    result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True)
+    diagnostic = check_rust_refusal(result, refused)
+    refusal_log = output / 'branches_write_ledger-both-refusal.log'
+    refusal_log.write_text(diagnostic)
+    before = generated_files(output / 'generated')
+    target = output / 'generated/empty_else_branch/both/contract'
+    package = tomllib.loads((target / 'Cargo.toml').read_text())['package']['name']
+    consumer = output / 'rust-consumer'
+    (consumer / 'tests').mkdir(parents=True)
+    shutil.copyfile(ROOT / 'Cargo.lock', consumer / 'Cargo.lock')
+    shutil.copyfile(CONSUMER, consumer / 'tests/if_original.rs')
+    manifest = consumer / 'Cargo.toml'
+    manifest.write_text('[workspace]\n[package]\nname = "ledger9-if-original-consumer"\n'
+                        'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
+                        f'empty_else_branch = {{ package = {json.dumps(package)}, '
+                        f'path = {json.dumps(str(target))} }}\n'
+                        'midnight-onchain-vm = "=4.0.1"\n'
+                        'midnight-serialize = "=1.2.1"\n')
+    cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target), CARGO_INCREMENTAL='0',
+                     CARGO_PROFILE_DEV_DEBUG='0')
+    metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
+                               '--format-version', '1', '--manifest-path', str(manifest)],
+                              output / 'cargo-metadata.log', cargo_env))
+    root_lock = tomllib.loads((ROOT / 'Cargo.lock').read_text())['package']
+    pinned = {(row['name'], row['version'], row['source']): row.get('checksum')
+              for row in root_lock if 'source' in row}
+    allowed = {manifest, target / 'Cargo.toml', ROOT / 'runtime-rs/Cargo.toml',
+               ROOT / 'runtime-rs-macros/Cargo.toml'}
+    validate_consumer_lock(metadata, consumer / 'Cargo.lock', allowed, pinned)
+    run(['cargo', '+1.99.0', 'test', '--locked', '--offline',
+         '--manifest-path', str(manifest), '--test', 'if_original'],
+        output / 'cargo-test.log', cargo_env)
+    rust_log = (output / 'cargo-test.log').read_text()
+    require('test result: ok. 1 passed; 0 failed;' in rust_log and
+            'test original_true_and_false_results_with_recorded_replay ... ok' in rust_log,
+            'generated empty-else original Rust assertions did not pass')
+    shutil.copyfile(ROOT / 'Cargo.lock', target / 'Cargo.lock')
+    metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
+                               '--format-version', '1', '--manifest-path',
+                               str(target / 'Cargo.toml')],
+                              output / 'generated-cargo-metadata.log', cargo_env))
+    validate_consumer_lock(metadata, target / 'Cargo.lock',
+                           {target / 'Cargo.toml', ROOT / 'runtime-rs/Cargo.toml',
+                            ROOT / 'runtime-rs-macros/Cargo.toml'}, pinned)
+    run(['cargo', '+1.99.0', 'clippy', '--locked', '--offline', '--all-targets',
+         '--manifest-path', str(target / 'Cargo.toml'), '--', '-D', 'warnings'],
+        output / 'generated-clippy.log', cargo_env)
+    after = generated_files(output / 'generated')
+    lock_name = 'empty_else_branch/both/contract/Cargo.lock'
+    require(set(after) == set(before) | {lock_name} and
+            all(after[name] == digest for name, digest in before.items()),
+            'Rust consumer or Clippy modified compiler-generated if artifacts')
+    require(source_state() == source and runtime_identity(runtime) == runtime_before and
+            compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
+            original_inventory() == originals and
+            generated_files(output / 'generated') == after and
+            all(sha256(ROOT / name) == digest for name, digest in local_sources.items()),
+            'if source, compiler, runtime or generated artifact changed')
+    receipt = {**source, 'status': 'passed-with-recorded-rust-refusal',
+               'source_clean': True, 'platform': os.uname().sysname + ' ' + os.uname().machine,
+               'upstream_commit': PINNED, 'original_files': originals,
+               'local_sources': local_sources, 'generated': generated,
+               'compiler_generated_files_sha256': before,
+               'generated_files_sha256': after,
+               'generated_cargo_lock_sha256': after[lock_name],
+               'rust_refusal': {'case': 'branches_write_ledger',
+                                'diagnostic_sha256': sha256(refusal_log),
+                                'expected': RUST_REFUSAL,
+                                'source_location': RUST_REFUSAL_LOCATION,
+                                'exit_code': result.returncode,
+                                'output_absent': True},
+               'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
+               'scheme_sha256': sha256(scheme), 'runtime': runtime_before,
+               'runtime_recipe': runtime_recipe,
+               'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
+               'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'clippy_log_sha256': sha256(output / 'generated-clippy.log'),
+               'case_count': 2, 'rust_accepted_cases': 1, 'rust_refusal_cases': 1,
+               'proof_execution': False, 'funded_application': False,
+               'limitations': ['native Linux qualification required',
+                               'fresh proof and funded strict application remain separate',
+                               'branches_write_ledger remains blocked by nested Set.insert (#752)',
+                               'original Vitest host harness not run; pinned assertions replayed']}
+    (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+    print(json.dumps({'status': receipt['status'], 'head': source['head'],
+                      'cases': 2, 'output': str(output)}))
+
+
+if __name__ == '__main__':
+    main()
