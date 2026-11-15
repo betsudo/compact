@@ -39,3 +39,28 @@ fn original_zero_iteration_and_recorded_replay() {
     tagged_serialize(replay.context.state.get_ref(), &mut replay_bytes).unwrap();
     assert_eq!(replay_bytes, ordinary_bytes);
 }
+
+#[test]
+fn original_generic_bound_and_recorded_replay() {
+    let fresh = || generic_bound::ledger_contract::initial_state(
+        ConstructorContext::new(())
+    ).unwrap().into_circuit_context(ContractAddress::default());
+    let ordinary = generic_bound::ledger_contract::for_generic_bound(fresh()).unwrap();
+    assert_eq!(ordinary.result.value(), 5);
+    assert_eq!(generic_bound::ledger_contract::PublicStateView::from(&ordinary)
+               .total().unwrap().value(), 5);
+    let recorded = generic_bound::ledger_contract::recorded::for_generic_bound(fresh()).unwrap();
+    assert_eq!(recorded.execution.result.value(), 5);
+    assert_eq!(generic_bound::ledger_contract::PublicStateView::from(&recorded.execution)
+               .total().unwrap().value(), 5);
+    assert_eq!(recorded.execution.public_state(), ordinary.public_state());
+    assert_eq!(recorded.execution.gas_cost, ordinary.gas_cost);
+    assert!(!recorded.public.verify_ops().is_empty());
+    let replay = recorded.public.initial()
+        .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL).unwrap();
+    let mut ordinary_bytes = Vec::new();
+    tagged_serialize(ordinary.public_state(), &mut ordinary_bytes).unwrap();
+    let mut replay_bytes = Vec::new();
+    tagged_serialize(replay.context.state.get_ref(), &mut replay_bytes).unwrap();
+    assert_eq!(replay_bytes, ordinary_bytes);
+}

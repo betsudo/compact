@@ -31,12 +31,13 @@ FAMILY = Path('test-contracts/keywords/for')
 MANIFEST = ROOT / FAMILY / 'original-source-sha256.json'
 ADAPTER = ROOT / FAMILY / 'check-original-results.mjs'
 CONSUMER = ROOT / FAMILY / 'consumer-original.rs'
-PASS = ('return_in_lambda_in_body', 'zero_iteration')
+PASS = ('generic_bound', 'return_in_lambda_in_body', 'zero_iteration')
 FAIL = ('non_constant_bound', 'return_in_body', 'return_in_body_of_constructor',
         'return_in_body_of_fold_callback', 'return_in_body_of_generic_circuit',
         'return_in_body_of_lambda', 'return_in_body_of_map_callback')
 PATTERN = re.compile(r'expectedError:\s*/((?:\\.|[^/])*)/')
-ORIGINAL_EXPECTATIONS = {'return_in_lambda_in_body': 'expect(result).toEqual(7n)',
+ORIGINAL_EXPECTATIONS = {'generic_bound': 'expect(result).toEqual(5n)',
+                         'return_in_lambda_in_body': 'expect(result).toEqual(7n)',
                          'zero_iteration': 'expect(result).toEqual(0n)'}
 
 
@@ -48,15 +49,12 @@ def original_inventory():
                 str(FAMILY / case / name) for case in FAIL
                 for name in (f'for_{case}.compact', 'compile.fail.test.ts')}
     require(files.get('upstream_commit') == PINNED and
-            set(files.get('files', {})) == expected and len(expected) == 20,
+            set(files.get('files', {})) == expected and len(expected) == 23,
             'for-keyword pinned roster changed')
     upstream = set(subprocess.check_output(
         ['git', 'ls-tree', '-r', '--name-only', PINNED, str(FAMILY)],
         cwd=ROOT, text=True).splitlines())
-    require(upstream - expected == {
-        str(FAMILY / 'generic_bound' / name) for name in (
-            'for_generic_bound.compact', 'compile.pass.test.ts',
-            'runtime.pass.test.ts')}, 'unexpected missing for-keyword original')
+    require(upstream == expected, 'unexpected missing or extra for-keyword original')
     for name, digest in files['files'].items():
         path = ROOT / name
         source = subprocess.check_output(['git', 'show', f'{PINNED}:{name}'], cwd=ROOT)
@@ -135,7 +133,7 @@ def main():
             command += ['--feature-zkir-v3', '--skip-zk', '--compact-path',
                         str(ROOT / 'compiler'), str(contract), str(destination)]
             run(command, output / f'{case}-{mode}-compile.log', env)
-            proof = case == 'zero_iteration'
+            proof = case in ('generic_bound', 'zero_iteration')
             check_manifest(destination, require_zkir=proof)
             info = destination / 'compiler/contract-info.json'
             circuits = json.loads(info.read_text())['circuits']
@@ -250,7 +248,8 @@ def main():
          '--manifest-path', str(manifest), '--test', 'for_original'],
         output / 'cargo-test.log', cargo_env)
     rust_log = (output / 'cargo-test.log').read_text()
-    require('test result: ok. 2 passed; 0 failed;' in rust_log and
+    require('test result: ok. 3 passed; 0 failed;' in rust_log and
+            'test original_generic_bound_and_recorded_replay ... ok' in rust_log and
             'test original_return_in_nested_lambda ... ok' in rust_log and
             'test original_zero_iteration_and_recorded_replay ... ok' in rust_log,
             'for Rust consumer assertions did not pass')
@@ -270,15 +269,14 @@ def main():
                'runtime_recipe': runtime_recipe,
                'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
-               'case_count': 9, 'positive_cases': 2, 'refusal_cases': 7,
+               'case_count': 10, 'positive_cases': 3, 'refusal_cases': 7,
                'proof_execution': False, 'funded_application': False,
-               'result': 'nine pinned for-keyword diagnostics and TS/Rust results passed',
-               'limitations': ['generic_bound original remains blocked by multiple Vector indices at one occurrence',
-                               'native Linux qualification required',
-                               'zero_iteration proof=true: fresh proof and funded strict application remain separate',
+               'result': 'ten pinned for-keyword diagnostics and TS/Rust results passed',
+               'limitations': ['native Linux qualification required',
+                               'zero_iteration and generic_bound proof=true: fresh proof and funded strict application remain separate',
                                'original Vitest host harness was not run; pinned assertions replayed against generated APIs']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
-    print(json.dumps({'status': 'passed', 'head': source['head'], 'cases': 9,
+    print(json.dumps({'status': 'passed', 'head': source['head'], 'cases': 10,
                       'output': str(output)}))
 
 

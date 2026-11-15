@@ -279,6 +279,10 @@
           (source-errorf src "foreign field or coordinate operation expects one argument"))
         (object (cons "kind" kind) (cons "value" (lower (car args)))))
       (define current-variable-types (make-parameter #f))
+      ;; An inline Fold over literal unsigned items can give its reducer a
+      ;; closed index domain. Key it by the analyzed item formal and scope it
+      ;; only to that reducer body.
+      (define current-static-fold-index-domains (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
       ;; Keep ordinary expressions and constructor value initializers on their
       ;; existing cast transport; parameterize restores this scope afterward.
@@ -936,6 +940,78 @@
                  `(let* ,src (((,var-name ,type) ,expr)
                               ((,index-name ,index-type) ,index))
                     (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
+
+      (define (literal-fold-index-domain expr len item-type)
+        (define (literal arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(single ,src ,expr^)
+             (nanopass-case (Lnodisclose Expression) expr^
+               [(quote ,src^ ,datum)
+                (and (integer? datum) (exact? datum) (>= datum 0) datum)]
+               [else #f])]
+            [else #f]))
+        (let ([maximum (rust-unsigned-maximum item-type)])
+          (and maximum (> len 0) (<= len 8)
+               (nanopass-case (Lnodisclose Expression) expr
+                 [(tuple ,src ,tuple-arg* ...)
+                  (let ([indices (map literal tuple-arg*)])
+                    (and (= (length indices) len)
+                         (for-all (lambda (index) (and index (<= index maximum))) indices)
+                         (cons maximum indices)))]
+                 [else #f]))))
+
+      ;; The Fold item is still a runtime formal, but an exact literal source
+      ;; limits its values. Keep direct dynamic indexes refused. Both the
+      ;; indexed operand and the index must be side-effect-free references;
+      ;; this preserves their source evaluation order without duplicating an
+      ;; effect in the conditional branches. A forged out-of-domain item fails.
+      (define (static-fold-vector-ref-ir original src type value index lower)
+        (and (rust-vector-unique-source? original)
+             (nanopass-case (Lnodisclose Expression) index
+               [(var-ref ,src^ ,var-name)
+                (nanopass-case (Lnodisclose Expression) value
+                  [(var-ref ,src^^ ,var-name^)
+                   (let* ([domains (current-static-fold-index-domains)]
+                          [domain (and domains (eq-hashtable-ref domains var-name #f))]
+                          [width (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
+                                   [(tvector ,src^^^ ,len ,type^) len]
+                                   [else #f])])
+                     (and domain width
+                          (for-all (lambda (k) (< k width)) (cdr domain))
+                          ;; The same circuit evaluator that admits each
+                          ;; position must have visited this exact occurrence
+                          ;; once per literal item, in the same order. The
+                          ;; admitted index is a bare formal, so it contains
+                          ;; no hidden subtraction or assertion guard.
+                          (rust-vector-domain-certified? original (cdr domain))
+                          (let ([maximum (car domain)]
+                                [indices (cdr domain)]
+                                [name (rust-var-name var-name)])
+                            (define (item) (object (cons "kind" "parameter") (cons "name" name)))
+                            (define (same k)
+                              (object (cons "kind" "equal")
+                                      (cons "left" (item))
+                                      (cons "right" (object (cons "kind" "unsigned_literal")
+                                                            (cons "value" (number->string k))
+                                                            (cons "max" (number->string maximum))))))
+                            (define (project k)
+                              (object (cons "kind" "tuple_index")
+                                      (cons "value" (lower value))
+                                      (cons "index" k)))
+                            (let loop ([remaining indices])
+                              (if (null? (cdr remaining))
+                                  (object (cons "kind" "sequence")
+                                          (cons "steps" (vector
+                                            (object (cons "kind" "assert")
+                                                    (cons "condition" (same (car remaining)))
+                                                    (cons "message" "index outside static Fold domain"))))
+                                          (cons "value" (project (car remaining))))
+                                  (object (cons "kind" "if")
+                                          (cons "condition" (same (car remaining)))
+                                          (cons "then" (project (car remaining)))
+                                          (cons "otherwise" (loop (cdr remaining)))))))))]
+                  [else #f])]
+               [else #f])))
 
       (define (byte-vector-type src len)
         (with-output-language (Lnodisclose Type)
@@ -3069,12 +3145,27 @@
           [(circuit ,src^ (,arg* ...) ,type ,expr)
            (let ([variable-types (if (current-variable-types)
                                      (hashtable-copy (current-variable-types) #t)
-                                     (make-eq-hashtable))])
+                                     (make-eq-hashtable))]
+                 [index-domains (if (current-static-fold-index-domains)
+                                    (hashtable-copy (current-static-fold-index-domains) #t)
+                                    (make-eq-hashtable))])
+             (unless (= (length arg*) (+ 1 (length map-args)))
+               (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
+             (for-each
+               (lambda (arg map-arg)
+                 (nanopass-case (Lnodisclose Argument) arg
+                   [(,var-name ,type^)
+                    (nanopass-case (Lnodisclose Map-Argument) map-arg
+                      [(,expr1 ,type1 ,type2)
+                       (let ([domain (literal-fold-index-domain expr1 len type2)])
+                         (when domain (eq-hashtable-set! index-domains var-name domain)))])]))
+               (cdr arg*) map-args)
              (for-each (lambda (arg)
                          (nanopass-case (Lnodisclose Argument) arg
                            [(,var-name ,type^)
                             (eq-hashtable-set! variable-types var-name type^)])) arg*)
-             (parameterize ([current-variable-types variable-types])
+             (parameterize ([current-variable-types variable-types]
+                            [current-static-fold-index-domains index-domains])
                (emit (map (lambda (arg) (argument-ir arg src)) arg*)
                  (lambda ()
                    (if (stateful-body-has-storage-mutation? expr)
@@ -3237,8 +3328,10 @@
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
           [(vector-ref ,src ,type ,expr ,index)
-           (stateful-expression-ir
-             (resolved-vector-expression value-expr src type expr index) owner-src witness-ids)]
+           (or (static-fold-vector-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids)))
+               (stateful-expression-ir
+                 (resolved-vector-expression value-expr src type expr index) owner-src witness-ids))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]

@@ -18,7 +18,9 @@
 (library (rust-vector-indices)
   (export current-rust-vector-index-facts make-rust-vector-index-facts
           observe-rust-vector-index! rust-vector-index rust-unsigned-maximum
-          observe-rust-vector-index-guard! rust-vector-index-guard-state)
+          observe-rust-vector-index-guard! rust-vector-index-guard-state
+          rust-vector-unique-source? rust-vector-index-observations
+          rust-vector-domain-certified?)
   (import (except (chezscheme) errorf) (utils) (nanopass) (langs))
 
   ;; Fresh for one compiler invocation. Source objects are used only to join
@@ -225,7 +227,8 @@
 
   (define (make-rust-vector-index-facts ir)
     (let ([facts (vector (make-eq-hashtable) (make-eq-hashtable)
-                        (make-eq-hashtable) (make-eq-hashtable))])
+                        (make-eq-hashtable) (make-eq-hashtable)
+                        (make-eq-hashtable))])
       (parameterize ([collecting facts] [constant-bindings (make-eq-hashtable)])
         (collect-assert-sources ir)
         (collect-vector-indices ir))
@@ -237,6 +240,15 @@
         (let* ([node (eq-hashtable-ref (vector-ref facts 0) src #f)]
                [by-node (vector-ref facts 1)]
                [old (and node (eq-hashtable-ref by-node node #f))])
+          ;; Retain every successful circuit evaluation in visit order even
+          ;; when a single original node is reused by a static Fold. The
+          ;; single-index bridge below remains unchanged and refuses that
+          ;; ambiguity. A copied source node has no unique join here.
+          (when (and node (not (eq? node 'ambiguous))
+                     (exact-integer? index) (>= index 0))
+            (let ([observed (vector-ref facts 4)])
+              (eq-hashtable-set! observed node
+                (cons index (eq-hashtable-ref observed node '())))))
           (when old
             (eq-hashtable-set! by-node node
               (cond
@@ -248,6 +260,28 @@
     (let* ([facts (current-rust-vector-index-facts)]
            [index (and facts (eq-hashtable-ref (vector-ref facts 1) expr #f))])
       (and (exact-integer? index) (>= index 0) index)))
+
+  ;; A literal Fold may prove a finite domain for a runtime item. Its
+  ;; projection still belongs to exactly one original source occurrence.
+  ;; Duplicating the node with the same source object must not lend that
+  ;; domain to either copy.
+  (define (rust-vector-unique-source? expr)
+    (let ([facts (current-rust-vector-index-facts)])
+      (and facts
+           (nanopass-case (Lnodisclose Expression) expr
+             [(vector-ref ,src ,type ,expr^ ,index)
+              (and (source-object? src)
+                   (eq? (eq-hashtable-ref (vector-ref facts 0) src #f) expr))]
+             [else #f]))))
+
+  (define (rust-vector-index-observations expr)
+    (and (rust-vector-unique-source? expr)
+         (let ([facts (current-rust-vector-index-facts)])
+           (reverse (eq-hashtable-ref (vector-ref facts 4) expr '())))))
+
+  (define (rust-vector-domain-certified? expr expected)
+    (and (pair? expected)
+         (equal? (rust-vector-index-observations expr) expected)))
 
   ;; The existing circuit evaluator supplies these truth facts. This bridge
   ;; never evaluates a comparison or arithmetic expression itself. Conflicting
