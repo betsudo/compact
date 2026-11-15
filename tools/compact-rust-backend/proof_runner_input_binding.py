@@ -66,9 +66,31 @@ def prepare_generated_inputs(root, output, report, execute, feature, digest):
         require(directory.is_relative_to(target), "generated-input directory outside Cargo target")
         files = {path.resolve(strict=True) for path in directory.rglob("*") if path.is_file()}
         generated.update(files)
-        owners.append({"package_id": event["package_id"], "source": str(scripts[0]),
-                       "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory),
-                       "files": sorted(map(str, files))})
+        owner = {"package_id": event["package_id"], "source": str(scripts[0]),
+                 "source_sha256": source_map[str(scripts[0])], "out_dir": str(directory),
+                 "files": sorted(map(str, files))}
+        script_log = directory.parent / "output"
+        require(script_log.is_file(), "missing actual build-script output log")
+        generated.add(script_log.resolve(strict=True))
+        owner.update(output_log=str(script_log), output_log_sha256=digest(script_log))
+        if package.get("source") is None:
+            manifest = Path(package["manifest_path"]).resolve(strict=True)
+            require(str(manifest) in source_map and digest(manifest) == source_map[str(manifest)],
+                    "local build-script manifest was not bound")
+            rerun_files = set()
+            for line in script_log.read_text().splitlines():
+                if line.startswith(("cargo:rerun-if-changed=", "cargo::rerun-if-changed=")):
+                    path = (manifest.parent / line.split("=", 1)[1]).resolve(strict=True)
+                    if path.is_dir():
+                        rerun_files.update(p.resolve(strict=True) for p in path.rglob("*") if p.is_file())
+                    else:
+                        rerun_files.add(path)
+            require(all(str(path) in source_map and digest(path) == source_map[str(path)]
+                        for path in rerun_files),
+                    "local generated-input source absent from pre-preparation map")
+            owner["rerun_inputs_before_preparation"] = {
+                str(path): source_map[str(path)] for path in sorted(rerun_files)}
+        owners.append(owner)
     require(owners and generated, "no actual build-generated inputs prepared")
     report["prepared_build_scripts"] = owners
     report["generated_build_inputs_before_compile"] = hashes(generated)

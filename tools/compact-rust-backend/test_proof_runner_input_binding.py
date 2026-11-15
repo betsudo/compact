@@ -28,14 +28,20 @@ class RunnerInputBindingTests(unittest.TestCase):
             owner = root / "fixture/build.rs"
             owner.parent.mkdir()
             owner.write_text("fn main() {}\n")
+            manifest = root / "fixture/Cargo.toml"
+            manifest.write_text('[package]\nname = "fixture"\nversion = "1.0.0"\n')
+            rerun = root / "fixture/source.txt"
+            rerun.write_text("original source\n")
             (root / "Cargo.lock").write_text('[[package]]\nname = "fixture"\nversion = "1.0.0"\n')
             generated = root / "target/proof-checks/build/fixture/out/contract.rs"
             generated.parent.mkdir(parents=True)
             generated.write_text("pub const PINNED: u8 = 1;\n")
+            script_log = generated.parent.parent / "output"
+            script_log.write_text("cargo:rerun-if-changed=source.txt\n")
             package = {"id": "fixture 1.0.0", "name": "fixture", "version": "1.0.0",
-                       "source": None, "manifest_path": str(root / "fixture/Cargo.toml"),
+                       "source": None, "manifest_path": str(manifest),
                        "targets": [{"kind": ["custom-build"], "src_path": str(owner)}]}
-            report = {"source_hashes": hashes([owner, root / "Cargo.lock"])}
+            report = {"source_hashes": hashes([owner, manifest, rerun, root / "Cargo.lock"])}
             calls = []
 
             def execute(label, command, stdout=None):
@@ -52,7 +58,10 @@ class RunnerInputBindingTests(unittest.TestCase):
                                      "stateful-local-vector-widening", digest)
             self.assertEqual([call[0] for call in calls],
                              ["locked-build-metadata", "prepare-runner-inputs"])
-            self.assertEqual(report["generated_build_inputs_before_compile"], hashes([generated]))
+            self.assertEqual(report["generated_build_inputs_before_compile"],
+                             hashes([generated, script_log]))
+            self.assertEqual(report["prepared_build_scripts"][0]
+                             ["rerun_inputs_before_preparation"], hashes([rerun]))
             qualified, origins = qualify_dependency_inputs({str(owner), str(generated)},
                 {"source_hashes": report["source_hashes"],
                  "generated_build_inputs_before_compile": report["generated_build_inputs_before_compile"]},
@@ -72,6 +81,21 @@ class RunnerInputBindingTests(unittest.TestCase):
                 qualify_dependency_inputs({str(generated)},
                     {"generated_build_inputs_before_compile": report["generated_build_inputs_before_compile"]},
                     digest)
+            generated.write_text("pub const PINNED: u8 = 1;\n")
+            rerun.write_text("changed after source pin\n")
+            changed_report = {"source_hashes": report["source_hashes"].copy()}
+            changed_output = root / "changed-evidence"
+            changed_output.mkdir()
+            with self.assertRaisesRegex(ValueError, "local generated-input source absent"):
+                prepare_generated_inputs(root, changed_output, changed_report, execute,
+                                         "stateful-product-vector-widening", digest)
+            rerun.write_text("original source\n")
+            untracked_report = {"source_hashes": hashes([owner, manifest, root / "Cargo.lock"])}
+            untracked_output = root / "untracked-evidence"
+            untracked_output.mkdir()
+            with self.assertRaisesRegex(ValueError, "local generated-input source absent"):
+                prepare_generated_inputs(root, untracked_output, untracked_report, execute,
+                                         "stateful-product-vector-widening", digest)
 
     def test_conflicting_authorities_and_empty_depfile_refuse(self):
         with tempfile.TemporaryDirectory() as directory:
