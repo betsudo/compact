@@ -30,6 +30,29 @@
      (Expression index)
      ir]))
 
+(define byte-collected '())
+(define-pass collect-bytes-index-nodes : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(bytes-ref ,src ,type ,expr ,index)
+     (set! byte-collected (cons ir byte-collected))
+     (Expression expr)
+     (Expression index)
+     ir]))
+
+(define (byte-nodes ir)
+  (set! byte-collected '())
+  (collect-bytes-index-nodes ir)
+  (reverse byte-collected))
+
+(define (byte-source node)
+  (nanopass-case (Lnodisclose Expression) node
+    [(bytes-ref ,src ,type ,expr ,index) src]))
+
+(define-pass duplicate-bytes : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(bytes-ref ,src ,type ,expr ,index)
+     `(seq ,src ,ir (bytes-ref ,src ,type ,expr ,index))]))
+
 (define-pass duplicate : Lnodisclose (ir) -> Lnodisclose ()
   (Expression : Expression (ir) -> Expression ()
     [(vector-ref ,src ,type ,expr ,index)
@@ -295,4 +318,38 @@
     (observe-rust-vector-index! (source node) 0)
     (check 'compound-inferred-zero-still-rejects-runtime-input (not (rust-vector-index node)))))
 
-(printf "~d Rust Vector index occurrence controls passed\n" checks)
+;; The same original-node authority must apply to Bytes. A valid constant
+;; subtraction can be observed by circuit lowering, while a runtime parameter
+;; and a copied occurrence with the same source object cannot borrow it.
+(let* ([bytes-ir (analyze (write-source "bytes-constant"
+         "export pure circuit choose(bytes: Bytes<3>): Uint<8> { const n = 2; return bytes[n - 1]; }"))]
+       [byte* (byte-nodes bytes-ir)] [node (car byte*)]
+       [src (byte-source node)])
+  (check 'bytes-one-original-occurrence (= (length byte*) 1))
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts bytes-ir)])
+    (check 'bytes-unobserved (not (rust-vector-index node)))
+    (observe-rust-vector-index! src 1)
+    (check 'bytes-constant-observed (= (rust-vector-index node) 1))
+    (check 'bytes-guard-not-inferred
+      (eq? (rust-vector-index-guard-state node) 'unknown))
+    (set! guard-sources '())
+    (collect-guard-sources bytes-ir)
+    (check 'bytes-one-subtraction-guard (= (length guard-sources) 1))
+    (observe-rust-vector-index-guard! (car guard-sources) 'true)
+    (check 'bytes-proven-guard
+      (eq? (rust-vector-index-guard-state node) 'safe)))
+  (let* ([copied (duplicate-bytes bytes-ir)] [copied* (byte-nodes copied)])
+    (check 'bytes-copied-occurrence-count (= (length copied*) 2))
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied)])
+      (observe-rust-vector-index! (byte-source (car copied*)) 1)
+      (check 'bytes-copied-source-refused
+        (for-all (lambda (item) (not (rust-vector-index item))) copied*)))))
+
+(let* ([dynamic-ir (analyze (write-source "bytes-dynamic"
+         "export pure circuit choose(bytes: Bytes<3>, i: Uint<8>): Uint<8> { return bytes[i]; }"))]
+       [node (car (byte-nodes dynamic-ir))])
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts dynamic-ir)])
+    (observe-rust-vector-index! (byte-source node) 1)
+    (check 'bytes-runtime-formal-refused (not (rust-vector-index node)))))
+
+(printf "~d Rust collection index occurrence controls passed\n" checks)
