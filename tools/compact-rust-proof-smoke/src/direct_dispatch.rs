@@ -43,6 +43,14 @@ pub(super) fn try_run(
             Some(super::positional_suite::verify_baseline(arguments))
         }
         ("--positional-call-verify", _) => Some(super::positional_transaction::verify(arguments)),
+        #[cfg(all(feature = "for-generic-bound-proof", compact_for_generic_bound_generated))]
+        ("--for-generic-bound-proof", _) => Some((|| {
+            let root = arguments.next().ok_or("for/generic_bound proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected for/generic_bound proof argument".into());
+            }
+            crate::for_generic_bound_proof::run(std::path::Path::new(&root))
+        })()),
         #[cfg(all(
             any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
             compact_bytes_remaining_proof_generated

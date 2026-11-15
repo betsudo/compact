@@ -45,6 +45,10 @@ mod asset_watch_write;
 mod asset_writable;
 mod bboard;
 mod boolean_pair_assert;
+#[cfg(all(feature = "for-generic-bound-proof", compact_for_generic_bound_generated))]
+include!(concat!(env!("COMPACT_FOR_GENERIC_BOUND_GENERATED"), "/contract/lib.rs"));
+#[cfg(all(feature = "for-generic-bound-proof", compact_for_generic_bound_generated))]
+mod for_generic_bound_proof;
 mod canonical_output_order;
 mod closed_pure_field;
 #[cfg(all(

@@ -263,6 +263,26 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_for_generic_bound_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_FOR_GENERIC_BOUND_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_FOR_GENERIC_BOUND_PROOF").is_some() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_FOR_GENERIC_BOUND_GENERATED")
+                .expect("complete pinned for/generic_bound generated root required"),
+        );
+        assert!(root.is_absolute(), "absolute for/generic_bound root required");
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/for_generic_bound.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(member.is_file(), "complete for/generic_bound member required");
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_for_generic_bound_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_stateful_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED");
     if std::env::var_os("CARGO_FEATURE_STATEFUL_PRODUCT_VECTOR_WIDENING").is_some()
