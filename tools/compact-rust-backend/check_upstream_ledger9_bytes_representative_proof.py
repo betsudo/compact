@@ -28,7 +28,8 @@ import sys
 
 import check_upstream_ledger9_bytes_remaining_proof as admission
 from check_upstream_ledger9_field_casts import require, sha256, source_state
-from proof_runner_input_binding import depfile_prerequisites
+from did_proof_gate import hashes, unchanged
+import proof_runner_input_binding as runner_inputs
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -54,6 +55,40 @@ def hash_files(root: Path) -> dict[str, str]:
         if path.is_file():
             result[path.relative_to(root).as_posix()] = sha256(path)
     return result
+
+
+def physical_sha256(path: str | Path) -> str:
+    return sha256(Path(path))
+
+
+def dependency_refusals(tracked: set[str], inventories: dict[str, dict[str, str]],
+                        output: Path) -> dict[str, bool]:
+    """Exercise unknown-path and altered-hash refusal before any key generation."""
+    unknown = output / 'unadmitted-runner-input.rs'
+    unknown.write_text('// outside the frozen Cargo input inventories\n')
+    try:
+        runner_inputs.qualify_dependency_inputs(tracked | {str(unknown)}, inventories,
+                                                physical_sha256)
+    except ValueError as error:
+        unknown_rejected = 'missing or inconsistent' in str(error)
+    else:
+        unknown_rejected = False
+    require(unknown_rejected, 'unknown physical runner dependency escaped refusal')
+    selected = sorted(tracked)[0]
+    altered = {name: dict(files) for name, files in inventories.items()}
+    for files in altered.values():
+        if selected in files:
+            files[selected] = '0' * 64 if files[selected] != '0' * 64 else 'f' * 64
+    try:
+        runner_inputs.qualify_dependency_inputs(tracked, altered, physical_sha256)
+    except ValueError as error:
+        altered_rejected = ('changed after physical prebuild binding' in str(error)
+                            or 'missing or inconsistent' in str(error))
+    else:
+        altered_rejected = False
+    require(altered_rejected, 'tampered physical runner dependency escaped refusal')
+    return {'unknown_dependency_rejected': unknown_rejected,
+            'tampered_dependency_hash_rejected': altered_rejected}
 
 
 def main() -> None:
@@ -112,8 +147,27 @@ def main() -> None:
             'existing Cargo target must be an ordinary directory')
     env['CARGO_TARGET_DIR'] = str(cargo_target)
     runners = {}
+    frozen_runner_inputs = []
     for name, (case, feature, _, _) in SELECTED.items():
         env['COMPACT_BYTES_REMAINING_GENERATED'] = str(generated / case / 'both')
+        binding_dir = output / 'binding' / name
+        binding_dir.mkdir(parents=True)
+        binding = {
+            'source_hashes': {str((ROOT / path).resolve(strict=True)): digest
+                              for path, digest in source_before.items()},
+            'generated_input_hashes': hashes(path for path in generated.rglob('*')
+                                             if path.is_file()),
+        }
+
+        def execute(label: str, command: list[str], log: Path) -> None:
+            for field in ('source_hashes', 'generated_input_hashes',
+                          'dependency_source_hashes', 'generated_build_inputs_before_compile'):
+                if field in binding:
+                    unchanged(binding[field])
+            run(command, log, env)
+
+        runner_inputs.prepare_generated_inputs(ROOT, binding_dir, binding, execute,
+                                               feature, sha256)
         result = run(['cargo', '+1.99.0', 'build', '--locked', '--offline',
                       '--profile', 'proof-checks', '-p', 'compact-rust-proof-smoke',
                       '--features', feature, '--message-format=json'],
@@ -125,19 +179,39 @@ def main() -> None:
         require(len(executables) == 1, f'ambiguous {name} proof runner')
         built = Path(executables.pop())
         depfile = built.with_suffix('.d')
-        tracked = depfile_prerequisites(depfile.read_text(), ROOT)
+        tracked = runner_inputs.depfile_prerequisites(depfile.read_text(), ROOT)
         required = [generated / case / 'both/contract/lib.rs',
                     generated / case / 'both/contract/compact-rust-ir.json',
                     generated / case / f'both/zkir/{name}.zkir',
                     ROOT / 'tools/compact-rust-proof-smoke/src/bytes_remaining_proof.rs']
         require(all(str(path.resolve(strict=True)) in tracked for path in required),
                 f'{name} proof runner omitted generated or committed source input')
+        inventories = {field: binding[field] for field in
+                       ('source_hashes', 'generated_input_hashes',
+                        'dependency_source_hashes', 'generated_build_inputs_before_compile')}
+        physical, origins = runner_inputs.qualify_dependency_inputs(tracked, inventories,
+                                                                     physical_sha256)
+        refusals = dependency_refusals(tracked, inventories, binding_dir)
+        frozen_runner_inputs.extend(inventories.values())
+        frozen_runner_inputs.append(physical)
+        inventory_path = binding_dir / 'inputs.json'
+        inventory_path.write_text(json.dumps({**binding, 'physical_inputs_before_build': physical,
+                                              'physical_input_origins': origins},
+                                             indent=2, sort_keys=True) + '\n')
+        retained_depfile = binding_dir / 'runner.d'
+        shutil.copyfile(depfile, retained_depfile)
         runner = output / 'bin' / name
         runner.parent.mkdir(exist_ok=True)
         shutil.copyfile(built, runner)
         runner.chmod(0o755)
         runners[name] = {'path': str(runner), 'sha256': sha256(runner),
                          'depfile_sha256': sha256(depfile),
+                         'retained_depfile': str(retained_depfile),
+                         'inventory_path': str(inventory_path),
+                         'inventory_sha256': sha256(inventory_path),
+                         'physical_input_count': len(physical),
+                         'physical_input_origins': origins,
+                         'dependency_refusals': refusals,
                          'required_inputs': [str(path) for path in required]}
     require(hash_files(proof) == proof_inputs_before,
             'proof source/IR/ZKIR inputs changed during runner build')
@@ -200,10 +274,17 @@ def main() -> None:
                 f'{name} proof/funded controls differ')
         calls.append(row)
     artifact_hashes = hash_files(proof)
+    for inventory in frozen_runner_inputs:
+        unchanged(inventory)
     require(source_state() == source and admission.tracked_source_hashes() == source_before and
             admission.generated_hashes(generated) == prepared['generated_hashes'] and
             hash_files(proof) == artifact_hashes and
             all(sha256(Path(row['path'])) == row['sha256'] for row in runners.values()) and
+            all(sha256(Path(row['inventory_path'])) == row['inventory_sha256'] and
+                sha256(Path(row['retained_depfile'])) == row['depfile_sha256']
+                for row in runners.values()) and
+            all(sha256(Path(verified['cache_directory']) / name) == digest
+                for name, digest in material_hashes.items()) and
             all(artifact_hashes[f'zkir/{name}.zkir'] == record['zkir_sha256'] and
                 artifact_hashes[f'{name}/contract/compact-rust-ir.json'] == record['ir_sha256']
                 for name, record in selected_source.items()),
