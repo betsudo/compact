@@ -30,6 +30,8 @@ Keep `for` as a source statement lowered through the existing Fold machinery. **
 
 A bounded implementation may keep the existing uniform `VectorFold` and emit a checked finite dispatch over its certified literal domain. If a case cannot satisfy the rules above, use per-iteration specialization with distinct occurrence identities and the same circuit authority, or retain the existing refusal. The dispatch is an internal lowering of a certified source domain; it is not a public runtime indexing feature. Any temporary maximum-domain size is an explicit capability limit, never a claim of general `for` support.
 
+The current dispatch admits one to eight literal items. A nine-item domain retains the existing Rust refusal before output publication. Zero-item loops use the existing empty-Fold path and execute no body effects.
+
 Conceptually, the pinned case must have these ordered effects:
 
 ```text
