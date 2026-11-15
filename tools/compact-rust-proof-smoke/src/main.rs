@@ -82,7 +82,8 @@ mod bytes_next_proof;
         feature = "bytes-fold-conditional-proof",
         feature = "bytes-fold-summation-proof",
         feature = "bytes-loop-spread-proof",
-        feature = "bytes-loop-iteration-proof"
+        feature = "bytes-loop-iteration-proof",
+        feature = "bytes-manual-update-proof"
     ),
     compact_bytes_next_remaining_proof_generated
 ))]
@@ -95,7 +96,8 @@ include!(concat!(
         feature = "bytes-fold-conditional-proof",
         feature = "bytes-fold-summation-proof",
         feature = "bytes-loop-spread-proof",
-        feature = "bytes-loop-iteration-proof"
+        feature = "bytes-loop-iteration-proof",
+        feature = "bytes-manual-update-proof"
     ),
     compact_bytes_next_remaining_proof_generated
 ))]

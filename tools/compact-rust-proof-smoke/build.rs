@@ -230,6 +230,7 @@ fn main() {
         "CARGO_FEATURE_BYTES_FOLD_SUMMATION_PROOF",
         "CARGO_FEATURE_BYTES_LOOP_SPREAD_PROOF",
         "CARGO_FEATURE_BYTES_LOOP_ITERATION_PROOF",
+        "CARGO_FEATURE_BYTES_MANUAL_UPDATE_PROOF",
     ]
     .iter()
     .filter(|name| std::env::var_os(name).is_some())

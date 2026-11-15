@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Exercise actual proof-smoke build-script admission for four Bytes exports."""
+"""Exercise actual proof-smoke build-script admission for five Bytes exports."""
 
 import os
 from pathlib import Path
@@ -29,7 +29,8 @@ SOURCE = ROOT / 'tools/compact-rust-proof-smoke/build.rs'
 FEATURES = ('CARGO_FEATURE_BYTES_FOLD_CONDITIONAL_PROOF',
             'CARGO_FEATURE_BYTES_FOLD_SUMMATION_PROOF',
             'CARGO_FEATURE_BYTES_LOOP_SPREAD_PROOF',
-            'CARGO_FEATURE_BYTES_LOOP_ITERATION_PROOF')
+            'CARGO_FEATURE_BYTES_LOOP_ITERATION_PROOF',
+            'CARGO_FEATURE_BYTES_MANUAL_UPDATE_PROOF')
 GENERATED = 'COMPACT_BYTES_NEXT_REMAINING_GENERATED'
 CFG = 'cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated'
 

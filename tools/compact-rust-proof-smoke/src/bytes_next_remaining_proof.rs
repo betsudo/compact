@@ -28,6 +28,8 @@ const CIRCUIT: &str = "bytes_fold_summation";
 const CIRCUIT: &str = "bytes_loop_spread_iteration";
 #[cfg(feature = "bytes-loop-iteration-proof")]
 const CIRCUIT: &str = "bytes_loop_iteration";
+#[cfg(feature = "bytes-manual-update-proof")]
+const CIRCUIT: &str = "bytes_manual_update_semantics";
 const GENERATED_IR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_BYTES_NEXT_REMAINING_GENERATED"),
     "/contract/compact-rust-ir.json"
@@ -51,6 +53,11 @@ const GENERATED_ZKIR: &[u8] = include_bytes!(concat!(
 const GENERATED_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_BYTES_NEXT_REMAINING_GENERATED"),
     "/zkir/bytes_loop_iteration.zkir"
+));
+#[cfg(feature = "bytes-manual-update-proof")]
+const GENERATED_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_BYTES_NEXT_REMAINING_GENERATED"),
+    "/zkir/bytes_manual_update_semantics.zkir"
 ));
 
 fn validate_bindings(root: &Path) -> Result<(), Box<dyn Error>> {
@@ -81,6 +88,8 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let call = prove_spread(root)?;
     #[cfg(feature = "bytes-loop-iteration-proof")]
     let call = prove_iteration(root)?;
+    #[cfg(feature = "bytes-manual-update-proof")]
+    let call = prove_manual_update(root)?;
     let result = serde_json::json!({
         "format":"compact-ledger9-bytes-next-remaining-proof/v1",
         "status":"passed",
@@ -314,5 +323,59 @@ fn prove_summation(root: &Path) -> Result<serde_json::Value, Box<dyn Error>> {
     summary["circuit"] = name.into();
     summary["k"] = 7.into();
     summary["result_uint"] = 15.into();
+    Ok(summary)
+}
+
+#[cfg(feature = "bytes-manual-update-proof")]
+fn prove_manual_update(root: &Path) -> Result<serde_json::Value, Box<dyn Error>> {
+    let name = "bytes_manual_update_semantics";
+    let stem = "bytes-manual-update";
+    let expected = FixedBytes::new([1, 4, 14, 50]);
+    let mut rng = StdRng::seed_from_u64(0x0721_1005);
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = v3::operation(root, name, 12)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        name,
+        operation.clone(),
+        &mut rng,
+    );
+    let observed = observed(&deploy);
+    let native = contract::bytes_manual_update_semantics(observed.circuit_context(()))?;
+    let recorded = contract::recorded::bytes_manual_update_semantics(observed.circuit_context(()))?;
+    if native.result != expected
+        || contract::PublicStateView::from(&native).manual_update_result()? != expected
+        || native.result != recorded.execution.result
+        || native.public_state() != recorded.execution.public_state()
+        || native.gas_cost != recorded.execution.gas_cost
+        || !native.private_transcript_outputs.is_empty()
+    {
+        return Err("original Bytes manual update result, state or recording changed".into());
+    }
+    let state = native.context.query.state.get_ref().clone();
+    let wrong = v3::read_verifier(root, "bytes_fold_boolean_reduction")?;
+    let facade = contract::Contract::default();
+    let call = || {
+        facade
+            .recording()
+            .bytes_manual_update_semantics_call(&observed, ())
+    };
+    if !matches!(call()?.prepare(wrong, Fr::from(0_u64)),
+                 Err(ObservedCallError::VerifierMismatch(ref circuit)) if circuit == name)
+    {
+        return Err("wrong Bytes manual update verifier accepted before proving".into());
+    }
+    let prepared = call()?.prepare(verifier.clone(), Fr::from(0_u64))?;
+    if prepared.op != operation || prepared.entry_point != EntryPointBuf(name.as_bytes().to_vec()) {
+        return Err("prepared Bytes manual update operation differs from source".into());
+    }
+    let standalone = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
+    positional_transaction::verify_separately(root, name, stem)?;
+    reject_wrong_verifier_proof(root, "bytes_fold_boolean_reduction", stem, &standalone)?;
+    let proof_bytes = v3::apply(root, name, stem, prepared, deploy, &state, &standalone)?;
+    let mut summary = check_proof_artifacts(root, stem, proof_bytes)?;
+    summary["circuit"] = name.into();
+    summary["k"] = 12.into();
+    summary["result_bytes_hex"] = "01040e32".into();
     Ok(summary)
 }
