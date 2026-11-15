@@ -268,8 +268,14 @@ def main():
         validate_consumer_lock(metadata, target / 'Cargo.lock',
                                {target / 'Cargo.toml', ROOT / 'runtime-rs/Cargo.toml',
                                 ROOT / 'runtime-rs-macros/Cargo.toml'}, pinned)
+        # The pinned source deliberately has identical Set.insert branches.
+        # Keep every other generated-crate warning denied without rewriting
+        # its conditional or changing the manifest for unrelated contracts.
+        clippy_exception = (['-A', 'clippy::if_same_then_else']
+                            if case == 'branches_write_ledger' else [])
         run(['cargo', '+1.99.0', 'clippy', '--locked', '--offline', '--all-targets',
-             '--manifest-path', str(target / 'Cargo.toml'), '--', '-D', 'warnings'],
+             '--manifest-path', str(target / 'Cargo.toml'), '--', '-D', 'warnings',
+             *clippy_exception],
             output / f'{case}-generated-clippy.log', cargo_env)
     after = generated_files(output / 'generated')
     lock_names = {f'{case}/both/contract/Cargo.lock' for case in CASES}
@@ -297,6 +303,8 @@ def main():
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
                'clippy_log_sha256': {case: sha256(output / f'{case}-generated-clippy.log')
                                      for case in CASES},
+               'clippy_source_exception': {'branches_write_ledger':
+                                           'clippy::if_same_then_else (pinned identical Set.insert branches)'},
                'case_count': 2, 'rust_accepted_cases': 2, 'rust_refusal_cases': 0,
                'proof_execution': False, 'funded_application': False,
                'limitations': ['native Linux qualification required',
