@@ -1381,6 +1381,7 @@
                  (let ([len (tbytes->length type)])
                    (unless (< kindex len)
                      (source-errorf src "invalid Bytes index ~d for a Bytes value of length ~d" kindex len)))
+                 (observe-rust-vector-index! src kindex)
                  (new-let src type expr expr-ctv
                    (lambda (var-name)
                      (let-values ([(var-ref var-ctv) (handle-var-ref src var-name)])

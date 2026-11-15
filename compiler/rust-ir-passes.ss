@@ -967,9 +967,11 @@
                   (cons "start" start)
                   (cons "length" length))))
 
-      (define (bytes-ref-ir src type value index lower)
+      (define (bytes-ref-ir original src type value index lower)
         (let ([width (bytes-carrier-width type)]
-              [position (maybe-nonnegative-integer-literal index src)])
+              [position (or (maybe-nonnegative-integer-literal index src)
+                            (and (eq? (rust-vector-index-guard-state original) 'safe)
+                                 (rust-vector-index original)))])
           (unless width
             (source-errorf src "Rust backend requires a Bytes indexing operand"))
           (unless position
@@ -1278,7 +1280,7 @@
           [(bytes-slice ,src ,type ,expr ,index ,len)
            (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
           [(bytes-ref ,src ,type ,expr ,index)
-           (bytes-ref-ir src type expr index (lambda (value) (expression-ir value src)))]
+           (bytes-ref-ir ir src type expr index (lambda (value) (expression-ir value src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (expression-ir value src)))]
           [(field->bytes ,src ,len ,expr)
@@ -3450,7 +3452,7 @@
            (bytes-slice-ir src expr index len
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(bytes-ref ,src ,type ,expr ,index)
-           (bytes-ref-ir src type expr index
+           (bytes-ref-ir ir src type expr index
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
