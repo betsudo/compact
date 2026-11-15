@@ -7,6 +7,7 @@
 
 import json
 from pathlib import Path
+import shlex
 import tomllib
 
 from did_proof_gate import hashes, unchanged
@@ -15,6 +16,18 @@ from did_proof_gate import hashes, unchanged
 def require(condition, message):
     if not condition:
         raise ValueError(message)
+
+
+def depfile_prerequisites(raw, base):
+    """Resolve only the physical prerequisites of Cargo's first Make rule."""
+    logical = raw.replace("\\\n", "")
+    first_rule = next(line for line in logical.splitlines() if line.strip())
+    _, separator, prerequisites = first_rule.partition(": ")
+    require(separator and prerequisites, "invalid actual runner dependency rule")
+    paths = {str((base / path).resolve(strict=True)) for path in shlex.split(prerequisites)}
+    require(paths and all(Path(path).is_file() for path in paths),
+            "non-file runner prerequisite")
+    return paths
 
 
 def prepare_generated_inputs(root, output, report, execute, feature, digest):

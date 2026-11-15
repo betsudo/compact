@@ -12,7 +12,8 @@ import tempfile
 import unittest
 
 from did_proof_gate import hashes
-from proof_runner_input_binding import prepare_generated_inputs, qualify_dependency_inputs
+from proof_runner_input_binding import (depfile_prerequisites, prepare_generated_inputs,
+                                        qualify_dependency_inputs)
 
 
 def digest(path):
@@ -20,6 +21,20 @@ def digest(path):
 
 
 class RunnerInputBindingTests(unittest.TestCase):
+    def test_depfile_skips_target_and_resolves_escaped_prerequisites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            first = root / "input one.rs"
+            second = root / "other.rs"
+            first.write_text("one\n")
+            second.write_text("two\n")
+            rule = "target/proof-checks/runner: input\\ one.rs \\\n other.rs\n"
+            self.assertEqual(depfile_prerequisites(rule, root), {str(first), str(second)})
+            with self.assertRaisesRegex(ValueError, "invalid actual runner dependency rule"):
+                depfile_prerequisites("target/proof-checks/runner:\n", root)
+            with self.assertRaises(FileNotFoundError):
+                depfile_prerequisites("target/proof-checks/runner: missing.rs\n", root)
+
     def test_generated_target_input_is_prepared_and_source_owned(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
