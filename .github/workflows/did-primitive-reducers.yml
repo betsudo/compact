@@ -1,0 +1,235 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: DID primitive reducers / native Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact 40-character commit SHA selected for this qualification
+        type: string
+        required: true
+
+permissions: {}
+
+env:
+  RUSTUP_TOOLCHAIN: 1.99.0
+  CARGO_INCREMENTAL: 0
+  PYTHONDONTWRITEBYTECODE: 1
+  COMPACT_CI_TIMINGS: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-preflight:
+    name: Exact source and provenance preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Require explicitly selected exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then exit 2; fi
+          if [[ "$EXPECTED_SHA" != "$SOURCE_SHA" ]]; then exit 2; fi
+      - name: Checkout exact source head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Check source and same-run compiler handoff controls
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          python3 -B .github/scripts/test_compiler_closure.py
+          python3 -B .github/scripts/test_did_manual_workflow.py
+          python3 - <<'PYSDK'
+          import sys
+          sys.path.insert(0, 'tools/compact-rust-backend')
+          from check_release_packages import compatibility_record
+          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.1'
+          PYSDK
+
+  compiler-linux:
+    needs: source-preflight
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+      export-shell: true
+
+  did-primitive-reducers:
+    name: DID primitive reducers / native Linux
+    runs-on: ubuntu-latest
+    needs: [source-preflight, compiler-linux]
+    if: ${{ !cancelled() && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' }}
+    permissions:
+      contents: read
+      actions: read
+    timeout-minutes: 180
+    env:
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - name: Require successful exact-source compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          PRODUCER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_SHELL: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$PRODUCER_RESULT" = success
+          test -n "$PRODUCER_ARTIFACT"
+          test -n "$PRODUCER_SHELL"
+          test -n "$PRODUCER_ATTEMPT"
+
+      - name: Checkout exact source head
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Nix with cache
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
+
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          COMPILER_PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/compiler-material.zip"
+          compiler=$(python3 .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$COMPILER_PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/compiler-material.zip" \
+            --directory "$RUNNER_TEMP/imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+
+      - name: Import compiler shell prerequisites
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+
+      - name: Setup Rust 1.99 proof toolchain
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+          components: rustfmt
+
+      - name: Setup Python for DID proof gate
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Restore locked Cargo downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+
+      - name: Select isolated proof build target
+        run: printf 'CARGO_TARGET_DIR=%s/compact-did-reducer-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+
+      - name: Resolve exact Ledger 9 SDK fixture and Runtime 0.18
+        run: |
+          python3 - <<'PY'
+          import sys
+          sys.path.insert(0, 'tools/compact-rust-backend')
+          from check_release_packages import compatibility_record
+          record = compatibility_record()
+          if record['ledger_version'] != 'ledger-9.1.0.1':
+              raise SystemExit('DID reducer SDK matrix differs from Ledger 9.1.0.1')
+          print('DID reducer source SDK matrix:', record['ledger_version'])
+          PY
+          cargo fetch --locked
+          cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/did-reducer-cargo-metadata.json"
+          python3 tools/compact-rust-backend/resolve_ledger_test_static.py \
+            --metadata "$RUNNER_TEMP/did-reducer-cargo-metadata.json" \
+            --lock Cargo.lock \
+            --provenance "$RUNNER_TEMP/did-reducer-ledger-static.json" \
+            --github-env "$GITHUB_ENV"
+          nix build --no-link .#runtime.package
+          printf 'MIDNIGHT_PP=%s/compact-did-reducer-parameters\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/compact-did-reducer-parameters"
+
+      - name: Prove all nine current DID primitive reducers
+        id: did_primitive_reducer_proof
+        run: |
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/did_primitive_reducer_gate.py \
+              --compiler "$COMPACTC" \
+              --scheme "$(dirname "$COMPACTC")/compactc-scheme" \
+              --target "$CARGO_TARGET_DIR" \
+              --output "$RUNNER_TEMP/compact-did-primitive-reducer-proof"
+          python3 - "$RUNNER_TEMP/compact-did-primitive-reducer-proof/receipt.json" "$GITHUB_SHA" <<'PY'
+          import json, pathlib, sys
+          receipt = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          assert receipt['status'] == 'passed' and receipt['git_head'] == sys.argv[2]
+          assert len(receipt['reducers']) == len(receipt['expected_reducers']) == 9
+          assert sum(len(row['summary']['calls']) for row in receipt['reducers']) == 21
+          PY
+
+      - name: Retain DID reducer source, material, and proof receipts
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: did-primitive-reducer-proof-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/did-reducer-ledger-static.json
+            ${{ runner.temp }}/compact-did-primitive-reducer-proof/
+          if-no-files-found: warn
+          retention-days: 14
+
+  complete:
+    name: DID native Linux qualification
+    runs-on: ubuntu-latest
+    needs: [source-preflight, compiler-linux, did-primitive-reducers]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every DID qualification owner
+        env:
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          DID_RESULT: ${{ needs.did-primitive-reducers.result }}
+        run: |
+          test "$PREFLIGHT_RESULT" = success
+          test "$PRODUCER_RESULT" = success
+          test "$DID_RESULT" = success
