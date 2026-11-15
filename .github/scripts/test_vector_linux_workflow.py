@@ -40,12 +40,18 @@ class VectorLinuxWorkflowControls(unittest.TestCase):
         self.assertIn('refs/heads/codex/ledger9-vector-linux/$SOURCE_SHA', text)
         self.assertIn('test "$EXPECTED_SHA" = "$SOURCE_SHA"', text)
         self.assertIn("fetch-depth: 0", text)
+        pinned_fetch = ("git fetch --no-tags --depth=1 "
+                        "https://github.com/LFDT-Minokawa/compact.git "
+                        "672bd0f226f47a7d036c5c074ce71fbe1af1925e")
+        self.assertEqual(text.count(pinned_fetch), 2)
         self.assertEqual(text.count("bash .github/scripts/trust_vector_source_key.sh"), 2)
         self.assertIn("git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e^{commit}'", text)
         preflight = text.split("  source-preflight:\n", 1)[1].split("  compiler-linux:\n", 1)[0]
         producer = text.split("  compiler-linux:\n", 1)[1].split("  vector-semantics:\n", 1)[0]
         consumer = text.split("  vector-semantics:\n", 1)[1].split("  complete:\n", 1)[0]
         complete = text.split("  complete:\n", 1)[1]
+        self.assertLess(preflight.index(pinned_fetch), preflight.index("git cat-file -e"))
+        self.assertLess(consumer.index(pinned_fetch), consumer.index("compiler_closure.py import"))
         self.assertIn("test_vector_linux_workflow.py", preflight)
         self.assertIn("needs: source-preflight", producer)
         self.assertIn("uses: ./.github/workflows/compiler-producer.yml", producer)
