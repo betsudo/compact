@@ -679,6 +679,56 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      ;; Only an if in discarded sequence-step position needs a Unit branch
+      ;; join. An inlined lambda returning a default Field is represented as
+      ;; an empty let around a Field literal. This restricted shape gives a
+      ;; checked binding type for evaluating that value before discarding it;
+      ;; other source expressions retain the existing sequence-step refusal.
+      (define (literal-field-ir? value)
+        (let ([kind^ (assoc "kind" value)])
+          (and kind^
+               (cond
+                 [(equal? (cdr kind^) "field_literal") #t]
+                 [(equal? (cdr kind^) "let")
+                  (let ([bindings (assoc "bindings" value)]
+                        [body (assoc "body" value)])
+                    (and bindings (vector? (cdr bindings))
+                         (zero? (vector-length (cdr bindings)))
+                         body (literal-field-ir? (cdr body))))]
+                 [else #f]))))
+
+      (define (discarded-field-ir src value)
+        (let ([name (make-source-id src 'discarded_field)])
+          (object (cons "kind" "let")
+                  (cons "bindings"
+                    (vector (object (cons "name" (sourced-rust-var-name name))
+                                    (cons "ty" (kind "field"))
+                                    (cons "value" value))))
+                  (cons "body" (kind "unit")))))
+
+      (define (discarded-expression-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (call-with-rust-origin "expression" (expression-origin expr)
+             (expression-origin-preserve? expr)
+             (lambda ()
+               (object (cons "kind" "if")
+                       (cons "condition" (expression-ir expr0 src))
+                       (cons "then" (discarded-expression-ir expr1 src))
+                       (cons "otherwise" (discarded-expression-ir expr2 src))))
+             (expression-operation-origin expr))]
+          [else
+           (let ([value (expression-ir expr owner-src)])
+             (if (literal-field-ir? value)
+                 (discarded-field-ir owner-src value)
+                 value))]))
+
+      (define (sequence-step-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (discarded-expression-ir expr owner-src)]
+          [else (expression-ir expr owner-src)]))
+
       ;; Rust's existing type-ir erases numeric aliases to the same carrier.
       ;; Use the bridge's shared analyzed-bound query for typed expressions and
       ;; cast annotations too; do not mistake an aliased Uint for a new value.
@@ -1410,7 +1460,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (expression-ir expr src)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (expression-ir expr src))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -1823,7 +1873,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (typed-expression-ir expr expected-type src source-type)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (typed-expression-ir expr expected-type src source-type))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (if mbits
