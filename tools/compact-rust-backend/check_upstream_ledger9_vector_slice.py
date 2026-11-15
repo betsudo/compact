@@ -24,6 +24,11 @@ import shutil
 import subprocess
 import tomllib
 
+from check_upstream_ledger9_vector_casts import (
+    compiler_recipe_identity, require_unchanged, runtime_identity,
+    runtime_recipe_identity, source_state,
+)
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY = ROOT / "test-contracts/primitives/vector/slice"
@@ -49,6 +54,7 @@ def run(command: list[str], log: Path, *, env: dict[str, str]) -> str:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--compiler", type=Path, required=True)
+    parser.add_argument("--compiler-recipe", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cargo-target", type=Path,
@@ -59,13 +65,24 @@ def main() -> None:
     output = args.output.resolve()
     if args.output.is_symlink() or output.exists():
         parser.error("output must be absent")
-    if subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT):
-        parser.error("clean committed source required for qualification")
+    source = source_state()
+    commit = subprocess.check_output(["git", "log", "-1", "--format=%G?%n%B"],
+                                     cwd=ROOT, text=True)
+    if not (commit.startswith("G\n") and "Signed-off-by:" in commit
+            and "Assisted-by: AI" in commit):
+        parser.error("source head must be signed, DCO complete and assisted")
     source_package = json.loads((ROOT / "runtime/package.json").read_text())
     runtime_package = json.loads((runtime / "package.json").read_text())
     if any(source_package[key] != runtime_package[key]
            for key in ("name", "version", "dependencies")):
         parser.error("TypeScript runtime package does not match this source tree")
+    nix_executable = shutil.which("nix")
+    if not nix_executable:
+        parser.error("Nix is required to bind the TypeScript runtime to this source head")
+    runtime_recipe = runtime_recipe_identity(runtime, Path(nix_executable).resolve(strict=True))
+    runtime_before = runtime_identity(runtime)
+    scheme = compiler.with_name("compactc-scheme").resolve(strict=True)
+    recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
     manifest_path = FAMILY / "original-source-sha256.json"
     manifest = json.loads(manifest_path.read_text())
     if manifest["upstream_commit"] != "672bd0f226f47a7d036c5c074ce71fbe1af1925e" \
@@ -80,9 +97,6 @@ def main() -> None:
     link.parent.mkdir(parents=True)
     link.symlink_to(runtime, target_is_directory=True)
     env = os.environ.copy()
-    scheme = compiler.with_name("compactc-scheme")
-    if not scheme.is_file():
-        parser.error("paired Scheme compiler is missing")
     env["COMPACTC_SCHEME"] = str(scheme)
     generated = {}
     for name in POSITIVES:
@@ -217,10 +231,10 @@ def main() -> None:
     if ("eight original vector slice assertions passed" not in rust_output
             or "local Field-to-Uint slice assertion passed" not in rust_output):
         raise RuntimeError("generated Rust assertion result missing")
+    require_unchanged(source, runtime_before, recipe, runtime,
+                      args.compiler_recipe, compiler, scheme)
     receipt = {
-        "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-        "tree": subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=ROOT, text=True).strip(),
-        "source_clean": not subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT),
+        **source, "source_clean": True,
         "platform": os.uname().sysname + " " + os.uname().machine,
         "upstream_commit": manifest["upstream_commit"],
         "original_files": 30,
@@ -228,6 +242,11 @@ def main() -> None:
         "compiler_sha256": sha256(compiler),
         "scheme_sha256": sha256(scheme),
         "runtime_package_sha256": sha256(runtime / "package.json"),
+        "runtime": runtime_before,
+        "runtime_recipe": runtime_recipe,
+        "compiler_recipe": recipe,
+        "checker_sha256": sha256(Path(__file__)),
+        "identity_library_sha256": sha256(ROOT / "tools/compact-rust-backend/check_upstream_ledger9_vector_casts.py"),
         "cargo_target": str(cargo_target),
         "generated": generated,
         "local_field_to_uint": local_positive,
