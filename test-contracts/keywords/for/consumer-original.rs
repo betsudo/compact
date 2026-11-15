@@ -55,7 +55,15 @@ fn original_generic_bound_and_recorded_replay() {
                .total().unwrap().value(), 5);
     assert_eq!(recorded.execution.public_state(), ordinary.public_state());
     assert_eq!(recorded.execution.gas_cost, ordinary.gas_cost);
-    assert!(!recorded.public.verify_ops().is_empty());
+    assert_eq!(ordinary.gas_cost.read_time.into_picoseconds(), 765000000);
+    assert_eq!(ordinary.gas_cost.compute_time.into_picoseconds(), 7385878722);
+    assert_eq!(ordinary.gas_cost.bytes_written, 72);
+    assert_eq!(ordinary.gas_cost.bytes_deleted, 72);
+    assert!(ordinary.private_transcript_outputs.is_empty());
+    assert!(recorded.execution.private_transcript_outputs.is_empty());
+    // The initial write and both ordered loop writes each retain six SDK
+    // verification operations; the terminal read does not add a write.
+    assert_eq!(recorded.public.verify_ops().len(), 18);
     let replay = recorded.public.initial()
         .query(recorded.public.verify_ops(), None, &INITIAL_COST_MODEL).unwrap();
     let mut ordinary_bytes = Vec::new();

@@ -166,7 +166,7 @@ def main():
                     for key in ('typescript_sha256', 'contract_info_sha256',
                                 'runtime_log_sha256')),
                 f'paired target altered for TypeScript: {case}')
-        if case == 'zero_iteration':
+        if proof:
             require(generated[case]['typescript']['zkir_sha256'] ==
                     generated[case]['both']['zkir_sha256'],
                     'paired target altered for ZKIR')

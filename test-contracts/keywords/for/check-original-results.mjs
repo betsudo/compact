@@ -23,5 +23,13 @@ assert.deepStrictEqual(execution.result,
 if (name !== 'return_in_lambda_in_body') assert.ok(execution.proofData);
 if (name === 'generic_bound') {
   assert.deepStrictEqual(generated.ledger(execution.context.currentQueryContext.state).total, 5n);
+  assert.equal(execution.proofData.publicTranscript.length, 18);
+  assert.equal(execution.proofData.privateTranscriptOutputs.length, 0);
+  assert.deepStrictEqual(execution.context.gasCost, {
+    readTime: 765000000n,
+    computeTime: 7385878722n,
+    bytesWritten: 72n,
+    bytesDeleted: 72n,
+  });
 }
 console.log(`${name}: original for result passed`);
