@@ -20,6 +20,8 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import shutil
+import subprocess
 import tempfile
 import unittest
 
@@ -34,6 +36,93 @@ spec.loader.exec_module(verifier)
 
 
 class BytesNextLinuxWorkflowControls(unittest.TestCase):
+    def foreign_fixture(self, output):
+        names = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only',
+                                         verifier.PINNED, *verifier.FOREIGN_DIRS],
+                                        cwd=ROOT, text=True).splitlines()
+        originals = {name: verifier.sha256(ROOT / name) for name in names}
+        controls = {name: verifier.sha256(ROOT / name) for name in
+                    ('tools/compact-rust-backend/tests/foreign_opaque_field/check.mjs',
+                     'tools/compact-rust-backend/tests/foreign_opaque_field/consumer.rs')}
+        logs = {}
+        for name in verifier.FOREIGN_LOGS:
+            value = ''
+            if name.startswith('opaque-') and name.endswith('-runtime.log'):
+                value = 'opaque: original Uint8Array assertion passed\n'
+            if name.startswith('foreign-') and name.endswith('-runtime.log'):
+                value = 'foreign: five original zero-result assertions passed\n'
+            if name.startswith('field-'):
+                value = 'is out of Field range\n'
+            if name == 'cargo-test.log':
+                value = ('test original_opaque_result_is_bytes ... ok\n'
+                         'test five_original_foreign_zero_results_ordinary_and_recorded ... ok\n'
+                         'test result: ok. 2 passed; 0 failed;\n')
+            (output / name).write_text(value)
+            logs[name] = verifier.sha256(output / name)
+        rust = output / 'rust-consumer'
+        (rust / 'tests').mkdir(parents=True)
+        shutil.copyfile(ROOT / 'tools/compact-rust-backend/tests/foreign_opaque_field/consumer.rs',
+                        rust / 'tests/foreign_opaque_field.rs')
+        (rust / 'Cargo.lock').write_text('lock\n')
+        generated = {}
+        for kind in ('opaque', 'foreign'):
+            generated[kind] = {}
+            for mode in ('typescript', 'both'):
+                root = output / 'generated' / kind / mode
+                (root / 'compiler').mkdir(parents=True)
+                (root / 'contract').mkdir()
+                circuits = ([{'name': name, 'proof': True, 'pure': False}
+                             for name in verifier.FOREIGN_NAMES] if kind == 'foreign' else
+                            [{'name': 'opaque_casts_to_opaque', 'proof': False, 'pure': True,
+                              'result-type': {'type-name': 'Opaque', 'tsType': 'Uint8Array'}}])
+                (root / 'compiler/contract-info.json').write_text(json.dumps({'circuits': circuits}))
+                (root / 'contract/index.js').write_text('export const contract = 1;\n')
+                if mode == 'both':
+                    (root / 'contract/lib.rs').write_text('pub fn contract() {}\n')
+                if kind == 'foreign':
+                    (root / 'zkir').mkdir()
+                    for name in verifier.FOREIGN_NAMES:
+                        (root / f'zkir/{name}.zkir').write_text('zkir\n')
+                generated[kind][mode] = verifier.hash_tree(root)
+        return {'original_files': originals, 'local_controls': controls,
+                'command_logs_sha256': logs, 'generated': generated,
+                'cargo_target': str(output / 'shared-target'),
+                'proof_execution': False, 'funded_application': False,
+                'limitations': ['native Linux generated semantics qualified',
+                                'five foreign proof=true exports are unproved'],
+                'rust_consumer_lock_sha256': verifier.sha256(rust / 'Cargo.lock')}
+
+    def test_foreign_logs_artifacts_refusal_and_scope_tamper_refused(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            target = output / 'shared-target'
+            target.mkdir()
+            receipt = self.foreign_fixture(output)
+            verifier.verify_foreign(receipt, output, target)
+            log = output / 'foreign-both-runtime.log'
+            log.write_text('forged success\n')
+            with self.assertRaisesRegex(ValueError, 'foreign command log changed'):
+                verifier.verify_foreign(receipt, output, target)
+            log.unlink()
+            with self.assertRaisesRegex(ValueError, 'foreign command log roster differs'):
+                verifier.verify_foreign(receipt, output, target)
+            log.write_text('foreign: five original zero-result assertions passed\n')
+            artifact = output / 'generated/foreign/both/contract/lib.rs'
+            artifact.write_text('pub fn forged() {}\n')
+            with self.assertRaisesRegex(ValueError, 'complete generated artifacts differ'):
+                verifier.verify_foreign(receipt, output, target)
+            artifact.write_text('pub fn contract() {}\n')
+            refusal = output / 'field-both-compile.log'
+            refusal.write_text('compiled successfully\n')
+            receipt['command_logs_sha256'][refusal.name] = verifier.sha256(refusal)
+            with self.assertRaisesRegex(ValueError, 'Field refusal changed'):
+                verifier.verify_foreign(receipt, output, target)
+            refusal.write_text('is out of Field range\n')
+            receipt['command_logs_sha256'][refusal.name] = verifier.sha256(refusal)
+            receipt['proof_execution'] = True
+            with self.assertRaisesRegex(ValueError, 'foreign proof scope'):
+                verifier.verify_foreign(receipt, output, target)
+
     def test_exact_sha_and_fail_closed_job_graph(self):
         text = WORKFLOW.read_text()
         self.assertIn("'codex/ledger9-bytes-next-linux/*'", text)
@@ -62,7 +151,7 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
         for owner in ('PREFLIGHT_RESULT', 'PRODUCER_RESULT', 'BYTES_NEXT_RESULT'):
             self.assertIn('test "$' + owner + '" = success', complete)
 
-    def test_three_gates_share_cargo_target_and_preserve_scope(self):
+    def test_four_gates_share_cargo_target_and_preserve_scope(self):
         text = WORKFLOW.read_text()
         match = re.search(r'for gate in ([^;]+); do', text)
         self.assertIsNotNone(match)
@@ -70,6 +159,14 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
         self.assertIn('mkdir -p "$BYTES_NEXT_CARGO_TARGET"', text)
         self.assertIn('--cargo-target "$BYTES_NEXT_CARGO_TARGET"', text)
         for case in verifier.CASES:
+            if case == 'foreign_opaque_field':
+                path = ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_foreign_opaque_field.py'
+                source = ast.unparse(ast.parse(path.read_text()))
+                self.assertIn('cargo-target', source)
+                self.assertIn("'cargo_target'", source)
+                self.assertIn("'proof_execution': False", source)
+                self.assertIn('native Linux generated semantics qualified', source)
+                continue
             path = ROOT / 'tools/compact-rust-backend' / f'check_upstream_ledger9_bytes_{case}.py'
             main = next(node for node in ast.parse(path.read_text()).body
                         if isinstance(node, ast.FunctionDef) and node.name == 'main')
@@ -78,9 +175,9 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
             self.assertIn("'cargo_target'", source)
             self.assertIn("'proof_execution': False", source)
             self.assertIn("'native Linux generated semantics qualified'", source)
-        self.assertEqual(sum(verifier.ORIGINAL_COUNT.values()), 24)
+        self.assertEqual(sum(verifier.ORIGINAL_COUNT.values()), 32)
         source = VERIFIER.read_text()
-        self.assertIn("'proof_required_exports_not_qualified_here': 7", source)
+        self.assertIn("'proof_required_exports_not_qualified_here': 12", source)
         self.assertIn("'funded_application': False", source)
         self.assertIn("'constructor_execution_proved': False", source)
 
@@ -104,6 +201,18 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
                                   compiler=base / 'compiler', recipe_path=base / 'recipe',
                                   runtime=base / 'runtime', runtime_snapshot={},
                                   runtime_recipe={}, target=base / 'target')
+            foreign_output = base / 'foreign_opaque_field'
+            foreign_output.mkdir()
+            foreign_log = base / 'foreign_opaque_field.stdout.log'
+            foreign_log.write_text(json.dumps({'status': 'passed', 'head': head,
+                                               'output': str(foreign_output)}) + '\n')
+            foreign_receipt = foreign_output / 'receipt.json'
+            foreign_receipt.write_text(receipt.read_text())
+            with self.assertRaisesRegex(ValueError, 'native source or result differs'):
+                verifier.validate('foreign_opaque_field', foreign_receipt, foreign_log,
+                                  head=head, tree=tree, compiler=base / 'compiler',
+                                  recipe_path=base / 'recipe', runtime=base / 'runtime',
+                                  runtime_snapshot={}, runtime_recipe={}, target=base / 'target')
 
     def test_original_and_local_inventory_tamper_refused(self):
         manifest = json.loads((ROOT / verifier.MANIFESTS['loops']).read_text())

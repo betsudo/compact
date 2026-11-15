@@ -192,22 +192,27 @@ jobs:
           printf 'BYTES_NEXT_CARGO_TARGET=%s/bytes-next-shared-cargo-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
           python3 -B tools/compact-rust-backend/record_compiler_recipe.py \
             --compiler "$COMPACTC" --output "$RUNNER_TEMP/bytes-next-compiler-recipe"
-      - name: Run three original Bytes semantic gates serially
+      - name: Run four original semantic gates serially
         env:
           SOURCE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/bytes-next-semantic-evidence"
           mkdir -p "$BYTES_NEXT_CARGO_TARGET"
-          for gate in manual_witness fold loops; do
+          for gate in manual_witness fold loops foreign_opaque_field; do
             arguments=(--compiler "$COMPACTC" \
               --compiler-recipe "$RUNNER_TEMP/bytes-next-compiler-recipe/receipt.json" \
               --output "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate")
             arguments+=(--ts-runtime "$BYTES_NEXT_RUNTIME" \
               --cargo-target "$BYTES_NEXT_CARGO_TARGET")
+            if [[ "$gate" == foreign_opaque_field ]]; then
+              checker=tools/compact-rust-backend/check_upstream_ledger9_foreign_opaque_field.py
+            else
+              checker="tools/compact-rust-backend/check_upstream_ledger9_bytes_$gate.py"
+            fi
             env -u LD_LIBRARY_PATH nix develop .#compiler --command \
               python3 -X faulthandler -u \
-              "tools/compact-rust-backend/check_upstream_ledger9_bytes_$gate.py" "${arguments[@]}" \
+              "$checker" "${arguments[@]}" \
               | tee "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate.stdout.log"
             python3 -B .github/scripts/verify_bytes_next_linux_receipts.py \
               --case "$gate" \

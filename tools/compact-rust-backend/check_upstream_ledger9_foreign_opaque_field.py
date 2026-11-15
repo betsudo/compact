@@ -89,6 +89,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--cargo-target', type=Path)
     args = parser.parse_args()
     source = source_state()
     signature = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
@@ -100,6 +101,13 @@ def main():
     runtime = args.ts_runtime.resolve(strict=True)
     output = args.output.resolve()
     require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
+    if args.cargo_target:
+        require(args.cargo_target.is_absolute() and args.cargo_target.is_dir() and
+                not args.cargo_target.is_symlink(), 'shared Cargo target must be an existing directory')
+        cargo_target = args.cargo_target.resolve(strict=True)
+        require(not cargo_target.is_relative_to(output), 'shared Cargo target inside evidence output')
+    else:
+        cargo_target = output / 'cargo-target'
     original = inventory()
     adapter, consumer = BASE / 'check.mjs', BASE / 'consumer.rs'
     controls = {str(p.relative_to(ROOT)): sha256(p) for p in (adapter, consumer)}
@@ -189,7 +197,7 @@ def main():
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
                         'midnight-onchain-vm = "=4.0.1"\nmidnight-serialize = "=1.2.1"\n' +
                         '\n'.join(dependencies) + '\n')
-    cargo_env = dict(env, CARGO_TARGET_DIR=str(output / 'cargo-target'),
+    cargo_env = dict(env, CARGO_TARGET_DIR=str(cargo_target),
                      CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0')
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
                                '--format-version', '1', '--manifest-path', str(manifest)],
@@ -226,7 +234,11 @@ def main():
                'checker_sha256': sha256(Path(__file__)),
                'rust_consumer_lock_sha256': sha256(rust / 'Cargo.lock'),
                'command_logs_sha256': logs,
-               'limitations': ['local Darwin arm64; native Linux qualification required',
+               'cargo_target': str(cargo_target),
+               'proof_execution': False, 'funded_application': False,
+               'limitations': [('native Linux generated semantics qualified' if
+                                os.uname().sysname == 'Linux' and os.uname().machine == 'x86_64' else
+                                'local Darwin arm64; native Linux qualification required'),
                                'five foreign proof=true exports are unproved: fresh proof, independent verification, funded strict application and replay remain open',
                                'original Vitest harness not run; exact pinned assertions replayed against generated APIs']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')

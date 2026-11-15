@@ -13,7 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Fail closed on the three original-Bytes native Linux semantic receipts."""
+"""Fail closed on original Bytes and foreign native Linux semantic receipts."""
 
 import argparse
 import hashlib
@@ -29,10 +29,15 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
 from check_upstream_ledger9_field_casts import runtime_identity, runtime_recipe_identity  # noqa: E402
+from check_upstream_ledger9_foreign_opaque_field import (  # noqa: E402
+    LOG_NAMES as FOREIGN_LOGS, NAMES as FOREIGN_NAMES,
+    ORIGINAL_DIRS as FOREIGN_DIRS,
+)
 
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
-CASES = ('manual_witness', 'fold', 'loops')
-ORIGINAL_COUNT = {'manual_witness': 6, 'fold': 9, 'loops': 9}
+CASES = ('manual_witness', 'fold', 'loops', 'foreign_opaque_field')
+ORIGINAL_COUNT = {'manual_witness': 6, 'fold': 9, 'loops': 9,
+                  'foreign_opaque_field': 8}
 GENERATED = {
     'manual_witness': {'manual_update', 'witness_return'},
     'fold': {'boolean_reduction', 'conditional_accumulation', 'summation'},
@@ -264,6 +269,98 @@ def verify_rust(case: str, receipt: dict, output: Path) -> None:
             f'{case}: original/recorded Rust tests differ')
 
 
+def verify_foreign(receipt: dict, output: Path, target: Path) -> None:
+    case = 'foreign_opaque_field'
+    originals = receipt.get('original_files')
+    names = subprocess.check_output(['git', 'ls-tree', '-r', '--name-only', PINNED,
+                                     *FOREIGN_DIRS], cwd=ROOT, text=True).splitlines()
+    require(len(names) == 8 and isinstance(originals, dict) and set(originals) == set(names),
+            'foreign original roster differs')
+    for name, digest in originals.items():
+        upstream = subprocess.check_output(['git', 'show', f'{PINNED}:{name}'], cwd=ROOT)
+        require(sha256(file_under(ROOT, name)) == digest == hashlib.sha256(upstream).hexdigest(),
+                f'foreign pinned original changed: {name}')
+    local = receipt.get('local_controls')
+    controls = {'tools/compact-rust-backend/tests/foreign_opaque_field/check.mjs',
+                'tools/compact-rust-backend/tests/foreign_opaque_field/consumer.rs'}
+    require(isinstance(local, dict) and set(local) == controls and
+            all(sha256(file_under(ROOT, name)) == digest for name, digest in local.items()),
+            'foreign local controls differ')
+    require(receipt.get('cargo_target') == str(target) and
+            receipt.get('proof_execution') is False and
+            receipt.get('funded_application') is False and
+            'native Linux generated semantics qualified' in receipt.get('limitations', []) and
+            any('five foreign proof=true exports are unproved' in item
+                for item in receipt.get('limitations', [])),
+            'foreign proof scope or Cargo target differs')
+    logs = receipt.get('command_logs_sha256')
+    require(isinstance(logs, dict) and set(logs) == FOREIGN_LOGS and
+            {p.name for p in output.glob('*.log')} == FOREIGN_LOGS,
+            'foreign command log roster differs')
+    for name, digest in logs.items():
+        require(sha256(file_under(output, name)) == digest,
+                f'foreign command log changed: {name}')
+    for kind, expected in (('opaque', 'opaque: original Uint8Array assertion passed\n'),
+                           ('foreign', 'foreign: five original zero-result assertions passed\n')):
+        for mode in ('typescript', 'both'):
+            require(file_under(output, f'{kind}-{mode}-runtime.log').read_text() == expected,
+                    f'foreign runtime assertion changed: {kind}/{mode}')
+            require(file_under(output, f'{kind}-{mode}-compile.log').read_text() == '',
+                    f'foreign compile outcome changed: {kind}/{mode}')
+    for mode in ('typescript', 'both'):
+        require('is out of Field range' in
+                file_under(output, f'field-{mode}-compile.log').read_text() and
+                not (output / 'generated/field' / mode).exists(),
+                f'Field refusal changed: {mode}')
+    rust_log = file_under(output, 'cargo-test.log').read_text()
+    require('test result: ok. 2 passed; 0 failed;' in rust_log and
+            all(f'test {name} ... ok' in rust_log for name in
+                ('original_opaque_result_is_bytes',
+                 'five_original_foreign_zero_results_ordinary_and_recorded')) and
+            sha256(file_under(output, 'rust-consumer/Cargo.lock')) ==
+            receipt.get('rust_consumer_lock_sha256') and
+            file_under(output, 'rust-consumer/tests/foreign_opaque_field.rs').read_bytes() ==
+            file_under(ROOT, 'tools/compact-rust-backend/tests/foreign_opaque_field/consumer.rs').read_bytes(),
+            'foreign Rust consumer result differs')
+    generated = receipt.get('generated')
+    require(isinstance(generated, dict) and set(generated) == {'opaque', 'foreign'},
+            'foreign generated case roster differs')
+    require({p.name for p in (output / 'generated').iterdir()} == {'opaque', 'foreign'} and
+            all(not p.is_symlink() for p in (output / 'generated').iterdir()),
+            'foreign generated directory roster differs')
+    for kind, modes in generated.items():
+        require(isinstance(modes, dict) and set(modes) == {'typescript', 'both'},
+                f'{kind}: generated target roster differs')
+        for mode, inventory in modes.items():
+            root = output / 'generated' / kind / mode
+            require(isinstance(inventory, dict) and inventory == hash_tree(root),
+                    f'{kind}/{mode}: complete generated artifacts differ')
+            info = object_file(root / 'compiler/contract-info.json')
+            circuits = info.get('circuits')
+            if kind == 'foreign':
+                require(isinstance(circuits, list) and
+                        tuple(c.get('name') for c in circuits) == FOREIGN_NAMES and
+                        all(c.get('proof') is True and c.get('pure') is False
+                            for c in circuits) and
+                        {p.name for p in (root / 'zkir').glob('*.zkir')} ==
+                        {f'{name}.zkir' for name in FOREIGN_NAMES},
+                        f'{kind}/{mode}: five proof flags or ZKIR differ')
+            else:
+                require(isinstance(circuits, list) and len(circuits) == 1 and
+                        circuits[0].get('name') == 'opaque_casts_to_opaque' and
+                        circuits[0].get('proof') is False and circuits[0].get('pure') is True and
+                        circuits[0].get('result-type') ==
+                        {'type-name': 'Opaque', 'tsType': 'Uint8Array'} and
+                        not (root / 'zkir').exists(),
+                        f'{kind}/{mode}: Opaque capability differs')
+            require('contract/index.js' in inventory and
+                    (mode == 'both') == ('contract/lib.rs' in inventory),
+                    f'{kind}/{mode}: TS/Rust artifact missing')
+        for name in ('contract/index.js', 'compiler/contract-info.json'):
+            require(modes['typescript'][name] == modes['both'][name],
+                    f'{kind}: generated TypeScript drift: {name}')
+
+
 def validate(case: str, path: Path, gate_log: Path, *,
              head: str, tree: str, compiler: Path, recipe_path: Path, runtime: Path,
              runtime_snapshot: dict, runtime_recipe: dict, target: Path) -> dict:
@@ -275,16 +372,31 @@ def validate(case: str, path: Path, gate_log: Path, *,
             receipt.get('tree') == tree and receipt.get('source_clean') is True and
             receipt.get('platform') == 'Linux x86_64' and
             receipt.get('upstream_commit') == PINNED and
-            receipt.get('result') == RESULT[case], f'{case}: native source or result differs')
+            (case == 'foreign_opaque_field' or receipt.get('result') == RESULT[case]),
+            f'{case}: native source or result differs')
+    recipe = object_file(recipe_path)
+    require(recipe.get('status') == 'passed' and recipe.get('head') == head and
+            recipe.get('tree') == tree, f'{case}: exact-head compiler recipe differs')
+    if case == 'foreign_opaque_field':
+        require(receipt.get('compiler_sha256') == sha256(compiler) and
+                receipt.get('scheme_sha256') == sha256(compiler.with_name('compactc-scheme')) and
+                receipt.get('compiler_recipe') ==
+                {'path': str(recipe_path), 'sha256': sha256(recipe_path),
+                 'head': head, 'tree': tree, 'store': str(compiler.parent.parent)} and
+                receipt.get('runtime') == runtime_snapshot and
+                receipt.get('runtime_recipe') == runtime_recipe and
+                receipt.get('checker_sha256') == sha256(ROOT /
+                    'tools/compact-rust-backend/check_upstream_ledger9_foreign_opaque_field.py'),
+                'foreign compiler, Runtime, or checker differs')
+        verify_foreign(receipt, output, target)
+        return {'case': case, 'head': head, 'tree': tree, 'status': 'passed',
+                'original_files': 8, 'receipt_sha256': sha256(path)}
     require(receipt.get('cargo_target') == str(target) and
             receipt.get('proof_execution') is False and
             receipt.get('funded_application') is False and
             receipt.get('constructor_execution_proved') is False and
             'native Linux generated semantics qualified' in receipt.get('limitations', []),
             f'{case}: semantic proof scope or shared Cargo target differs')
-    recipe = object_file(recipe_path)
-    require(recipe.get('status') == 'passed' and recipe.get('head') == head and
-            recipe.get('tree') == tree, f'{case}: exact-head compiler recipe differs')
     scheme = compiler.with_name('compactc-scheme')
     require(receipt.get('compiler_sha256') == sha256(compiler) and
             receipt.get('scheme_sha256') == sha256(scheme) and
@@ -364,9 +476,9 @@ def main() -> None:
                    'runtime_package_sha256': sha256(runtime / 'package.json'),
                    'proof_execution': False, 'funded_application': False,
                    'constructor_execution_proved': False,
-                   'proof_required_exports_not_qualified_here': 7}
-        require(summary['original_files'] == 24 and len(rows) == 3,
-                'Bytes original inventory incomplete')
+                   'proof_required_exports_not_qualified_here': 12}
+        require(summary['original_files'] == 32 and len(rows) == 4,
+                'original inventory incomplete')
         args.summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
         print(json.dumps({'status': 'passed', 'head': head, 'cases': len(rows)}))
 
