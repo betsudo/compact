@@ -38,9 +38,7 @@ PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 FAMILY = Path('test-contracts/keywords')
 MANIFEST = ROOT / FAMILY / 'import-type-original-source-sha256.json'
 EXPECTED_ERROR = re.compile(r'expectedError:\s*/((?:\\.|[^/])*)/')
-BLOCKED = {
-    'import/module_from_file',
-}
+BLOCKED = set()
 
 # The original Vitest callbacks and assertions are copied byte for byte. These
 # narrow adapters supply the older released synchronous runtime context shape.
@@ -68,6 +66,11 @@ RUNNER = (
     "await definition.run(Contract); console.log('original runtime passed');\n"
 )
 RUST_REPRESENTATIVES = {
+    'import/module_from_file': (
+        'expect(result).toEqual(2n);',
+        'assert_eq!(generated::pure_circuits::import_module_from_file()'
+        '.unwrap().value(), 2);',
+    ),
     'import/alias_shadows_stdlib_name': (
         'expect(result).toEqual(1n);',
         'assert_eq!(generated::pure_circuits::import_alias_shadows_stdlib_name()'
@@ -138,7 +141,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
     require(manifest.get('upstream_commit') == PINNED and
             isinstance(ported, dict) and isinstance(blocked, dict) and
             isinstance(cases, dict) and set(cases) == BLOCKED and
-            len(ported) == 95 and len(blocked) == 4 and
+            len(ported) == 99 and len(blocked) == 0 and
             sorted(set(ported) | set(blocked)) == expected and
             set(ported).isdisjoint(blocked),
             'pinned import/type coverage roster differs')
@@ -154,7 +157,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
                 f'pinned original changed or blocked case unexpectedly staged: {name}')
     selected_cases = {str(Path(name).relative_to(FAMILY).parent)
                       for name in ported}
-    require(len(selected_cases) == 38 and selected_cases.isdisjoint(BLOCKED),
+    require(len(selected_cases) == 39 and selected_cases.isdisjoint(BLOCKED),
             'selected case roster differs')
     for case in selected_cases:
         directory = ROOT / FAMILY / case
@@ -434,8 +437,7 @@ def main() -> None:
                'positive_count': sum('runtime.pass.test.ts' in x for x in originals),
                'refusal_count': sum('compile.fail.test.ts' in x for x in originals),
                'results': results,
-               'limitations': ['One pinned positive case remains blocked on Rust lowering.',
-                               'Original Vitest harness is adapted to runtime 0.18.0; '
+               'limitations': ['Original Vitest harness is adapted to runtime 0.18.0; '
                                'native Linux, wider Rust behavioral execution and proofs remain.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2,
                                                     sort_keys=True) + '\n')

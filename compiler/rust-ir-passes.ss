@@ -1279,10 +1279,10 @@
                    (cons "length" len))]
           [(bytes-slice ,src ,type ,expr ,index ,len)
            (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
-          [(bytes-ref ,src ,type ,value ,index)
+          [(bytes-ref ,src ,type ,expr^ ,index)
            ;; The outer expr is the exact analyzed Bytes-ref occurrence. The
            ;; operand is a distinct child and must not shadow that identity.
-           (bytes-ref-ir expr src type value index
+           (bytes-ref-ir expr src type expr^ index
              (lambda (operand) (expression-ir operand src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (expression-ir value src)))]
