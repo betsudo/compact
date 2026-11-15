@@ -125,8 +125,9 @@ def main() -> None:
                 'witness-return skip-zk unexpectedly emitted proof material')
         info = json.loads((destination / 'compiler/contract-info.json').read_text())
         circuits = info['circuits']
-        require(len(circuits) == 1 and circuits[0]['name'] == CIRCUIT and
-                not circuits[0]['pure'] and not circuits[0]['arguments'],
+        require(circuits == [{'name': CIRCUIT, 'pure': False, 'proof': False,
+                              'arguments': [],
+                              'result-type': {'type-name': 'Tuple', 'types': []}}],
                 'witness-return circuit API changed')
         adapter_result = run(['node', str(FAMILY / 'check.mjs'),
                               str(destination / 'contract/index.js'), str(runtime)],
@@ -188,7 +189,8 @@ def main() -> None:
                'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
                'rust_result': 'two generated Rust witness-return tests passed',
                'limitations': ['local platform only; native Linux qualification required',
-                               'skip-zk source/artifact/runtime parity; no proof or funded transaction']}
+                               'original witness-return circuit has proof=false; '
+                               'proof and funded transaction are inapplicable']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'], 'output': str(output)}))
 
