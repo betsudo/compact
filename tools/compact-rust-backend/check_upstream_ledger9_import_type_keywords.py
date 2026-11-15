@@ -39,7 +39,7 @@ FAMILY = Path('test-contracts/keywords')
 MANIFEST = ROOT / FAMILY / 'import-type-original-source-sha256.json'
 EXPECTED_ERROR = re.compile(r'expectedError:\s*/((?:\\.|[^/])*)/')
 BLOCKED = {
-    'import/module_from_file', 'type/new_type_of_adt',
+    'import/module_from_file',
 }
 
 # The original Vitest callbacks and assertions are copied byte for byte. These
@@ -90,6 +90,25 @@ RUST_REPRESENTATIVES = {
         'type_new_type_keeps_operations(a, b).unwrap(), '
         '(true, true, generated::runtime::Field::from(5u128)));',
     ),
+    'type/new_type_of_adt': (
+        'expect(result).toEqual(5n);',
+        'use generated::{ledger_contract as contract, ledger_slots as slots};'
+        'let context = || contract::initial_state('
+        'generated::runtime::context::ConstructorContext::new(()))'
+        '.unwrap().into_circuit_context(Default::default());'
+        'let native = contract::type_new_type_of_adt(context()).unwrap();'
+        'let recorded = contract::recorded::type_new_type_of_adt(context())'
+        '.unwrap();'
+        'assert_eq!(native.result.value(), 5);'
+        'assert_eq!(recorded.execution.result.value(), 5);'
+        'assert_eq!(slots::c.inspect(native.context.query.state.get_ref())'
+        '.unwrap(), 5);'
+        'assert_eq!(slots::c.inspect(recorded.execution.context.query.state'
+        '.get_ref()).unwrap(), 5);'
+        'assert_eq!(native.context.query.state, '
+        'recorded.execution.context.query.state);'
+        'assert_eq!(native.gas_cost, recorded.execution.gas_cost);',
+    ),
 }
 
 
@@ -119,7 +138,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
     require(manifest.get('upstream_commit') == PINNED and
             isinstance(ported, dict) and isinstance(blocked, dict) and
             isinstance(cases, dict) and set(cases) == BLOCKED and
-            len(ported) == 92 and len(blocked) == 7 and
+            len(ported) == 95 and len(blocked) == 4 and
             sorted(set(ported) | set(blocked)) == expected and
             set(ported).isdisjoint(blocked),
             'pinned import/type coverage roster differs')
@@ -135,7 +154,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
                 f'pinned original changed or blocked case unexpectedly staged: {name}')
     selected_cases = {str(Path(name).relative_to(FAMILY).parent)
                       for name in ported}
-    require(len(selected_cases) == 37 and selected_cases.isdisjoint(BLOCKED),
+    require(len(selected_cases) == 38 and selected_cases.isdisjoint(BLOCKED),
             'selected case roster differs')
     for case in selected_cases:
         directory = ROOT / FAMILY / case
@@ -305,6 +324,16 @@ def main() -> None:
                              json.loads(info.read_text())['circuits']]
                     require(names == ['_', '__', 'import_underscore_names'],
                             'underscore alias contract-info lost Compact names')
+                if case == 'type/new_type_of_adt':
+                    info_data = json.loads(info.read_text())
+                    require(info_data['ledger'] == [
+                        {'name': 'c', 'index': 0, 'exported': True,
+                         'storage': 'Counter'}] and
+                        info_data['circuits'] == [
+                            {'name': 'type_new_type_of_adt', 'pure': False,
+                             'proof': True, 'arguments': [], 'result-type':
+                             {'type-name': 'Uint', 'maxval': 18446744073709551615}}],
+                            'nominal Counter ledger declaration or capability changed')
                 row.update(typescript_sha256=sha256(entry),
                            contract_info_sha256=sha256(info),
                            zkir={str(p.relative_to(destination)): sha256(p)
@@ -331,6 +360,10 @@ def main() -> None:
                                     for name in ('__compact_export_underscore', '__',
                                                  'import_underscore_names')),
                                 'underscore alias generated Rust API changed')
+                    if case == 'type/new_type_of_adt':
+                        require(all(fragment in rust.read_text() for fragment in
+                                    ('CounterSlot', 'record_increment', 'record_read')),
+                                'nominal Counter generated Rust actions changed')
                     row.update(rust_sha256=sha256(rust), rust_ir_sha256=sha256(ir))
                     row.update(locked_rust_check(destination / 'contract',
                                                  output / case / mode,
@@ -401,7 +434,7 @@ def main() -> None:
                'positive_count': sum('runtime.pass.test.ts' in x for x in originals),
                'refusal_count': sum('compile.fail.test.ts' in x for x in originals),
                'results': results,
-               'limitations': ['Two pinned positive cases remain blocked on Rust lowering.',
+               'limitations': ['One pinned positive case remains blocked on Rust lowering.',
                                'Original Vitest harness is adapted to runtime 0.18.0; '
                                'native Linux, wider Rust behavioral execution and proofs remain.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2,
