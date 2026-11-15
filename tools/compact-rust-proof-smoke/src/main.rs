@@ -77,6 +77,29 @@ include!(concat!(
     compact_bytes_next_proof_generated
 ))]
 mod bytes_next_proof;
+#[cfg(all(
+    any(
+        feature = "bytes-fold-conditional-proof",
+        feature = "bytes-fold-summation-proof",
+        feature = "bytes-loop-spread-proof",
+        feature = "bytes-loop-iteration-proof"
+    ),
+    compact_bytes_next_remaining_proof_generated
+))]
+include!(concat!(
+    env!("COMPACT_BYTES_NEXT_REMAINING_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    any(
+        feature = "bytes-fold-conditional-proof",
+        feature = "bytes-fold-summation-proof",
+        feature = "bytes-loop-spread-proof",
+        feature = "bytes-loop-iteration-proof"
+    ),
+    compact_bytes_next_remaining_proof_generated
+))]
+mod bytes_next_remaining_proof;
 #[cfg(feature = "component-product-vector-models")]
 mod component_product_vector_models;
 #[cfg(all(

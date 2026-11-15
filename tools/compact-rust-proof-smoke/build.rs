@@ -223,6 +223,44 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_bytes_next_proof_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_bytes_next_remaining_proof_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_BYTES_NEXT_REMAINING_GENERATED");
+    let remaining = [
+        "CARGO_FEATURE_BYTES_FOLD_CONDITIONAL_PROOF",
+        "CARGO_FEATURE_BYTES_FOLD_SUMMATION_PROOF",
+        "CARGO_FEATURE_BYTES_LOOP_SPREAD_PROOF",
+        "CARGO_FEATURE_BYTES_LOOP_ITERATION_PROOF",
+    ]
+    .iter()
+    .filter(|name| std::env::var_os(name).is_some())
+    .count();
+    let remaining_root = std::env::var_os("COMPACT_BYTES_NEXT_REMAINING_GENERATED");
+    assert!(
+        remaining <= 1 || remaining_root.is_none(),
+        "one remaining Bytes proof crate per generated runner"
+    );
+    if remaining == 1 {
+        let root = std::path::PathBuf::from(
+            remaining_root.expect("complete remaining Bytes generated root required"),
+        );
+        assert!(
+            root.is_absolute(),
+            "absolute remaining Bytes generated root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete remaining Bytes generated member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_stateful_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED");
     if std::env::var_os("CARGO_FEATURE_STATEFUL_PRODUCT_VECTOR_WIDENING").is_some()
