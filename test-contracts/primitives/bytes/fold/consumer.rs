@@ -30,6 +30,16 @@ fn pure_bytes_fold_source_normalization() {
     );
 }
 
+#[test]
+fn named_bytes_fold_source_normalization() {
+    assert_eq!(
+        named_control::pure_circuits::bytes_fold_named()
+            .unwrap()
+            .value(),
+        6
+    );
+}
+
 macro_rules! assert_replayed_state {
     ($recorded:expr, $ordinary:expr) => {{
         let replay = $recorded

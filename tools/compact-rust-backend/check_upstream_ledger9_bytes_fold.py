@@ -119,9 +119,11 @@ def main() -> None:
     runtime_before = runtime_identity(runtime)
     recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
     pinned = originals()
-    control_source = ROOT / 'tools/compact-rust-backend/tests/bytes_fold/pure.compact'
+    control_dir = ROOT / 'tools/compact-rust-backend/tests/bytes_fold'
+    control_sources = {name: control_dir / f'{name}.compact' for name in ('pure', 'named')}
     local_paths = [FAMILY / 'original-source-sha256.json', FAMILY / 'check.mjs',
-                   FAMILY / 'consumer.rs', control_source]
+                   FAMILY / 'consumer.rs', control_dir / 'check-control.mjs',
+                   *control_sources.values()]
     local = {str(path.relative_to(ROOT)): sha256(path) for path in local_paths}
     output.mkdir(parents=True)
     link = output / 'node_modules/@midnight-ntwrk/compact-runtime'
@@ -169,22 +171,46 @@ def main() -> None:
                     for key in ('typescript_sha256', 'contract_info_sha256',
                                 'runtime_log_sha256', 'zkir_sha256')),
                 f'paired compile changed TypeScript or ZKIR: {case}')
-    control = output / 'generated/pure-control'
-    run([str(compiler), '--target', 'ts', '--target', 'rust',
-         '--rust-runtime-root', str(ROOT), '--feature-zkir-v3', '--skip-zk',
-         '--compact-path', str(ROOT / 'compiler'), str(control_source), str(control)],
-        output / 'pure-control-compile.log', env)
-    check_manifest(control, require_zkir=False)
-    require(not (control / 'zkir').exists() and
-            json.loads((control / 'compiler/contract-info.json').read_text())['circuits'] == [{
-                'name': 'bytes_fold_pure', 'pure': True, 'proof': False,
-                'arguments': [], 'result-type': {'type-name': 'Uint', 'maxval': 255}}],
-            'pure Bytes Fold control capability changed')
-    control_hashes = {
-        'typescript': sha256(control / 'contract/index.js'),
-        'rust': sha256(control / 'contract/lib.rs'),
-        'rust_ir': sha256(control / 'contract/compact-rust-ir.json'),
-        'contract_info': sha256(control / 'compiler/contract-info.json')}
+    control_hashes = {}
+    for name, control_source in control_sources.items():
+        control = output / f'generated/{name}-control'
+        run([str(compiler), '--target', 'ts', '--target', 'rust',
+             '--rust-runtime-root', str(ROOT), '--feature-zkir-v3', '--skip-zk',
+             '--compact-path', str(ROOT / 'compiler'), str(control_source), str(control)],
+            output / f'{name}-control-compile.log', env)
+        check_manifest(control, require_zkir=False)
+        require(not (control / 'zkir').exists() and
+                json.loads((control / 'compiler/contract-info.json').read_text())['circuits'] == [{
+                    'name': f'bytes_fold_{name}', 'pure': True, 'proof': False,
+                    'arguments': [], 'result-type': {'type-name': 'Uint', 'maxval': 255}}],
+                f'{name} Bytes Fold control capability changed')
+        runtime_log = output / f'{name}-control-runtime.log'
+        observed = run(['node', str(control_dir / 'check-control.mjs'),
+                        str(control / 'contract/index.js'), name], runtime_log, env)
+        require(observed.strip() == f'{name}: pure Bytes fold result passed',
+                f'{name} Bytes Fold TypeScript result changed')
+        if name == 'named':
+            ir = json.loads((control / 'contract/compact-rust-ir.json').read_text())
+            def folds(value):
+                if isinstance(value, dict):
+                    if value.get('kind') == 'vector_fold_call':
+                        yield value
+                    for child in value.values():
+                        yield from folds(child)
+                elif isinstance(value, list):
+                    for child in value:
+                        yield from folds(child)
+            named = list(folds(ir))
+            require(len(named) == 1 and named[0]['name'] == 'add_byte' and
+                    named[0]['source']['kind'] == 'bytes_to_vector' and
+                    named[0]['source']['length'] == 3,
+                    'named Bytes Fold lost checked byte source normalization')
+        control_hashes[name] = {
+            'typescript': sha256(control / 'contract/index.js'),
+            'rust': sha256(control / 'contract/lib.rs'),
+            'rust_ir': sha256(control / 'contract/compact-rust-ir.json'),
+            'contract_info': sha256(control / 'compiler/contract-info.json'),
+            'runtime_log': sha256(runtime_log)}
     generated_before_consumer = generated_files(output / 'generated')
     consumer = output / 'rust-consumer'
     (consumer / 'tests').mkdir(parents=True)
@@ -198,11 +224,12 @@ def main() -> None:
         package = tomllib.loads((contract / 'Cargo.toml').read_text())['package']['name']
         dependencies.append(f'{case} = {{ package = {json.dumps(package)}, '
                             f'path = {json.dumps(str(contract))} }}')
-    control_contract = control / 'contract'
-    generated_paths.append(control_contract)
-    control_package = tomllib.loads((control_contract / 'Cargo.toml').read_text())['package']['name']
-    dependencies.append(f'pure_control = {{ package = {json.dumps(control_package)}, '
-                        f'path = {json.dumps(str(control_contract))} }}')
+    for name in control_sources:
+        control_contract = output / f'generated/{name}-control/contract'
+        generated_paths.append(control_contract)
+        control_package = tomllib.loads((control_contract / 'Cargo.toml').read_text())['package']['name']
+        dependencies.append(f'{name}_control = {{ package = {json.dumps(control_package)}, '
+                            f'path = {json.dumps(str(control_contract))} }}')
     manifest = consumer / 'Cargo.toml'
     manifest.write_text('[workspace]\n[package]\nname = "ledger9-bytes-fold-consumer"\n'
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
@@ -227,10 +254,11 @@ def main() -> None:
     run(['cargo', '+1.99.0', 'test', '--locked', '--offline',
          '--manifest-path', str(manifest)], output / 'cargo-test.log', cargo_env)
     rust_log = (output / 'cargo-test.log').read_text()
-    require(re.search(r'test result: ok\. 4 passed; 0 failed;', rust_log) is not None and
+    require(re.search(r'test result: ok\. 5 passed; 0 failed;', rust_log) is not None and
             all(f'test {name}_original_result_and_replay ... ok' in rust_log
                 for name in CASES) and
-            'test pure_bytes_fold_source_normalization ... ok' in rust_log,
+            all(f'test {name}_bytes_fold_source_normalization ... ok' in rust_log
+                for name in control_sources),
             'Bytes Fold Rust ordinary/recorded/pure tests failed')
     require(source_state() == source and runtime_identity(runtime) == runtime_before and
             compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
@@ -253,18 +281,21 @@ def main() -> None:
                 require(sha256(contract / 'lib.rs') == row['rust_sha256'] and
                         sha256(contract / 'compact-rust-ir.json') == row['rust_ir_sha256'],
                         f'generated Rust changed: {case}')
-    require(all(sha256(control / path) == digest for path, digest in (
-        ('contract/index.js', control_hashes['typescript']),
-        ('contract/lib.rs', control_hashes['rust']),
-        ('contract/compact-rust-ir.json', control_hashes['rust_ir']),
-        ('compiler/contract-info.json', control_hashes['contract_info']))),
-        'pure Bytes Fold generated artifact changed')
+    for name, row in control_hashes.items():
+        control = output / f'generated/{name}-control'
+        require(all(sha256(path) == row[key] for path, key in (
+            (control / 'contract/index.js', 'typescript'),
+            (control / 'contract/lib.rs', 'rust'),
+            (control / 'contract/compact-rust-ir.json', 'rust_ir'),
+            (control / 'compiler/contract-info.json', 'contract_info'),
+            (output / f'{name}-control-runtime.log', 'runtime_log'))),
+            f'{name} Bytes Fold generated artifact or runtime log changed')
     receipt = {**source, 'status': 'passed', 'source_clean': True,
                'platform': os.uname().sysname + ' ' + os.uname().machine,
                'upstream_commit': PINNED, 'original_files': pinned,
                'local_sources': local, 'generated': generated,
                'generated_files_sha256': generated_before_consumer,
-               'pure_control': control_hashes,
+               'pure_controls': control_hashes,
                'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
                'scheme_sha256': sha256(scheme), 'runtime': runtime_before,
                'runtime_recipe': runtime_recipe,
