@@ -68,6 +68,21 @@ RUNNER = (
     "import {Contract} from './product/contract/index.js';\n"
     "await definition.run(Contract); console.log('original runtime passed');\n"
 )
+RUST_REPRESENTATIVES = {
+    'import/alias_shadows_stdlib_name': (
+        'expect(result).toEqual(1n);',
+        'assert_eq!(generated::pure_circuits::import_alias_shadows_stdlib_name()'
+        '.unwrap(), generated::runtime::Field::from(1u128));',
+    ),
+    'type/new_type_keeps_operations': (
+        'expect(result).toEqual([true, true, 5n]);',
+        'let a = generated::runtime::BoundedUint::<65535>::new(3u64.into())'
+        '.unwrap(); let b = generated::runtime::BoundedUint::<65535>::new('
+        '2u64.into()).unwrap(); assert_eq!(generated::pure_circuits::'
+        'type_new_type_keeps_operations(a, b).unwrap(), '
+        '(true, true, generated::runtime::Field::from(5u128)));',
+    ),
+}
 
 
 def require(ok: bool, message: str) -> None:
@@ -177,6 +192,29 @@ def locked_rust_check(contract: Path, output: Path, env: dict[str, str],
             'cargo_check_sha256': sha256(output / 'cargo-check.log')}
 
 
+def representative_rust_execution(case: str, contract: Path, test: Path,
+                                  output: Path, env: dict[str, str]) -> dict[str, str]:
+    expected, body = RUST_REPRESENTATIVES[case]
+    require(expected in test.read_text(),
+            f'Rust representative lost original assertion: {case}')
+    package = tomllib.loads((contract / 'Cargo.toml').read_text())['package']['name']
+    crate = package.replace('-', '_')
+    consumer = contract / 'tests/original_keywords.rs'
+    consumer.parent.mkdir()
+    consumer.write_text('use ' + crate + ' as generated;\n'
+                        '#[test] fn pinned_original_result() { ' + body + ' }\n')
+    log = output / 'cargo-test.log'
+    run(['cargo', '+1.99.0', 'test', '--locked', '--offline',
+         '--manifest-path', str(contract / 'Cargo.toml'),
+         '--test', 'original_keywords'], log, env)
+    require(re.search(r'test result: ok\. 1 passed; 0 failed;',
+                      log.read_text()) is not None,
+            f'Rust representative test count changed: {case}')
+    return {'rust_execution_test_sha256': sha256(consumer),
+            'rust_execution_log_sha256': sha256(log),
+            'original_assertion': expected}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
@@ -278,6 +316,10 @@ def main() -> None:
                     row.update(locked_rust_check(destination / 'contract',
                                                  output / case / mode,
                                                  cargo_env, expected_registry))
+                    if case in RUST_REPRESENTATIVES:
+                        row.update(representative_rust_execution(
+                            case, destination / 'contract', runtime_test,
+                            output / case / mode, cargo_env))
             results[case][mode] = row
         ts, paired = results[case]['typescript'], results[case]['paired']
         if positive:
@@ -288,6 +330,39 @@ def main() -> None:
         else:
             require(ts['diagnostic_sha256'] == paired['diagnostic_sha256'],
                     f'paired target changed original diagnostic: {case}')
+    for case in cases:
+        for mode, row in results[case].items():
+            base = output / case / mode
+            if 'diagnostic_sha256' in row:
+                require(sha256(base / 'diagnostic.log') == row['diagnostic_sha256'] and
+                        not (base / 'product').exists(),
+                        f'refusal artifact changed during gate: {case} {mode}')
+                continue
+            product = base / 'product'
+            require(sha256(product / 'contract/index.js') == row['typescript_sha256'] and
+                    sha256(product / 'compiler/contract-info.json') ==
+                    row['contract_info_sha256'] and
+                    {str(p.relative_to(product)): sha256(p)
+                     for p in sorted((product / 'zkir').glob('*.zkir'))} == row['zkir'] and
+                    sha256(base / 'runtime.pass.test.ts') ==
+                    originals[row['original_runtime_test']] and
+                    sha256(base / 'runtime.log') == row['runtime_log_sha256'] and
+                    (base / 'node_modules/@midnight-ntwrk/compact-runtime').resolve() ==
+                    runtime,
+                    f'generated TS, ZKIR or original runtime changed: {case} {mode}')
+            if mode == 'paired':
+                require(sha256(product / 'contract/lib.rs') == row['rust_sha256'] and
+                        sha256(product / 'contract/compact-rust-ir.json') ==
+                        row['rust_ir_sha256'] and
+                        sha256(product / 'contract/Cargo.lock') == row['lock_sha256'] and
+                        sha256(base / 'cargo-check.log') == row['cargo_check_sha256'],
+                        f'generated Rust or lock changed: {case}')
+                if case in RUST_REPRESENTATIVES:
+                    require(sha256(product / 'contract/tests/original_keywords.rs') ==
+                            row['rust_execution_test_sha256'] and
+                            sha256(base / 'cargo-test.log') ==
+                            row['rust_execution_log_sha256'],
+                            f'Rust representative evidence changed: {case}')
     require(source_state() == source and original_inventory() ==
             (originals, blocked) and sha256(MANIFEST) == manifest_hash and
             sha256(Path(__file__)) == checker_hash and
@@ -309,7 +384,7 @@ def main() -> None:
                'results': results,
                'limitations': ['Three pinned positive cases remain blocked on Rust lowering.',
                                'Original Vitest harness is adapted to runtime 0.18.0; '
-                               'native Linux, Rust behavioral execution and proofs remain.']}
+                               'native Linux, wider Rust behavioral execution and proofs remain.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2,
                                                     sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'],
