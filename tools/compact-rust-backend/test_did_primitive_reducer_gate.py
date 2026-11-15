@@ -64,7 +64,15 @@ class EvidenceTests(unittest.TestCase):
             self.assertEqual(set(gate.validate_current_capture(capture, fixture)),
                              {str(oracle / name) for name in
                               ("ledger9-binding.json", "ledger9-cases.json", "cases.json",
-                               "reviewed-rust-binding.json")})
+                               "reviewed-rust-binding.json")} |
+                             {str(source) for source, _ in gate.FROZEN_LEDGER9_RUNTIME.values()})
+            frozen = gate.FROZEN_LEDGER9_RUNTIME['runtime/src/built-ins.ts']
+            changed_source = Path(temp) / 'changed-built-ins.ts'
+            changed_source.write_text('not the reviewed source')
+            with patch.dict(gate.FROZEN_LEDGER9_RUNTIME,
+                            {'runtime/src/built-ins.ts': (changed_source, frozen[1])}):
+                with self.assertRaisesRegex(gate.common.GateError, 'reducer capture source changed'):
+                    gate.validate_current_capture(capture, fixture)
             capture.write_bytes(raw + b" ")
             with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
                 gate.validate_current_capture(capture, fixture)

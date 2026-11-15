@@ -14,7 +14,12 @@
 // limitations under the License.
 
 use super::{CircuitContext, CircuitResult};
-use crate::ledger::{ContractAddress, DB, DefaultDB, shielded_burn_program, shielded_mint_program, shielded_receive_program, shielded_spend_program, unshielded_spend_program, unshielded_receive_program, unshielded_mint_program, unshielded_burn_program, paused_program, unpaused_program, misc_program};
+use crate::ledger::{
+    ContractAddress, DB, DefaultDB, misc_program, paused_program, shielded_burn_program,
+    shielded_mint_program, shielded_receive_program, shielded_spend_program, unpaused_program,
+    unshielded_burn_program, unshielded_mint_program, unshielded_receive_program,
+    unshielded_spend_program,
+};
 use crate::{CompactError, FixedBytes};
 use midnight_onchain_vm::ops::{Op, VersionedLogItem};
 use midnight_onchain_vm::result_mode::ResultModeVerify;

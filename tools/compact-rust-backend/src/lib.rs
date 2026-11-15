@@ -215,7 +215,10 @@ pub enum RenderError {
         length: usize,
         input_length: usize,
     },
-    InvalidByteChunks { length: usize, chunk_count: usize },
+    InvalidByteChunks {
+        length: usize,
+        chunk_count: usize,
+    },
     InvalidBytesSlice {
         start: usize,
         length: usize,
@@ -223,7 +226,10 @@ pub enum RenderError {
     },
     ExpectedBytes(Type),
     UnsupportedUintBytesWidth,
-    InvalidEnumCast { source: Type, target: Type },
+    InvalidEnumCast {
+        source: Type,
+        target: Type,
+    },
     InvalidSecp256k1BytesCast {
         source: Type,
         target: Type,
@@ -371,11 +377,17 @@ impl fmt::Display for RenderError {
             Self::TypeMismatch { expected, actual } => {
                 write!(f, "expression has type {actual:?}, expected {expected:?}")
             }
-            Self::InvalidBytesPadding { length, input_length } => write!(
+            Self::InvalidBytesPadding {
+                length,
+                input_length,
+            } => write!(
                 f,
                 "cannot zero-pad Bytes<{input_length}> to the shorter length {length}"
             ),
-            Self::InvalidByteChunks { length, chunk_count } => write!(
+            Self::InvalidByteChunks {
+                length,
+                chunk_count,
+            } => write!(
                 f,
                 "expected a tuple of {chunk_count} fixed Bytes chunks totaling {length} bytes"
             ),
@@ -388,9 +400,14 @@ impl fmt::Display for RenderError {
                 "slice index {start} plus length {length} is out-of-bounds for Bytes<{input_length}>"
             ),
             Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
-            Self::UnsupportedUintBytesWidth => write!(f, "unsupported width for native Uint/Bytes conversion"),
+            Self::UnsupportedUintBytesWidth => {
+                write!(f, "unsupported width for native Uint/Bytes conversion")
+            }
             Self::InvalidEnumCast { source, target } => {
-                write!(f, "cannot cast between {source:?} and {target:?}; expected an enum and a numeric type")
+                write!(
+                    f,
+                    "cannot cast between {source:?} and {target:?}; expected an enum and a numeric type"
+                )
             }
             Self::InvalidSecp256k1BytesCast { source, target } => write!(
                 f,
@@ -892,8 +909,10 @@ fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
-        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }
-            | Expr::EnumCast { value, ty } => {
+        Expr::Coerce { value, ty }
+        | Expr::JubjubCast { value, ty }
+        | Expr::Secp256k1BytesCast { value, ty }
+        | Expr::EnumCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins, observer)?;
             collect_named_types_observed(ty, structs, enums, observer, Some(origins))?;
         }
@@ -919,7 +938,18 @@ fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value }
+        | Expr::EmitShieldedBurn { value }
+        | Expr::EmitShieldedMint { value }
+        | Expr::EmitShieldedReceive { value }
+        | Expr::EmitUnshieldedSpend { value }
+        | Expr::EmitUnshieldedReceive { value }
+        | Expr::EmitUnshieldedMint { value }
+        | Expr::EmitUnshieldedBurn { value }
+        | Expr::EmitMisc { value }
+        | Expr::EmitPaused { value }
+        | Expr::EmitUnpaused { value }
+        | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
         Expr::KernelMintShielded { domain, amount } => {
@@ -1686,8 +1716,6 @@ fn pure_crypto_expression(
         Expr::EcNeg { value } => CryptoSource::EcNeg(value),
         Expr::Secp256k1Neg { .. }
         | Expr::Secp256k1Inv { .. }
-        | Expr::Secp256k1PointX { .. }
-        | Expr::Secp256k1PointY { .. }
         | Expr::Secp256k1PointX { .. }
         | Expr::Secp256k1PointY { .. } => {
             let (kind, value) =

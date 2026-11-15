@@ -1,6 +1,6 @@
 {
   "source": {
-    "contract/compact-rust-ir.json": "39a41cac4060d468f762b007d7e29f0e01ef4aabec9bb7ae287a48579c174a5d",
+    "contract/compact-rust-ir.json": "92d558c4967134901b3f3f1f742d36a47fb3c8e4b08c67b7f0309e6bd9917a8c",
     "contract/lib.rs": "a9fb29d07f5ed17cffcffcfbead2ef5e655c4f9eb8461a26d08171214535ad31",
     "zkir/advance.zkir": "89e413273c11dd124bc85cf17a5c2705df729a92273aeee87c1171b35b7b48b5",
     "zkir/buy_in.zkir": "8d06cb5cf1053ff8a8ab8b86e235b209988709cd14f7e6799b76055531bf8979",

@@ -46,7 +46,8 @@ pub mod transaction;
 
 pub use curve25519_point::Curve25519Point;
 pub use foreign_fields::{
-    Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Scalar, Secp256r1Base, Secp256r1Scalar,
+    Curve25519Base, Curve25519Scalar, Secp256k1Base, Secp256k1Scalar, Secp256r1Base,
+    Secp256r1Scalar,
 };
 pub use hash_input::{ExactHashInput, HashInputValue, exact_hash_input, exact_private_output};
 pub use jubjub_scalar::JubjubScalar;

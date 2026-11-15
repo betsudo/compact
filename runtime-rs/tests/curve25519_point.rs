@@ -32,8 +32,14 @@ fn identity_has_four_shifted_base_atoms_and_roundtrips() {
     expected.0.extend(Value::from(one).0);
     assert_eq!(Value::from(point), expected);
     assert_eq!(Curve25519Point::try_from(&*expected).unwrap(), point);
-    assert_eq!(Curve25519Point::from_field_repr(&point.field_vec()), Some(point));
-    assert_eq!(point.binary_vec(), [zero.binary_vec(), one.binary_vec()].concat());
+    assert_eq!(
+        Curve25519Point::from_field_repr(&point.field_vec()),
+        Some(point)
+    );
+    assert_eq!(
+        point.binary_vec(),
+        [zero.binary_vec(), one.binary_vec()].concat()
+    );
     let cell = try_constructor_cell::<_, DefaultDB>(point).unwrap();
     assert_eq!(read_cell::<Curve25519Point, _>(&cell).unwrap(), point);
 }

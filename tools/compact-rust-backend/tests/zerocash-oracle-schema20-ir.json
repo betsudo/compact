@@ -625,7 +625,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 67,
+        "line": 77,
         "column": 1
       }
     },
@@ -797,7 +797,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 83,
+        "line": 93,
         "column": 1
       }
     },

@@ -30,6 +30,18 @@ import reducer_capture_source as capture_inputs
 
 ROOT = common.ROOT
 REGISTRY = ROOT / 'tools/compact-rust-backend/did_primitive_reducers.json'
+FROZEN_LEDGER9_SOURCE = ROOT / 'tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594'
+# The retained 0.17.0 captures were made at the published Rust AST base. Later
+# Ledger 9 work changes these live runtime files; their reviewed capture must
+# remain bound to the source bytes that actually produced it.
+FROZEN_LEDGER9_RUNTIME = {
+    'runtime/src/built-ins.ts':
+        (FROZEN_LEDGER9_SOURCE / 'built-ins.ts',
+         '89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b'),
+    'runtime/src/compact-types.ts':
+        (FROZEN_LEDGER9_SOURCE / 'compact-types.ts',
+         '07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4'),
+}
 GEOMETRY = {
     "point-digest": {"point_write_only": (7, 77), "pure_projection_only": (7, 95),
                      "scalar_control": (6, 49), "update": (7, 97)},
@@ -122,9 +134,17 @@ def validate_current_capture(path, fixture):
             and capture["generatedJavaScriptSha256"] == binding["generated_javascript_sha256"],
             "Ledger 9 reducer runtime or generated JavaScript identity changed")
     for row in capture["provenance"]:
-        source = ROOT / reviewed.relative(row["path"])
+        relative = reviewed.relative(row["path"])
+        frozen = FROZEN_LEDGER9_RUNTIME.get(str(relative))
+        if frozen is not None:
+            source, expected_sha = frozen
+            require(row["sha256"] == expected_sha,
+                    f"reviewed reducer runtime identity changed: {relative}")
+        else:
+            source = ROOT / relative
         require(common.sha256(source) == row["sha256"], f"reducer capture source changed: {source}")
-    return hashes([binding_path, retained, historical, old_binding])
+    return hashes([binding_path, retained, historical, old_binding,
+                   *(source for source, _ in FROZEN_LEDGER9_RUNTIME.values())])
 
 
 def source_inventory(rows):
@@ -138,6 +158,7 @@ def source_inventory(rows):
              ROOT/'tools/compact-rust-backend/did_primitive_reducer_cases.mjs',
              ROOT/'tools/compact-rust-backend/test_did_primitive_reducer_gate.py',
              ROOT/'tools/compact-rust-backend/check_fixture_outputs.py']
+    files.extend(source for source, _ in FROZEN_LEDGER9_RUNTIME.values())
     for row in rows:
         files.append(ROOT/row['source'])
         files.append(ROOT/row['fixture']/'oracle/reviewed-rust-binding.json')

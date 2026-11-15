@@ -19,8 +19,8 @@ use super::leaf::NativeLeafSink;
 use crate::{
     pure_semantics::{conversion::ConversionFacts, sink::ConversionSink},
     value_lowering::{
-        coercion, field_to_bytes_32_syntax, fixed_bytes_conversion_syntax,
-        jubjub_cast_syntax, secp256k1_bytes_cast_syntax,
+        coercion, field_to_bytes_32_syntax, fixed_bytes_conversion_syntax, jubjub_cast_syntax,
+        secp256k1_bytes_cast_syntax,
     },
 };
 

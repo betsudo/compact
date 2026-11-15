@@ -103,7 +103,10 @@ fn unshielded_spend_event_requires_exact_bytes145_in_the_checked_plan() {
 
 #[test]
 fn pause_events_require_zero_byte_payloads_in_the_checked_plan() {
-    for event in [Operation::EmitPaused as fn(Value) -> Operation, Operation::EmitUnpaused] {
+    for event in [
+        Operation::EmitPaused as fn(Value) -> Operation,
+        Operation::EmitUnpaused,
+    ] {
         let event_plan = |ty| {
             let input = value(0, ty);
             let mut plan = plan(event(input.clone()));

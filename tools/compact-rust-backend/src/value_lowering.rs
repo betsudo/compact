@@ -105,7 +105,10 @@ pub(crate) fn fixed_bytes_conversion_syntax(
                 Ok(runtime::FixedBytes::new(output))
             }?
         }),
-        FixedBytesConversion::BytesToUint { bound: UnsignedMaximum::Wide { high, low }, .. } => {
+        FixedBytesConversion::BytesToUint {
+            bound: UnsignedMaximum::Wide { high, low },
+            ..
+        } => {
             let target = wide_uint_type(high, low);
             syn::parse_quote!({
                 let input = (#value).into_array();
@@ -117,7 +120,10 @@ pub(crate) fn fixed_bytes_conversion_syntax(
                 }?
             })
         }
-        FixedBytesConversion::BytesToUint { bound: UnsignedMaximum::Small(max), .. } => {
+        FixedBytesConversion::BytesToUint {
+            bound: UnsignedMaximum::Small(max),
+            ..
+        } => {
             let max = syn::LitInt::new(&format!("{max}u128"), Span::call_site());
             syn::parse_quote!({
                 let input = (#value).into_array();
@@ -137,7 +143,10 @@ pub(crate) fn fixed_bytes_conversion_syntax(
             output[..input.len()].copy_from_slice(&input);
             runtime::FixedBytes::new(output)
         }),
-        FixedBytesConversion::FromChunks { length, chunk_count } => {
+        FixedBytesConversion::FromChunks {
+            length,
+            chunk_count,
+        } => {
             let indices = (0..chunk_count).map(syn::Index::from);
             syn::parse_quote!({
                 let chunks = #value;
@@ -165,12 +174,14 @@ pub(crate) fn fixed_bytes_conversion_syntax(
 pub(crate) fn jubjub_cast_syntax(value: syn::Expr, cast: JubjubCast) -> syn::Expr {
     use crate::pure_semantics::numeric::UnsignedMaximum;
     match cast {
-        JubjubCast::ToScalar => syn::parse_quote!(runtime::JubjubScalar::from_field_reduced(#value)),
-        JubjubCast::ToField => syn::parse_quote!((#value).as_field()),
-        JubjubCast::ToUnsigned(UnsignedMaximum::Small(max)) => {
+        JubjubCast::Scalar => {
+            syn::parse_quote!(runtime::JubjubScalar::from_field_reduced(#value))
+        }
+        JubjubCast::Field => syn::parse_quote!((#value).as_field()),
+        JubjubCast::Unsigned(UnsignedMaximum::Small(max)) => {
             syn::parse_quote!((#value).try_to_uint::<#max>()?)
         }
-        JubjubCast::ToUnsigned(UnsignedMaximum::Wide { high, low }) => {
+        JubjubCast::Unsigned(UnsignedMaximum::Wide { high, low }) => {
             syn::parse_quote!((#value).try_to_wide_uint::<#high, #low>()?)
         }
     }
@@ -183,7 +194,10 @@ pub(crate) fn enum_cast_syntax(
     use crate::pure_semantics::conversion::{EnumCast, EnumOrdinalSource};
     match cast {
         EnumCast::ToField => syn::parse_quote!(runtime::FieldRepr::field_vec(&(#value))[0]),
-        EnumCast::ToUnsigned { max_ordinal, strategy } => {
+        EnumCast::ToUnsigned {
+            max_ordinal,
+            strategy,
+        } => {
             let bound = syn::LitInt::new(&format!("{max_ordinal}u128"), Span::call_site());
             let ordinal = syn::parse_quote!({
                 let field = runtime::FieldRepr::field_vec(&(#value))[0];
@@ -197,7 +211,9 @@ pub(crate) fn enum_cast_syntax(
             let name = crate::naming::checked_ident(&name);
             let field: syn::Expr = match source {
                 EnumOrdinalSource::Field => value,
-                EnumOrdinalSource::Small => syn::parse_quote!(runtime::Field::from((#value).value())),
+                EnumOrdinalSource::Small => {
+                    syn::parse_quote!(runtime::Field::from((#value).value()))
+                }
                 EnumOrdinalSource::Wide => syn::parse_quote!((#value).as_field()),
             };
             syn::parse_quote!(<crate::types::#name as runtime::FromFieldRepr>::from_field_repr(&[#field])
@@ -336,12 +352,19 @@ fn map_slot_value_type(value: &Type) -> Result<Option<syn::Type>, RenderError> {
             syn::parse_quote!(runtime::slots::MapNode<#key, #value>),
         ));
     }
-    if let Type::LedgerMerkle { historic, depth, ty } = value {
+    if let Type::LedgerMerkle {
+        historic,
+        depth,
+        ty,
+    } = value
+    {
         if !(2..=32).contains(depth) {
             return Err(RenderError::UnsupportedLedgerValueType(value.clone()));
         }
         let leaf = rust_type(ty)?;
-        return Ok(Some(syn::parse_quote!(runtime::slots::MerkleNode<#leaf, #depth, #historic>)));
+        return Ok(Some(
+            syn::parse_quote!(runtime::slots::MerkleNode<#leaf, #depth, #historic>),
+        ));
     }
     match rust_type(value) {
         Ok(ty) => Ok(Some(ty)),

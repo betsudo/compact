@@ -123,7 +123,8 @@ pub(crate) fn rust_type(ty: &Type) -> Result<syn::Type, RenderError> {
             let length = syn::LitInt::new(&length.to_string(), Span::call_site());
             syn::parse_quote!(runtime::FixedVector<#element, #length>)
         }
-        Type::LedgerMap { .. } | Type::LedgerMerkle { .. }
+        Type::LedgerMap { .. }
+        | Type::LedgerMerkle { .. }
         | Type::Secp256k1Base
         | Type::Secp256r1Base
         | Type::Curve25519Base
@@ -132,7 +133,8 @@ pub(crate) fn rust_type(ty: &Type) -> Result<syn::Type, RenderError> {
         | Type::Secp256r1Scalar
         | Type::Curve25519Scalar
         | Type::Secp256k1Point
-        | Type::Curve25519Point | Type::Secp256r1Point => {
+        | Type::Curve25519Point
+        | Type::Secp256r1Point => {
             return Err(RenderError::UnsupportedLedgerValueType(ty.clone()));
         }
     })

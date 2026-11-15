@@ -146,7 +146,7 @@ pub mod ledger_contract {
             state,
         ))
     }
-    pub(crate) fn emit<Private>(
+    pub(crate) fn register_output<Private>(
         context: runtime::context::CircuitContext<Private>,
         __compact_param_0: crate::types::ShieldedCoinInfo,
         __compact_param_1: crate::types::Either,
@@ -207,7 +207,7 @@ pub mod ledger_contract {
             let mut context = context;
             let __compact_call_argument_1 = __compact_param_1.clone();
             let __compact_call_argument_2 = __compact_param_2.clone();
-            let call_step = emit(
+            let call_step = register_output(
                 context,
                 __compact_call_argument_1,
                 __compact_call_argument_2,

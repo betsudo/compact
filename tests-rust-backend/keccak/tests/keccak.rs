@@ -34,10 +34,14 @@ impl Witnesses<u64> for Echo {
 
 #[test]
 fn generated_keccak_matches_typescript_and_preserves_witness_transcript() {
-    let oracle: serde_json::Value = serde_json::from_str(include_str!(
+    let aligned: serde_json::Value =
+        serde_json::from_str(include_str!("../aligned-oracle.json")).unwrap();
+    let historical: serde_json::Value = serde_json::from_str(include_str!(
         "../../../runtime-rs/tests/fixtures/keccak.json"
     ))
     .unwrap();
+    assert_eq!(aligned["format"], "compact-keccak-aligned-oracle/v1");
+    assert_eq!(aligned["runtimeVersion"], "0.17.0");
     let cases = [
         ("field", hash_field(Field::from(42_u64)).unwrap()),
         ("bytes", hash_bytes(FixedBytes::new([1, 2, 3, 4])).unwrap()),
@@ -49,7 +53,7 @@ fn generated_keccak_matches_typescript_and_preserves_witness_transcript() {
     for (name, value) in cases {
         assert_eq!(
             hex::encode(value.0),
-            oracle[name].as_str().unwrap(),
+            aligned[name]["digest"].as_str().unwrap(),
             "{name}"
         );
     }
@@ -58,8 +62,8 @@ fn generated_keccak_matches_typescript_and_preserves_witness_transcript() {
         .unwrap()
         .into_circuit_context(ContractAddress::default());
     let result = hash_echo(context, &Echo, Field::from(2_u64)).unwrap();
-    let expected = &oracle["witness"];
-    assert_eq!(hex::encode(result.result.0), expected["result"]);
+    let expected = &historical["witness"];
+    assert_eq!(hex::encode(result.result.0), aligned["witness"]["digest"]);
     assert_eq!(result.context.private_state, expected["privateState"]);
     let outputs = expected["privateTranscriptOutputs"].as_array().unwrap();
     assert_eq!(result.private_transcript_outputs.len(), outputs.len());

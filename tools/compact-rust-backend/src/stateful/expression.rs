@@ -502,12 +502,18 @@ fn render_operation_expression(
     environment: &StateExpressionContext<'_, '_>,
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
+        Expr::MapMember { .. } | Expr::MapLookup { .. } => render_map_observation(
+            value,
+            parameters,
+            statements,
+            next_temp,
+            query_effect,
+            environment,
+        ),
         Expr::CellRead { .. }
         | Expr::CounterLessThan { .. }
         | Expr::CounterRead { .. }
         | Expr::SetMember { .. }
-        | Expr::MapMember { .. }
-        | Expr::MapLookup { .. }
         | Expr::NestedMapLookup { .. }
         | Expr::MerkleCheckRoot { .. }
         | Expr::HistoricMerkleCheckRoot { .. }
@@ -636,6 +642,73 @@ fn render_operation_expression(
             .pure_expression(value, parameters)
             .map(|(rendered, ty)| (rendered, ty, false)),
     }
+}
+
+// Keep recursive map keys off the larger observation-operation stack frame.
+fn render_map_observation(
+    value: &Expr,
+    parameters: &HashMap<&str, (&Type, syn::Ident)>,
+    statements: &mut Vec<syn::Stmt>,
+    next_temp: &mut usize,
+    query_effect: &mut bool,
+    environment: &StateExpressionContext<'_, '_>,
+) -> Result<(syn::Expr, Type, bool), RenderError> {
+    let (field, index, key) = match value {
+        Expr::MapMember { field, index, key } | Expr::MapLookup { field, index, key } => {
+            (field, index, key)
+        }
+        _ => unreachable!("map observation selected by dispatcher"),
+    };
+    let declaration = environment
+        .ledger_fields
+        .get(field.as_str())
+        .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
+    if declaration.index != *index {
+        return Err(RenderError::InvalidLedgerIndex(*index));
+    }
+    let LedgerFieldKind::Map {
+        key: key_ty,
+        value: value_ty,
+    } = &declaration.declaration
+    else {
+        return Err(RenderError::UnknownLedgerField(field.clone()));
+    };
+    let (key, actual, witness_effect) = render_state_expression_observed(
+        key,
+        parameters,
+        statements,
+        next_temp,
+        query_effect,
+        environment,
+    )?;
+    if actual != *key_ty {
+        return Err(RenderError::TypeMismatch {
+            expected: key_ty.clone(),
+            actual,
+        });
+    }
+    let step = syn::Ident::new(
+        &format!("__compact_query_{}", *next_temp),
+        Span::call_site(),
+    );
+    *next_temp += 1;
+    let slot = ident(&declaration.id)?;
+    let key = retained_value(key, key_ty);
+    let result_ty = if matches!(value, Expr::MapMember { .. }) {
+        statements.push(syn::parse_quote!(
+            let #step = crate::ledger_slots::#slot.member(context, #key)?;
+        ));
+        Type::Boolean
+    } else {
+        statements.push(syn::parse_quote!(
+            let #step = crate::ledger_slots::#slot.lookup(context, #key)?;
+        ));
+        value_ty.clone()
+    };
+    statements.push(syn::parse_quote!(context = #step.context;));
+    statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
+    *query_effect = true;
+    Ok((syn::parse_quote!(#step.result), result_ty, witness_effect))
 }
 
 // Same-owner operation family; recursive operands return through the small dispatcher.
@@ -786,57 +859,6 @@ fn render_observation_operation(
                 Type::Boolean,
                 witness_effect,
             ))
-        }
-        Expr::MapMember { field, index, key } | Expr::MapLookup { field, index, key } => {
-            let declaration = ledger_fields
-                .get(field.as_str())
-                .ok_or_else(|| RenderError::UnknownLedgerField(field.clone()))?;
-            if declaration.index != *index {
-                return Err(RenderError::InvalidLedgerIndex(*index));
-            }
-            let LedgerFieldKind::Map {
-                key: key_ty,
-                value: value_ty,
-            } = &declaration.declaration
-            else {
-                return Err(RenderError::UnknownLedgerField(field.clone()));
-            };
-            let (key, actual, witness_effect) = render_state_expression_observed(
-                key,
-                parameters,
-                statements,
-                next_temp,
-                query_effect,
-                environment,
-            )?;
-            if actual != *key_ty {
-                return Err(RenderError::TypeMismatch {
-                    expected: key_ty.clone(),
-                    actual,
-                });
-            }
-            let step = syn::Ident::new(
-                &format!("__compact_query_{}", *next_temp),
-                Span::call_site(),
-            );
-            *next_temp += 1;
-            let slot = ident(&declaration.id)?;
-            let key = retained_value(key, key_ty);
-            let result_ty = if matches!(value, Expr::MapMember { .. }) {
-                statements.push(syn::parse_quote!(
-                    let #step = crate::ledger_slots::#slot.member(context, #key)?;
-                ));
-                Type::Boolean
-            } else {
-                statements.push(syn::parse_quote!(
-                    let #step = crate::ledger_slots::#slot.lookup(context, #key)?;
-                ));
-                value_ty.clone()
-            };
-            statements.push(syn::parse_quote!(context = #step.context;));
-            statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
-            *query_effect = true;
-            Ok((syn::parse_quote!(#step.result), result_ty, witness_effect))
         }
         Expr::NestedMapLookup {
             field,
@@ -1681,10 +1703,19 @@ fn render_conversion_operation(
         }
         Expr::EnumCast { value, ty } => {
             let (rendered, actual, effect) = render_state_expression_observed(
-                value, parameters, statements, next_temp, query_effect, environment,
+                value,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
             )?;
             let cast = crate::pure_semantics::conversion::EnumCast::check(&actual, ty)?;
-            Ok((crate::value_lowering::enum_cast_syntax(rendered, cast), ty.clone(), effect))
+            Ok((
+                crate::value_lowering::enum_cast_syntax(rendered, cast),
+                ty.clone(),
+                effect,
+            ))
         }
         Expr::Secp256k1BytesCast { value, ty } => {
             let (rendered, actual, effect) = render_state_expression_observed(

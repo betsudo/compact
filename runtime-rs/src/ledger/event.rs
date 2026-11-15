@@ -88,14 +88,8 @@ fn event_program<D: DB, const LENGTH: usize>(
     bytes: FixedBytes<LENGTH>,
 ) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
     // Upstream lower-emit packs the version, event tag and payload in order.
-    let payload = StateValue::Array(
-        vec![
-            vm::literal(1u32),
-            vm::literal(tag as u8),
-            vm::cell(bytes)?,
-        ]
-        .into(),
-    );
+    let payload =
+        StateValue::Array(vec![vm::literal(1u32), vm::literal(tag as u8), vm::cell(bytes)?].into());
     Ok(vec![
         Op::Push {
             storage: false,

@@ -15,10 +15,9 @@
 
 //! Exact source-value encoding for hashing, separate from ledger normal form.
 use crate::{
-    BoundedUint, Field, FixedBytes, FixedVector, JubjubPoint, OpaqueBytes, OpaqueString,
-    Curve25519Base, Curve25519Point, Curve25519Scalar, Secp256k1Base, Secp256k1Point, Secp256k1Scalar, Secp256r1Base,
-    Secp256r1Point, Secp256r1Scalar,
-    WideUint,
+    BoundedUint, Curve25519Base, Curve25519Point, Curve25519Scalar, Field, FixedBytes, FixedVector,
+    JubjubPoint, OpaqueBytes, OpaqueString, Secp256k1Base, Secp256k1Point, Secp256k1Scalar,
+    Secp256r1Base, Secp256r1Point, Secp256r1Scalar, WideUint,
 };
 use midnight_base_crypto::fab::{Aligned, Alignment, Value, ValueAtom};
 

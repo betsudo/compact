@@ -15,12 +15,17 @@
 
 import 'jest-expect-message';
 import { getTestFileContent, getTestFilePath, keywordsJson } from './helpers/resources';
+import fs from 'fs';
+import path from 'path';
 
 describe('Compiler keywords matches definitions should', () => {
   let testlib: string;
 
   beforeAll(() => {
-    testlib = getTestFileContent();
+    // The shared sample must compile without V3; cover feature-gated emit in
+    // its own source while keeping the keyword inventory assertion complete.
+    const eventSource = path.join(__dirname, '..', 'resources', 'emit.compact');
+    testlib = `${getTestFileContent()}\n${fs.readFileSync(eventSource, 'utf8')}`;
   });
 
   test('have correct definitions for booleans', async () => {

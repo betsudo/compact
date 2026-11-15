@@ -301,19 +301,13 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
 
     /// Record a public ShieldedBurn event with its fixed-width wire payload.
     #[doc(hidden)]
-    pub fn emit_shielded_burn(
-        self,
-        payload: crate::FixedBytes<49>,
-    ) -> Result<Self, CompactError> {
+    pub fn emit_shielded_burn(self, payload: crate::FixedBytes<49>) -> Result<Self, CompactError> {
         self.apply_verify_program(ledger::shielded_burn_program(payload)?)
     }
 
     /// Record a public ShieldedMint event with its fixed-width wire payload.
     #[doc(hidden)]
-    pub fn emit_shielded_mint(
-        self,
-        payload: crate::FixedBytes<81>,
-    ) -> Result<Self, CompactError> {
+    pub fn emit_shielded_mint(self, payload: crate::FixedBytes<81>) -> Result<Self, CompactError> {
         self.apply_verify_program(ledger::shielded_mint_program(payload)?)
     }
 
@@ -364,28 +358,19 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
 
     /// Record a public Misc event with its fixed-width wire payload.
     #[doc(hidden)]
-    pub fn emit_misc(
-        self,
-        payload: crate::FixedBytes<288>,
-    ) -> Result<Self, CompactError> {
+    pub fn emit_misc(self, payload: crate::FixedBytes<288>) -> Result<Self, CompactError> {
         self.apply_verify_program(ledger::misc_program(payload)?)
     }
 
     /// Record a public Paused event with its fixed-width wire payload.
     #[doc(hidden)]
-    pub fn emit_paused(
-        self,
-        payload: crate::FixedBytes<0>,
-    ) -> Result<Self, CompactError> {
+    pub fn emit_paused(self, payload: crate::FixedBytes<0>) -> Result<Self, CompactError> {
         self.apply_verify_program(ledger::paused_program(payload)?)
     }
 
     /// Record a public Unpaused event with its fixed-width wire payload.
     #[doc(hidden)]
-    pub fn emit_unpaused(
-        self,
-        payload: crate::FixedBytes<0>,
-    ) -> Result<Self, CompactError> {
+    pub fn emit_unpaused(self, payload: crate::FixedBytes<0>) -> Result<Self, CompactError> {
         self.apply_verify_program(ledger::unpaused_program(payload)?)
     }
 

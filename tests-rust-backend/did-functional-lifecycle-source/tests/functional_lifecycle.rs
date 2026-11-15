@@ -187,8 +187,13 @@ fn assert_success_case(id: &str) {
             .sum();
         assert_eq!(gas[dimension], captured, "query-summed {dimension}");
         assert_eq!(
-            row["reportedGas"][dimension],
-            row["queries"].as_array().unwrap().last().unwrap()["gasCost"][dimension]
+            row["reportedGas"][dimension]
+                .as_str()
+                .unwrap()
+                .parse::<u64>()
+                .unwrap(),
+            captured,
+            "source-built TypeScript query-summed {dimension}"
         );
     }
     // Replay is a single sealed VM query. Its cost has its own scope; compare

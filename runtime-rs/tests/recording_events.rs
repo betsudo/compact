@@ -182,7 +182,10 @@ fn unshielded_spend_events_replay_in_order_with_the_exact_payload_and_gas() {
     let left_sender = FixedBytes::new(bytes);
 
     let native_first = context().emit_unshielded_spend(left_sender).unwrap();
-    let native_second = native_first.context.emit_unshielded_spend(right_sender).unwrap();
+    let native_second = native_first
+        .context
+        .emit_unshielded_spend(right_sender)
+        .unwrap();
     let recorded = RecordingFrame::new(context())
         .emit_unshielded_spend(left_sender)
         .unwrap()
@@ -203,7 +206,11 @@ fn unshielded_spend_events_replay_in_order_with_the_exact_payload_and_gas() {
     assert!(events == native_second.context.events());
     assert_eq!(replay.events.len(), 2);
     assert_eq!(replay.context.state, context().query.state);
-    for ((event, log), value) in events.iter().zip(replay.events).zip([left_sender, right_sender]) {
+    for ((event, log), value) in events
+        .iter()
+        .zip(replay.events)
+        .zip([left_sender, right_sender])
+    {
         assert_eq!(event.address, context().query.address);
         assert_eq!(event.log, log);
         assert_eq!(log.version, 1);
@@ -237,7 +244,11 @@ fn pause_events_replay_in_order_with_distinct_tags_and_empty_payloads() {
     assert!(events == native_second.context.events());
     assert_eq!(replay.events.len(), 2);
     assert_eq!(replay.context.state, context().query.state);
-    for ((event, log), tag) in events.iter().zip(replay.events).zip([LogEventType::Paused, LogEventType::Unpaused]) {
+    for ((event, log), tag) in events
+        .iter()
+        .zip(replay.events)
+        .zip([LogEventType::Paused, LogEventType::Unpaused])
+    {
         assert_eq!(event.address, context().query.address);
         assert_eq!(event.log, log);
         assert_eq!(log.version, 1);
@@ -297,7 +308,10 @@ fn unshielded_burn_events_replay_in_order_with_the_exact_payload_and_gas() {
     let left_sender = FixedBytes::new(bytes);
 
     let native_first = context().emit_unshielded_burn(left_sender).unwrap();
-    let native_second = native_first.context.emit_unshielded_burn(right_sender).unwrap();
+    let native_second = native_first
+        .context
+        .emit_unshielded_burn(right_sender)
+        .unwrap();
     let recorded = RecordingFrame::new(context())
         .emit_unshielded_burn(left_sender)
         .unwrap()
@@ -318,7 +332,11 @@ fn unshielded_burn_events_replay_in_order_with_the_exact_payload_and_gas() {
     assert!(events == native_second.context.events());
     assert_eq!(replay.events.len(), 2);
     assert_eq!(replay.context.state, context().query.state);
-    for ((event, log), value) in events.iter().zip(replay.events).zip([left_sender, right_sender]) {
+    for ((event, log), value) in events
+        .iter()
+        .zip(replay.events)
+        .zip([left_sender, right_sender])
+    {
         assert_eq!(event.address, context().query.address);
         assert_eq!(event.log, log);
         assert_eq!(log.version, 1);
@@ -340,7 +358,10 @@ fn unshielded_receive_events_replay_in_order_with_the_exact_payload_and_gas() {
     let left_recipient = FixedBytes::new(bytes);
 
     let native_first = context().emit_unshielded_receive(left_recipient).unwrap();
-    let native_second = native_first.context.emit_unshielded_receive(right_recipient).unwrap();
+    let native_second = native_first
+        .context
+        .emit_unshielded_receive(right_recipient)
+        .unwrap();
     let recorded = RecordingFrame::new(context())
         .emit_unshielded_receive(left_recipient)
         .unwrap()
@@ -361,7 +382,11 @@ fn unshielded_receive_events_replay_in_order_with_the_exact_payload_and_gas() {
     assert!(events == native_second.context.events());
     assert_eq!(replay.events.len(), 2);
     assert_eq!(replay.context.state, context().query.state);
-    for ((event, log), value) in events.iter().zip(replay.events).zip([left_recipient, right_recipient]) {
+    for ((event, log), value) in events
+        .iter()
+        .zip(replay.events)
+        .zip([left_recipient, right_recipient])
+    {
         assert_eq!(event.address, context().query.address);
         assert_eq!(event.log, log);
         assert_eq!(log.version, 1);

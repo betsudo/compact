@@ -114,7 +114,9 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         Expr::JubjubCast { value, ty } => {
             Source::Conversion(ConversionSource::JubjubCast { value, ty })
         }
-        Expr::EnumCast { value, ty } => Source::Conversion(ConversionSource::EnumCast { value, ty }),
+        Expr::EnumCast { value, ty } => {
+            Source::Conversion(ConversionSource::EnumCast { value, ty })
+        }
         Expr::Secp256k1BytesCast { value, ty } => {
             Source::Conversion(ConversionSource::Secp256k1BytesCast { value, ty })
         }
