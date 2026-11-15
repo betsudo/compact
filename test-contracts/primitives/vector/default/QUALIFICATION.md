@@ -14,7 +14,7 @@ binds the pinned source, original assertion, compiler, runtime, generated
 TypeScript, Rust, raw ZKIR, metadata, ordinary result, recorded result and
 public-state replay. A passing preflight is required before proof qualification.
 
-## Fresh proof gate to implement after preflight
+## Fresh proof gate
 
 1. Read and hash the exact-head preflight receipt and all of its named source,
    compiler, runtime and generated artifacts. Reject a changed tree, absent
@@ -36,7 +36,7 @@ public-state replay. A passing preflight is required before proof qualification.
    does not establish that the circuit executed its write. Require the recorded
    verify operation and its replayed transition as well.
 
-## Funded application gate to implement after proof
+## Funded application gate
 
 Build a transaction from that same proved call, with real funded dust inputs,
 a positive fee and the default strictness policy. Verify and apply the
@@ -48,5 +48,14 @@ again; require `IntentAlreadyExists` and byte-identical ledger state before and
 after the refusal. A strict verification check of an already applied
 transaction may succeed; the replay refusal must be measured at application.
 
-These proof and funded gates have **not** run for this family. Local Darwin
-preflight will not substitute for the required native Linux integration gate.
+The original local slice at signed head `8b5504f8` passed this preflight, a
+fresh k=8 proof with separate-process independent verification and wrong
+verifier, changed binding and corrupt-proof refusals, and a distinct funded
+default-strict application with a positive Dust fee. Reapplying the identical
+transaction returned `IntentAlreadyExists` without changing ledger bytes.
+The sealed local Darwin arm64 receipt is
+`ledger9-vector-default-20261115/qualification-8b5504f8.json`, SHA-256
+`2d450e4f5c4501d9ef23eb801679da49970a4f4c31a059a7df61d44079e85425`.
+Its source-bound proof and funded runners remain local evidence rather than
+committed CI gates. This grouped head needs its own exact-head qualification,
+and native Linux integration remains required.
