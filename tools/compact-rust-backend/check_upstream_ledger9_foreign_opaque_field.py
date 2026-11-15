@@ -72,8 +72,11 @@ def inventory():
 
 
 def generated_files(path):
-    return {str(p.relative_to(path)): sha256(p) for p in sorted(path.rglob('*'))
-            if p.is_file() and not p.is_symlink()}
+    paths = sorted(path.rglob('*'))
+    require(all(not p.is_symlink() for p in paths), 'generated artifact symlink changed')
+    files = {str(p.relative_to(path)): sha256(p) for p in paths if p.is_file()}
+    require(files, 'generated artifact inventory empty')
+    return files
 
 
 def log_hashes(output):
@@ -168,6 +171,11 @@ def main():
         for name in ('contract/index.js', 'compiler/contract-info.json'):
             require(generated[case]['typescript'][name] == generated[case]['both'][name],
                     f'{case} TS-only and paired output differ: {name}')
+        if case == 'foreign':
+            for name in NAMES:
+                zkir = f'zkir/{name}.zkir'
+                require(generated[case]['typescript'][zkir] == generated[case]['both'][zkir],
+                        f'foreign TS-only and paired ZKIR differ: {name}')
     for mode in ('typescript', 'both'):
         dest = output / 'generated/field' / mode
         cmd = [str(compiler), '--target', 'ts']
@@ -220,7 +228,23 @@ def main():
             all(sha256(ROOT / name) == digest for name, digest in controls.items()),
             'qualified inputs changed')
     require(log_hashes(output) == logs, 'archived command outcome changed')
+    generated_root = output / 'generated'
+    require({p.name for p in generated_root.iterdir()} == {'opaque', 'foreign', 'field'} and
+            all(p.is_dir() and not p.is_symlink() for p in generated_root.iterdir()),
+            'generated source roster changed')
+    field_lock = generated_root / 'field/.both.compactc.lock'
+    require({p.name for p in (generated_root / 'field').iterdir()} == {field_lock.name} and
+            field_lock.is_file() and not field_lock.is_symlink() and
+            field_lock.stat().st_size == 0, 'Field refusal lock or artifacts changed')
     for case in generated:
+        case_root = output / 'generated' / case
+        lock = case_root / '.both.compactc.lock'
+        require({p.name for p in case_root.iterdir()} ==
+                {'typescript', 'both', lock.name} and
+                lock.is_file() and not lock.is_symlink() and lock.stat().st_size == 0 and
+                all((case_root / mode).is_dir() and not (case_root / mode).is_symlink()
+                    for mode in ('typescript', 'both')),
+                f'{case} generated target roster changed')
         for mode in generated[case]:
             require(generated_files(output / 'generated' / case / mode) == generated[case][mode],
                     'generated artifacts changed')

@@ -67,6 +67,9 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
         generated = {}
         for kind in ('opaque', 'foreign'):
             generated[kind] = {}
+            case_root = output / 'generated' / kind
+            case_root.mkdir(parents=True)
+            (case_root / '.both.compactc.lock').write_text('')
             for mode in ('typescript', 'both'):
                 root = output / 'generated' / kind / mode
                 (root / 'compiler').mkdir(parents=True)
@@ -84,6 +87,9 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
                     for name in verifier.FOREIGN_NAMES:
                         (root / f'zkir/{name}.zkir').write_text('zkir\n')
                 generated[kind][mode] = verifier.hash_tree(root)
+        field = output / 'generated/field'
+        field.mkdir()
+        (field / '.both.compactc.lock').write_text('')
         return {'original_files': originals, 'local_controls': controls,
                 'command_logs_sha256': logs, 'generated': generated,
                 'cargo_target': str(output / 'shared-target'),
@@ -119,6 +125,22 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
                 verifier.verify_foreign(receipt, output, target)
             refusal.write_text('is out of Field range\n')
             receipt['command_logs_sha256'][refusal.name] = verifier.sha256(refusal)
+            zkir = output / f'generated/foreign/both/zkir/{verifier.FOREIGN_NAMES[0]}.zkir'
+            zkir.write_text('different zkir\n')
+            receipt['generated']['foreign']['both'] = verifier.hash_tree(
+                output / 'generated/foreign/both')
+            with self.assertRaisesRegex(ValueError, 'paired ZKIR drift'):
+                verifier.verify_foreign(receipt, output, target)
+            zkir.write_text('zkir\n')
+            receipt['generated']['foreign']['both'] = verifier.hash_tree(
+                output / 'generated/foreign/both')
+            extra = output / 'generated/foreign/unlisted'
+            extra.mkdir()
+            (extra / 'artifact.txt').write_text('unlisted\n')
+            with self.assertRaisesRegex(ValueError, 'target directory roster differs'):
+                verifier.verify_foreign(receipt, output, target)
+            (extra / 'artifact.txt').unlink()
+            extra.rmdir()
             receipt['proof_execution'] = True
             with self.assertRaisesRegex(ValueError, 'foreign proof scope'):
                 verifier.verify_foreign(receipt, output, target)

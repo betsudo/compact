@@ -325,12 +325,26 @@ def verify_foreign(receipt: dict, output: Path, target: Path) -> None:
     generated = receipt.get('generated')
     require(isinstance(generated, dict) and set(generated) == {'opaque', 'foreign'},
             'foreign generated case roster differs')
-    require({p.name for p in (output / 'generated').iterdir()} == {'opaque', 'foreign'} and
+    require({p.name for p in (output / 'generated').iterdir()} ==
+            {'opaque', 'foreign', 'field'} and
             all(not p.is_symlink() for p in (output / 'generated').iterdir()),
             'foreign generated directory roster differs')
+    field_lock = output / 'generated/field/.both.compactc.lock'
+    require({p.name for p in field_lock.parent.iterdir()} == {field_lock.name} and
+            field_lock.is_file() and not field_lock.is_symlink() and
+            field_lock.stat().st_size == 0,
+            'Field refusal lock or artifacts differ')
     for kind, modes in generated.items():
         require(isinstance(modes, dict) and set(modes) == {'typescript', 'both'},
                 f'{kind}: generated target roster differs')
+        case_root = output / 'generated' / kind
+        lock = case_root / '.both.compactc.lock'
+        require({p.name for p in case_root.iterdir()} ==
+                {'typescript', 'both', lock.name} and
+                lock.is_file() and not lock.is_symlink() and lock.stat().st_size == 0 and
+                all((case_root / mode).is_dir() and not (case_root / mode).is_symlink()
+                    for mode in ('typescript', 'both')),
+                f'{kind}: generated target directory roster differs')
         for mode, inventory in modes.items():
             root = output / 'generated' / kind / mode
             require(isinstance(inventory, dict) and inventory == hash_tree(root),
@@ -359,6 +373,11 @@ def verify_foreign(receipt: dict, output: Path, target: Path) -> None:
         for name in ('contract/index.js', 'compiler/contract-info.json'):
             require(modes['typescript'][name] == modes['both'][name],
                     f'{kind}: generated TypeScript drift: {name}')
+        if kind == 'foreign':
+            for name in FOREIGN_NAMES:
+                zkir = f'zkir/{name}.zkir'
+                require(modes['typescript'][zkir] == modes['both'][zkir],
+                        f'foreign paired ZKIR drift: {name}')
 
 
 def validate(case: str, path: Path, gate_log: Path, *,
