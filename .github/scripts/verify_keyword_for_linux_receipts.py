@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
 from check_upstream_ledger9_field_casts import (  # noqa: E402
     compiler_recipe_identity, runtime_identity, runtime_recipe_identity,
 )
+import proof_runner_input_binding as runner_inputs  # noqa: E402
 
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 FAMILY = Path('test-contracts/keywords/for')
@@ -55,6 +56,72 @@ def inventory(root):
         if path.is_file():
             found[path.relative_to(root).as_posix()] = sha(path)
     return found
+
+
+def load_runner_inventory(path):
+    require(path.is_file() and not path.is_symlink() and path.stat().st_size <= 64_000_000,
+            f'missing, symlinked or oversized runner inventory: {path}')
+    value = json.loads(path.read_text())
+    require(isinstance(value, dict), 'runner inventory is not an object')
+    return value
+
+
+def verify_runner_inputs(receipt, output, semantic_root, semantic_receipt):
+    """Independently classify every actual physical Cargo prerequisite."""
+    binding = output / 'binding'
+    source_path = binding / 'source-hashes.json'
+    input_path = binding / 'inputs.json'
+    require(sha(source_path) == receipt.get('source_hashes_sha256') and
+            sha(input_path) == receipt.get('runner_inventory_sha256'),
+            'retained source or runner input inventory differs')
+    source = load_runner_inventory(source_path)
+    declared = load_runner_inventory(input_path)
+    tracked = [os.fsdecode(raw) for raw in subprocess.check_output(
+        ['git', 'ls-files', '-z'], cwd=ROOT).split(b'\0') if raw]
+    require(len(source) == receipt.get('source_count') == len(tracked) and
+            set(source) == set(tracked), 'full committed source inventory differs')
+    for name, digest in source.items():
+        path = ROOT / name
+        require(path.is_file() and not path.is_symlink() and sha(path) == digest,
+                f'committed source hash differs: {name}')
+    expected_source = {str((ROOT / name).resolve(strict=True)): digest
+                       for name, digest in source.items()}
+    expected_generated = {
+        str((semantic_root / 'generated' / name).resolve(strict=True)): digest
+        for name, digest in semantic_receipt['generated_files_sha256'].items()}
+    require(declared.get('source_hashes') == expected_source and
+            declared.get('generated_input_hashes') == expected_generated,
+            'runner source or generated prebuild map differs')
+    fields = ('source_hashes', 'generated_input_hashes',
+              'dependency_source_hashes', 'generated_build_inputs_before_compile')
+    inventories = {field: declared.get(field) for field in fields}
+    require(all(isinstance(value, dict) and value for value in inventories.values()),
+            'physical runner input inventory is incomplete')
+    for field, mapping in inventories.items():
+        for path, digest in mapping.items():
+            require(re.fullmatch('[0-9a-f]{64}', digest) is not None and
+                    Path(path).is_file() and sha(path) == digest,
+                    f'runner {field} input differs: {path}')
+    depfile = output / 'proof-runner.d'
+    require(depfile.is_file() and not depfile.is_symlink(),
+            'retained physical runner depfile is missing or symlinked')
+    prerequisites = runner_inputs.depfile_prerequisites(depfile.read_text(), ROOT)
+    physical, origins = runner_inputs.qualify_dependency_inputs(prerequisites,
+                                                                 inventories, sha)
+    require(physical == declared.get('physical_inputs_before_build') and
+            origins == declared.get('physical_input_origins') and
+            len(physical) == receipt.get('runner_physical_input_count') and
+            origins == receipt.get('runner_physical_input_origins') and
+            receipt.get('dependency_refusals') == {
+                'unknown_dependency_rejected': True,
+                'tampered_dependency_hash_rejected': True},
+            'runner physical prerequisite closure or negative controls differ')
+    both = semantic_root / 'generated/generic_bound/both'
+    required = (both / 'contract/lib.rs', both / 'contract/compact-rust-ir.json',
+                both / 'zkir/for_generic_bound.zkir',
+                ROOT / 'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs')
+    require(all(str(path.resolve(strict=True)) in physical for path in required),
+            'proof runner omitted a selected source or generated prerequisite')
 
 
 def gate_log(path, expected):
@@ -176,7 +243,8 @@ def semantic(receipt, output, *, source, compiler, recipe, runtime):
             'three generated Rust for consumers did not pass')
 
 
-def proof(receipt, output, *, source, semantic_receipt, semantic_path, zkir):
+def proof(receipt, output, *, source, semantic_receipt, semantic_path,
+          semantic_root, zkir):
     require(receipt.get('status') == 'passed' and receipt.get('source_clean') is True and
             receipt.get('platform') == 'Linux x86_64' and
             (receipt.get('head'), receipt.get('tree')) == (source['head'], source['tree']) and
@@ -191,9 +259,17 @@ def proof(receipt, output, *, source, semantic_receipt, semantic_path, zkir):
             sha(runner) == receipt.get('runner_sha256') and
             sha(output / 'proof-runner.d') == receipt.get('runner_depfile_sha256'),
             'proof runner or build provenance differs')
+    verify_runner_inputs(receipt, output, semantic_root, semantic_receipt)
     root = output / 'proof'
     require(inventory(root) == receipt.get('artifact_hashes'),
             'proof artifact inventory differs')
+    require(sha(root / 'for_generic_bound/contract/compact-rust-ir.json') ==
+            sha(semantic_root / 'generated/generic_bound/both/contract/compact-rust-ir.json') and
+            sha(root / 'zkir/for_generic_bound.zkir') ==
+            sha(semantic_root / 'generated/generic_bound/both/zkir/for_generic_bound.zkir') and
+            sha(root / 'zkir/for_zero_iteration.zkir') ==
+            sha(semantic_root / 'generated/zero_iteration/both/zkir/for_zero_iteration.zkir'),
+            'proof IR or raw ZKIR differs from the exact generated semantic gate')
     summary = load(root / 'for_generic_bound-proof-result.json')
     require(summary == receipt.get('proof_summary') and
             summary.get('status') == 'passed' and
@@ -236,11 +312,25 @@ def proof(receipt, output, *, source, semantic_receipt, semantic_path, zkir):
                 f'binary ZKIR differs: {name}')
     material = receipt.get('material')
     require(material.get('mode') == 'verify-only' and
+            material.get('verification') ==
+            'all files checked against locked upstream SHA256 tables' and
             {6, 7} <= {row['k'] for row in material['parameters']},
             'k6/k7 verified proof material missing')
     cache = Path(material['cache_directory'])
-    for name, digest in receipt.get('material_hashes', {}).items():
-        require(sha(cache / name) == digest, f'proof material differs: {name}')
+    expected_material = [row['name'] for row in
+                         material['assets'] + material['parameters']]
+    material_hashes = receipt.get('material_hashes')
+    require(isinstance(material_hashes, dict) and expected_material and
+            len(expected_material) == len(set(expected_material)) and
+            set(material_hashes) == set(expected_material),
+            'verified proving-material inventory differs')
+    for name, digest in material_hashes.items():
+        member = cache / name
+        require(not Path(name).is_absolute() and '..' not in Path(name).parts and
+                member.is_file() and not member.is_symlink() and
+                member.resolve(strict=True).is_relative_to(cache.resolve(strict=True)) and
+                sha(member) == digest,
+                f'proof material differs: {name}')
 
 
 def main():
@@ -307,6 +397,7 @@ def main():
         proof_path = proof_root / 'receipt.json'
         proof(load(proof_path), proof_root, source=source,
               semantic_receipt=receipt, semantic_path=semantic_path,
+              semantic_root=semantic_root,
               zkir=Path(args.zkir).resolve(strict=True))
         proof_sha = sha(proof_path)
     summary_path = Path(args.summary)

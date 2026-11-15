@@ -7,6 +7,8 @@
 import importlib.util
 import json
 from pathlib import Path
+import subprocess
+import sys
 import tempfile
 import unittest
 
@@ -18,6 +20,11 @@ spec = importlib.util.spec_from_file_location('verify_keyword_for_linux_receipts
 assert spec and spec.loader
 verifier = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verifier)
+sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
+proof_spec = importlib.util.spec_from_file_location('check_for_generic_bound_proof', PROOF_GATE)
+assert proof_spec and proof_spec.loader
+proof_gate = importlib.util.module_from_spec(proof_spec)
+proof_spec.loader.exec_module(proof_gate)
 
 
 class KeywordForLinuxWorkflowControls(unittest.TestCase):
@@ -124,7 +131,103 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
             proof = dict(receipt, platform='Linux x86_64', grouped_head='c' * 40)
             with self.assertRaisesRegex(ValueError, 'native Linux proof identity'):
                 verifier.proof(proof, base, source=source, semantic_receipt={},
-                               semantic_path=base/'semantic.json', zkir=base/'zkir')
+                               semantic_path=base/'semantic.json',
+                               semantic_root=base, zkir=base/'zkir')
+
+    def test_physical_dependency_controls_refuse_unknown_and_tampered(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            source = base / 'source.rs'
+            source.write_text('fn pinned() {}\n')
+            path = str(source.resolve())
+            inventory = {'source_hashes': {path: verifier.sha(source)}}
+            self.assertEqual(proof_gate.dependency_refusals({path}, inventory, base), {
+                'unknown_dependency_rejected': True,
+                'tampered_dependency_hash_rejected': True})
+
+    def test_linux_verifier_refuses_unadmitted_or_changed_depfile_inputs(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            root = base / 'repo'
+            root.mkdir()
+            body = root / 'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs'
+            body.parent.mkdir(parents=True)
+            body.write_text('fn proof() {}\n')
+            source = root / 'pinned.rs'
+            source.write_text('fn source() {}\n')
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            subprocess.run(['git', 'add', 'pinned.rs',
+                            'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs'],
+                           cwd=root, check=True)
+            semantic = base / 'semantic'
+            both = semantic / 'generated/generic_bound/both'
+            generated = [both / 'contract/lib.rs',
+                         both / 'contract/compact-rust-ir.json',
+                         both / 'zkir/for_generic_bound.zkir']
+            for member in generated:
+                member.parent.mkdir(parents=True, exist_ok=True)
+                member.write_text(member.name)
+            dependency = base / 'cargo/src/lib.rs'
+            build_input = base / 'target/out/generated.rs'
+            for member in (dependency, build_input):
+                member.parent.mkdir(parents=True, exist_ok=True)
+                member.write_text(member.name)
+            output = base / 'proof'
+            binding = output / 'binding'
+            binding.mkdir(parents=True)
+            source_map = {str(path.relative_to(root)): verifier.sha(path)
+                          for path in (source, body)}
+            source_path = binding / 'source-hashes.json'
+            source_path.write_text(json.dumps(source_map))
+            semantic_map = {str(path.relative_to(semantic / 'generated')): verifier.sha(path)
+                            for path in generated}
+            inventories = {
+                'source_hashes': {str(path.resolve()): verifier.sha(path)
+                                  for path in (source, body)},
+                'generated_input_hashes': {str(path.resolve()): verifier.sha(path)
+                                           for path in generated},
+                'dependency_source_hashes': {str(dependency.resolve()): verifier.sha(dependency)},
+                'generated_build_inputs_before_compile': {
+                    str(build_input.resolve()): verifier.sha(build_input)},
+            }
+            depfile = output / 'proof-runner.d'
+            paths = [str(path.resolve()) for path in
+                     (source, body, *generated, dependency, build_input)]
+            depfile.write_text('runner: ' + ' '.join(paths) + '\n')
+            physical, origins = proof_gate.runner_inputs.qualify_dependency_inputs(
+                set(paths), inventories, verifier.sha)
+            inputs = binding / 'inputs.json'
+            inputs.write_text(json.dumps({**inventories,
+                                          'physical_inputs_before_build': physical,
+                                          'physical_input_origins': origins}))
+            receipt = {
+                'source_count': len(source_map),
+                'source_hashes_sha256': verifier.sha(source_path),
+                'runner_inventory_sha256': verifier.sha(inputs),
+                'runner_physical_input_count': len(physical),
+                'runner_physical_input_origins': origins,
+                'dependency_refusals': {
+                    'unknown_dependency_rejected': True,
+                    'tampered_dependency_hash_rejected': True},
+            }
+            previous_root = verifier.ROOT
+            verifier.ROOT = root.resolve()
+            try:
+                verifier.verify_runner_inputs(
+                    receipt, output, semantic, {'generated_files_sha256': semantic_map})
+                unknown = base / 'unknown.rs'
+                unknown.write_text('fn unknown() {}\n')
+                depfile.write_text('runner: ' + ' '.join([*paths, str(unknown)]) + '\n')
+                with self.assertRaisesRegex(ValueError, 'missing or inconsistent'):
+                    verifier.verify_runner_inputs(
+                        receipt, output, semantic, {'generated_files_sha256': semantic_map})
+                depfile.write_text('runner: ' + ' '.join(paths) + '\n')
+                dependency.write_text('fn tampered() {}\n')
+                with self.assertRaisesRegex(ValueError, 'input differs'):
+                    verifier.verify_runner_inputs(
+                        receipt, output, semantic, {'generated_files_sha256': semantic_map})
+            finally:
+                verifier.ROOT = previous_root
 
 
 if __name__ == '__main__':

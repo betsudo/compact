@@ -18,6 +18,8 @@ import sys
 import tomllib
 
 from check_upstream_ledger9_field_casts import require, sha256, source_state
+from did_proof_gate import hashes, unchanged
+import proof_runner_input_binding as runner_inputs
 import resolve_ledger_test_static as ledger_static
 
 
@@ -51,6 +53,54 @@ def copy_new(source: Path, destination: Path) -> None:
     shutil.copyfile(source, destination)
 
 
+def tracked_source_hashes() -> dict[str, str]:
+    """Freeze every committed physical source before any Cargo preparation."""
+    result = {}
+    for raw in subprocess.check_output(['git', 'ls-files', '-z'], cwd=ROOT).split(b'\0'):
+        if not raw:
+            continue
+        name = os.fsdecode(raw)
+        path = ROOT / name
+        require(path.is_file() and not path.is_symlink(),
+                f'tracked source absent or symlink: {name}')
+        result[name] = sha256(path)
+    return result
+
+
+def physical_sha256(path: str | Path) -> str:
+    return sha256(Path(path))
+
+
+def dependency_refusals(tracked: set[str], inventories: dict[str, dict[str, str]],
+                        output: Path) -> dict[str, bool]:
+    """Refuse unadmitted and altered physical prerequisites before keygen."""
+    unknown = output / 'unadmitted-runner-input.rs'
+    unknown.write_text('// outside the frozen Cargo input inventories\n')
+    try:
+        runner_inputs.qualify_dependency_inputs(tracked | {str(unknown)}, inventories,
+                                                physical_sha256)
+    except ValueError as error:
+        unknown_rejected = 'missing or inconsistent' in str(error)
+    else:
+        unknown_rejected = False
+    require(unknown_rejected, 'unknown physical runner dependency escaped refusal')
+    selected = sorted(tracked)[0]
+    altered = {name: dict(files) for name, files in inventories.items()}
+    for files in altered.values():
+        if selected in files:
+            files[selected] = '0' * 64 if files[selected] != '0' * 64 else 'f' * 64
+    try:
+        runner_inputs.qualify_dependency_inputs(tracked, altered, physical_sha256)
+    except ValueError as error:
+        altered_rejected = ('changed after physical prebuild binding' in str(error)
+                            or 'missing or inconsistent' in str(error))
+    else:
+        altered_rejected = False
+    require(altered_rejected, 'tampered physical runner dependency escaped refusal')
+    return {'unknown_dependency_rejected': unknown_rejected,
+            'tampered_dependency_hash_rejected': altered_rejected}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('grouped-gate', 'zkir', 'output'):
@@ -59,6 +109,7 @@ def main() -> None:
     parser.add_argument('--cargo-target', required=True, type=Path)
     args = parser.parse_args()
     source = source_state()
+    source_before = tracked_source_hashes()
     require(re.fullmatch('[0-9a-f]{40}', args.expected_source_sha) is not None and
             source['head'] == args.expected_source_sha,
             'proof source differs from explicitly selected exact head')
@@ -110,10 +161,32 @@ def main() -> None:
     static = ledger_static.resolve(json.loads(metadata.stdout),
                                    tomllib.loads((ROOT / 'Cargo.lock').read_text()))
     env['MIDNIGHT_LEDGER_TEST_STATIC_DIR'] = static['static_directory']
-    build = run(['cargo', '+1.99.0', 'build', '--locked', '--offline', '--profile',
-                 'proof-checks', '-p', 'compact-rust-proof-smoke', '--features',
-                 'for-generic-bound-proof', '--message-format=json'],
-                output / 'build.log', env)
+    binding_dir = output / 'binding'
+    binding_dir.mkdir()
+    source_hashes_path = binding_dir / 'source-hashes.json'
+    source_hashes_path.write_text(json.dumps(source_before, indent=2, sort_keys=True) + '\n')
+    source_hashes_sha = sha256(source_hashes_path)
+    binding = {
+        'source_hashes': {str((ROOT / name).resolve(strict=True)): digest
+                          for name, digest in source_before.items()},
+        'generated_input_hashes': hashes(path for path in generated.rglob('*')
+                                         if path.is_file()),
+    }
+
+    def execute(label: str, command: list[str], log: Path) -> subprocess.CompletedProcess[str]:
+        for field in ('source_hashes', 'generated_input_hashes',
+                      'dependency_source_hashes', 'generated_build_inputs_before_compile'):
+            if field in binding:
+                unchanged(binding[field])
+        return run(command, log, env)
+
+    runner_inputs.prepare_generated_inputs(ROOT, binding_dir, binding, execute,
+                                           'for-generic-bound-proof', sha256)
+    build = execute('build-proof-runner',
+                    ['cargo', '+1.99.0', 'build', '--locked', '--offline', '--profile',
+                     'proof-checks', '-p', 'compact-rust-proof-smoke', '--features',
+                     'for-generic-bound-proof', '--message-format=json'],
+                    output / 'build.log')
     rows = [json.loads(line) for line in build.stdout.splitlines() if line.startswith('{')]
     executables = {row['executable'] for row in rows
                    if row.get('reason') == 'compiler-artifact' and
@@ -124,13 +197,29 @@ def main() -> None:
     copy_new(built, runner)
     runner.chmod(0o755)
     depfile = built.with_suffix('.d')
-    copy_new(depfile, output / 'proof-runner.d')
-    deptext = depfile.read_text()
+    tracked = runner_inputs.depfile_prerequisites(depfile.read_text(), ROOT)
     for expected in (both / 'contract/lib.rs', both / 'contract/compact-rust-ir.json',
                      both / f'zkir/{GENERIC}.zkir',
                      ROOT / 'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs'):
-        require(str(expected) in deptext, f'runner depfile omitted {expected}')
+        require(str(expected.resolve(strict=True)) in tracked,
+                f'runner depfile omitted {expected}')
+    inventories = {field: binding[field] for field in
+                   ('source_hashes', 'generated_input_hashes',
+                    'dependency_source_hashes', 'generated_build_inputs_before_compile')}
+    physical, origins = runner_inputs.qualify_dependency_inputs(tracked, inventories,
+                                                                 physical_sha256)
+    refusals = dependency_refusals(tracked, inventories, binding_dir)
+    inventory_path = binding_dir / 'inputs.json'
+    inventory_path.write_text(json.dumps({**binding,
+                                          'physical_inputs_before_build': physical,
+                                          'physical_input_origins': origins},
+                                         indent=2, sort_keys=True) + '\n')
+    retained_depfile = output / 'proof-runner.d'
+    copy_new(depfile, retained_depfile)
     runner_sha = sha256(runner)
+    depfile_sha = sha256(retained_depfile)
+    inventory_sha = sha256(inventory_path)
+    frozen_runner_inputs = [*inventories.values(), physical]
     require(files(proof) == input_hashes and files(generated) == gate['generated_files_sha256'],
             'runner build changed pinned inputs')
     # The embedded IR and raw circuit refuse drift before any key is used.
@@ -185,8 +274,14 @@ def main() -> None:
                  'wrong_verifier_proof_rejected', 'corrupt_proof_rejected',
                  'changed_binding_rejected', 'replay_unchanged')),
             'generic-bound proof, verification or funded application differs')
-    require(source_state() == source and files(generated) == gate['generated_files_sha256'] and
+    for inventory in frozen_runner_inputs:
+        unchanged(inventory)
+    require(source_state() == source and tracked_source_hashes() == source_before and
+            files(generated) == gate['generated_files_sha256'] and
             sha256(runner) == runner_sha and
+            sha256(retained_depfile) == depfile_sha and
+            sha256(inventory_path) == inventory_sha and
+            sha256(source_hashes_path) == source_hashes_sha and
             all(sha256(Path(verified['cache_directory']) / name) == digest
                 for name, digest in material_hashes.items()) and
             all(sha256(proof / name) == digest for name, digest in input_hashes.items()),
@@ -195,7 +290,13 @@ def main() -> None:
               'status':'passed', 'platform':os.uname().sysname + ' ' + os.uname().machine,
               'grouped_head':source['head'], 'grouped_gate_sha256':sha256(gate_path),
               'generated_input_sha256':gate['generated_files_sha256'],
-              'runner_sha256':runner_sha, 'runner_depfile_sha256':sha256(output / 'proof-runner.d'),
+              'source_count':len(source_before),
+              'source_hashes_sha256':source_hashes_sha,
+              'runner_sha256':runner_sha, 'runner_depfile_sha256':depfile_sha,
+              'runner_inventory_sha256':inventory_sha,
+              'runner_physical_input_count':len(physical),
+              'runner_physical_input_origins':origins,
+              'dependency_refusals':refusals,
               'zkir_sha256':sha256(zkir), 'ledger_static':static,
               'material':verified, 'material_hashes':material_hashes,
               'keygen':keys, 'proof_summary':summary, 'artifact_hashes':files(proof),
