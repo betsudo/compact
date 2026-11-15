@@ -10,7 +10,11 @@ const [entry, kind] = process.argv.slice(2);
 assert.ok(entry && ['opaque', 'foreign'].includes(kind));
 const generated = await import(pathToFileURL(entry).href);
 if (kind === 'opaque') {
-  const result = generated.pureCircuits.opaque_casts_to_opaque();
+  const context = Object.freeze({});
+  const contract = new generated.Contract({});
+  const execution = contract.circuits.opaque_casts_to_opaque(context);
+  assert.strictEqual(execution.context, context);
+  const result = execution.result;
   assert.ok(result instanceof Uint8Array);
   console.log('opaque: original Uint8Array assertion passed');
 } else {

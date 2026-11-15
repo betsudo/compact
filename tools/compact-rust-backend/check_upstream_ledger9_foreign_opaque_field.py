@@ -37,6 +37,14 @@ SOURCES = {
 }
 NAMES = ('self_subtract', 'inlined_self_subtract', 'multiply_self_subtract',
          'secp256r1_self_subtract', 'curve25519_self_subtract')
+LOG_NAMES = frozenset(
+    [f'{case}-{mode}-{phase}.log'
+     for case in ('opaque', 'foreign')
+     for mode in ('typescript', 'both')
+     for phase in ('compile', 'runtime')]
+    + [f'field-{mode}-compile.log' for mode in ('typescript', 'both')]
+    + ['cargo-metadata.log', 'cargo-test.log']
+)
 
 
 def inventory():
@@ -66,6 +74,15 @@ def inventory():
 def generated_files(path):
     return {str(p.relative_to(path)): sha256(p) for p in sorted(path.rglob('*'))
             if p.is_file() and not p.is_symlink()}
+
+
+def log_hashes(output):
+    """Bind every archived command outcome, including refused compilation."""
+    actual = {p.name for p in output.glob('*.log')}
+    require(actual == LOG_NAMES, 'archived command log set changed')
+    require(all((output / name).is_file() and not (output / name).is_symlink()
+                for name in actual), 'archived command log replaced')
+    return {name: sha256(output / name) for name in sorted(actual)}
 
 
 def main():
@@ -188,11 +205,13 @@ def main():
         output / 'cargo-test.log', cargo_env)
     require('test result: ok. 2 passed; 0 failed;' in
             (output / 'cargo-test.log').read_text(), 'Rust ordinary/recorded tests failed')
+    logs = log_hashes(output)
     require(source_state() == source and inventory() == original and
             runtime_identity(runtime) == runtime_before and
             compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
             all(sha256(ROOT / name) == digest for name, digest in controls.items()),
             'qualified inputs changed')
+    require(log_hashes(output) == logs, 'archived command outcome changed')
     for case in generated:
         for mode in generated[case]:
             require(generated_files(output / 'generated' / case / mode) == generated[case][mode],
@@ -206,7 +225,7 @@ def main():
                'runtime_recipe': runtime_recipe,
                'checker_sha256': sha256(Path(__file__)),
                'rust_consumer_lock_sha256': sha256(rust / 'Cargo.lock'),
-               'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'command_logs_sha256': logs,
                'limitations': ['local Darwin arm64; native Linux qualification required',
                                'five foreign proof=true exports are unproved: fresh proof, independent verification, funded strict application and replay remain open',
                                'original Vitest harness not run; exact pinned assertions replayed against generated APIs']}
