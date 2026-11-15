@@ -1,0 +1,14 @@
+{
+  "files": {
+    "test-contracts/primitives/bytes/fold/boolean_reduction/bytes_fold_boolean_reduction.compact": "a2f7db87f62fedbf46314860f69dee03b8b53fc860c52ffbc3123365c7c9e07e",
+    "test-contracts/primitives/bytes/fold/boolean_reduction/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/fold/boolean_reduction/runtime.pass.test.ts": "841d44eccb8fe0dfe3132a72353517d0f3a1729569c39b8b73ed1a557cce2604",
+    "test-contracts/primitives/bytes/fold/conditional_accumulation/bytes_fold_conditional_accumulation.compact": "a5aa142708bb6178cf15619ca7eb7df0cbeac9cfa8691532e761780e7d193ccd",
+    "test-contracts/primitives/bytes/fold/conditional_accumulation/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/fold/conditional_accumulation/runtime.pass.test.ts": "51b6fd6ac393a98eb2e3dee5e4779e5727d8e431639182bfc1b7c41314354765",
+    "test-contracts/primitives/bytes/fold/summation/bytes_fold_summation.compact": "d685776dd78b12ca356a3b33936466fccaf83de17e1e28d4d80f6d5ea6055f4d",
+    "test-contracts/primitives/bytes/fold/summation/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/fold/summation/runtime.pass.test.ts": "8d78868ac4b1ce10c83f611b746c06e31c57898e2efb6add28aa5a77bb0d4782"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}
