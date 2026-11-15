@@ -15,6 +15,9 @@
 name: DID primitive reducers / native Linux
 
 on:
+  push:
+    branches:
+      - 'codex/ledger9-did-linux/*'
   workflow_dispatch:
     inputs:
       expected_sha:
@@ -46,7 +49,15 @@ jobs:
         env:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
           SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
+          if [[ "$EVENT_NAME" == push ]]; then
+            if [[ "$SOURCE_REF" != "refs/heads/codex/ledger9-did-linux/$SOURCE_SHA" ]]; then exit 2; fi
+            EXPECTED_SHA="$SOURCE_SHA"
+          elif [[ "$EVENT_NAME" != workflow_dispatch ]]; then
+            exit 2
+          fi
           if [[ ! "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]; then exit 2; fi
           if [[ "$EXPECTED_SHA" != "$SOURCE_SHA" ]]; then exit 2; fi
       - name: Checkout exact source head

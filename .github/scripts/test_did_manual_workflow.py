@@ -45,7 +45,8 @@ def run_block(job, step):
 class ManualDidWorkflowTests(unittest.TestCase):
     def test_dispatch_requires_exact_sha_before_any_expensive_job(self):
         header = WORKFLOW.split('\njobs:\n', 1)[0]
-        self.assertIn('on:\n  workflow_dispatch:', header)
+        self.assertIn('  workflow_dispatch:', header)
+        self.assertIn("  push:\n    branches:\n      - 'codex/ledger9-did-linux/*'", header)
         self.assertNotIn('pull_request:', header)
         self.assertNotIn('schedule:', header)
         self.assertRegex(header, r'expected_sha:\n(?:        .*\n)*?        required: true')
@@ -61,7 +62,22 @@ class ManualDidWorkflowTests(unittest.TestCase):
                                            ('a' * 39, 'a' * 39, False),
                                            ('', '', False)):
             with self.subTest(expected=expected, source=source):
-                env = dict(os.environ, EXPECTED_SHA=expected, SOURCE_SHA=source)
+                env = dict(os.environ, EXPECTED_SHA=expected, SOURCE_SHA=source,
+                           EVENT_NAME='workflow_dispatch', SOURCE_REF='refs/heads/main')
+                result = subprocess.run(['bash', '-e', '-c', check], env=env,
+                                        capture_output=True, text=True)
+                self.assertEqual(result.returncode == 0, accepted)
+        for event, ref, source, accepted in (
+            ('push', 'refs/heads/codex/ledger9-did-linux/' + valid, valid, True),
+            ('push', 'refs/heads/codex/ledger9-did-linux/' + 'b' * 40, valid, False),
+            ('push', 'refs/heads/codex/ledger9-did-linux/' + 'a' * 39, valid, False),
+            ('push', 'refs/heads/codex/ledger9-did-linux/' + 'A' * 40, valid, False),
+            ('push', 'refs/heads/codex/ledger9-did-linux/' + valid, 'b' * 40, False),
+            ('schedule', 'refs/heads/codex/ledger9-did-linux/' + valid, valid, False),
+        ):
+            with self.subTest(event=event, ref=ref, source=source):
+                env = dict(os.environ, EXPECTED_SHA='', SOURCE_SHA=source,
+                           EVENT_NAME=event, SOURCE_REF=ref)
                 result = subprocess.run(['bash', '-e', '-c', check], env=env,
                                         capture_output=True, text=True)
                 self.assertEqual(result.returncode == 0, accepted)
