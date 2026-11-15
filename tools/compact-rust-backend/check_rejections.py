@@ -61,22 +61,23 @@ CASES = {
 ROOT = Path(__file__).resolve().parents[2]
 
 
-# Spread cases are valid TypeScript programs. Unknown opaque types deliberately
-# exercise a shared target refusal; they are not Rust-only language gaps.
+# Tuple spreads are valid TypeScript programs but remain unsupported by the
+# Rust backend. Unknown opaque types deliberately exercise a shared target
+# refusal; they are not Rust-only language gaps.
 CONTEXT_CASES = {
     "nested": (
-        'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
+        'export pure circuit pair(v: [Field, Field]): [Field, Field] {\n'
         '  return true ? [...v] : v;\n}\n',
         "nested.compact", (2, 17), False,
     ),
     "constructor": (
-        'export ledger n: Vector<2, Field>;\nconstructor(v: Vector<2, Field>) {\n'
+        'export ledger n: [Field, Field];\nconstructor(v: [Field, Field]) {\n'
         '  n = disclose([...v]);\n}\n',
         "constructor.compact", (3, 16), False,
     ),
     "imported": (
         'import "broken";\n'
-        'export pure circuit value(v: Vector<2, Field>): Vector<2, Field> { return spread(v); }\n',
+        'export pure circuit value(v: [Field, Field]): [Field, Field] { return pair(v); }\n',
         "broken.compact", (3, 10), False,
     ),
     "witness": (
@@ -102,7 +103,7 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
     directory = directory / "contexts"
     directory.mkdir()
     (directory / "broken.compact").write_text(
-        "module broken {\nexport pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n"
+        "module broken {\nexport pure circuit pair(v: [Field, Field]): [Field, Field] {\n"
         "  return [...v];\n}\n}\n"
     )
 
@@ -129,7 +130,7 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
         elif control.returncode or not (directory / f"{name}-ts/contract/index.js").is_file():
             failures.append(f"{name}: valid TypeScript control failed:\n{control.stderr}")
         diagnostic = "Rust backend does not yet support " + (
-            "this opaque type" if opaque else "vector spreads"
+            "this opaque type" if opaque else "tuple spreads"
         )
         for output in (directory / name, preserved):
             rejected = compile_source(source_path, output, "rust")
