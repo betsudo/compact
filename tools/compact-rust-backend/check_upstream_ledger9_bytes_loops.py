@@ -1,0 +1,273 @@
+#!/usr/bin/env python3
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Qualify pinned Bytes loops and zero-length Fold operand order on generated APIs."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import tomllib
+
+from check_compactc_target import check_manifest
+from check_unit_mutation_initializers import validate_consumer_lock
+from check_upstream_ledger9_field_casts import (
+    compiler_recipe_identity, require, run, runtime_identity,
+    runtime_recipe_identity, sha256, source_state,
+)
+
+
+ROOT = Path(__file__).resolve().parents[2]
+PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
+FAMILY = ROOT / 'test-contracts/primitives/bytes/loops'
+CASES = ('empty_iteration', 'spread_iteration', 'iteration')
+RESULTS = (0, 0, 120)
+MESSAGES = ('Loop should not execute', 'Loop should not execute',
+            'Loop should execute 8 times')
+CONTROL = ROOT / 'tools/compact-rust-backend/tests/bytes_loops/zero_operand_order.compact'
+REFUSAL = ROOT / 'tools/compact-rust-backend/tests/bytes_loops/dynamic_index_refusal.compact'
+
+
+def fixture(case: str) -> Path:
+    return FAMILY / case / f'bytes_loop_{case}.compact'
+
+
+def originals() -> dict[str, str]:
+    manifest = json.loads((FAMILY / 'original-source-sha256.json').read_text())
+    expected = {str((fixture(case).parent / name).relative_to(ROOT))
+                for case in CASES for name in
+                (fixture(case).name, 'compile.pass.test.ts', 'runtime.pass.test.ts')}
+    require(manifest.get('upstream_commit') == PINNED and
+            isinstance(manifest.get('files'), dict) and
+            set(manifest['files']) == expected, 'pinned Bytes loop inventory changed')
+    for name, digest in manifest['files'].items():
+        path = ROOT / name
+        upstream = subprocess.check_output(['git', 'show', f'{PINNED}:{name}'], cwd=ROOT)
+        require(path.is_file() and not path.is_symlink() and
+                re.fullmatch('[0-9a-f]{64}', digest) is not None and
+                path.read_bytes() == upstream and sha256(path) == digest,
+                f'pinned Bytes loop original changed: {name}')
+    for case, result, message in zip(CASES, RESULTS, MESSAGES):
+        require(message in fixture(case).read_text() and
+                f'expect(result).toEqual({result}n)' in
+                (fixture(case).parent / 'runtime.pass.test.ts').read_text(),
+                f'original Bytes loop assertion changed: {case}')
+    return manifest['files']
+
+
+def generated_files(root: Path) -> dict[str, str]:
+    files = {}
+    for path in sorted(root.rglob('*')):
+        require(not path.is_symlink(), f'generated artifact symlink: {path}')
+        if path.is_file():
+            files[path.relative_to(root).as_posix()] = sha256(path)
+    require(files, 'empty generated artifact inventory')
+    return files
+
+
+def compile_case(compiler: Path, output: Path,
+                 case: str, source: Path, control: bool,
+                 environment: dict[str, str]) -> dict:
+    result = {}
+    for mode in ('typescript', 'both'):
+        destination = output / 'generated' / case / mode
+        command = [str(compiler), '--target', 'ts']
+        if mode == 'both':
+            command += ['--target', 'rust', '--rust-runtime-root', str(ROOT),
+                        '--rust-require-recording']
+        command += ['--feature-zkir-v3', '--skip-zk', '--compact-path',
+                    str(ROOT / 'compiler'), str(source), str(destination)]
+        run(command, output / f'{case}-{mode}-compile.log', environment)
+        check_manifest(destination, require_zkir=not control)
+        contract = destination / 'contract'
+        info = destination / 'compiler/contract-info.json'
+        require(json.loads(info.read_text())['circuits'] == [{
+            'name': case if control else f'bytes_loop_{case}', 'pure': False,
+            'proof': not control, 'arguments': [],
+            'result-type': {'type-name': 'Field'}}],
+            f'Bytes loop capability changed: {case}/{mode}')
+        if not control:
+            message = MESSAGES[CASES.index(case)]
+            require((contract / 'index.js').read_text().count(message) == 1 and
+                    (mode != 'both' or
+                     (contract / 'lib.rs').read_text().count(message) == 2),
+                    f'generated Bytes loop assertion changed: {case}/{mode}')
+        script = FAMILY / ('check-order.mjs' if control else 'check.mjs')
+        invocation = ['node', str(script), str(contract / 'index.js')]
+        if not control:
+            invocation.append(case)
+        observed = run(invocation, output / f'{case}-{mode}-runtime.log', environment)
+        expected = ('zero_operand_order: initial and source evaluated in order; reducer unreachable'
+                    if control else f'{case}: original Bytes loop result and ledger passed')
+        require(observed.strip() == expected, f'generated TS Bytes loop changed: {case}/{mode}')
+        row = {'typescript_sha256': sha256(contract / 'index.js'),
+               'contract_info_sha256': sha256(info),
+               'manifest_sha256': sha256(destination / 'compiler/contract-manifest.json'),
+               'runtime_log_sha256': sha256(output / f'{case}-{mode}-runtime.log')}
+        if not control:
+            row['zkir_sha256'] = sha256(destination / f'zkir/bytes_loop_{case}.zkir')
+        if mode == 'both':
+            row.update(rust_sha256=sha256(contract / 'lib.rs'),
+                       rust_ir_sha256=sha256(contract / 'compact-rust-ir.json'))
+        result[mode] = row
+    for key in ('typescript_sha256', 'contract_info_sha256'):
+        require(result['typescript'][key] == result['both'][key],
+                f'paired TS metadata changed: {case}/{key}')
+    if not control:
+        require(result['typescript']['zkir_sha256'] == result['both']['zkir_sha256'],
+                f'paired ZKIR changed: {case}')
+    return result
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
+        parser.add_argument('--' + name, required=True, type=Path)
+    parser.add_argument('--cargo-target', type=Path)
+    args = parser.parse_args()
+    source = source_state()
+    signature = subprocess.check_output(['git', 'log', '-1', '--format=%G?%n%B'],
+                                        cwd=ROOT, text=True)
+    require(signature.startswith('G\n') and 'Signed-off-by:' in signature and
+            'Assisted-by: AI' in signature, 'head must be signed, DCO and assisted')
+    output = args.output.resolve()
+    require(not args.output.is_symlink() and not output.exists(), 'output must be absent')
+    compiler = args.compiler.resolve(strict=True)
+    scheme = compiler.with_name('compactc-scheme').resolve(strict=True)
+    runtime = args.ts_runtime.resolve(strict=True)
+    package = json.loads((ROOT / 'runtime/package.json').read_text())
+    installed = json.loads((runtime / 'package.json').read_text())
+    require(all(package[key] == installed[key] for key in ('name', 'version', 'dependencies')),
+            'runtime package differs from source')
+    nix = shutil.which('nix')
+    require(nix is not None, 'Nix required for runtime binding')
+    runtime_recipe = runtime_recipe_identity(runtime, Path(nix).resolve(strict=True))
+    runtime_before = runtime_identity(runtime)
+    recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
+    pinned = originals()
+    local_paths = (FAMILY / 'original-source-sha256.json', FAMILY / 'check.mjs',
+                   FAMILY / 'check-order.mjs', FAMILY / 'consumer.rs', CONTROL, REFUSAL,
+                   ROOT / 'compiler/rust-ir-passes.ss')
+    local = {str(path.relative_to(ROOT)): sha256(path) for path in local_paths}
+    output.mkdir(parents=True)
+    link = output / 'node_modules/@midnight-ntwrk/compact-runtime'
+    link.parent.mkdir(parents=True)
+    link.symlink_to(runtime, target_is_directory=True)
+    (output / 'package.json').write_text('{"type":"module"}\n')
+    environment = dict(os.environ, COMPACTC_SCHEME=str(scheme), RUSTUP_TOOLCHAIN='1.99.0')
+    generated = {}
+    for case in CASES:
+        generated[case] = compile_case(compiler, output, case,
+                                       fixture(case), False, environment)
+    generated['zero_operand_order'] = compile_case(
+        compiler, output, 'zero_operand_order', CONTROL, True, environment)
+    refusal = subprocess.run([str(compiler), '--target', 'ts', '--feature-zkir-v3',
+                              '--skip-zk', '--compact-path', str(ROOT / 'compiler'),
+                              str(REFUSAL), str(output / 'refusal-generated')],
+                             cwd=ROOT, env=environment, capture_output=True, text=True)
+    (output / 'dynamic-refusal.log').write_text(refusal.stdout + refusal.stderr)
+    require(refusal.returncode != 0 and
+            'Bytes index did not reduce to a constant nonnegative value at compile time'
+            in refusal.stderr and not (output / 'refusal-generated').exists(),
+            'genuinely dynamic Bytes index refusal changed')
+    generated_before = generated_files(output / 'generated')
+    consumer = output / 'rust-consumer'
+    (consumer / 'tests').mkdir(parents=True)
+    shutil.copyfile(FAMILY / 'consumer.rs', consumer / 'tests/bytes_loops.rs')
+    shutil.copyfile(ROOT / 'Cargo.lock', consumer / 'Cargo.lock')
+    dependencies, generated_paths = [], []
+    for case in (*CASES, 'zero_operand_order'):
+        contract = output / 'generated' / case / 'both/contract'
+        generated_paths.append(contract)
+        package_name = tomllib.loads((contract / 'Cargo.toml').read_text())['package']['name']
+        dependencies.append(f'{case} = {{ package = {json.dumps(package_name)}, '
+                            f'path = {json.dumps(str(contract))} }}')
+    manifest = consumer / 'Cargo.toml'
+    manifest.write_text('[workspace]\n[package]\nname = "ledger9-bytes-loop-consumer"\n'
+                        'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
+                        'midnight-onchain-vm = "=4.0.1"\nmidnight-serialize = "=1.2.1"\n'
+                        + '\n'.join(dependencies) + '\n')
+    cargo_target = args.cargo_target.resolve(strict=True) if args.cargo_target else output / 'cargo-target'
+    require(not args.cargo_target or (cargo_target.is_dir() and
+                                     not args.cargo_target.is_symlink()),
+            'shared Cargo target must be an ordinary directory')
+    cargo_env = dict(environment, CARGO_TARGET_DIR=str(cargo_target), CARGO_INCREMENTAL='0',
+                     CARGO_PROFILE_DEV_DEBUG='0')
+    metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
+                               '--format-version', '1', '--manifest-path', str(manifest)],
+                              output / 'cargo-metadata.log', cargo_env))
+    packages = tomllib.loads((ROOT / 'Cargo.lock').read_text())['package']
+    pinned_packages = {(row['name'], row['version'], row['source']): row.get('checksum')
+                       for row in packages if 'source' in row}
+    allowed = {manifest, ROOT / 'runtime-rs/Cargo.toml',
+               ROOT / 'runtime-rs-macros/Cargo.toml',
+               *(path / 'Cargo.toml' for path in generated_paths)}
+    validate_consumer_lock(metadata, consumer / 'Cargo.lock', allowed, pinned_packages)
+    run(['cargo', '+1.99.0', 'test', '--locked', '--offline', '--manifest-path', str(manifest),
+         '--test', 'bytes_loops'], output / 'cargo-test.log', cargo_env)
+    log = (output / 'cargo-test.log').read_text()
+    require(re.search(r'test result: ok\. 4 passed; 0 failed;', log) is not None and
+            all(f'test {case}_original_result_and_replay ... ok' in log for case in CASES) and
+            'test zero_length_fold_evaluates_operands_in_order_and_skips_reducer ... ok' in log,
+            'generated Rust Bytes loop/replay/order tests failed')
+    require(source_state() == source and runtime_identity(runtime) == runtime_before and
+            compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
+            originals() == pinned and generated_files(output / 'generated') == generated_before and
+            all(sha256(ROOT / name) == digest for name, digest in local.items()),
+            'source, generated, compiler, runtime or originals changed')
+    for case in (*CASES, 'zero_operand_order'):
+        for mode in ('typescript', 'both'):
+            destination = output / 'generated' / case / mode
+            contract = destination / 'contract'
+            row = generated[case][mode]
+            require(all(sha256(path) == row[key] for path, key in (
+                (contract / 'index.js', 'typescript_sha256'),
+                (destination / 'compiler/contract-info.json', 'contract_info_sha256'),
+                (destination / 'compiler/contract-manifest.json', 'manifest_sha256'),
+                (output / f'{case}-{mode}-runtime.log', 'runtime_log_sha256'))),
+                f'generated TS changed: {case}/{mode}')
+            if case in CASES:
+                require(sha256(destination / f'zkir/bytes_loop_{case}.zkir') ==
+                        row['zkir_sha256'], f'generated ZKIR changed: {case}/{mode}')
+            if mode == 'both':
+                require(sha256(contract / 'lib.rs') == row['rust_sha256'] and
+                        sha256(contract / 'compact-rust-ir.json') == row['rust_ir_sha256'],
+                        f'generated Rust changed: {case}')
+    receipt = {**source, 'status': 'passed', 'source_clean': True,
+               'platform': os.uname().sysname + ' ' + os.uname().machine,
+               'upstream_commit': PINNED, 'original_files': pinned,
+               'local_sources': local, 'generated': generated,
+               'generated_files_sha256': generated_before,
+               'dynamic_index_refusal_log_sha256': sha256(output / 'dynamic-refusal.log'),
+               'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
+               'scheme_sha256': sha256(scheme), 'runtime': runtime_before,
+               'runtime_recipe': runtime_recipe, 'checker_sha256': sha256(Path(__file__)),
+               'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
+               'rust_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'result': 'three pinned Bytes loops and zero-length operand-order control passed generated TS/Rust ordinary/recorded replay',
+               'limitations': ['Darwin arm64 local; native Linux qualification required',
+                               'three proof=true loop exports require fresh independent proofs and funded strict application/replay',
+                               'original Vitest harness was not run; pinned assertions were replayed against generated APIs',
+                               'static-loop Bytes indexed_access and large reconstruction remain open']}
+    (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
+    print(json.dumps({'status': 'passed', 'head': source['head'], 'output': str(output)}))
+
+
+if __name__ == '__main__':
+    main()

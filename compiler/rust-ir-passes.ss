@@ -2168,6 +2168,28 @@
            (if (null? tuple-arg*)
                (object (cons "kind" "sequence") (cons "actions" (vector)))
                (source-errorf src "Rust backend does not support tuple values as state actions"))]
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (if (= len 0)
+               ;; The reducer is unreachable, but the initial value and each
+               ;; iterable still evaluate in Fold operand order.
+               (object (cons "kind" "sequence")
+                       (cons "actions"
+                             (list->vector
+                               (cons
+                                 (object (cons "kind" "expression")
+                                         (cons "value"
+                                               (stateful-typed-expression-ir
+                                                 expr0 type0 src witness-ids)))
+                                 (map (lambda (arg)
+                                        (nanopass-case (Lnodisclose Map-Argument) arg
+                                          [(,expr ,type1 ,type2)
+                                           (object (cons "kind" "expression")
+                                                   (cons "value"
+                                                         (stateful-typed-expression-ir
+                                                           expr type1 src witness-ids)))]))
+                                      (cons map-arg map-arg*))))))
+               (object (cons "kind" "expression")
+                       (cons "value" (stateful-expression-ir action src witness-ids))))]
           [(seq ,src ,expr* ... ,expr)
            (object (cons "kind" "sequence")
                    (cons "actions"
