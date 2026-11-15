@@ -164,7 +164,7 @@ def locked_rust_check(contract: Path, output: Path, env: dict[str, str],
     shutil.copyfile(ROOT / 'Cargo.lock', lock)
     manifest = contract / 'Cargo.toml'
     run(['cargo', '+1.99.0', 'metadata', '--offline', '--format-version', '1',
-         '--no-deps', '--manifest-path', str(manifest)],
+         '--manifest-path', str(manifest)],
         output / 'cargo-metadata.log', env)
     actual = tomllib.loads(lock.read_text())['package']
     registry = {(row['name'], row['version'], row['source'],
