@@ -22,15 +22,8 @@ import resolve_ledger_test_static as ledger_static
 
 
 ROOT = Path(__file__).resolve().parents[2]
-BASE = '32474f67111aea668a42d09006af16af3eb931d0'
-RUNNER_FILES = {
-    'tools/compact-rust-proof-smoke/Cargo.toml',
-    'tools/compact-rust-proof-smoke/build.rs',
-    'tools/compact-rust-proof-smoke/src/main.rs',
-    'tools/compact-rust-proof-smoke/src/direct_dispatch.rs',
-    'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs',
-    'tools/compact-rust-backend/check_upstream_ledger9_for_generic_bound_proof.py',
-}
+PROOF_BODY = ROOT / 'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs'
+PROOF_BODY_SHA256 = '715a31326e61662cb6b5492706764b085b593211542d0df7f73db3eb2c5bb9aa'
 GENERIC = 'for_generic_bound'
 WRONG = 'for_zero_iteration'
 
@@ -62,19 +55,23 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ('grouped-gate', 'zkir', 'output'):
         parser.add_argument('--' + name, type=Path, required=True)
+    parser.add_argument('--expected-source-sha', required=True)
+    parser.add_argument('--cargo-target', required=True, type=Path)
     args = parser.parse_args()
     source = source_state()
-    changed = set(subprocess.check_output(
-        ['git', 'diff', '--name-only', BASE, 'HEAD'], cwd=ROOT, text=True).splitlines())
-    require(changed == RUNNER_FILES, 'proof head must contain only the signed runner follow-up')
-    require(subprocess.run(['git', 'merge-base', '--is-ancestor', BASE, 'HEAD'],
-                           cwd=ROOT).returncode == 0, 'grouped base is not an ancestor')
+    require(re.fullmatch('[0-9a-f]{40}', args.expected_source_sha) is not None and
+            source['head'] == args.expected_source_sha,
+            'proof source differs from explicitly selected exact head')
+    require(PROOF_BODY.is_file() and not PROOF_BODY.is_symlink() and
+            sha256(PROOF_BODY) == PROOF_BODY_SHA256,
+            'dedicated signed generic-bound proof body changed')
     output = args.output.resolve()
     require(not output.exists() and not args.output.is_symlink(), 'new proof output required')
     gate_root = args.grouped_gate.resolve(strict=True)
     gate_path = gate_root / 'receipt.json'
     gate = json.loads(gate_path.read_text())
-    require(gate['status'] == 'passed' and gate['head'] == BASE and
+    require(gate['status'] == 'passed' and gate['head'] == source['head'] and
+            gate['tree'] == source['tree'] and
             gate.get('case_count') == 10 and gate.get('source_clean') is True,
             'grouped exact-head for-keyword gate is not accepted')
     generated = gate_root / 'generated'
@@ -95,13 +92,19 @@ def main() -> None:
              proof / f'zkir/{WRONG}.zkir')
     (proof / 'keys').mkdir()
     input_hashes = files(proof)
+    parameter_cache = Path(os.environ.get('MIDNIGHT_PP',
+                           str(Path.home() / '.cache/midnight/zk-params')))
+    require(parameter_cache.is_absolute() and parameter_cache.is_dir() and
+            not parameter_cache.is_symlink(), 'verified proof parameter cache absent')
+    cargo_target = args.cargo_target.resolve(strict=True)
+    require(cargo_target.is_dir() and not args.cargo_target.is_symlink(),
+            'shared Cargo target must be an ordinary existing directory')
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', RUSTUP_TOOLCHAIN='1.99.0',
                CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
                COMPACT_FOR_GENERIC_BOUND_GENERATED=str(both),
-               CARGO_TARGET_DIR=str(output / 'cargo-target'),
-               MIDNIGHT_PP=str(Path.home() / '.cache/midnight/zk-params'))
+               CARGO_TARGET_DIR=str(cargo_target),
+               MIDNIGHT_PP=str(parameter_cache))
     env.pop('MIDNIGHT_PROOF_SERVER', None)
-    require(Path(env['MIDNIGHT_PP']).is_dir(), 'local proof parameter cache absent')
     metadata = run(['cargo', '+1.99.0', 'metadata', '--locked', '--offline',
                     '--format-version', '1'], output / 'metadata.log', env)
     static = ledger_static.resolve(json.loads(metadata.stdout),
@@ -190,15 +193,14 @@ def main() -> None:
             'proof source, generated artifact or proving material drifted')
     report = {**source, 'format':'compact-ledger9-for-generic-bound-proof-gate/v1',
               'status':'passed', 'platform':os.uname().sysname + ' ' + os.uname().machine,
-              'grouped_head':BASE, 'grouped_gate_sha256':sha256(gate_path),
+              'grouped_head':source['head'], 'grouped_gate_sha256':sha256(gate_path),
               'generated_input_sha256':gate['generated_files_sha256'],
               'runner_sha256':runner_sha, 'runner_depfile_sha256':sha256(output / 'proof-runner.d'),
               'zkir_sha256':sha256(zkir), 'ledger_static':static,
               'material':verified, 'material_hashes':material_hashes,
               'keygen':keys, 'proof_summary':summary, 'artifact_hashes':files(proof),
               'proof_execution':True, 'funded_application':True,
-              'limitations':['constructor execution was not proved',
-                             'native Linux grouped qualification remains open']}
+              'limitations':['constructor execution was not proved']}
     (output / 'receipt.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status':'passed', 'head':source['head'], 'output':str(output)}))
 

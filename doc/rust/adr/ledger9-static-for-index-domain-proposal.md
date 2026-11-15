@@ -3,21 +3,21 @@ id: RUST-ADR-LEDGER9-FOR-PROPOSAL
 title: "Certify finite for-loop index domains before Rust AST projection"
 date: 2026-11-15
 decision_status: proposed
-delivery_status: not-integrated
+delivery_status: locally-integrated-linux-pending
 topics: [ledger9, compiler, rust-ast, vector, recording]
 issue: https://github.com/betsudo/compact/issues/750
 ---
 # Certify finite for-loop index domains before Rust AST projection
 
-This is an **unnumbered local ADR proposal**. The repository ADR register reserves 0367–0499 and the vault assigns later numbers; the register owner should assign an available number when integrating this decision. This document records a bounded implementation decision, not upstream language acceptance or a completed qualification.
+This is an **unnumbered local ADR proposal**. The repository ADR register reserves 0367–0499 and the vault assigns later numbers; the register owner should assign an available number when publishing this decision. The bounded implementation is locally integrated in the keyword group; hosted native Linux qualification and ADR numbering remain pending. This is not upstream language acceptance or a claim of general `for` parity.
 
-## Context and observed failure
+## Context and original failure
 
-The pinned upstream source at `672bd0f226f47a7d036c5c074ce71fbe1af1925e`, `test-contracts/keywords/for/generic_bound/for_generic_bound.compact`, specializes `sum_range<1, 3>([1, 2, 3, 4])`. Its original runtime assertion expects `5`: `v[1] = 2` followed by `v[2] = 3`, with `total` initially set to zero. Its three original files remain outside the locally qualified nine-case `for` slice at `10214228`; the Rust target currently refuses `v[i]` with `no unique constant-valued Vector index for this occurrence`. That refusal is preferable to generating a wrong projection.
+The pinned upstream source at `672bd0f226f47a7d036c5c074ce71fbe1af1925e`, `test-contracts/keywords/for/generic_bound/for_generic_bound.compact`, specializes `sum_range<1, 3>([1, 2, 3, 4])`. Its original runtime assertion expects `5`: `v[1] = 2` followed by `v[2] = 3`, with `total` initially set to zero. The earlier nine-case `for` slice at `10214228` safely refused `v[i]` with `no unique constant-valued Vector index for this occurrence`; that refusal motivated this bounded implementation.
 
 Compact defines `for` as a statement with a compile-time-known iteration count. For a range, the start is inclusive and end exclusive; generic natural-number parameters are valid bounds. Analysis resolves `S..E` into a literal tuple and lowers `for` into a unit-accumulator Fold (`compiler/analysis-passes.ss`). The circuit path unrolls and inlines that Fold before `resolve-indices/simplify` (`compiler/circuit-passes.ss`). The Rust path starts from the earlier analyzed Fold and emits one uniform `VectorFold` body (`compiler/passes.ss`, `compiler/rust-ir-passes.ss`). Its current source-occurrence bridge stores one constant index per original Vector-ref node. The circuit observes both 1 and 2 for that node, so the bridge correctly marks it ambiguous (`compiler/rust-vector-indices.ss`).
 
-The two successful original `for` cases and seven original diagnostic refusals in the isolated slice do not establish this remaining stateful case or general loop parity.
+The locally integrated grouped branch at `32474f67111aea668a42d09006af16af3eb931d0` includes all three intact `generic_bound` originals. Its source-built Darwin arm64 gate passed all ten `for` cases, including the original result 5, public state, transcript and gas on generated TypeScript and Rust, plus seven original diagnostic refusals. The signed proof follow-up at `87b830b63368114e78cfd285f18ed85f7553a579` separately qualified a fresh standalone proof, independent verification, funded default-strict application and unchanged replay refusal locally. These results do not establish native Linux or general loop parity.
 
 ## Decision
 
@@ -64,7 +64,7 @@ The compiler must evaluate a source iterable once, preserve each loop binding's 
 4. Run focused Scheme/compiler and Rust renderer/recorded tests, source-built exact-head generated TypeScript/Rust comparison and Clippy. Preserve existing VectorFold, Bytes and Ledger 8 behavior. Document any size cap and its refusal.
 5. For the proof-required stateful original, generate fresh keys and a standalone proof, verify independently, exercise wrong-verifier/corrupt/binding refusals, then prove a distinct positive-fee transaction and apply under default strictness. Exact replay must refuse without changing ledger state. Run the grouped native Linux gate separately; do not label Darwin arm64 evidence as Linux.
 
-Only after these checks may the remaining original case be counted as Rust AST compatible. The original Vitest harness and broader `for` corpus remain separate coverage claims.
+The bounded original case is locally compatible under the recorded Darwin evidence. Native Linux qualification is a separate required gate. The original Vitest harness and broader `for` corpus remain separate coverage claims.
 
 ## Tracking
 
@@ -73,4 +73,4 @@ Only after these checks may the remaining original case be counted as Rust AST c
 - Pinned upstream fixture: [source](https://github.com/LFDT-Minokawa/compact/blob/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/keywords/for/generic_bound/for_generic_bound.compact), [original assertion](https://github.com/LFDT-Minokawa/compact/blob/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/keywords/for/generic_bound/runtime.pass.test.ts).
 - Language authority: [Compact reference, `for` statements](https://docs.midnight.network/compact/reference/compact-reference#for-statements), [generic bounds release note](https://github.com/midnightntwrk/compact/releases/tag/compactc-v0.31.0).
 
-Implementation remains local under the main session's grouped CI and publication sequence. No merge or ADR-register publication is implied by this proposal.
+Implementation remains local under the main session's grouped CI and publication sequence. The ADR register owner still needs to assign a number; no hosted Linux result, merge or ADR-register publication is implied by this proposal.
