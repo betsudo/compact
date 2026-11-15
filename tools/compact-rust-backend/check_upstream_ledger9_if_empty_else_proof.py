@@ -109,7 +109,7 @@ def main() -> None:
     gate_root = args.semantic_gate.resolve(strict=True)
     gate_path = gate_root / 'receipt.json'
     gate = json.loads(gate_path.read_text())
-    require(gate['status'] == 'passed-with-recorded-rust-refusal' and
+    require(gate['status'] == 'passed' and
             gate['head'] == source['head'] and gate['tree'] == source['tree'] and
             gate['case_count'] == 2 and gate['source_clean'] is True,
             'if-keyword semantic gate differs from exact source')
@@ -283,7 +283,7 @@ def main() -> None:
               'proof_summary':summary, 'artifact_hashes':files(proof),
               'proof_execution':True, 'funded_application':True,
               'limitations':['constructor execution was not proved',
-                             'branches_write_ledger remains a Rust refusal']}
+                             'branches_write_ledger proof/funded qualification remains separate']}
     (output / 'receipt.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status':'passed', 'head':source['head'], 'output':str(output)}))
 

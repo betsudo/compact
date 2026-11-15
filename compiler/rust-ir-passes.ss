@@ -2906,6 +2906,61 @@
            (unit-return-type? type)]
           [else #f]))
 
+      ;; A selected Set insertion can be the value of a Unit return. Keep it
+      ;; in the ordered return body; lowering it as an ordinary nested value
+      ;; would either drop the mutation or evaluate it outside its branch.
+      (define (unit-set-insert-return-leaf? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
+           (nanopass-case (Lnodisclose ADT-Op) adt-op
+             [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
+              (and (eq? adt-name 'Set) (eq? ledger-op 'insert)
+                   (eq? op-class 'update)
+                   (= (length expr*) 1) (pair? path-elt*)
+                   (for-all pure-unit-set-insert-argument? expr*)
+                   (unit-return-type? type))])]
+          [else #f]))
+
+      ;; The branch's compiler-created argument bindings may contain casts
+      ;; and conditionals, but no call, witness, or ledger operation. Those
+      ;; effects need a separate ordered return qualification.
+      (define (pure-unit-set-insert-argument? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(quote ,src ,datum) #t]
+          [(var-ref ,src ,var-name) #t]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (pure-unit-set-insert-argument? expr)]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (pure-unit-set-insert-argument? expr1)
+                (pure-unit-set-insert-argument? expr2))]
+          [else #f]))
+
+      (define (unit-set-insert-return-branch? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [else (unit-set-insert-return-leaf? expr)]))
+
+      (define (terminal-unit-set-insert-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (terminal-unit-set-insert-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (unit-set-insert-return-branch? expr1)
+                (unit-set-insert-return-branch? expr2))]
+          [else #f]))
+
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
       ;; nonliteral conversions select this owner through the value predicate.
@@ -3083,9 +3138,15 @@
                    (cons "otherwise"
                          (stateful-return-plan-ir expr2 expected-type src environment witness-ids finish)))]
           [else
-           (object (cons "kind" "value")
-                   (cons "value"
-                         (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids))))]))
+           (if (and (unit-return-type? expected-type)
+                    (unit-set-insert-return-leaf? expr))
+               (object (cons "kind" "sequence")
+                       (cons "actions" (vector (state-action-ir expr owner-src environment witness-ids)))
+                       (cons "result" (object (cons "kind" "value")
+                                              (cons "value" (finish (kind "unit"))))))
+               (object (cons "kind" "value")
+                       (cons "value"
+                             (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))))]))
 
       ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
       ;; The paired schema20 consumer checks every annotation independently.
@@ -3944,9 +4005,11 @@
                       [local-vector-widening? (stateful-local-vector-widening? expr)]
                       [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
                                              (has-unit-mutation-initializer? expr)
-                                             (and (not (unit-return-type? type))
-                                                  (or (terminal-storage-mutation-conditional? expr)
-                                                      (lexical-storage-mutation-return? expr))))]
+                                             (or (and (unit-return-type? type)
+                                                      (terminal-unit-set-insert-return? expr))
+                                                 (and (not (unit-return-type? type))
+                                                      (or (terminal-storage-mutation-conditional? expr)
+                                                          (lexical-storage-mutation-return? expr)))))]
                       [all-names (if (member internal-name names)
                                      names
                                      (append names (list internal-name)))])
