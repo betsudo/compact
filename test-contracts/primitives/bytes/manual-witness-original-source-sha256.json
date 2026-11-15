@@ -1,0 +1,11 @@
+{
+  "files": {
+    "test-contracts/primitives/bytes/manual_update/semantics/bytes_manual_update_semantics.compact": "1bbc6eebb84c7a3951ccc2d0a28f2d3c1ba3aade7d5ca68621ce7d1dc1b77bb7",
+    "test-contracts/primitives/bytes/manual_update/semantics/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/manual_update/semantics/runtime.pass.test.ts": "1fcec01ab35ced7b6f59f6b504c8534f1a59eebc461f5302df2cf0f8dabf4df4",
+    "test-contracts/primitives/bytes/witness_return/semantics/bytes_witness_return_semantics.compact": "1330bd2298b16444cc76021372fc963302d86a896a59cbbf3d1f3bd06a883ef7",
+    "test-contracts/primitives/bytes/witness_return/semantics/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/witness_return/semantics/runtime.pass.test.ts": "0528eebaf2d8e4086832a3645023cde8def6e4b6339a14bae66796cdb8f2cd69"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}
