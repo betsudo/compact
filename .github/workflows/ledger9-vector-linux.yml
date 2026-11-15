@@ -208,10 +208,12 @@ jobs:
             fi
             env -u LD_LIBRARY_PATH nix develop .#compiler --command \
               python3 -X faulthandler -u \
-              "tools/compact-rust-backend/check_upstream_ledger9_$gate.py" "${arguments[@]}"
+              "tools/compact-rust-backend/check_upstream_ledger9_$gate.py" "${arguments[@]}" \
+              | tee "$RUNNER_TEMP/vector-semantic-evidence/$gate.stdout.log"
             python3 -B .github/scripts/verify_vector_linux_receipts.py \
               --case "$gate" \
               --receipt "$RUNNER_TEMP/vector-semantic-evidence/$gate/receipt.json" \
+              --gate-log "$RUNNER_TEMP/vector-semantic-evidence/$gate.stdout.log" \
               --source-sha "$SOURCE_SHA" --compiler "$COMPACTC" \
               --compiler-recipe "$RUNNER_TEMP/vector-compiler-recipe/receipt.json" \
               --runtime "$VECTOR_RUNTIME"

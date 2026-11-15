@@ -98,6 +98,16 @@ def load_receipt(path: Path) -> dict:
     return value
 
 
+def gate_status(path: Path, *, source_sha: str, output: Path) -> None:
+    require(path.is_file() and not path.is_symlink() and path.stat().st_size <= 8_000_000,
+            f"missing, symlinked or oversized gate log: {path}")
+    lines = path.read_text().splitlines()
+    require(bool(lines), f"empty gate log: {path}")
+    status = json.loads(lines[-1])
+    require(status == {"status": "passed", "head": source_sha, "output": str(output)},
+            f"gate reported wrong status, source or output: {path}")
+
+
 def digest_fields(value: object) -> None:
     if isinstance(value, dict):
         for key, item in value.items():
@@ -156,10 +166,11 @@ def validate_generated(case: str, receipt: dict, output: Path) -> None:
                             "local Field-to-Uint slice artifact differs")
 
 
-def validate(case: str, path: Path, *, source_sha: str, tree: str,
+def validate(case: str, path: Path, *, gate_log: Path, source_sha: str, tree: str,
              compiler: Path, recipe_path: Path, runtime: Path,
              runtime_snapshot: dict, runtime_recipe: dict) -> dict:
     require(case in CASES and path.parent.name == case, "unknown or misplaced Vector gate")
+    gate_status(gate_log, source_sha=source_sha, output=path.parent)
     receipt = load_receipt(path)
     require(receipt.get("status", "passed") == "passed", f"{case}: gate status failed")
     require(receipt.get("head") == source_sha and receipt.get("tree") == tree
@@ -210,6 +221,7 @@ def main() -> None:
     selection.add_argument("--case", choices=CASES)
     selection.add_argument("--all", type=Path)
     parser.add_argument("--receipt", type=Path)
+    parser.add_argument("--gate-log", type=Path)
     parser.add_argument("--source-sha", required=True)
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--compiler-recipe", type=Path, required=True)
@@ -233,14 +245,18 @@ def main() -> None:
                    runtime=runtime, runtime_snapshot=runtime_snapshot,
                    runtime_recipe=runtime_recipe)
     if args.case:
-        require(args.receipt is not None and args.summary is None, "single gate needs receipt")
-        print(json.dumps(validate(args.case, args.receipt, **options), sort_keys=True))
+        require(args.receipt is not None and args.gate_log is not None and
+                args.summary is None, "single gate needs receipt and status log")
+        print(json.dumps(validate(args.case, args.receipt, gate_log=args.gate_log,
+                                  **options), sort_keys=True))
     else:
-        require(args.receipt is None and args.summary is not None, "group needs summary path")
+        require(args.receipt is None and args.gate_log is None and
+                args.summary is not None, "group needs summary path")
         directory = args.all.resolve(strict=True)
         require(not args.summary.exists() and args.summary.parent == directory,
                 "summary must be new in the evidence directory")
-        rows = [validate(case, directory / case / "receipt.json", **options)
+        rows = [validate(case, directory / case / "receipt.json",
+                         gate_log=directory / f"{case}.stdout.log", **options)
                 for case in CASES]
         summary = {"status": "passed", "head": head, "tree": tree,
                    "upstream_commit": PINNED, "platform": "Linux x86_64",

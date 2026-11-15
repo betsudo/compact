@@ -60,6 +60,8 @@ class VectorLinuxWorkflowControls(unittest.TestCase):
         self.assertIn("nix build --no-link .#runtime.package", consumer)
         self.assertIn("record_compiler_recipe.py", consumer)
         self.assertIn("verify_vector_linux_receipts.py", consumer)
+        self.assertIn('tee "$RUNNER_TEMP/vector-semantic-evidence/$gate.stdout.log"', consumer)
+        self.assertIn('--gate-log "$RUNNER_TEMP/vector-semantic-evidence/$gate.stdout.log"', consumer)
         self.assertIn("--all \"$RUNNER_TEMP/vector-semantic-evidence\"", consumer)
         self.assertIn("if: ${{ always() }}", complete)
         for owner in ("PREFLIGHT_RESULT", "PRODUCER_RESULT", "VECTOR_RESULT"):
@@ -146,10 +148,14 @@ class VectorLinuxWorkflowControls(unittest.TestCase):
                              "paired": "refused"},
             }
             receipt_path = output / "receipt.json"
+            gate_log = base / "vector_length_refusal.stdout.log"
+            gate_log.write_text(json.dumps({"status": "passed", "head": source_sha,
+                                            "output": str(output)}) + "\n")
             def check():
                 receipt_path.write_text(json.dumps(receipt))
                 return verifier.validate(
-                    "vector_length_refusal", receipt_path, source_sha=source_sha,
+                    "vector_length_refusal", receipt_path, gate_log=gate_log,
+                    source_sha=source_sha,
                     tree=tree, compiler=compiler, recipe_path=recipe_path,
                     runtime=base, runtime_snapshot={}, runtime_recipe={})
             self.assertEqual(check()["status"], "passed")
@@ -159,6 +165,11 @@ class VectorLinuxWorkflowControls(unittest.TestCase):
             receipt["head"] = source_sha
             compiler.write_bytes(b"stale compiler")
             with self.assertRaisesRegex(ValueError, "compiler artifact differs"):
+                check()
+            compiler.write_bytes(b"compiler")
+            gate_log.write_text(json.dumps({"status": "failed", "head": source_sha,
+                                            "output": str(output)}) + "\n")
+            with self.assertRaisesRegex(ValueError, "wrong status"):
                 check()
 
 
