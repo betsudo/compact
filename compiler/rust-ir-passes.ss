@@ -2065,7 +2065,12 @@
                         (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-index*))
              (source-errorf src "Rust backend requires an array-index ledger path"))
            (with-source src
-             (nanopass-case (Lnodisclose Type) type
+             (let unwrap-alias ([type type])
+               (nanopass-case (Lnodisclose Type) type
+             [(talias ,src^ ,nominal? ,type-name ,type^)
+              ;; Ledger ADT operations survive a Compact `new type` alias.
+              ;; The generated storage carrier already erases that wrapper.
+              (unwrap-alias type^)]
              [(tadt ,src^ ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
               (cond
                 [(eq? adt-name 'Counter)
@@ -2113,7 +2118,7 @@
                                        (cons "depth" (car adt-arg*))
                                        (cons "ty" (type-ir (cadr adt-arg*) src)))))]
                 [else (source-errorf src "Rust backend does not yet support this ledger ADT")])]
-             [else (source-errorf src "Rust backend does not yet support this ledger field type")]))]
+             [else (source-errorf src "Rust backend does not yet support this ledger field type")])))]
           [else (source-errorf owner-src "Rust backend does not yet support this ledger field shape")]))
 
       (define (ledger-array-ir pl-array owner-src)
