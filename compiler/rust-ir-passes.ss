@@ -1880,7 +1880,13 @@
 
       (define (rust-function-name function-name)
         (or (eq-hashtable-ref function-rust-names function-name #f)
-            (symbol->string (id-sym function-name))))
+            (let ([name (id-sym function-name)])
+              ;; Compact permits an import alias named _, but Rust reserves
+              ;; that spelling for a pattern. Keep its lexical identity in
+              ;; the source ID and give only the private Rust binding a name.
+              (if (eq? name '_)
+                  (format "__compact_function_underscore_~a" (id-uniq function-name))
+                  (symbol->string name)))))
 
       (define (index-function-names pelt*)
         (let ([counts (make-eq-hashtable)])
@@ -1905,10 +1911,25 @@
             pelt*)))
 
       (define (exported-names function-name export-alist)
+        (define (rust-export-name source-name)
+          (if (eq? source-name '_)
+              ;; The public Rust method cannot be spelled _. Avoid aliases
+              ;; already exported by this source, including a user's chosen
+              ;; spelling of the fallback itself.
+              (let loop ([suffix 0])
+                (let ([candidate (if (= suffix 0)
+                                     "__compact_export_underscore"
+                                     (format "__compact_export_underscore_~a" suffix))])
+                  (if (ormap (lambda (entry)
+                               (string=? candidate (symbol->string (car entry))))
+                             export-alist)
+                      (loop (+ suffix 1))
+                      candidate)))
+              (symbol->string source-name)))
         (fold-right
           (lambda (entry names)
             (if (eq? (cdr entry) function-name)
-                (cons (symbol->string (car entry)) names)
+                (cons (rust-export-name (car entry)) names)
                 names))
           '()
           export-alist))
