@@ -16,6 +16,14 @@
 use super::*;
 
 #[test]
+fn empty_lexical_value_keeps_plain_expression() {
+    let body: syn::Expr = syn::parse_quote!(runtime::Field::from(0u128));
+    let expected = body.to_token_stream().to_string();
+    let fragment = fragment::lexical(vec![], NativeFragment::Value(body));
+    assert_eq!(fragment.into_expression().to_token_stream().to_string(), expected);
+}
+
+#[test]
 fn prepared_unit_views_are_distinct_without_any_source_or_type_checker() {
     let assertion = control::assertion(syn::parse_quote!(flag), "guard", std::iter::empty());
     let fragment = fragment::lexical(

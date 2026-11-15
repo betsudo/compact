@@ -84,6 +84,7 @@ pub(crate) fn sequence(steps: Vec<syn::Stmt>, tail: NativeFragment) -> NativeFra
 
 pub(crate) fn lexical(bindings: Vec<syn::Stmt>, body: NativeFragment) -> NativeFragment {
     match body {
+        NativeFragment::Value(body) if bindings.is_empty() => NativeFragment::Value(body),
         NativeFragment::Value(body)
         | NativeFragment::Place {
             expression: body, ..
