@@ -232,7 +232,8 @@ def main():
     dependencies = []
     for case, target in targets.items():
         package = tomllib.loads((target / 'Cargo.toml').read_text())['package']['name']
-        dependencies.append(f'{case} = {{ package = {json.dumps(package)}, '
+        crate_name = 'if_branches_write_ledger' if case == 'branches_write_ledger' else case
+        dependencies.append(f'{crate_name} = {{ package = {json.dumps(package)}, '
                             f'path = {json.dumps(str(target))} }}')
     manifest.write_text('[workspace]\n[package]\nname = "ledger9-if-original-consumer"\n'
                         'version = "0.1.0"\nedition = "2024"\n[dependencies]\n'
