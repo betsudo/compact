@@ -22,6 +22,7 @@ import tomllib
 
 import check_stateful_local_vector_widening as main_gate
 import local_parity_gate as common
+import proof_runner_input_binding as runner_inputs
 import resolve_ledger_test_static as ledger_static
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
 
@@ -107,12 +108,18 @@ def run(args):
         env["COMPACT_STATEFUL_LOCAL_VECTOR_GENERATED"] = str(generated)
         report["generated_sdk"] = str(generated)
         report["generated_before"] = before = main_gate.inventory(generated)
-        source_paths = [ROOT / "Cargo.toml", ROOT / "Cargo.lock", Path(__file__),
-                        Path(main_gate.__file__), Path(common.__file__), Path(ledger_static.__file__),
-                        ROOT / "tools/compact-rust-backend/did_proof_gate.py"]
-        for directory in ["tools/compact-rust-proof-smoke", "tests-rust-backend", "runtime-rs", "runtime-rs-macros", "tools/compact-rust-backend"]:
-            source_paths += [p for p in (ROOT / directory).rglob("*") if p.suffix in {".rs", ".toml", ".json", ".py", ".mjs", ".compact"}]
+        tracked_sources = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
+        source_paths = [ROOT / os.fsdecode(path) for path in tracked_sources if path]
+        require(all(path.is_file() for path in source_paths), "tracked source file is absent")
         report["source_hashes"] = hashes(source_paths)
+        for relative, sha in admitted["inputs"].items():
+            path = str(ROOT / relative)
+            require(digest(path) == sha and
+                    (path not in report["source_hashes"] or report["source_hashes"][path] == sha),
+                    "admitted source changed before runner build: " + relative)
+            report["source_hashes"][path] = sha
+        report["generated_input_hashes"] = hashes(
+            path for path in generated.rglob("*") if path.is_file())
         (output / "bin").mkdir()
         zkir = args.zkir.resolve(strict=True)
         report["zkir"] = common.stable_copy(zkir, output / "bin/zkir")
@@ -122,6 +129,10 @@ def run(args):
             argv = list(map(str, command))
             if argv[0] in admitted["rust_tools"]:
                 argv[0] = admitted["rust_tools"][argv[0]]["path"]
+            for field in ("source_hashes", "generated_input_hashes",
+                          "dependency_source_hashes", "generated_build_inputs_before_compile"):
+                if field in report:
+                    unchanged(report[field])
             common.run(argv, label, output, report, env=env, stdout_path=stdout)
 
         # No SDK path is needed by the default build. The opt-in build follows it.
@@ -132,6 +143,8 @@ def run(args):
         common.run([admitted["rust_tools"]["cargo"]["path"], "clippy", "--profile", "proof-checks", "--locked", "--offline",
                     "-p", "compact-rust-proof-smoke", "--all-targets", "--all-features", "--", "-D", "warnings"],
                    "all-features-runner-clippy-without-sdk", output, report, env=plain)
+        runner_inputs.prepare_generated_inputs(ROOT, output, report, execute,
+                                               "stateful-local-vector-widening", digest)
         execute("build-runner", ["cargo", "build", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                 "compact-rust-proof-smoke", "--features", "stateful-local-vector-widening", "--message-format=json"], output / "build.jsonl")
         artifacts = [json.loads(line) for line in (output / "build.jsonl").read_text().splitlines() if line.startswith("{")]
@@ -154,15 +167,18 @@ def run(args):
                      *sorted((main_gate.FIXTURES / "ledger9-goldens/proofs/checked-programs").glob("*.json"))]:
             require(str(path.resolve(strict=True)) in tracked,
                     "runner omitted an actual generated SDK/Program dependency")
-        worktree_inputs = {path: report["source_hashes"].get(path) for path in tracked
-                           if Path(path).is_file() and Path(path).is_relative_to(ROOT)}
-        require(all(sha is not None and digest(path) == sha for path, sha in worktree_inputs.items()),
-                "runner worktree dependency was not pinned before build")
+        input_maps = {field: report[field] for field in ("source_hashes", "generated_input_hashes",
+                      "dependency_source_hashes", "generated_build_inputs_before_compile")}
+        physical_inputs, origins = runner_inputs.qualify_dependency_inputs(tracked, input_maps, digest)
+        worktree_inputs = {path: physical_inputs[path] for path in physical_inputs
+                           if Path(path).is_relative_to(ROOT)}
         retained_depfile = output / "runner.d"
         shutil.copyfile(depfile, retained_depfile)
         report["runner_depfile"] = {"path": str(retained_depfile), "build_path": str(depfile),
                 "sha256": digest(retained_depfile), "all_generated_includes": True,
-                "worktree_inputs_pinned_before_build": worktree_inputs}
+                "worktree_inputs_pinned_before_build": worktree_inputs,
+                "physical_inputs_before_build": physical_inputs,
+                "physical_input_origins": origins}
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "stateful-local-vector-widening", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for label, message in [("changed-ir", "stateful-local-vector complete IR bytes differ"),
