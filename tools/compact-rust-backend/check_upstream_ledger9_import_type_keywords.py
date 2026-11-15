@@ -39,8 +39,7 @@ FAMILY = Path('test-contracts/keywords')
 MANIFEST = ROOT / FAMILY / 'import-type-original-source-sha256.json'
 EXPECTED_ERROR = re.compile(r'expectedError:\s*/((?:\\.|[^/])*)/')
 BLOCKED = {
-    'import/module_from_file', 'import/underscore_names',
-    'type/new_type_of_adt',
+    'import/module_from_file', 'type/new_type_of_adt',
 }
 
 # The original Vitest callbacks and assertions are copied byte for byte. These
@@ -73,6 +72,15 @@ RUST_REPRESENTATIVES = {
         'expect(result).toEqual(1n);',
         'assert_eq!(generated::pure_circuits::import_alias_shadows_stdlib_name()'
         '.unwrap(), generated::runtime::Field::from(1u128));',
+    ),
+    'import/underscore_names': (
+        'expect(result).toEqual(2n);',
+        'assert_eq!(generated::pure_circuits::__compact_export_underscore()'
+        '.unwrap(), generated::runtime::Field::from(1u128));'
+        'assert_eq!(generated::pure_circuits::__().unwrap(), '
+        'generated::runtime::Field::from(1u128));'
+        'assert_eq!(generated::pure_circuits::import_underscore_names()'
+        '.unwrap(), generated::runtime::Field::from(2u128));',
     ),
     'type/new_type_keeps_operations': (
         'expect(result).toEqual([true, true, 5n]);',
@@ -111,7 +119,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
     require(manifest.get('upstream_commit') == PINNED and
             isinstance(ported, dict) and isinstance(blocked, dict) and
             isinstance(cases, dict) and set(cases) == BLOCKED and
-            len(ported) == 89 and len(blocked) == 10 and
+            len(ported) == 92 and len(blocked) == 7 and
             sorted(set(ported) | set(blocked)) == expected and
             set(ported).isdisjoint(blocked),
             'pinned import/type coverage roster differs')
@@ -127,7 +135,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
                 f'pinned original changed or blocked case unexpectedly staged: {name}')
     selected_cases = {str(Path(name).relative_to(FAMILY).parent)
                       for name in ported}
-    require(len(selected_cases) == 36 and selected_cases.isdisjoint(BLOCKED),
+    require(len(selected_cases) == 37 and selected_cases.isdisjoint(BLOCKED),
             'selected case roster differs')
     for case in selected_cases:
         directory = ROOT / FAMILY / case
@@ -292,6 +300,11 @@ def main() -> None:
                 entry = destination / 'contract/index.js'
                 require(info.is_file() and entry.is_file(),
                         f'generated TypeScript product missing: {case} {mode}')
+                if case == 'import/underscore_names':
+                    names = [item['name'] for item in
+                             json.loads(info.read_text())['circuits']]
+                    require(names == ['_', '__', 'import_underscore_names'],
+                            'underscore alias contract-info lost Compact names')
                 row.update(typescript_sha256=sha256(entry),
                            contract_info_sha256=sha256(info),
                            zkir={str(p.relative_to(destination)): sha256(p)
@@ -312,6 +325,12 @@ def main() -> None:
                     ir = destination / 'contract/compact-rust-ir.json'
                     require(rust.is_file() and ir.is_file(),
                             f'paired Rust product missing: {case}')
+                    if case == 'import/underscore_names':
+                        source_text = rust.read_text()
+                        require(all('pub fn ' + name + '(' in source_text
+                                    for name in ('__compact_export_underscore', '__',
+                                                 'import_underscore_names')),
+                                'underscore alias generated Rust API changed')
                     row.update(rust_sha256=sha256(rust), rust_ir_sha256=sha256(ir))
                     row.update(locked_rust_check(destination / 'contract',
                                                  output / case / mode,
@@ -382,7 +401,7 @@ def main() -> None:
                'positive_count': sum('runtime.pass.test.ts' in x for x in originals),
                'refusal_count': sum('compile.fail.test.ts' in x for x in originals),
                'results': results,
-               'limitations': ['Three pinned positive cases remain blocked on Rust lowering.',
+               'limitations': ['Two pinned positive cases remain blocked on Rust lowering.',
                                'Original Vitest harness is adapted to runtime 0.18.0; '
                                'native Linux, wider Rust behavioral execution and proofs remain.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2,

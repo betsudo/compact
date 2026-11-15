@@ -1,7 +1,6 @@
 {
   "blocked_cases": {
     "import/module_from_file": "Generic Bytes<N> index N-1 accepted by mainstream but rejected by Rust constant-index lowering.",
-    "import/underscore_names": "Mainstream accepts exported import alias _, but Rust identifier validation rejects it.",
     "type/new_type_of_adt": "Mainstream accepts a new type over Counter as a ledger field; Rust field lowering rejects this ADT."
   },
   "blocked_files": {
@@ -9,9 +8,6 @@
     "test-contracts/keywords/import/module_from_file/import_module_from_file.compact": "bd385621688fff825f6e764b7f57d1008ef7ff390a2c1c432c395b01e9fe7874",
     "test-contracts/keywords/import/module_from_file/lib/Lib.compact": "a6581bdd064425c4b2cc1788d70307417343184ebc728497754f4062adcc09d9",
     "test-contracts/keywords/import/module_from_file/runtime.pass.test.ts": "bc31cc91ba57c6e2400a53cd981fc9be1d0d0c8c923cbbcf9081e149fb1f9440",
-    "test-contracts/keywords/import/underscore_names/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
-    "test-contracts/keywords/import/underscore_names/import_underscore_names.compact": "383d6f73edb0c90ba741353e955e87cfaebfddc17347d1df044a936f82aa4953",
-    "test-contracts/keywords/import/underscore_names/runtime.pass.test.ts": "e73696fbfb902521b06fd6708919492d1b5057d6716dd31a107f04bcf292a7c2",
     "test-contracts/keywords/type/new_type_of_adt/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
     "test-contracts/keywords/type/new_type_of_adt/runtime.pass.test.ts": "be5d9852b94f2862150ff0c9dbd84f93116843b57fa947286717fcf6f2f1ca8f",
     "test-contracts/keywords/type/new_type_of_adt/type_new_type_of_adt.compact": "3858d1447f92ce80a3d11f078693f369d684bfa6937c764de9ece6a1a140cb66"
@@ -64,6 +60,9 @@
     "test-contracts/keywords/import/under_several_names/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
     "test-contracts/keywords/import/under_several_names/import_under_several_names.compact": "606ac2b624bf9b65b5b284f568cedf816ce1d0ce2b418c0748fd553ec3784f45",
     "test-contracts/keywords/import/under_several_names/runtime.pass.test.ts": "bd231a7e3a56705671e5473b2bdd21ab6ae604fedd9b919713331eab0f0a84b0",
+    "test-contracts/keywords/import/underscore_names/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/import/underscore_names/import_underscore_names.compact": "383d6f73edb0c90ba741353e955e87cfaebfddc17347d1df044a936f82aa4953",
+    "test-contracts/keywords/import/underscore_names/runtime.pass.test.ts": "e73696fbfb902521b06fd6708919492d1b5057d6716dd31a107f04bcf292a7c2",
     "test-contracts/keywords/import/unknown_name/compile.fail.test.ts": "e30f3c15dbf7eb48cd47bfa134d15f580df1c826bd32bf81062e71952a742368",
     "test-contracts/keywords/import/unknown_name/import_unknown_name.compact": "4faa8d94dbde83cbcfad6c0595b62cfdfc6569c6c37998643d186ffac6098e0a",
     "test-contracts/keywords/type/alias_interchangeable/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
