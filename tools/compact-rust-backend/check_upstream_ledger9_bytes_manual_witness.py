@@ -179,8 +179,13 @@ def main() -> None:
             command += ['--feature-zkir-v3', '--skip-zk', '--compact-path',
                         str(ROOT / 'compiler'), str(fixture(case)), str(destination)]
             run(command, output / f'{case}-{mode}-compile.log', env)
-            check_manifest(destination, require_zkir=False)
-            require(not (destination / 'zkir').exists(), 'skip-zk emitted proof material')
+            check_manifest(destination, require_zkir=case == 'manual_update')
+            if case == 'witness_return':
+                require(not (destination / 'zkir').exists(),
+                        'proof=false witness return emitted ZKIR')
+            else:
+                require((destination / 'zkir/bytes_manual_update_semantics.zkir').is_file(),
+                        'proof=true manual update lost raw ZKIR')
             info = destination / 'compiler/contract-info.json'
             circuit_info(json.loads(info.read_text())['circuits'], case)
             contract = destination / 'contract'
