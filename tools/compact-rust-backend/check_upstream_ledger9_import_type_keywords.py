@@ -155,7 +155,7 @@ def original_inventory() -> tuple[dict[str, str], dict[str, str]]:
                                  and sha256(path) == digest if name in ported
                                  else not path.exists()),
                 f'pinned original changed or blocked case unexpectedly staged: {name}')
-    selected_cases = {str(Path(name).relative_to(FAMILY).parent)
+    selected_cases = {'/'.join(Path(name).relative_to(FAMILY).parts[:2])
                       for name in ported}
     require(len(selected_cases) == 39 and selected_cases.isdisjoint(BLOCKED),
             'selected case roster differs')
@@ -276,7 +276,7 @@ def main() -> None:
     originals, blocked = original_inventory()
     manifest_hash = sha256(MANIFEST)
     checker_hash = sha256(Path(__file__))
-    cases = sorted({str(Path(name).relative_to(FAMILY).parent)
+    cases = sorted({'/'.join(Path(name).relative_to(FAMILY).parts[:2])
                     for name in originals})
     expected_registry = {(row['name'], row['version'], row['source'],
                           row.get('checksum'))
