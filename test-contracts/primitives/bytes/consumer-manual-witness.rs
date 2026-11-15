@@ -125,12 +125,20 @@ fn wrong_witness_bytes_are_refused_in_both_modes() {
             witness_context(),
             &witness,
         );
-        assert!(ordinary.unwrap_err().to_string().contains(message));
+        let ordinary_error = match ordinary {
+            Ok(_) => panic!("wrong witness byte was accepted by ordinary execution"),
+            Err(error) => error,
+        };
+        assert!(ordinary_error.to_string().contains(message));
         let recorded = witness_return::ledger_contract::recorded::bytes_witness_return_semantics(
             witness_context(),
             &witness,
         );
-        assert!(recorded.unwrap_err().to_string().contains(message));
+        let recorded_error = match recorded {
+            Ok(_) => panic!("wrong witness byte was accepted by recorded execution"),
+            Err(error) => error,
+        };
+        assert!(recorded_error.to_string().contains(message));
         assert_eq!(witness.calls.get(), 2);
     }
 }
