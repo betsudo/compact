@@ -38,6 +38,11 @@ def variants(source):
             True, 'no unique constant-valued Vector index'),
         'out_of_range': (replace('sum_range<1, 3>', 'sum_range<1, 5>'),
                          False, 'invalid vector index 4'),
+        'cap_eight': (source.replace('Vector<4, Uint<8>>', 'Vector<8, Uint<8>>')
+                       .replace('sum_range<1, 3>', 'sum_range<0, 8>')
+                       .replace('[1, 2, 3, 4]',
+                                '[1, 2, 3, 4, 5, 6, 7, 8]'),
+                      True, None),
         'cap_nine': (source.replace('Vector<4, Uint<8>>', 'Vector<10, Uint<8>>')
                      .replace('sum_range<1, 3>', 'sum_range<0, 9>')
                      .replace('[1, 2, 3, 4]',
@@ -86,10 +91,12 @@ def main():
             completed = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
             log = folder / f'{mode}.log'
             log.write_text(completed.stdout + completed.stderr)
-            expected_success = mode == 'typescript' and ts_passes
+            expected_success = (ts_passes and
+                                (mode == 'typescript' or refusal is None))
             require((completed.returncode == 0) == expected_success,
                     f'unexpected {name}/{mode} exit {completed.returncode}')
             if not expected_success:
+                require(refusal is not None, f'missing refusal contract for {name}')
                 require(refusal in log.read_text(), f'missing {name}/{mode} refusal')
                 require(not destination.exists(), f'{name}/{mode} published refused output')
             results[name][mode] = {'exit': completed.returncode,
