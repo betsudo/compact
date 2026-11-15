@@ -147,11 +147,24 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
                                          rust_ir_sha256='contract/compact-rust-ir.json')
                     row.update({key: verifier.sha256(root / relative)
                                 for key, relative in artifacts.items()})
+                    if name == 'manual_update':
+                        row['zkir_sha256'] = verifier.sha256(
+                            root / 'zkir/bytes_manual_update_semantics.zkir')
                     modes[mode] = row
                 generated[name] = modes
             receipt = {'generated': generated,
                        'generated_files_sha256': verifier.hash_tree(output / 'generated')}
             verifier.verify_generated('manual_witness', receipt, output)
+            manual = receipt['generated']['manual_update']['both']
+            zkir_hash = manual.pop('zkir_sha256')
+            with self.assertRaisesRegex(ValueError, 'artifact fields differ'):
+                verifier.verify_generated('manual_witness', receipt, output)
+            manual['zkir_sha256'] = zkir_hash
+            witness = receipt['generated']['witness_return']['both']
+            witness['zkir_sha256'] = zkir_hash
+            with self.assertRaisesRegex(ValueError, 'artifact fields differ'):
+                verifier.verify_generated('manual_witness', receipt, output)
+            witness.pop('zkir_sha256')
             log = output / 'manual_update-both-runtime.log'
             log.write_text('forged success\n')
             receipt['generated']['manual_update']['both']['runtime_log_sha256'] = verifier.sha256(log)
@@ -162,6 +175,63 @@ class BytesNextLinuxWorkflowControls(unittest.TestCase):
             (output / 'generated/manual_update/both/contract/unlisted.rs').write_text('x')
             with self.assertRaisesRegex(ValueError, 'complete generated artifact inventory differs'):
                 verifier.verify_generated('manual_witness', receipt, output)
+
+    def test_loop_zkir_omission_and_proof_free_control_refused(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            output = Path(temporary)
+            generated = {}
+            for name in verifier.GENERATED['loops']:
+                modes = {}
+                for mode in ('typescript', 'both'):
+                    root = output / 'generated' / name / mode
+                    (root / 'contract').mkdir(parents=True)
+                    (root / 'compiler').mkdir()
+                    (root / 'contract/index.js').write_text('export const value = 1;\n')
+                    (root / 'compiler/contract-manifest.json').write_text('{}\n')
+                    (root / 'compiler/contract-info.json').write_text('{}\n')
+                    if name != 'zero_operand_order':
+                        (root / 'zkir').mkdir()
+                        (root / f'zkir/bytes_loop_{name}.zkir').write_text('zkir\n')
+                    if mode == 'both':
+                        (root / 'contract/lib.rs').write_text('pub fn value() {}\n')
+                        (root / 'contract/compact-rust-ir.json').write_text('{}\n')
+                    log = output / f'{name}-{mode}-runtime.log'
+                    log.write_text(verifier.runtime_text('loops', name))
+                    artifacts = {
+                        'typescript_sha256': 'contract/index.js',
+                        'manifest_sha256': 'compiler/contract-manifest.json',
+                        'contract_info_sha256': 'compiler/contract-info.json',
+                    }
+                    if name != 'zero_operand_order':
+                        artifacts['zkir_sha256'] = f'zkir/bytes_loop_{name}.zkir'
+                    if mode == 'both':
+                        artifacts.update(rust_sha256='contract/lib.rs',
+                                         rust_ir_sha256='contract/compact-rust-ir.json')
+                    modes[mode] = {
+                        **{key: verifier.sha256(root / relative)
+                           for key, relative in artifacts.items()},
+                        'runtime_log_sha256': verifier.sha256(log),
+                    }
+                generated[name] = modes
+            refusal = output / 'dynamic-refusal.log'
+            refusal.write_text(
+                'Bytes index did not reduce to a constant nonnegative value at compile time\n')
+            receipt = {
+                'generated': generated,
+                'generated_files_sha256': verifier.hash_tree(output / 'generated'),
+                'dynamic_index_refusal_log_sha256': verifier.sha256(refusal),
+            }
+            verifier.verify_generated('loops', receipt, output)
+            missing = receipt['generated']['iteration']['both'].pop('zkir_sha256')
+            with self.assertRaisesRegex(ValueError, 'artifact fields differ'):
+                verifier.verify_generated('loops', receipt, output)
+            receipt['generated']['iteration']['both']['zkir_sha256'] = missing
+            control = output / 'generated/zero_operand_order/both/zkir'
+            control.mkdir()
+            (control / 'unexpected.zkir').write_text('forged\n')
+            receipt['generated_files_sha256'] = verifier.hash_tree(output / 'generated')
+            with self.assertRaisesRegex(ValueError, 'proof-free case emitted ZKIR'):
+                verifier.verify_generated('loops', receipt, output)
 
 
 if __name__ == '__main__':

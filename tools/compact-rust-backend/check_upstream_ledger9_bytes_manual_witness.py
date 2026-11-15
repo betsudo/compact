@@ -213,6 +213,9 @@ def main() -> None:
                    'manifest_sha256': sha256(destination / 'compiler/contract-manifest.json'),
                    'contract_info_sha256': sha256(info),
                    'runtime_log_sha256': sha256(runtime_log)}
+            if case == 'manual_update':
+                row['zkir_sha256'] = sha256(
+                    destination / 'zkir/bytes_manual_update_semantics.zkir')
             if mode == 'both':
                 row['rust_sha256'] = sha256(contract / 'lib.rs')
                 row['rust_ir_sha256'] = sha256(contract / 'compact-rust-ir.json')
@@ -221,6 +224,10 @@ def main() -> None:
                     for key in ('typescript_sha256', 'contract_info_sha256',
                                 'runtime_log_sha256')),
                 f'paired compilation changed TypeScript behavior: {case}')
+        if case == 'manual_update':
+            require(generated[case]['typescript']['zkir_sha256'] ==
+                    generated[case]['both']['zkir_sha256'],
+                    'paired compilation changed manual-update ZKIR')
     generated_before = generated_files(output / 'generated')
     consumer = output / 'rust-consumer'
     (consumer / 'tests').mkdir(parents=True)
@@ -275,6 +282,10 @@ def main() -> None:
                     sha256(destination / 'compiler/contract-manifest.json') == row['manifest_sha256'] and
                     sha256(output / f'{case}-{mode}-runtime.log') == row['runtime_log_sha256'],
                     f'generated TypeScript artifact changed: {case}/{mode}')
+            if case == 'manual_update':
+                require(sha256(destination / 'zkir/bytes_manual_update_semantics.zkir') ==
+                        row['zkir_sha256'],
+                        f'generated manual-update ZKIR changed: {mode}')
             if mode == 'both':
                 require(sha256(contract / 'lib.rs') == row['rust_sha256'] and
                         sha256(contract / 'compact-rust-ir.json') == row['rust_ir_sha256'],

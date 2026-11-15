@@ -200,9 +200,16 @@ def verify_generated(case: str, receipt: dict, output: Path) -> None:
             if mode == 'both':
                 artifacts.update(rust_sha256='contract/lib.rs',
                                  rust_ir_sha256='contract/compact-rust-ir.json')
-            if 'zkir_sha256' in row:
-                stem = ('bytes_fold_' if case == 'fold' else 'bytes_loop_') + name
+            proof_required = ((case == 'manual_witness' and name == 'manual_update') or
+                              case == 'fold' or
+                              (case == 'loops' and name != 'zero_operand_order'))
+            if proof_required:
+                stem = (f'bytes_manual_update_semantics' if case == 'manual_witness' else
+                        ('bytes_fold_' if case == 'fold' else 'bytes_loop_') + name)
                 artifacts['zkir_sha256'] = f'zkir/{stem}.zkir'
+            else:
+                require(not (location / 'zkir').exists(),
+                        f'{case}/{name}/{mode}: proof-free case emitted ZKIR')
             expected_keys = set(artifacts) | {'runtime_log_sha256'}
             require(set(row) == expected_keys, f'{case}/{name}/{mode}: artifact fields differ')
             for key, relative in artifacts.items():
@@ -215,13 +222,10 @@ def verify_generated(case: str, receipt: dict, output: Path) -> None:
         require(all(modes['typescript'][key] == modes['both'][key]
                     for key in ('typescript_sha256', 'contract_info_sha256',
                                 'runtime_log_sha256')), f'{case}/{name}: paired TS drift')
-        if 'zkir_sha256' in modes['typescript']:
+        if (case == 'manual_witness' and name == 'manual_update') or case == 'fold' or (
+                case == 'loops' and name != 'zero_operand_order'):
             require(modes['typescript']['zkir_sha256'] == modes['both']['zkir_sha256'],
                     f'{case}/{name}: paired ZKIR drift')
-    if case == 'manual_witness':
-        require(file_under(generated_root, 'manual_update/both/zkir/bytes_manual_update_semantics.zkir').is_file() and
-                not (generated_root / 'witness_return/both/zkir').exists(),
-                'manual/witness proof capability differs')
     if case == 'fold':
         controls = receipt.get('pure_controls')
         require(isinstance(controls, dict) and set(controls) == {'pure', 'named'},
@@ -232,6 +236,8 @@ def verify_generated(case: str, receipt: dict, output: Path) -> None:
         for name, hashes in controls.items():
             require(isinstance(hashes, dict) and set(hashes) == set(fields) | {'runtime_log'},
                     f'{name}: pure control inventory differs')
+            require(not (generated_root / f'{name}-control/zkir').exists(),
+                    f'{name}: proof-free pure control emitted ZKIR')
             for key, relative in fields.items():
                 require(sha256(file_under(generated_root / f'{name}-control', relative)) ==
                         hashes[key], f'{name}: pure control {relative} differs')
