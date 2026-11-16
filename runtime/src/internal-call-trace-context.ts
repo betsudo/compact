@@ -81,6 +81,20 @@ const assertPinned = (
   }
 };
 
+/** Refuse a stale frame before any internal VM or coin operation is attempted. */
+export const assertInternalCallTraceLiveCells = (context: InternalCallTraceContext): void => {
+  const frame = context.callContext;
+  const address = frame.contractAddress;
+  if (
+    context.queryContexts[address] !== frame.currentQueryContext ||
+    context.gasCosts[address] !== frame.currentGasCost ||
+    context.zswapLocalStates[address] !== frame.currentZswapLocalState
+  ) {
+    throw new CompactError('Trace live call cells differ from their per-address cells');
+  }
+  assertPinned(frame.currentQueryContext, address, context.parentBlockHash, context.time);
+};
+
 /** Root seed from the already pinned state model; no provider access here. */
 export const createInternalCallTraceContext = <PS>({
   circuitId,
@@ -188,16 +202,9 @@ export const queryInternalCallTraceContext = (
   costModel: ocrt.CostModel,
   gasLimit?: ocrt.RunningCost,
 ): { context: InternalCallTraceContext; partialProofData: PartialProofData; read: ocrt.AlignedValue | undefined } => {
+  assertInternalCallTraceLiveCells(context);
   const frame = context.callContext;
   const address = frame.contractAddress;
-  if (
-    context.queryContexts[address] !== frame.currentQueryContext ||
-    context.gasCosts[address] !== frame.currentGasCost ||
-    context.zswapLocalStates[address] !== frame.currentZswapLocalState
-  ) {
-    throw new CompactError('Trace live call cells differ from their per-address cells');
-  }
-  assertPinned(frame.currentQueryContext, address, context.parentBlockHash, context.time);
   try {
     const result = frame.currentQueryContext.query(program, costModel, gasLimit);
     const nextGasCost: ocrt.RunningCost = {

@@ -15,7 +15,8 @@
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import { CircuitContext } from './circuit-context.js';
-import { Bytes32Descriptor, ShieldedCoinInfoDescriptor, ShieldedCoinRecipientDescriptor, Recipient } from './compact-types.js';
+import { Bytes32Descriptor, Recipient } from './compact-types.js';
+import { createCoinCommitment } from './internal-coin-commitment.js';
 import { toHex } from './utils.js';
 
 /**
@@ -213,27 +214,6 @@ export function createZswapInput(
     inputs: circuitContext.currentZswapLocalState.inputs.concat(qualifiedShieldedCoinInfo),
   };
   return [];
-}
-
-/**
- * Creates a coin commitment from the given coin information and recipient represented as an Impact value.
- *
- * @param coinInfo The coin.
- * @param recipient The coin recipient.
- *
- * @internal
- */
-function createCoinCommitment(coinInfo: EncodedShieldedCoinInfo, recipient: EncodedRecipient): ocrt.AlignedValue {
-  return ocrt.runtimeCoinCommitment(
-    {
-      value: ShieldedCoinInfoDescriptor.toValue(coinInfo),
-      alignment: ShieldedCoinInfoDescriptor.alignment(),
-    },
-    {
-      value: ShieldedCoinRecipientDescriptor.toValue(recipient),
-      alignment: ShieldedCoinRecipientDescriptor.alignment(),
-    },
-  );
 }
 
 /**

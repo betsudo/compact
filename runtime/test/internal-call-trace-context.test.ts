@@ -12,6 +12,7 @@ import { InternalCrossContractCallState } from '../src/cross-contract-call-state
 import { emptyRunningCost } from '../src/circuit-context.js';
 import { CompactTypeUnsignedInteger } from '../src/compact-types.js';
 import { InterfaceDescriptor } from '../src/interface-descriptor.js';
+import { appendInternalZswapInput, appendInternalZswapOutput, ownInternalZswapPublicKey } from '../src/internal-call-zswap.js';
 import {
   advanceInternalCallTraceContext,
   copyInternalCallTraceContext,
@@ -132,6 +133,18 @@ const entryPointReadContext = () => {
   });
 };
 
+const coinInfo = () =>
+  ocrt.encodeShieldedCoinInfo({
+    type: ocrt.sampleRawTokenType(),
+    nonce: '2ab78b2272ec3489da60e6af54a87bfa53a7fa727602a040df782ebae7f5ab59',
+    value: 5n,
+  });
+const recipient = (address: ocrt.ContractAddress) => ({
+  is_left: false,
+  left: { bytes: new Uint8Array(32) },
+  right: { bytes: ocrt.encodeContractAddress(address) },
+});
+
 describe('internal pinned call trace cells', () => {
   test('routes the original Caller first ledger read through replacement query and gas cells', () => {
     const root = entryPointReadContext();
@@ -239,6 +252,134 @@ describe('internal pinned call trace cells', () => {
     expect('crossContractCall' in publicRuntime).toBe(false);
     expect('createInternalCallTraceContext' in publicRuntime).toBe(false);
     expect('queryInternalCallTraceContext' in publicRuntime).toBe(false);
+    expect('appendInternalZswapInput' in publicRuntime).toBe(false);
+    expect('appendInternalZswapOutput' in publicRuntime).toBe(false);
+  });
+
+  test('internal input and output replace per-address coin/query cells without charging gas', () => {
+    const root = entryPointReadContext();
+    const queried = queryInternalCallTraceContext(
+      root,
+      proofData(),
+      callerFirstRead(),
+      ocrt.CostModel.initialCostModel(),
+    ).context;
+    const gas = queried.callContext.currentGasCost;
+    const coin = coinInfo();
+    const target = recipient(B);
+    const input = appendInternalZswapInput(queried, { ...coin, mt_index: 0n });
+    const output = appendInternalZswapOutput(input, coin, target);
+    expect(input.callContext.currentZswapLocalState.inputs).toHaveLength(1);
+    expect(input.callContext.currentZswapLocalState).toBe(input.zswapLocalStates[A]);
+    expect(output.callContext.currentZswapLocalState.outputs).toHaveLength(1);
+    expect(output.callContext.currentZswapLocalState.currentIndex).toBe(1n);
+    expect(output.callContext.currentZswapLocalState).toBe(output.zswapLocalStates[A]);
+    expect(output.callContext.currentQueryContext).toBe(output.queryContexts[A]);
+    expect(output.callContext.currentQueryContext).not.toBe(input.callContext.currentQueryContext);
+    expect(output.callContext.currentQueryContext.comIndices.size).toBe(1);
+    expect(input.callContext.currentQueryContext.comIndices.size).toBe(0);
+    const legacy = publicRuntime.createCircuitContext(A, '0'.repeat(64), new ocrt.ContractState(), null);
+    publicRuntime.createZswapOutput(legacy, coin, target);
+    expect([...output.callContext.currentQueryContext.comIndices.keys()]).toEqual([
+      ...legacy.currentQueryContext.comIndices.keys(),
+    ]);
+    expect(input.callContext.currentGasCost).toEqual(gas);
+    expect(output.callContext.currentGasCost).toEqual(gas);
+    expect(output.callContext.currentGasCost).toBe(output.gasCosts[A]);
+    expect(root.callContext.currentZswapLocalState.inputs).toEqual([]);
+    expect(root.callContext.currentZswapLocalState.outputs).toEqual([]);
+    expect(ownInternalZswapPublicKey(output)).toEqual({ bytes: ocrt.encodeCoinPublicKey('0'.repeat(64)) });
+
+    // The completed copy owns every byte array, including prior entries.
+    coin.nonce[0] ^= 1;
+    target.right.bytes[0] ^= 1;
+    input.callContext.currentZswapLocalState.inputs[0].color[0] ^= 1;
+    expect(output.callContext.currentZswapLocalState.outputs[0].coinInfo.nonce).not.toEqual(coin.nonce);
+    expect(output.callContext.currentZswapLocalState.outputs[0].recipient.right.bytes).not.toEqual(target.right.bytes);
+    expect(output.callContext.currentZswapLocalState.inputs[0].color).not.toEqual(
+      input.callContext.currentZswapLocalState.inputs[0].color,
+    );
+    const key = ownInternalZswapPublicKey(output);
+    key.bytes[0] ^= 1;
+    expect(ownInternalZswapPublicKey(output)).toEqual({ bytes: ocrt.encodeCoinPublicKey('0'.repeat(64)) });
+  });
+
+  test('callee coin state is separate from the caller and survives return to its address', async () => {
+    const { calls, root } = setup();
+    const active = await calls.begin(request(B));
+    const entered = enterInternalCallTraceContext(root, active);
+    const withCoin = appendInternalZswapOutput(entered, coinInfo(), recipient(B));
+    expect(withCoin.callContext.currentZswapLocalState).toBe(withCoin.zswapLocalStates[B]);
+    expect(withCoin.callContext.currentQueryContext).toBe(withCoin.queryContexts[B]);
+    expect(withCoin.zswapLocalStates[B].coinPublicKey.bytes).toEqual(root.zswapLocalStates[A].coinPublicKey.bytes);
+    expect(root.zswapLocalStates[B]).toBeUndefined();
+    expect(root.queryContexts[B]).toBeUndefined();
+    const finalized = finalizeInternalCallProofData(withCoin, proofData());
+    const restored = restoreInternalCallerTraceContext(root, finalized, active);
+    active.end();
+    expect(restored.zswapLocalStates[B].outputs).toHaveLength(1);
+    expect(restored.queryContexts[B].comIndices.size).toBe(1);
+    expect(restored.callContext.currentZswapLocalState).toBe(root.zswapLocalStates[A]);
+    expect(restored.gasCosts[A]).toEqual(emptyRunningCost());
+    expect(restored.gasCosts[B]).toEqual(emptyRunningCost());
+    expect(restored.callProofDataTrace[0].zswapLocalState).toBe(finalized.zswapLocalStates[B]);
+  });
+
+  test('malformed coin, stale map, and wrong returned query identity discard an internal output', () => {
+    const validCoin = coinInfo();
+    const target = recipient(B);
+    const original = entryPointReadContext();
+    const badCoin = { ...validCoin, value: -1n };
+    expect(() => appendInternalZswapOutput(original, badCoin, target)).toThrow();
+    expect(original.callContext.currentZswapLocalState.outputs).toEqual([]);
+    expect(original.callContext.currentQueryContext.comIndices.size).toBe(0);
+    for (const changed of ['block', 'address'] as const) {
+      const root = entryPointReadContext();
+      const next = new ocrt.QueryContext(root.callContext.currentQueryContext.state, changed === 'address' ? B : A);
+      next.block = {
+        ...root.callContext.currentQueryContext.block,
+        ownAddress: changed === 'address' ? B : A,
+        parentBlockHash: changed === 'block' ? 'cd'.repeat(32) : BLOCK,
+      };
+      const spy = vi.spyOn(root.callContext.currentQueryContext, 'insertCommitment').mockReturnValue(next);
+      expect(() => appendInternalZswapOutput(root, validCoin, target)).toThrow('pinned parent block or call identity');
+      expect(spy).toHaveBeenCalledOnce();
+      expect(root.queryContexts[A]).toBe(root.callContext.currentQueryContext);
+      expect(root.zswapLocalStates[A].outputs).toEqual([]);
+      expect(root.callContext.currentQueryContext.comIndices.size).toBe(0);
+    }
+    const stale = entryPointReadContext();
+    stale.zswapLocalStates[A] = { ...stale.zswapLocalStates[A] };
+    expect(() => appendInternalZswapInput(stale, { ...validCoin, mt_index: 0n })).toThrow('live call cells differ');
+    expect(() => appendInternalZswapOutput(stale, validCoin, target)).toThrow('live call cells differ');
+    expect(stale.callContext.currentZswapLocalState.inputs).toEqual([]);
+    const absent = entryPointReadContext();
+    absent.callContext.currentZswapLocalState = undefined as unknown as typeof absent.callContext.currentZswapLocalState;
+    absent.zswapLocalStates[A] = absent.callContext.currentZswapLocalState;
+    expect(() => ownInternalZswapPublicKey(absent)).toThrow('Zswap local state is undefined');
+  });
+
+  test('encoded accessors and sparse previous coin arrays refuse without evaluating a getter', () => {
+    const root = entryPointReadContext();
+    const coin = coinInfo();
+    let reads = 0;
+    Object.defineProperty(coin, 'nonce', {
+      enumerable: true,
+      get: () => {
+        reads++;
+        return new Uint8Array(32);
+      },
+    });
+    expect(() => appendInternalZswapOutput(root, coin, recipient(B))).toThrow('own data field');
+    expect(reads).toBe(0);
+    expect(root.callContext.currentQueryContext.comIndices.size).toBe(0);
+    expect(root.callContext.currentZswapLocalState.outputs).toEqual([]);
+
+    const withInput = appendInternalZswapInput(root, { ...coinInfo(), mt_index: 0n });
+    delete withInput.callContext.currentZswapLocalState.inputs[0];
+    expect(() => appendInternalZswapOutput(withInput, coinInfo(), recipient(B))).toThrow('own data field');
+    expect(withInput.callContext.currentQueryContext.comIndices.size).toBe(0);
+    expect(withInput.callContext.currentZswapLocalState.outputs).toEqual([]);
   });
 
   test('copies all mutable containers and keeps per-address live cells aligned', async () => {
