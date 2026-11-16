@@ -226,6 +226,9 @@
                 */test-contracts/stdlib/keccak256/cross_width/keccak256_cross_width.compact)
                   expected=0f57999236e7d47004e9768626f52d2efe860fef5a04439b1f7c976c3e9c9e56
                   ;;
+                */test-contracts/stdlib/keccak256/adt_rejected/keccak256_adt_rejected.compact)
+                  expected=92b9866f4edfa107320b97b1595102afd185b698ae4b71c02c96a7e6fb5d3378
+                  ;;
                 */test-contracts/stdlib/keccak256/field_types/keccak256_field_types.compact)
                   expected=319b37a50f65125de0f6b14e9c8e91cb0ecb26f27df4b20d7b6ccc6afe3ac30e
                   ;;
