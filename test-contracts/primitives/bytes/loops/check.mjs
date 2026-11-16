@@ -18,7 +18,8 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 
 const [entry, name] = process.argv.slice(2);
-const expected = { empty_iteration: 0n, spread_iteration: 0n, iteration: 120n };
+const expected = { empty_iteration: 0n, spread_iteration: 0n, iteration: 120n,
+  indexed_access: 32n };
 assert.ok(entry && Object.hasOwn(expected, name));
 const generated = await import(pathToFileURL(entry).href);
 const runtimeEntry = createRequire(entry).resolve('@midnight-ntwrk/compact-runtime');
