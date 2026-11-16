@@ -286,12 +286,14 @@ jobs:
             --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
             --prepare-proof-material --parameter-k 6 --parameter-k 7 --parameter-k 8 \
             > "$root/proof-material.json"
+          mkdir -p "$SECONDARY_CARGO_TARGET/import" "$SECONDARY_CARGO_TARGET/bytes" \
+            "$SECONDARY_CARGO_TARGET/constructor" "$SECONDARY_CARGO_TARGET/disclose"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command \
             python3 -X faulthandler -u \
             tools/compact-rust-backend/check_upstream_ledger9_import_ledger_field_proof.py \
             --import-type-gate "$root/import_type" --zkir "$SECONDARY_ZKIR" \
             --output "$root/import_proof" --expected-source-sha "$GITHUB_SHA" \
-            --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --cargo-target "$SECONDARY_CARGO_TARGET/import" \
             | tee "$root/import_proof.stdout.log"
       - name: Prove and strictly apply indexed Bytes transaction
         run: |
@@ -303,7 +305,7 @@ jobs:
             tools/compact-rust-backend/check_upstream_ledger9_bytes_indexed_access_proof.py \
             --bytes-gate "$root/bytes_indexed" --zkir "$SECONDARY_ZKIR" \
             --output "$root/bytes_proof" --expected-source-sha "$GITHUB_SHA" \
-            --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --cargo-target "$SECONDARY_CARGO_TARGET/bytes" \
             | tee "$root/bytes_proof.stdout.log"
       - name: Prove and strictly apply constructor parameters transaction
         run: |
@@ -316,7 +318,7 @@ jobs:
             --grouped-gate "$root/small_keywords" --compiler "$COMPACTC" \
             --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
             --zkir "$SECONDARY_ZKIR" --output "$root/constructor_proof" \
-            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET/constructor" \
             | tee "$root/constructor_proof.stdout.log"
       - name: Prove and strictly apply two disclose transactions serially
         run: |
@@ -329,7 +331,7 @@ jobs:
             --disclose-gate "$root/disclose" --compiler "$COMPACTC" \
             --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
             --zkir "$SECONDARY_ZKIR" --output "$root/disclose_proofs" \
-            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET/disclose" \
             | tee "$root/disclose_proofs.stdout.log"
       - name: Verify retained source, generated artifacts and proof receipts
         env:
