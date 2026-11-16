@@ -126,7 +126,27 @@ const isEncodedZswapLocalState = (value: any): value is EncodedZswapLocalState =
   );
 };
 
-export const createCircuitContext = <PS>(
+/**
+ * The root test-contracts host uses the object-form constructor from the
+ * pinned Ledger 9 runtime. Runtime 0.18 still executes positional contexts;
+ * this form accepts the same local inputs without claiming cross-contract
+ * context support.
+ */
+export interface HostCircuitContextOptions<PS> {
+  circuitId: string;
+  contractAddress: ocrt.ContractAddress;
+  coinPublicKeyOrZswapState: ocrt.CoinPublicKey | EncodedCoinPublicKey | ZswapLocalState | EncodedZswapLocalState;
+  contractState: ocrt.ContractState | ocrt.StateValue | ocrt.ChargedState;
+  privateState: PS;
+  gasLimit?: ocrt.RunningCost;
+  costModel?: ocrt.CostModel;
+  time?: number;
+  parentBlockHash?: string;
+  crossContract?: unknown;
+}
+
+export function createCircuitContext<PS>(options: HostCircuitContextOptions<PS>): CircuitContext<PS>;
+export function createCircuitContext<PS>(
   contractAddress: ocrt.ContractAddress,
   coinPublicKeyOrZswapState: ocrt.CoinPublicKey | EncodedCoinPublicKey | ZswapLocalState | EncodedZswapLocalState,
   contractState: ocrt.ContractState | ocrt.StateValue | ocrt.ChargedState,
@@ -134,7 +154,45 @@ export const createCircuitContext = <PS>(
   gasLimit?: ocrt.RunningCost,
   costModel?: ocrt.CostModel,
   time?: number,
-): CircuitContext<PS> => {
+): CircuitContext<PS>;
+export function createCircuitContext<PS>(
+  contractAddressOrOptions: ocrt.ContractAddress | HostCircuitContextOptions<PS>,
+  coinPublicKeyOrZswapState?: ocrt.CoinPublicKey | EncodedCoinPublicKey | ZswapLocalState | EncodedZswapLocalState,
+  contractState?: ocrt.ContractState | ocrt.StateValue | ocrt.ChargedState,
+  privateState?: PS,
+  gasLimit?: ocrt.RunningCost,
+  costModel?: ocrt.CostModel,
+  time?: number,
+): CircuitContext<PS> {
+  let contractAddress: ocrt.ContractAddress;
+  if (arguments.length === 1) {
+    const options = contractAddressOrOptions as HostCircuitContextOptions<PS>;
+    if (
+      typeof options !== 'object' || options === null ||
+      typeof options.circuitId !== 'string' ||
+      !('contractAddress' in options) ||
+      !('coinPublicKeyOrZswapState' in options) ||
+      !('contractState' in options) ||
+      !('privateState' in options)
+    ) {
+      throw new CompactError('createCircuitContext: invalid object-form context options');
+    }
+    if (options.parentBlockHash !== undefined || options.crossContract !== undefined) {
+      throw new CompactError('createCircuitContext: cross-contract context requires Ledger 9 runtime');
+    }
+    contractAddress = options.contractAddress;
+    coinPublicKeyOrZswapState = options.coinPublicKeyOrZswapState;
+    contractState = options.contractState;
+    privateState = options.privateState;
+    gasLimit = options.gasLimit;
+    costModel = options.costModel;
+    time = options.time;
+  } else {
+    contractAddress = contractAddressOrOptions as ocrt.ContractAddress;
+  }
+  if (coinPublicKeyOrZswapState === undefined || contractState === undefined) {
+    throw new CompactError('createCircuitContext: missing coin key or contract state');
+  }
   const initialQueryContext = createInitialQueryContext(contractState, contractAddress, time);
 
   let zswapLocalState: EncodedZswapLocalState;
@@ -151,14 +209,14 @@ export const createCircuitContext = <PS>(
   }
 
   return {
-    currentPrivateState: privateState,
+    currentPrivateState: privateState as PS,
     currentZswapLocalState: zswapLocalState,
     currentQueryContext: initialQueryContext,
     costModel: costModel ?? ocrt.CostModel.initialCostModel(),
     gasLimit,
     events: [],
   };
-};
+}
 
 /**
  * Function for creating an initial running cost of zero.

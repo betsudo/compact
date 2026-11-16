@@ -220,6 +220,63 @@
                 */test-contracts/stdlib/foreign_field/self_subtract/foreign_field_self_subtract.compact)
                   expected=5a3322fc1c889390fd3a620dd905e01c96bb81808af0e7ef587ab4f5f598c26a
                   ;;
+                */test-contracts/stdlib/curve25519/slow/verify_sequential/curve25519_verify_sequential.compact)
+                  expected=7ad2e291ec23e496ab4f9157f1f46e17772edbe4d7516f5f2e12856a0122767f
+                  ;;
+                */test-contracts/stdlib/keccak256/cross_width/keccak256_cross_width.compact)
+                  expected=0f57999236e7d47004e9768626f52d2efe860fef5a04439b1f7c976c3e9c9e56
+                  ;;
+                */test-contracts/stdlib/keccak256/field_types/keccak256_field_types.compact)
+                  expected=319b37a50f65125de0f6b14e9c8e91cb0ecb26f27df4b20d7b6ccc6afe3ac30e
+                  ;;
+                */test-contracts/stdlib/keccak256/flatten_equivalence/keccak256_flatten_equivalence.compact)
+                  expected=a9d34f4911f4e8faa866418d02bb0a6cbafbb9772e434331551c91da26dbca59
+                  ;;
+                */test-contracts/stdlib/keccak256/impure/keccak256_impure.compact)
+                  expected=61f4204b918f9635828d07b6117d404ab11041bd61fd47c556b8f3cca0ab9d59
+                  ;;
+                */test-contracts/stdlib/keccak256/known_vectors/keccak256_known_vectors.compact)
+                  expected=d95c93c2abddfbee69dae5b9de6b368ae9af6baff214367d3e18c16bf91767b3
+                  ;;
+                */test-contracts/stdlib/keccak256/multi_length/keccak256_multi_length.compact)
+                  expected=3d6cd76f04078b7cc4259580b1e7c093a9816752b56651672bc773c557bafeb2
+                  ;;
+                */test-contracts/stdlib/keccak256/ordinary_types/keccak256_ordinary_types.compact)
+                  expected=66856b94eb03bfe4eaade139cc3dd966bc6aaad9f9d4a4359c1fc7c551667988
+                  ;;
+                */test-contracts/stdlib/keccak256/trailing_zero/keccak256_trailing_zero.compact)
+                  expected=d8e791a46417c717ef51ffb155657c07660ef19ceeeb755b1481515e804428f1
+                  ;;
+                */test-contracts/stdlib/secp256k1/bitcoin_kat/secp256k1_bitcoin_kat.compact)
+                  expected=3f600e9c25498b8cd6c8b82270286aa58d864f1fe9a7e10ee1a01315c8c9b086
+                  ;;
+                */test-contracts/stdlib/secp256k1/ecdsa_verify/secp256k1_ecdsa_verify.compact)
+                  expected=83aaf4309bbaa741537371d6d23ea55b46282abd892c255075c0b60fb3b16462
+                  ;;
+                */test-contracts/stdlib/secp256k1/ethereum_address/secp256k1_ethereum_address.compact)
+                  expected=819c1d11c841f15fa00ca01cabfbb8e659c8bbb41cd7ba12e20c88c5303007c2
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/prove_ethereum_address/secp256k1_prove_ethereum_address.compact)
+                  expected=14c198a3d1df93579a176de06b31af10c6062d03b2eae5bc2c7a19f6d58bc459
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/verify_sequential/secp256k1_verify_sequential.compact)
+                  expected=e1ba0175af4e5ff91af065e87dc631e89f033195177436cfc2c386331a68f3fe
+                  ;;
+                */test-contracts/stdlib/secp256r1/ecdsa_verify/secp256r1_ecdsa_verify.compact)
+                  expected=ce45565985916e21c16ec14ed351a05eaa44da144d08ff30fde682dcc646db30
+                  ;;
+                */test-contracts/stdlib/secp256r1/sha256_kat/secp256r1_sha256_kat.compact)
+                  expected=d174d86cf6e3af7be6d5a05485c8c3a39fb1b202f8e467e06fc1b8785e46540e
+                  ;;
+                */test-contracts/stdlib/secp256r1/slow/verify_sequential/secp256r1_verify_sequential.compact)
+                  expected=f1c20ef9040f20fc347007dda991b173e21e8d817d24a01e3bd41a9f7202c665
+                  ;;
+                */test-contracts/stdlib/sha256/multi_length/sha256_multi_length.compact)
+                  expected=1adb85bdf1d1be98dbf2635564011437b3a9366d96be467f2e82864314efccc0
+                  ;;
+                */test-contracts/stdlib/sha256/trailing_zero/sha256_trailing_zero.compact)
+                  expected=96a514e793a1870ef03b0d25e1efbb84d681d793af9b5ae8435c30bb8ad88636
+                  ;;
               esac
               if [ -n "$expected" ]; then
                 if ! { [ "$#" -eq 2 ] && [ "$1" = "$arg" ]; } &&

@@ -18,6 +18,41 @@ import { keccak_256 } from '@noble/hashes/sha3.js';
 import * as compactRuntime from '../src/index.js';
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 
+describe('createCircuitContext host options', () => {
+  const address = ocrt.sampleContractAddress();
+  const options = () => ({
+    circuitId: 'constructor',
+    contractAddress: address,
+    coinPublicKeyOrZswapState: '0'.repeat(64),
+    contractState: new ocrt.ContractState(),
+    privateState: { value: 7 },
+  });
+
+  test('accepts the pinned root host object form and retains positional contexts', () => {
+    const inputs = options();
+    const fromOptions = compactRuntime.createCircuitContext(inputs);
+    const positional = compactRuntime.createCircuitContext(
+      inputs.contractAddress,
+      inputs.coinPublicKeyOrZswapState,
+      inputs.contractState,
+      inputs.privateState,
+    );
+    expect(fromOptions.currentPrivateState).toEqual(positional.currentPrivateState);
+    expect(fromOptions.currentZswapLocalState).toEqual(positional.currentZswapLocalState);
+    expect(fromOptions.currentQueryContext.block.ownAddress).toEqual(address);
+  });
+
+  test('refuses incomplete and cross-contract option shapes', () => {
+    const inputs = options();
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, contractState: undefined as never }))
+      .toThrow(/missing coin key or contract state/);
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, crossContract: {} }))
+      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, parentBlockHash: '0'.repeat(64) }))
+      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+  });
+});
+
 describe('createCoinCommitment', () => {
   test('Check for success', () => {
     const context = compactRuntime.createCircuitContext(
