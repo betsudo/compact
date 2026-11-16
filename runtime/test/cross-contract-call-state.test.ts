@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import * as publicRuntime from '../src/index.js';
-import { InternalCrossContractCallState } from '../src/cross-contract-call-state.js';
+import { InternalCallTransactionRollbackError, InternalCrossContractCallState } from '../src/cross-contract-call-state.js';
 import {
   advanceInternalCallTraceContext,
   createInternalCallTraceContext,
@@ -327,6 +327,83 @@ describe('internal Ledger 9 call state', () => {
     expect(gas.readTime).toBe(5n);
     expect(callee.balance.has('33'.repeat(32))).toBe(false);
     expect(callee.balance).toBe(providerBalance);
+  });
+
+  test('abort rebinds a replaced commitment-index map on a cached callee', async () => {
+    const { calls } = setup();
+    const first = await calls.begin(request(B));
+    first.end();
+    const query = calls.queryContextFor(B)!;
+    const originalIndices = new Map(query.comIndices);
+    originalIndices.set('aa'.repeat(32), 1n);
+    Object.defineProperty(query, 'comIndices', { value: originalIndices, writable: true, configurable: true });
+    const second = await calls.begin(request(B));
+    Object.defineProperty(query, 'comIndices', {
+      value: new Map([['bb'.repeat(32), 2n]]),
+      writable: true,
+      configurable: true,
+    });
+    second.abort();
+    expect(calls.queryContextFor(B)).toBe(query);
+    expect(query.comIndices).toBe(originalIndices);
+    expect(originalIndices.get('aa'.repeat(32))).toBe(1n);
+    expect(query.comIndices.has('bb'.repeat(32))).toBe(false);
+  });
+
+  test('an un-restorable frozen VM cell poisons state and releases the active frame', async () => {
+    const { calls } = setup();
+    const first = await calls.begin(request(B));
+    first.end();
+    const query = calls.queryContextFor(B)!;
+    Object.defineProperty(query, 'block', { value: query.block, writable: true, configurable: true });
+    const savedBlock = query.block;
+    const second = await calls.begin(request(B));
+    savedBlock.balance.set('aa'.repeat(32), 3n);
+    Object.freeze(savedBlock);
+    expect(() => second.abort()).toThrow(/rollback failed.*poisoned/);
+    expect(() => second.abort()).toThrow(/top of its active stack/);
+    expect(() => calls.queryContextFor(B)).toThrow(/poisoned/);
+    expect(() => first.queryContext).toThrow(/poisoned/);
+    expect(() => first.gasCost).toThrow(/poisoned/);
+    await expect(calls.begin(request(C))).rejects.toThrow(/poisoned/);
+  });
+
+  test('transaction owner unwinds a frozen nested frame and reports rollback failure', async () => {
+    const { calls } = setup();
+    const first = await calls.begin(request(C));
+    first.end();
+    const cached = calls.queryContextFor(C)!;
+    Object.defineProperty(cached, 'block', { value: cached.block, writable: true, configurable: true });
+    const savedBlock = cached.block;
+    const rootQuery = calls.queryContextFor(A)!;
+    Object.defineProperty(rootQuery, 'block', { value: rootQuery.block, writable: true, configurable: true });
+    const savedRootBlock = rootQuery.block;
+    let retainedView: { readonly queryContext: ocrt.QueryContext; readonly gasCost: ocrt.RunningCost } | undefined;
+    let failure: unknown;
+    try {
+      await calls.transact(request(B), async (view) => {
+        retainedView = view;
+        const nested = await calls.begin(request(C));
+        savedBlock.balance.set('bb'.repeat(32), 4n);
+        Object.freeze(savedBlock);
+        savedRootBlock.balance.set('cc'.repeat(32), 5n);
+        Object.freeze(savedRootBlock);
+        expect(nested.calleeAddress).toBe(C);
+        throw new Error('callback failed');
+      });
+    } catch (error) {
+      failure = error;
+    }
+    expect(failure).toBeInstanceOf(InternalCallTransactionRollbackError);
+    const rollbackError = failure as InternalCallTransactionRollbackError;
+    expect(rollbackError.message).toMatch(/rollback failed.*poisoned/);
+    expect(rollbackError.cause).toEqual(new Error('callback failed'));
+    expect(rollbackError.rollbackFailures).toHaveLength(2);
+    expect(rollbackError.rollbackFailures.every((error) => String(error).includes('rollback failed'))).toBe(true);
+    expect(() => calls.queryContextFor(B)).toThrow(/poisoned/);
+    expect(() => retainedView!.queryContext).toThrow(/poisoned/);
+    expect(() => retainedView!.gasCost).toThrow(/poisoned/);
+    await expect(calls.begin(request(B))).rejects.toThrow(/poisoned/);
   });
 
   test('aborting a parent rolls back a completed nested call and its cached effects', async () => {

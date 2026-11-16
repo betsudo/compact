@@ -65,6 +65,18 @@ export type ActiveCall = Readonly<{
 /** The state callback cannot finish the handle or mutate provider-owned objects. */
 export type ActiveCallView = Pick<ActiveCall, 'callerAddress' | 'calleeAddress' | 'calleeCircuitId' | 'queryContext' | 'gasCost'>;
 
+/** Preserves the callback failure and every failed rollback while refusing reuse. */
+export class InternalCallTransactionRollbackError extends CompactError {
+  readonly cause: unknown;
+  readonly rollbackFailures: readonly unknown[];
+
+  constructor(cause: unknown, rollbackFailures: readonly unknown[]) {
+    super(`Cross-contract transaction failed and rollback failed in ${rollbackFailures.length} frame(s); call state is poisoned`);
+    this.cause = cause;
+    this.rollbackFailures = Object.freeze([...rollbackFailures]);
+  }
+}
+
 type RollbackSnapshot = {
   readonly queryContexts: Map<ocrt.ContractAddress, ocrt.QueryContext>;
   readonly gasCosts: Map<ocrt.ContractAddress, ocrt.RunningCost>;
@@ -74,6 +86,8 @@ type RollbackSnapshot = {
     readonly context: ocrt.QueryContext;
     readonly block: ocrt.CallContext;
     readonly effects: ocrt.Effects;
+    readonly commitmentIndices: ocrt.QueryContext['comIndices'];
+    readonly ownCommitmentIndices: PropertyDescriptor | undefined;
     readonly restoreBlock: () => void;
     readonly restoreEffects: () => void;
     readonly restoreCommitmentIndices: () => void;
@@ -195,6 +209,11 @@ export class InternalCrossContractCallState {
   readonly #gasCosts = new Map<ocrt.ContractAddress, ocrt.RunningCost>();
   readonly #deployedStates = new Map<ocrt.ContractAddress, ocrt.ContractState>();
   #generation = 0;
+  #poisoned: CompactError | undefined;
+
+  #requireHealthy(): void {
+    if (this.#poisoned) throw this.#poisoned;
+  }
 
   constructor({ entryAddress, entryState, parentBlockHash, time, stateProvider, moduleProvider }: InternalCallStateOptions) {
     assertAddress(entryAddress);
@@ -230,22 +249,27 @@ export class InternalCrossContractCallState {
   }
 
   get currentAddress(): ocrt.ContractAddress {
+    this.#requireHealthy();
     return this.#frames[this.#frames.length - 1].address;
   }
 
   isActive(address: ocrt.ContractAddress): boolean {
+    this.#requireHealthy();
     return this.#active.has(address);
   }
 
   queryContextFor(address: ocrt.ContractAddress): ocrt.QueryContext | undefined {
+    this.#requireHealthy();
     return this.#queryContexts.get(address);
   }
 
   gasCostFor(address: ocrt.ContractAddress): ocrt.RunningCost | undefined {
+    this.#requireHealthy();
     return this.#gasCosts.get(address);
   }
 
   deployedStateFor(address: ocrt.ContractAddress): ocrt.ContractState | undefined {
+    this.#requireHealthy();
     return this.#deployedStates.get(address);
   }
 
@@ -276,16 +300,29 @@ export class InternalCrossContractCallState {
     } catch (error) {
       // A nested call may have entered before the failure. Its rollback must
       // run first, even if the user callback did not get a chance to do so.
+      const rollbackFailures: unknown[] = [];
       while (this.#frames.some((frame) => frame.call === call) && this.#frames[this.#frames.length - 1].call !== call) {
-        this.#frames[this.#frames.length - 1].call!.abort();
+        try {
+          this.#frames[this.#frames.length - 1].call!.abort();
+        } catch (failure) {
+          rollbackFailures.push(failure);
+        }
       }
-      if (this.#frames[this.#frames.length - 1].call === call) call.abort();
+      if (this.#frames[this.#frames.length - 1].call === call) {
+        try {
+          call.abort();
+        } catch (failure) {
+          rollbackFailures.push(failure);
+        }
+      }
+      if (rollbackFailures.length) throw new InternalCallTransactionRollbackError(error, rollbackFailures);
       throw error;
     }
   }
 
   /** Resolve first, then enter. Re-entry is rejected before touching providers. */
   async begin({ calleeAddress, calleeCircuitId, interfaceName, declaration }: InternalCallRequest): Promise<ActiveCall> {
+    this.#requireHealthy();
     if (this.#active.has(calleeAddress)) {
       throw new CompactError(
         `Contract re-entrancy detected: '${calleeAddress}' is already executing on the call stack; ` +
@@ -325,14 +362,21 @@ export class InternalCrossContractCallState {
       queryContexts: new Map(this.#queryContexts),
       gasCosts: new Map(this.#gasCosts),
       deployedStates: new Map(this.#deployedStates),
-      queryFields: Array.from(new Set(this.#queryContexts.values()), (context) => ({
-        context,
-        block: context.block,
-        effects: context.effects,
-        restoreBlock: snapshotMutable(context.block),
-        restoreEffects: snapshotMutable(context.effects),
-        restoreCommitmentIndices: snapshotMutable(context.comIndices),
-      })),
+      queryFields: Array.from(new Set(this.#queryContexts.values()), (context) => {
+        const block = context.block;
+        const effects = context.effects;
+        const commitmentIndices = context.comIndices;
+        return {
+          context,
+          block,
+          effects,
+          commitmentIndices,
+          ownCommitmentIndices: Object.getOwnPropertyDescriptor(context, 'comIndices'),
+          restoreBlock: snapshotMutable(block),
+          restoreEffects: snapshotMutable(effects),
+          restoreCommitmentIndices: snapshotMutable(commitmentIndices),
+        };
+      }),
       gasFields: Array.from(new Set(this.#gasCosts.values()), (cost) => snapshotMutable(cost)),
       stateFields: Array.from(new Set([...this.#deployedStates.values(), prepared.deployedState]), (state) => ({
         state,
@@ -364,8 +408,14 @@ export class InternalCrossContractCallState {
     this.#queryContexts.set(calleeAddress, queryContext);
     this.#gasCosts.set(calleeAddress, this.#gasCosts.get(calleeAddress) ?? emptyRunningCost());
     this.#deployedStates.set(calleeAddress, prepared.deployedState);
-    const queryContextForCall = (): ocrt.QueryContext => this.#queryContexts.get(calleeAddress)!;
-    const gasCostForCall = (): ocrt.RunningCost => this.#gasCosts.get(calleeAddress)!;
+    const queryContextForCall = (): ocrt.QueryContext => {
+      this.#requireHealthy();
+      return this.#queryContexts.get(calleeAddress)!;
+    };
+    const gasCostForCall = (): ocrt.RunningCost => {
+      this.#requireHealthy();
+      return this.#gasCosts.get(calleeAddress)!;
+    };
     const call: ActiveCall = Object.freeze({
       callerAddress,
       calleeAddress,
@@ -389,6 +439,7 @@ export class InternalCrossContractCallState {
 
   /** Record an executed call's next context, without allowing its block to drift. */
   advance(call: ActiveCall, context: ocrt.QueryContext, gasCost: ocrt.RunningCost): void {
+    this.#requireHealthy();
     this.#assertTop(call);
     assertPinnedContext(context, call.calleeAddress, this.#snapshot);
     this.#queryContexts.set(call.calleeAddress, context);
@@ -397,6 +448,7 @@ export class InternalCrossContractCallState {
   }
 
   private end(call: ActiveCall): void {
+    this.#requireHealthy();
     this.#assertTop(call);
     this.#frames.pop();
     this.#active.delete(call.calleeAddress);
@@ -408,29 +460,79 @@ export class InternalCrossContractCallState {
     // not run assertPinnedContext before restoring the saved fields.
     this.#assertTopHandle(call);
     const rollback = this.#frames[this.#frames.length - 1].rollback!;
-    for (const { context, block, effects, restoreBlock, restoreEffects, restoreCommitmentIndices } of rollback.queryFields) {
-      restoreBlock();
-      restoreEffects();
-      restoreCommitmentIndices();
-      context.block = block;
-      context.effects = effects;
+    const failures: unknown[] = [];
+    const attempt = (restore: () => void): void => {
+      try {
+        restore();
+      } catch (error) {
+        failures.push(error);
+      }
+    };
+    try {
+      for (const {
+        context,
+        block,
+        effects,
+        commitmentIndices,
+        ownCommitmentIndices,
+        restoreBlock,
+        restoreEffects,
+        restoreCommitmentIndices,
+      } of rollback.queryFields) {
+        attempt(restoreBlock);
+        attempt(restoreEffects);
+        attempt(restoreCommitmentIndices);
+        attempt(() => {
+          context.block = block;
+        });
+        attempt(() => {
+          context.effects = effects;
+        });
+        attempt(() => {
+          if (ownCommitmentIndices) {
+            Object.defineProperty(context, 'comIndices', ownCommitmentIndices);
+          } else if (Object.prototype.hasOwnProperty.call(context, 'comIndices')) {
+            if (!Reflect.deleteProperty(context, 'comIndices')) {
+              throw new CompactError('Could not restore the commitment-index property');
+            }
+          }
+          if (ownCommitmentIndices && 'value' in ownCommitmentIndices && context.comIndices !== commitmentIndices) {
+            throw new CompactError('Could not restore the commitment-index map');
+          }
+        });
+      }
+      for (const restore of rollback.gasFields) attempt(restore);
+      for (const { state, balance, data, maintenanceAuthority, restoreBalance } of rollback.stateFields) {
+        attempt(restoreBalance);
+        attempt(() => {
+          state.balance = balance;
+          state.data = data;
+          state.maintenanceAuthority = maintenanceAuthority;
+        });
+      }
+      attempt(() => {
+        this.#queryContexts.clear();
+        for (const [address, context] of rollback.queryContexts) this.#queryContexts.set(address, context);
+      });
+      attempt(() => {
+        this.#gasCosts.clear();
+        for (const [address, cost] of rollback.gasCosts) this.#gasCosts.set(address, cost);
+      });
+      attempt(() => {
+        this.#deployedStates.clear();
+        for (const [address, state] of rollback.deployedStates) this.#deployedStates.set(address, state);
+      });
+    } finally {
+      this.#frames.pop();
+      this.#active.delete(call.calleeAddress);
+      this.#generation++;
     }
-    for (const restore of rollback.gasFields) restore();
-    for (const { state, balance, data, maintenanceAuthority, restoreBalance } of rollback.stateFields) {
-      restoreBalance();
-      state.balance = balance;
-      state.data = data;
-      state.maintenanceAuthority = maintenanceAuthority;
+    if (failures.length) {
+      this.#poisoned = new CompactError(
+        `Cross-contract rollback failed to restore ${failures.length} mutable cell(s); call state is poisoned`,
+      );
+      throw this.#poisoned;
     }
-    this.#queryContexts.clear();
-    for (const [address, context] of rollback.queryContexts) this.#queryContexts.set(address, context);
-    this.#gasCosts.clear();
-    for (const [address, cost] of rollback.gasCosts) this.#gasCosts.set(address, cost);
-    this.#deployedStates.clear();
-    for (const [address, state] of rollback.deployedStates) this.#deployedStates.set(address, state);
-    this.#frames.pop();
-    this.#active.delete(call.calleeAddress);
-    this.#generation++;
   }
 
   #assertTopHandle(call: ActiveCall): void {
