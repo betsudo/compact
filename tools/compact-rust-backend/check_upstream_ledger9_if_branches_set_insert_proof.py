@@ -218,7 +218,7 @@ def main() -> None:
                                 cwd=ROOT, env=env, capture_output=True, text=True)
         (output / f'{bad.name}.log').write_text(result.stdout + result.stderr)
         require(result.returncode != 0 and
-                'source-bound Rust IR or raw ZKIR bytes differ' in result.stderr and
+                'source-bound Rust IR or raw ZKIR differs' in result.stderr and
                 not list(bad.rglob('*.proof')),
                 f'{field} drift escaped pre-key refusal')
     material = run([str(runner), '--prepare-proof-material', '--verify-only',
