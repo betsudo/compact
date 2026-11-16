@@ -24,6 +24,11 @@
     any(feature = "bytes-equality-proof", feature = "bytes-fold-boolean-proof"),
     allow(clippy::bool_comparison)
 )]
+// The pinned if original deliberately repeats the same selected Set.insert.
+#![cfg_attr(
+    feature = "if-branches-set-insert-proof",
+    allow(clippy::if_same_then_else)
+)]
 
 mod adt_list_bytes;
 mod adt_list_enum;
