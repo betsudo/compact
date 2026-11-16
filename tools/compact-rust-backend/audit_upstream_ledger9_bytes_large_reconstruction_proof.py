@@ -91,8 +91,9 @@ def main() -> None:
             digest(semantic_receipt_path) == receipt['semantic_gate_sha256'] and
             semantic['original_files'] == originals() and
             semantic['ordered_transcript_parity'] is True and
-            semantic['rust_test_stack_bytes'] == 4 * 1024 * 1024 and
-            receipt['rust_min_stack_bytes'] == 4 * 1024 * 1024 and
+            semantic['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
+            semantic['rust_test_stack_modes'] == ['default', 'explicit-2m'] and
+            receipt['proof_worker_stack_bytes'] == 64 * 1024 * 1024 and
             semantic['zkir_model']['k'] == 16 and
             semantic['zkir_model']['rows'] == 40652,
             'source, original or exact-head semantic/proof receipt differs')
@@ -163,9 +164,12 @@ def main() -> None:
             'proof/funded result changed')
     output.mkdir(parents=True)
     runner = proof_root / 'proof-runner'
-    env = dict(os.environ, MIDNIGHT_PP=str(material_cache),
-               RUST_MIN_STACK=str(4 * 1024 * 1024))
+    require('.stack_size(64 * 1024 * 1024)' in
+            (ROOT / 'tools/compact-rust-proof-smoke/src/main.rs').read_text(),
+            'proof worker stack source changed')
+    env = dict(os.environ, MIDNIGHT_PP=str(material_cache))
     env.pop('MIDNIGHT_PROOF_SERVER', None)
+    env.pop('RUST_MIN_STACK', None)
     good = invoke(runner, proof, CIRCUIT, output / 'independent-verify.log', env)
     wrong = invoke(runner, proof, WRONG, output / 'wrong-verifier.log', env)
     require(good.returncode == 0 and wrong.returncode != 0,

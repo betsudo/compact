@@ -40,7 +40,7 @@ CASE = ROOT / 'test-contracts/primitives/bytes/manual_update/slow/large_reconstr
 SOURCE = CASE / 'bytes_manual_update_large_reconstruction.compact'
 MANIFEST = CASE.parent / 'large-reconstruction-original-source-sha256.json'
 EXPECTED = [1, 4, 9, 16, 25, 36, 49, 14, 31, 50]
-RUST_TEST_STACK_BYTES = 4 * 1024 * 1024
+RUST_TEST_STACK_BYTES = 2 * 1024 * 1024
 
 
 def originals() -> dict[str, str]:
@@ -208,15 +208,15 @@ def main() -> None:
             'shared Cargo target must be an ordinary directory')
     cargo_env = dict(environment, CARGO_TARGET_DIR=str(cargo_target),
                      CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
-                     # The generated ordinary circuit frame exceeds Darwin's
-                     # default 2 MiB Rust test-thread stack. The exact compiled
-                     # binary passes at 3 MiB; use 4 MiB with margin here.
-                     RUST_MIN_STACK=str(RUST_TEST_STACK_BYTES),
                      TS_GAS_READ_TIME=ts_result['gas']['readTime'],
                      TS_GAS_COMPUTE_TIME=ts_result['gas']['computeTime'],
                      TS_GAS_BYTES_WRITTEN=ts_result['gas']['bytesWritten'],
                      TS_GAS_BYTES_DELETED=ts_result['gas']['bytesDeleted'],
                      RUST_TRANSCRIPT_PATH=str(output / 'rust-transcript.json'))
+    # Compile with the normal compiler environment. A small RUST_MIN_STACK can
+    # also constrain rustc's own workers, which is unrelated to the generated
+    # circuit's test-thread frame.
+    cargo_env.pop('RUST_MIN_STACK', None)
     metadata = json.loads(run(['cargo', '+1.99.0', 'metadata', '--offline',
                                '--format-version', '1', '--manifest-path', str(manifest)],
                               output / 'cargo-metadata.log', cargo_env))
@@ -226,16 +226,33 @@ def main() -> None:
     allowed = {manifest, ROOT / 'runtime-rs/Cargo.toml',
                ROOT / 'runtime-rs-macros/Cargo.toml', paired_dest / 'contract/Cargo.toml'}
     validate_consumer_lock(metadata, consumer / 'Cargo.lock', allowed, locked)
-    run(['cargo', '+1.99.0', 'test', '--locked', '--offline',
+    run(['cargo', '+1.99.0', 'test', '--locked', '--offline', '--no-run',
          '--manifest-path', str(manifest), '--test', 'large_reconstruction'],
-        output / 'cargo-test.log', cargo_env)
+        output / 'cargo-build.log', cargo_env)
+    executables = [path for path in (cargo_target / 'debug/deps').glob('large_reconstruction-*')
+                   if path.is_file() and os.access(path, os.X_OK)]
+    require(len(executables) == 1, 'ambiguous exact Rust test binary')
+    rust_test = executables[0]
+    rust_test_sha = sha256(rust_test)
+    run([str(rust_test), '--test-threads=1'], output / 'cargo-test.log', cargo_env)
+    explicit_env = dict(cargo_env, RUST_MIN_STACK=str(RUST_TEST_STACK_BYTES),
+                        RUST_TRANSCRIPT_PATH=str(output / 'rust-transcript-2m.json'))
+    run([str(rust_test), '--test-threads=1'], output / 'cargo-test-2m.log', explicit_env)
     rust_log = (output / 'cargo-test.log').read_text()
+    explicit_log = (output / 'cargo-test-2m.log').read_text()
     require('test result: ok. 1 passed; 0 failed;' in rust_log and
-            'test untouched_original_ordinary_recorded_and_replay ... ok' in rust_log,
-            'untouched slow Rust ordinary/recorded parity failed')
+            'test untouched_original_ordinary_recorded_and_replay ... ok' in rust_log and
+            'test result: ok. 1 passed; 0 failed;' in explicit_log and
+            'test untouched_original_ordinary_recorded_and_replay ... ok' in explicit_log,
+            'untouched slow Rust ordinary/recorded parity failed at default or explicit 2 MiB')
     rust_transcript = json.loads((output / 'rust-transcript.json').read_text())
-    require(rust_transcript == ts_transcript,
-            'ordered Rust and TypeScript public transcript contents differ')
+    explicit_transcript = json.loads((output / 'rust-transcript-2m.json').read_text())
+    require(rust_transcript == explicit_transcript == ts_transcript,
+            'ordered default/explicit-2-MiB Rust and TypeScript transcript contents differ')
+    require(sha256(rust_test) == rust_test_sha, 'executed Rust test binary changed')
+    shutil.copy2(rust_test, output / 'rust-test-binary')
+    require(sha256(output / 'rust-test-binary') == rust_test_sha,
+            'retained Rust test binary differs from executed binary')
 
     require(source_state() == source and originals() == pinned and
             runtime_identity(runtime) == runtime_before and
@@ -257,6 +274,7 @@ def main() -> None:
                'typescript_observation': ts_result,
                'typescript_transcript_sha256': sha256(output / 'typescript-transcript.json'),
                'rust_transcript_sha256': sha256(output / 'rust-transcript.json'),
+               'rust_transcript_explicit_2m_sha256': sha256(output / 'rust-transcript-2m.json'),
                'ordered_transcript_parity': True,
                'result_and_ledger': EXPECTED, 'public_operations': 315,
                'zkir_sha256': sha256(raw_zkir), 'zkir_size': raw_zkir.stat().st_size,
@@ -270,11 +288,15 @@ def main() -> None:
                'rust_consumer_source_sha256': sha256(consumer / 'tests/large_reconstruction.rs'),
                'rust_consumer_lock_sha256': sha256(consumer / 'Cargo.lock'),
                'cargo_metadata_log_sha256': sha256(output / 'cargo-metadata.log'),
+               'cargo_build_log_sha256': sha256(output / 'cargo-build.log'),
                'cargo_test_log_sha256': sha256(output / 'cargo-test.log'),
+               'cargo_test_explicit_2m_log_sha256': sha256(output / 'cargo-test-2m.log'),
+               'rust_test_binary_sha256': rust_test_sha,
                'cargo_target': str(cargo_target),
                'rust_test_stack_bytes': RUST_TEST_STACK_BYTES,
+               'rust_test_stack_modes': ['default', 'explicit-2m'],
                'proof_execution': False, 'funded_application': False,
-               'limitation': 'Darwin default 2 MiB Rust test-thread stack overflows at the generated ordinary circuit entry; this gate uses 4 MiB. Fresh k16 proof, funded default-strict application and native Linux integration remain open'}
+               'limitation': 'Fresh exact-head k16 proof, funded default-strict application and native Linux integration remain open'}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': receipt['status'], 'head': source['head'],
                       'output': str(output)}))

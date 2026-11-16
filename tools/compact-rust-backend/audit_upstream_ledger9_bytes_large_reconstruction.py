@@ -60,7 +60,8 @@ def main() -> None:
             receipt['status'] == 'paired_semantics_qualified' and
             receipt['upstream_commit'] == PINNED and
             receipt['ordered_transcript_parity'] is True and
-            receipt['rust_test_stack_bytes'] == 4 * 1024 * 1024 and
+            receipt['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
+            receipt['rust_test_stack_modes'] == ['default', 'explicit-2m'] and
             receipt['proof_execution'] is False and
             receipt['funded_application'] is False,
             'paired semantic receipt identity/status changed')
@@ -108,12 +109,15 @@ def main() -> None:
             'TypeScript result/state/transcript changed')
     ts_transcript_path = gate / 'typescript-transcript.json'
     rust_transcript_path = gate / 'rust-transcript.json'
+    explicit_transcript_path = gate / 'rust-transcript-2m.json'
     ts_transcript = json.loads(ts_transcript_path.read_text())
     rust_transcript = json.loads(rust_transcript_path.read_text())
+    explicit_transcript = json.loads(explicit_transcript_path.read_text())
     require(digest(ts_transcript_path) == receipt['typescript_transcript_sha256'] and
             digest(rust_transcript_path) == receipt['rust_transcript_sha256'] and
+            digest(explicit_transcript_path) == receipt['rust_transcript_explicit_2m_sha256'] and
             isinstance(ts_transcript, list) and len(ts_transcript) == 315 and
-            ts_transcript == rust_transcript,
+            ts_transcript == rust_transcript == explicit_transcript,
             'full ordered Rust/TypeScript transcript contents changed')
     for name, path in (
         ('typescript_runtime_log_sha256', gate / 'typescript-runtime.log'),
@@ -121,7 +125,9 @@ def main() -> None:
         ('rust_consumer_source_sha256', gate / 'rust-consumer/tests/large_reconstruction.rs'),
         ('rust_consumer_lock_sha256', gate / 'rust-consumer/Cargo.lock'),
         ('cargo_metadata_log_sha256', gate / 'cargo-metadata.log'),
+        ('cargo_build_log_sha256', gate / 'cargo-build.log'),
         ('cargo_test_log_sha256', gate / 'cargo-test.log'),
+        ('cargo_test_explicit_2m_log_sha256', gate / 'cargo-test-2m.log'),
     ):
         require(digest(path) == receipt[name], f'consumer input/log changed: {name}')
     require(digest(gate / 'typescript-compile.log') ==
@@ -130,7 +136,12 @@ def main() -> None:
             receipt['paired_compile']['log_sha256'],
             'compiler logs changed')
     require('test result: ok. 1 passed; 0 failed;' in
-            (gate / 'cargo-test.log').read_text(), 'Rust consumer result changed')
+            (gate / 'cargo-test.log').read_text() and
+            'test result: ok. 1 passed; 0 failed;' in
+            (gate / 'cargo-test-2m.log').read_text(),
+            'default or explicit-2-MiB Rust consumer result changed')
+    require(digest(gate / 'rust-test-binary') == receipt['rust_test_binary_sha256'],
+            'retained exact Rust test binary changed')
     require(digest(Path(receipt['compiler_recipe']['path'])) ==
             receipt['compiler_recipe']['sha256'], 'compiler recipe changed')
     compiler = Path(receipt['compiler_recipe']['store']) / 'bin/compactc'

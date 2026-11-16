@@ -202,21 +202,23 @@ fn render_control_expression(
                 return Ok((value, ty, condition_effect || effect));
             }
             let mut then_statements = Vec::new();
+            let mut then_query = false;
             let (then_value, then_ty, then_effect) = render_state_expression_observed(
                 then,
                 parameters,
                 &mut then_statements,
                 next_temp,
-                query_effect,
+                &mut then_query,
                 environment,
             )?;
             let mut else_statements = Vec::new();
+            let mut else_query = false;
             let (else_value, else_ty, else_effect) = render_state_expression_observed(
                 otherwise,
                 parameters,
                 &mut else_statements,
                 next_temp,
-                query_effect,
+                &mut else_query,
                 environment,
             )?;
             if then_ty != else_ty {
@@ -231,6 +233,42 @@ fn render_control_expression(
                 .then_some(then_value);
             let else_value = (!matches!(&else_value, syn::Expr::Tuple(t) if t.elems.is_empty()))
                 .then_some(else_value);
+            *query_effect |= then_query || else_query;
+            if then_query || else_query {
+                // Each selected query arm owns and returns its context. Keeping
+                // the arms in separate native frames bounds debug-build stack
+                // use without reordering gas or public transcript effects.
+                let then_value = then_value.unwrap_or_else(|| syn::parse_quote!(()));
+                let else_value = else_value.unwrap_or_else(|| syn::parse_quote!(()));
+                return Ok((
+                    syn::parse_quote!({
+                        #[inline(never)]
+                        fn __compact_query_branch<C, T>(
+                            context: C,
+                            body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+                        ) -> Result<(C, T), runtime::CompactError> {
+                            body(context)
+                        }
+                        let (__compact_next_context, __compact_branch_value) = if #condition {
+                            __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
+                                #(#then_statements)*
+                                let __compact_branch_value = #then_value;
+                                Ok((context, __compact_branch_value))
+                            })?
+                        } else {
+                            __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
+                                #(#else_statements)*
+                                let __compact_branch_value = #else_value;
+                                Ok((context, __compact_branch_value))
+                            })?
+                        };
+                        context = __compact_next_context;
+                        __compact_branch_value
+                    }),
+                    then_ty,
+                    condition_effect || then_effect || else_effect,
+                ));
+            }
             let otherwise = (!else_statements.is_empty() || else_value.is_some())
                 .then(|| quote::quote!(else { #(#else_statements)* #else_value }));
             Ok((
