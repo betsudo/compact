@@ -20,7 +20,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tomllib
@@ -30,44 +29,72 @@ from check_unit_mutation_initializers import validate_consumer_lock
 ROOT = Path(__file__).resolve().parents[2]
 FAMILY = ROOT / "test-contracts/stdlib/sha256"
 CARGO = ("cargo", "+1.99.0")
-PRAGMA = b"pragma language_version >= 0.25.0;\n"
+PINNED = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 
 
 def run(*command, **options):
     return subprocess.run(command, cwd=ROOT, check=True, **options)
 
 
-def compile_fixture(compiler, fixture, output, probe):
+def version_policy_controls(compiler, output):
+    legacy = run(compiler, "--language-version", text=True,
+                 stdout=subprocess.PIPE).stdout.strip().splitlines()[-1]
+    ledger9 = run(compiler, "--feature-zkir-v3", "--language-version", text=True,
+                  stdout=subprocess.PIPE).stdout.strip().splitlines()[-1]
+    if (legacy, ledger9) != ("0.23.105", "0.28.0"):
+        raise RuntimeError(f"unexpected language profiles: {legacy}, {ledger9}")
+    controls = output / "version-controls"
+    controls.mkdir()
+    original = FAMILY / "multi_length/sha256_multi_length.compact"
+    rows = []
+    for name, source, flags, expected in [
+        ("ledger8_original", original, (), b"language version 0.23.105 mismatch"),
+        ("ledger9_future", controls / "future.compact", ("--feature-zkir-v3",),
+         b"language version 0.28.0 mismatch"),
+        ("ledger9_upper_bound", controls / "upper.compact", ("--feature-zkir-v3",),
+         b"language version 0.28.0 mismatch"),
+    ]:
+        if name == "ledger9_future":
+            source.write_text("pragma language_version >= 0.29.0;\n"
+                              "export circuit id(x: Field): Field { return x; }\n")
+        if name == "ledger9_upper_bound":
+            source.write_text("pragma language_version < 0.25.0;\n"
+                              "export circuit id(x: Field): Field { return x; }\n")
+        product = controls / name
+        result = subprocess.run((compiler, *flags, source, product), cwd=ROOT,
+                                capture_output=True)
+        (controls / f"{name}.stderr").write_bytes(result.stderr)
+        if result.returncode == 0 or expected not in result.stderr or product.exists():
+            raise RuntimeError(f"language refusal changed: {name}")
+        rows.append({"name": name, "source_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+                     "exit": result.returncode,
+                     "diagnostic_sha256": hashlib.sha256(result.stderr).hexdigest(),
+                     "product_absent": True})
+    (controls / "receipt.json").write_text(json.dumps({"legacy": legacy,
+                                                         "ledger9": ledger9,
+                                                         "refusals": rows}, indent=2) + "\n")
+    return ledger9
+
+
+def compile_fixture(compiler, fixture, output):
     family = fixture.parent.name
     work = output / family
     work.mkdir()
-    source = fixture
     original = fixture.read_bytes()
-    intact_exit = None
     command = (compiler, "--target", "rust", "--target", "ts", "--feature-zkir-v3",
                "--rust-runtime-root", ROOT)
-    if probe:
-        if original.count(PRAGMA) != 1:
-            raise RuntimeError(f"{fixture} must contain the pinned language pragma exactly once")
-        intact = subprocess.run((*command, fixture, work / "intact"), cwd=ROOT, capture_output=True)
-        intact_exit = intact.returncode
-        (work / "intact.stderr").write_bytes(intact.stderr)
-        (work / "intact.exit").write_text(f"{intact.returncode}\n")
-        if intact.returncode == 0 or b"language version 0.23.105 mismatch" not in intact.stderr:
-            raise RuntimeError(f"{fixture} did not refuse its intact language pragma")
-        if (work / "intact").exists():
-            raise RuntimeError(f"{fixture} published output on version refusal")
-        source = work / fixture.name
-        source.write_bytes(original.replace(PRAGMA, b"", 1))
+    relative = fixture.relative_to(ROOT)
+    pinned = subprocess.check_output(["git", "show", f"{PINNED}:{relative}"], cwd=ROOT)
+    if original != pinned:
+        raise RuntimeError(f"{fixture} differs from pinned upstream source")
     (work / "source.json").write_text(json.dumps({
         "original": str(fixture),
         "original_sha256": hashlib.sha256(original).hexdigest(),
-        "original_compile_exit": intact_exit,
-        "compiled": str(source),
-        "compiled_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
-        "compiled_source_kind": "pragma-only derivative" if probe else "original",
+        "compiled": str(fixture),
+        "compiled_sha256": hashlib.sha256(original).hexdigest(),
+        "compiled_source_kind": "pinned original",
     }, indent=2) + "\n")
-    result = subprocess.run((*command, source, work / ".build"), cwd=ROOT, capture_output=True)
+    result = subprocess.run((*command, fixture, work / ".build"), cwd=ROOT, capture_output=True)
     (work / "compile.stdout").write_bytes(result.stdout)
     (work / "compile.stderr").write_bytes(result.stderr)
     (work / "compile.exit").write_text(f"{result.returncode}\n")
@@ -120,8 +147,8 @@ def main():
     parser.add_argument("--compiler", type=Path, required=True)
     parser.add_argument("--ts-runtime", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True, help="Absent directory for generated outputs")
-    parser.add_argument("--allow-pragma-probe", action="store_true",
-                        help="On language 0.23.105, also compile a derivative without the 0.25.0 pragma")
+    parser.add_argument("--ts-only", action="store_true",
+                        help="Run original TypeScript callbacks without a Cargo consumer")
     args = parser.parse_args()
     compiler = args.compiler.resolve(strict=True)
     runtime = args.ts_runtime.resolve(strict=True)
@@ -133,31 +160,32 @@ def main():
     if args.output.is_symlink() or output.exists():
         parser.error("output must be absent")
 
-    # A cold Scheme frontend can print its library compilation before the version.
-    version_output = run(compiler, "--language-version", text=True, stdout=subprocess.PIPE).stdout
-    language = version_output.strip().rpartition("\n")[2]
-    if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", language) is None:
-        parser.error(f"compiler did not report a language version: {version_output!r}")
-    probe = args.allow_pragma_probe and language == "0.23.105"
     runtime_link = output / "node_modules/@midnight-ntwrk/compact-runtime"
     runtime_link.parent.mkdir(parents=True)
     runtime_link.symlink_to(runtime, target_is_directory=True)
     (output / "package.json").write_text('{"type":"module"}\n')
-    (output / "language.stdout").write_text(version_output)
-    (output / "language.json").write_text(json.dumps({"compiler": language, "pragma_probe": probe}) + "\n")
+    language = version_policy_controls(compiler, output)
+    (output / "language.json").write_text(json.dumps({"compiler": language,
+                                                       "profile": "Ledger 9 ZKIR v3"}) + "\n")
 
     contracts = {}
     for fixture in sorted(FAMILY.glob("*/sha256_*.compact")):
-        generated = compile_fixture(compiler, fixture, output, probe)
+        generated = compile_fixture(compiler, fixture, output)
         if generated is not None and (fixture.parent / "runtime.pass.test.ts").exists():
             contracts[fixture.parent.name] = generated
 
     env = os.environ.copy()
-    env.setdefault("CARGO_TARGET_DIR", str(output / "rust-target"))
-    consumer = build_consumer(contracts, output, env)
+    if args.ts_only:
+        consumer = Path("/bin/false")
+    else:
+        env.setdefault("CARGO_TARGET_DIR", str(output / "rust-target"))
+        consumer = build_consumer(contracts, output, env)
     env.update(SHA256_CORPUS_OUTPUT=str(output), SHA256_CORPUS_CONSUMER=str(consumer))
-    run("node", ROOT / "node_modules/vitest/vitest.mjs", "run",
-        "--config", FAMILY / "parity/vitest.config.mts", env=env)
+    command = ["node", ROOT / "test-contracts/node_modules/vitest/vitest.mjs", "run",
+               "--config", FAMILY / "parity/vitest.config.mts"]
+    if args.ts_only:
+        command.extend(["-t", "compile|TypeScript runtime"])
+    run(*command, env=env)
 
 
 if __name__ == "__main__":

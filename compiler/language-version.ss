@@ -17,11 +17,25 @@
 
 (library (language-version)
   (export language-version-string check-language-version)
-  (import (chezscheme) (version))
+  (import (chezscheme) (config-params) (version))
 
-  (define language-version (make-version 'language 0 23 105))
+  ;; The v2 compiler remains the Ledger 8 language profile. The explicit
+  ;; ZKIR v3 target selects the language version shipped by Compact 0.36.0.
+  (define ledger8-language-version (make-version 'language 0 23 105))
+  (define ledger9-language-version (make-version 'language 0 28 0))
 
-  (define language-version-string (make-version-string language-version))
+  (define (selected-language-version)
+    (if (feature-zkir-v3) ledger9-language-version ledger8-language-version))
 
-  (define check-language-version (make-version-checker language-version))
+  (define-syntax language-version-string
+    (identifier-syntax (make-version-string (selected-language-version))))
+
+  (define ledger8-check-language-version (make-version-checker ledger8-language-version))
+  (define ledger9-check-language-version (make-version-checker ledger9-language-version))
+
+  (define (check-language-version src ve)
+    ((if (feature-zkir-v3)
+         ledger9-check-language-version
+         ledger8-check-language-version)
+     src ve))
 )
