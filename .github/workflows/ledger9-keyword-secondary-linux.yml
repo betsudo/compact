@@ -299,8 +299,10 @@ jobs:
           path: |
             ${{ runner.temp }}/keyword-secondary-compiler-recipe/
             ${{ runner.temp }}/keyword-secondary-semantic-evidence/
-            !${{ runner.temp }}/keyword-secondary-semantic-evidence/host-stage/test-contracts/node_modules/**
-            !${{ runner.temp }}/keyword-secondary-semantic-evidence/host-stage/test-contracts/.yarn/**
+            !${{ runner.temp }}/keyword-secondary-semantic-evidence/**/node_modules/**
+            !${{ runner.temp }}/keyword-secondary-semantic-evidence/**/.yarn/**
+            !${{ runner.temp }}/keyword-secondary-semantic-evidence/**/target/**
+            !${{ runner.temp }}/keyword-secondary-semantic-evidence/**/rust-target/**
           if-no-files-found: warn
           include-hidden-files: true
           retention-days: 14

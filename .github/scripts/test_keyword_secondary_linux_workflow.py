@@ -80,6 +80,15 @@ class WorkflowTest(unittest.TestCase):
                       workflow)
         self.assertNotIn('pull_request:', workflow)
 
+    def test_upload_excludes_rebuildable_dependencies_and_targets(self):
+        workflow = WORKFLOW.read_text()
+        root = '${{ runner.temp }}/keyword-secondary-semantic-evidence/'
+        self.assertIn(root + '\n', workflow)
+        for name in ('node_modules', '.yarn', 'target', 'rust-target'):
+            self.assertIn('!' + root + '**/' + name + '/**', workflow)
+        for gate in ('import_proof', 'bytes_proof'):
+            self.assertNotIn('!' + root + gate + '/**', workflow)
+
     def test_family_and_host_roster(self):
         self.assertEqual(list(receipts.FAMILIES),
                          ['include', 'prefix', 'assert', 'module',
