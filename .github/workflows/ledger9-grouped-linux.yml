@@ -1,0 +1,368 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Ledger 9 grouped originals / native Linux
+
+on:
+  push:
+    branches:
+      - 'codex/ledger9-grouped-linux/*'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact 40-character commit SHA to qualify
+        type: string
+        required: true
+
+permissions: {}
+env:
+  RUSTUP_TOOLCHAIN: 1.99.0
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  PYTHONDONTWRITEBYTECODE: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-preflight:
+    name: Exact signed source and complete gate graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Require selected exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == push ]]; then
+            test "$SOURCE_REF" = "refs/heads/codex/ledger9-grouped-linux/$SOURCE_SHA"
+            EXPECTED_SHA="$SOURCE_SHA"
+          else
+            test "$EVENT_NAME" = workflow_dispatch
+          fi
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$SOURCE_SHA"
+      - name: Checkout exact source and pinned upstream
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Refuse source, SDK, or workflow drift
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          git verify-commit HEAD
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e^{commit}'
+          git log -1 --format=%B | grep -q '^Signed-off-by: '
+          git log -1 --format=%B | grep -q '^Assisted-by: AI$'
+          python3 -B .github/scripts/test_compiler_closure.py
+          python3 -B .github/scripts/test_ledger9_grouped_linux_workflow.py
+          python3 -B - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools/compact-rust-backend')
+          from check_release_packages import compatibility_record
+          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.1'
+          assert json.loads(Path('runtime/package.json').read_text())['version'] == '0.18.0'
+          PY
+
+  compiler-linux:
+    needs: source-preflight
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+      export-shell: true
+
+  grouped-originals:
+    name: Runtime, root host, hashes and k16 proof
+    needs: [source-preflight, compiler-linux]
+    if: ${{ !cancelled() && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require successful same-run compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          COMPILER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          SHELL_ARTIFACT: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$PRODUCER_RESULT" = success
+          test -n "$COMPILER_ARTIFACT"
+          test -n "$SHELL_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+      - name: Checkout exact source and pinned upstream
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          git verify-commit HEAD
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/grouped-compiler-material.zip"
+          compiler=$(python3 -B .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/grouped-compiler-material.zip" \
+            --directory "$RUNNER_TEMP/grouped-imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+      - name: Import authenticated same-run compiler shell
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+      - name: Setup locked Rust toolchain
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+      - name: Setup Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+      - name: Restore locked Cargo downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+      - name: Resolve exact-head Runtime, ZKIR and compiler recipe
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          cargo fetch --locked
+          nix build --no-link .#runtime.package
+          runtime_store=$(nix eval --offline --raw .#runtime.package.outPath)
+          runtime="$runtime_store/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          test -f "$runtime/dist/index.js"
+          test "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$runtime/package.json")" = 0.18.0
+          echo "GROUPED_RUNTIME=$runtime" >> "$GITHUB_ENV"
+          zkir_store=$(nix build --no-link --print-out-paths .#zkir-v3)
+          test -x "$zkir_store/bin/zkir"
+          echo "GROUPED_ZKIR=$zkir_store/bin/zkir" >> "$GITHUB_ENV"
+          echo "GROUPED_TARGET=$RUNNER_TEMP/grouped-shared-cargo-target" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/grouped-evidence"
+          python3 -B tools/compact-rust-backend/record_compiler_recipe.py \
+            --compiler "$COMPACTC" --output "$RUNNER_TEMP/grouped-compiler-recipe"
+      - name: Run full original Runtime 0.18 tests
+        run: |
+          set -euo pipefail
+          env -u LD_LIBRARY_PATH nix develop .#runtime --command bash -c 'cd runtime && npm run test' \
+            2>&1 | tee "$RUNNER_TEMP/grouped-evidence/runtime.log"
+          grep -Eq 'Test Files[[:space:]]+14 passed \(14\)' "$RUNNER_TEMP/grouped-evidence/runtime.log"
+          grep -Eq 'Tests[[:space:]]+358 passed \(358\)' "$RUNNER_TEMP/grouped-evidence/runtime.log"
+      - name: Run intact root host preparation, lint and 540 tests
+        run: |
+          set -euo pipefail
+          env -u LD_LIBRARY_PATH nix develop .#test-contracts --command bash -c '
+            test "$COMPACT_RUNTIME_PKG" = "$GROUPED_RUNTIME"
+            wrapper=$(command -v compactc)
+            test -f "$wrapper"
+            grep -Fq "compiler=$COMPACTC" "$wrapper"
+          '
+          bash test-contracts/test.sh 2>&1 | tee "$RUNNER_TEMP/grouped-evidence/root-host.log"
+          grep -Eq 'Tests[[:space:]]+540 passed \(540\)' "$RUNNER_TEMP/grouped-evidence/root-host.log"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+      - name: Run 23 intact Keccak and 6 SHA-256 originals
+        run: |
+          set -euo pipefail
+          export CARGO_TARGET_DIR="$GROUPED_TARGET"
+          test -d test-contracts/node_modules/vitest
+          test ! -e node_modules
+          ln -s test-contracts/node_modules node_modules
+          curves_utils="$PWD/test-contracts/node_modules/@noble/curves/utils.js"
+          test -f "$curves_utils"
+          mkdir -p "$GROUPED_TARGET"
+          env -u LD_LIBRARY_PATH nix develop .#test-contracts --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_keccak.py \
+              --compiler "$COMPACTC" --ts-runtime "$GROUPED_RUNTIME" \
+              --curves-utils "$curves_utils" --allow-pragma-probe \
+              --output "$RUNNER_TEMP/grouped-evidence/keccak" \
+            2>&1 | tee "$RUNNER_TEMP/grouped-evidence/keccak.log"
+          grep -Eq 'Tests[[:space:]]+23 passed \(23\)' "$RUNNER_TEMP/grouped-evidence/keccak.log"
+          env -u LD_LIBRARY_PATH nix develop .#test-contracts --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_sha256.py \
+              --compiler "$COMPACTC" --ts-runtime "$GROUPED_RUNTIME" \
+              --output "$RUNNER_TEMP/grouped-evidence/sha256" \
+            2>&1 | tee "$RUNNER_TEMP/grouped-evidence/sha256.log"
+          grep -Eq 'Tests[[:space:]]+6 passed \(6\)' "$RUNNER_TEMP/grouped-evidence/sha256.log"
+      - name: Run ten-step Bytes generated TS and Rust semantics
+        run: |
+          set -euo pipefail
+          mkdir -p "$GROUPED_TARGET"
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+              tools/compact-rust-backend/check_upstream_ledger9_bytes_large_reconstruction_gap.py \
+              --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/grouped-compiler-recipe/receipt.json" \
+              --ts-runtime "$GROUPED_RUNTIME" --zkir "$GROUPED_ZKIR" \
+              --cargo-target "$GROUPED_TARGET" \
+              --output "$RUNNER_TEMP/grouped-evidence/bytes-semantic" \
+            | tee "$RUNNER_TEMP/grouped-evidence/bytes-semantic.log"
+      - name: Prove k16, verify independently and apply funded strict call
+        run: |
+          set -euo pipefail
+          export MIDNIGHT_PP="$RUNNER_TEMP/grouped-proof-parameters"
+          mkdir -p "$MIDNIGHT_PP"
+          CARGO_TARGET_DIR="$GROUPED_TARGET" cargo run \
+            --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
+            --prepare-proof-material --parameter-k 6 --parameter-k 16 \
+            > "$RUNNER_TEMP/grouped-evidence/proof-material.json"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+              tools/compact-rust-backend/check_upstream_ledger9_bytes_large_reconstruction_proof.py \
+              --semantic-gate "$RUNNER_TEMP/grouped-evidence/bytes-semantic" \
+              --zkir "$GROUPED_ZKIR" --expected-source-sha "$GITHUB_SHA" \
+              --cargo-target "$GROUPED_TARGET" \
+              --output "$RUNNER_TEMP/grouped-evidence/bytes-proof" \
+            | tee "$RUNNER_TEMP/grouped-evidence/bytes-proof.log"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+              tools/compact-rust-backend/audit_upstream_ledger9_bytes_large_reconstruction_proof.py \
+              --semantic-gate "$RUNNER_TEMP/grouped-evidence/bytes-semantic" \
+              --proof-gate "$RUNNER_TEMP/grouped-evidence/bytes-proof" \
+              --output "$RUNNER_TEMP/grouped-evidence/bytes-audit" \
+            | tee "$RUNNER_TEMP/grouped-evidence/bytes-audit.log"
+      - name: Refuse missing owners or mismatched exact-head evidence
+        run: |
+          set -euo pipefail
+          test "$(uname -s)" = Linux
+          test "$(uname -m)" = x86_64
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          python3 -B - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'grouped-evidence'
+          sha = os.environ['GITHUB_SHA']
+          tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          counts = {'runtime': 358, 'root-host': 540, 'keccak': 23, 'sha256': 6}
+          for owner, count in counts.items():
+              text = (root / (owner + '.log')).read_text()
+              assert re.search(rf'Tests\s+{count} passed \({count}\)', text), owner
+          receipts = {name: root / name / 'receipt.json' for name in
+                      ('bytes-semantic', 'bytes-proof', 'bytes-audit')}
+          for name, path in receipts.items():
+              row = json.loads(path.read_text())
+              assert row['head'] == sha and row['tree'] == tree and row['status'] in ('passed', 'paired_semantics_qualified'), name
+          semantic = json.loads(receipts['bytes-semantic'].read_text())
+          proof = json.loads(receipts['bytes-proof'].read_text())
+          audit = json.loads(receipts['bytes-audit'].read_text())
+          assert semantic['zkir_model']['k'] == 16 and semantic['zkir_model']['rows'] == 40652
+          assert semantic['proof_execution'] is False and semantic['funded_application'] is False
+          assert proof['proof_execution'] is True and proof['funded_application'] is True
+          assert audit['proof_execution'] is True and audit['funded_application'] is True
+          # The existing auditor's receipt defaults this field to false. This
+          # wrapper establishes native Linux from the runner and exact-head logs.
+          assert audit['native_linux'] is False
+          assert proof['proof_summary']['public_verify_ops'] == 315
+          assert proof['proof_summary']['strict_application'] == 'default'
+          assert proof['proof_summary']['replay_refusal'] == 'IntentAlreadyExists'
+          assert proof['proof_summary']['positive_fee_dust_spends'] == 1
+          assert proof['proof_summary']['standalone_verified_separately'] is True
+          assert proof['proof_summary']['replay_unchanged'] is True
+          assert proof['proof_summary']['result'] == [1, 4, 9, 16, 25, 36, 49, 14, 31, 50]
+          assert audit['status'] == 'passed'
+          digest = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+          assert audit['semantic_gate_sha256'] == digest(receipts['bytes-semantic'])
+          assert audit['proof_gate_sha256'] == digest(receipts['bytes-proof'])
+          summary = {'format': 'ledger9-grouped-linux/v1', 'head': sha, 'tree': tree,
+                     'platform': 'Linux x86_64', 'native_linux': True,
+                     'auditor_legacy_native_linux_field': False,
+                     'original_test_counts': counts, 'bytes_public_verify_ops': 315,
+                     'scope': 'Keccak and SHA-256; SHA-512 is not claimed',
+                     'receipts_sha256': {name: digest(path) for name, path in receipts.items()},
+                     'owner_logs_sha256': {name: digest(root / (name + '.log'))
+                                           for name in (*counts, 'bytes-semantic', 'bytes-proof', 'bytes-audit')}}
+          (root / 'summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          PY
+      - name: Upload exact-head grouped Linux evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0 # v7.0.1
+        with:
+          name: ledger9-grouped-linux-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/grouped-compiler-recipe/
+            ${{ runner.temp }}/grouped-evidence/
+          if-no-files-found: warn
+          include-hidden-files: true
+          retention-days: 14
+
+  complete:
+    name: Ledger 9 grouped native Linux qualification
+    runs-on: ubuntu-latest
+    needs: [source-preflight, compiler-linux, grouped-originals]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every grouped qualification owner
+        env:
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          GROUPED_RESULT: ${{ needs.grouped-originals.result }}
+        run: |
+          set -euo pipefail
+          test "$PREFLIGHT_RESULT" = success
+          test "$PRODUCER_RESULT" = success
+          test "$GROUPED_RESULT" = success
