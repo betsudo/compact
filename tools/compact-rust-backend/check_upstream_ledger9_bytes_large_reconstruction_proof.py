@@ -168,6 +168,7 @@ def main() -> None:
             gate['funded_application'] is False and
             gate['original_files'] == originals() and
             gate['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
+            gate['rust_test_stack_modes'] == ['default', 'explicit-2m'] and
             gate['ordered_transcript_parity'] is True and
             gate['zkir_model']['k'] == 16 and
             gate['zkir_model']['rows'] == 40652 and

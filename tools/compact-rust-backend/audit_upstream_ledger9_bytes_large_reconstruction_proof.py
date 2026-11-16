@@ -92,6 +92,7 @@ def main() -> None:
             semantic['original_files'] == originals() and
             semantic['ordered_transcript_parity'] is True and
             semantic['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
+            semantic['rust_test_stack_modes'] == ['default', 'explicit-2m'] and
             receipt['proof_worker_stack_bytes'] == 64 * 1024 * 1024 and
             semantic['zkir_model']['k'] == 16 and
             semantic['zkir_model']['rows'] == 40652,
