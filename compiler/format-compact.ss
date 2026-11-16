@@ -57,7 +57,7 @@ The following flags, if present, affect the formatter's behavior as follows:
   (command-line-case (command-line)
     [((flags [(--help) $ (begin (print-help) (exit))]
              [(--version) $ (begin (print-compiler-version) (exit))]
-             [(--language-version) $ (begin (print-language-version) (exit))]
+             [(--language-version) $ (begin (print-language-version #f) (exit))]
              [(--vscode)]
              [(--line-length) (line-length line-length)])
       (string source-pathname)
@@ -76,7 +76,7 @@ The following flags, if present, affect the formatter's behavior as follows:
                (put-string (current-output-port) s)))))]
     [((flags [(--help) $ (begin (print-help) (exit))]
              [(--version) $ (begin (print-compiler-version) (exit))]
-             [(--language-version) $ (begin (print-language-version) (exit))])
+             [(--language-version) $ (begin (print-language-version #f) (exit))])
       (string arg) ...)
      (print-usage #t)
      (exit 1)]))
