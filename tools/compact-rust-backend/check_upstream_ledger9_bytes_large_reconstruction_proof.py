@@ -162,7 +162,7 @@ def main() -> None:
             gate['tree'] == source['tree'] and gate['proof_execution'] is False and
             gate['funded_application'] is False and
             gate['original_files'] == originals() and
-            gate['rust_test_stack_bytes'] == 4 * 1024 * 1024 and
+            gate['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
             gate['ordered_transcript_parity'] is True and
             gate['zkir_model']['k'] == 16 and
             gate['zkir_model']['rows'] == 40652 and
@@ -232,7 +232,7 @@ def main() -> None:
             'insufficient free disk before dedicated proof runner build')
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', RUSTUP_TOOLCHAIN='1.99.0',
                CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
-               RUST_MIN_STACK=str(4 * 1024 * 1024),
+               RUST_MIN_STACK=str(2 * 1024 * 1024),
                COMPACT_BYTES_LARGE_RECONSTRUCTION_GENERATED=str(paired),
                COMPACT_BYTES_LARGE_RECONSTRUCTION_GATE=str(gate_root),
                CARGO_TARGET_DIR=str(cargo_target),
@@ -395,7 +395,7 @@ def main() -> None:
               'wrong_generated_sha256':wrong_generated_hashes,
               'zkir_sha256':sha256(zkir), 'ledger_static':static,
               'resource_preflight':preflight,
-              'rust_min_stack_bytes':4 * 1024 * 1024,
+              'rust_min_stack_bytes':2 * 1024 * 1024,
               'material':verified, 'material_hashes':material_hashes,
               'keygen':keys, 'proof_summary':summary, 'artifact_hashes':files(proof),
               'command_logs_sha256':{path.name:sha256(path) for path in
@@ -404,7 +404,6 @@ def main() -> None:
               'resource_preflight_sha256':sha256(output / 'resource-preflight.json'),
               'proof_execution':True, 'funded_application':True,
               'limitations':['constructor execution was not proved',
-                             'Darwin default 2 MiB Rust test-thread stack remains unsupported',
                              'native Linux integration remains pending']}
     (output / 'receipt.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status':'passed', 'head':source['head'], 'output':str(output)}))

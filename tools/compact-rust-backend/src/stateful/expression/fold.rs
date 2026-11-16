@@ -108,6 +108,14 @@ pub(super) fn render(
     let body_context = temporary(next_temp);
     let body_result = temporary(next_temp);
     let mut value: syn::ExprBlock = syn::parse_quote!({
+        // Branch closures keep their query/context temporaries in separate
+        // native frames without changing which Fold arm executes.
+        #[inline(never)]
+        fn __compact_fold_branch<T>(
+            body: impl FnOnce() -> Result<T, runtime::CompactError>,
+        ) -> Result<T, runtime::CompactError> {
+            body()
+        }
         let (mut #loop_context, mut #accumulator_name, #iterator_name) = (context, __initial, __iterator);
         for #pattern in #iterator_name {
             let context = #loop_context;
@@ -118,7 +126,7 @@ pub(super) fn render(
         context = #loop_context;
         #accumulator_name
     });
-    let syn::Stmt::Local(binding) = &mut value.block.stmts[0] else {
+    let syn::Stmt::Local(binding) = &mut value.block.stmts[1] else {
         unreachable!("Fold state tuple");
     };
     let syn::Expr::Tuple(tuple) = binding
@@ -132,7 +140,7 @@ pub(super) fn render(
     };
     tuple.elems[1] = initial;
     tuple.elems[2] = iterator;
-    let syn::Stmt::Expr(syn::Expr::ForLoop(loop_), _) = &mut value.block.stmts[1] else {
+    let syn::Stmt::Expr(syn::Expr::ForLoop(loop_), _) = &mut value.block.stmts[2] else {
         unreachable!("Fold loop");
     };
     let syn::Stmt::Local(binding) = &mut loop_.body.stmts[1] else {

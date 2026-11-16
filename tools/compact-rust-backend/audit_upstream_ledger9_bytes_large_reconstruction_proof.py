@@ -91,8 +91,8 @@ def main() -> None:
             digest(semantic_receipt_path) == receipt['semantic_gate_sha256'] and
             semantic['original_files'] == originals() and
             semantic['ordered_transcript_parity'] is True and
-            semantic['rust_test_stack_bytes'] == 4 * 1024 * 1024 and
-            receipt['rust_min_stack_bytes'] == 4 * 1024 * 1024 and
+            semantic['rust_test_stack_bytes'] == 2 * 1024 * 1024 and
+            receipt['rust_min_stack_bytes'] == 2 * 1024 * 1024 and
             semantic['zkir_model']['k'] == 16 and
             semantic['zkir_model']['rows'] == 40652,
             'source, original or exact-head semantic/proof receipt differs')
@@ -164,7 +164,7 @@ def main() -> None:
     output.mkdir(parents=True)
     runner = proof_root / 'proof-runner'
     env = dict(os.environ, MIDNIGHT_PP=str(material_cache),
-               RUST_MIN_STACK=str(4 * 1024 * 1024))
+               RUST_MIN_STACK=str(2 * 1024 * 1024))
     env.pop('MIDNIGHT_PROOF_SERVER', None)
     good = invoke(runner, proof, CIRCUIT, output / 'independent-verify.log', env)
     wrong = invoke(runner, proof, WRONG, output / 'wrong-verifier.log', env)

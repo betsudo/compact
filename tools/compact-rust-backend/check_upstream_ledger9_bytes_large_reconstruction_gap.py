@@ -40,7 +40,7 @@ CASE = ROOT / 'test-contracts/primitives/bytes/manual_update/slow/large_reconstr
 SOURCE = CASE / 'bytes_manual_update_large_reconstruction.compact'
 MANIFEST = CASE.parent / 'large-reconstruction-original-source-sha256.json'
 EXPECTED = [1, 4, 9, 16, 25, 36, 49, 14, 31, 50]
-RUST_TEST_STACK_BYTES = 4 * 1024 * 1024
+RUST_TEST_STACK_BYTES = 2 * 1024 * 1024
 
 
 def originals() -> dict[str, str]:
@@ -208,9 +208,7 @@ def main() -> None:
             'shared Cargo target must be an ordinary directory')
     cargo_env = dict(environment, CARGO_TARGET_DIR=str(cargo_target),
                      CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
-                     # The generated ordinary circuit frame exceeds Darwin's
-                     # default 2 MiB Rust test-thread stack. The exact compiled
-                     # binary passes at 3 MiB; use 4 MiB with margin here.
+                     # Exercise the Darwin default-size Rust test-thread stack.
                      RUST_MIN_STACK=str(RUST_TEST_STACK_BYTES),
                      TS_GAS_READ_TIME=ts_result['gas']['readTime'],
                      TS_GAS_COMPUTE_TIME=ts_result['gas']['computeTime'],
@@ -274,7 +272,7 @@ def main() -> None:
                'cargo_target': str(cargo_target),
                'rust_test_stack_bytes': RUST_TEST_STACK_BYTES,
                'proof_execution': False, 'funded_application': False,
-               'limitation': 'Darwin default 2 MiB Rust test-thread stack overflows at the generated ordinary circuit entry; this gate uses 4 MiB. Fresh k16 proof, funded default-strict application and native Linux integration remain open'}
+               'limitation': 'Fresh exact-head k16 proof, funded default-strict application and native Linux integration remain open'}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': receipt['status'], 'head': source['head'],
                       'output': str(output)}))
