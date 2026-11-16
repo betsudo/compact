@@ -17,6 +17,7 @@
 
 import importlib.util
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 
@@ -26,9 +27,34 @@ VERIFIER = ROOT / '.github/scripts/verify_keyword_secondary_linux_receipts.py'
 SPEC = importlib.util.spec_from_file_location('secondary_receipts', VERIFIER)
 receipts = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(receipts)
+sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
+from check_upstream_keyword_vitest_host import original_host_counts_match
 
 
 class WorkflowTest(unittest.TestCase):
+    def test_host_accepts_plain_and_sgr_colored_exact_counts(self):
+        cases = '      ✓ original case\n' * 221
+        plain = cases + ' Test Files  1 passed (1)\n      Tests  221 passed (221)\n'
+        colored = (cases + '\x1b[2m Test Files \x1b[22m '
+                   '\x1b[1m\x1b[32m1 passed\x1b[39m\x1b[22m'
+                   '\x1b[90m (1)\x1b[39m\n'
+                   '\x1b[2m      Tests \x1b[22m '
+                   '\x1b[1m\x1b[32m221 passed\x1b[39m\x1b[22m'
+                   '\x1b[90m (221)\x1b[39m\n')
+        self.assertTrue(original_host_counts_match(plain))
+        self.assertTrue(original_host_counts_match(colored))
+
+    def test_host_refuses_wrong_counts_markers_and_non_sgr_control(self):
+        cases = '      ✓ original case\n' * 221
+        exact = cases + ' Test Files  1 passed (1)\n      Tests  221 passed (221)\n'
+        self.assertFalse(original_host_counts_match(
+            exact.replace('Tests  221 passed', 'Tests  220 passed')))
+        self.assertFalse(original_host_counts_match(
+            exact.replace('Test Files  1 passed', 'Test Files  2 passed')))
+        self.assertFalse(original_host_counts_match(exact.replace('✓', '', 1)))
+        self.assertFalse(original_host_counts_match(exact.replace('221 passed',
+                                                                  '\x1b[K221 passed')))
+
     def test_exact_source_and_serial_gate_graph(self):
         workflow = WORKFLOW.read_text()
         self.assertIn('refs/heads/codex/ledger9-keyword-secondary-linux/$SOURCE_SHA',

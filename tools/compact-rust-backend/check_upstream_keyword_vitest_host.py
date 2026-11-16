@@ -32,6 +32,17 @@ from stage_upstream_keyword_vitest_host import (
     ORIGINAL_COUNT, PINNED, ROOT,
 )
 
+ANSI_SGR = re.compile(r'\x1b\[[0-9;]*m')
+
+
+def original_host_counts_match(stdout: str) -> bool:
+    # Vitest colors its summary on Linux even when stdout is captured. Strip
+    # only SGR styling; keep the original per-case markers and exact counts.
+    summary = ANSI_SGR.sub('', stdout)
+    return (re.search(r'Tests\s+221 passed \(221\)', summary) is not None
+            and stdout.count('✓') == HOST_TEST_COUNT
+            and re.search(r'Test Files\s+1 passed \(1\)', summary) is not None)
+
 
 def run(command: list[str], cwd: Path, log: Path,
         env: dict[str, str]) -> subprocess.CompletedProcess[str]:
@@ -98,9 +109,7 @@ def main() -> None:
     selected = [f'keywords/{family}' for family in FAMILIES]
     result = run(['node', 'compact-test-runner.ts', *selected,
                   '--maxWorkers=1'], tests, output / 'original-vitest.log', env)
-    require(re.search(r'Tests\s+221 passed \(221\)', result.stdout) is not None
-            and result.stdout.count('✓') == HOST_TEST_COUNT and
-            re.search(r'Test Files\s+1 passed \(1\)', result.stdout) is not None,
+    require(original_host_counts_match(result.stdout),
             'original keyword host count changed')
     require(source_state() == source and
             all(sha256(stage / name) == digest for name, digest in originals.items()) and
