@@ -88,7 +88,7 @@ def compile_one(compiler: Path, source: Path, dest: Path, log: Path,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'output'):
+    for name in ('compiler', 'compiler-recipe', 'ts-runtime', 'zkir', 'output'):
         parser.add_argument('--' + name, required=True, type=Path)
     args = parser.parse_args()
     source = source_state()
@@ -101,8 +101,15 @@ def main() -> None:
     compiler = args.compiler.resolve(strict=True)
     scheme = (compiler.parent / 'compactc-scheme').resolve(strict=True)
     runtime = args.ts_runtime.resolve(strict=True)
+    zkir_tool = args.zkir.resolve(strict=True)
     nix = shutil.which('nix')
     require(nix is not None, 'Nix required for runtime binding')
+    zkir_store = subprocess.check_output(
+        [nix, 'eval', '--offline', '--raw', '--option', 'substitute',
+         'false', '.#zkir-v3.outPath'], cwd=ROOT, text=True).strip()
+    require(zkir_tool == Path(zkir_store) / 'bin/zkir' and
+            subprocess.check_output([str(zkir_tool), '--version'], text=True).strip() ==
+            'midnight-zkir 3.2.0', 'released ZKIR v3 tool changed')
     runtime_recipe = runtime_recipe_identity(runtime, Path(nix).resolve(strict=True))
     runtime_before = runtime_identity(runtime)
     recipe = compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme)
@@ -136,7 +143,16 @@ def main() -> None:
             'large_reconstruction: original result, ledger, and 315 operations passed',
             'slow TypeScript result/state/transcript changed')
     ts_files = generated_files(ts_dest)
-    zkir = ts_dest / 'zkir/bytes_manual_update_large_reconstruction.zkir'
+    raw_zkir = ts_dest / 'zkir/bytes_manual_update_large_reconstruction.zkir'
+    model_input = output / 'model-input.zkir'
+    shutil.copyfile(raw_zkir, model_input)
+    require(sha256(model_input) == sha256(raw_zkir), 'slow model input changed')
+    run([str(zkir_tool), 'mock-compile', str(model_input)],
+        output / 'zkir-model.log', environment)
+    model = re.search(r'k=(\d+), rows=(\d+)',
+                      (output / 'zkir-model.log').read_text())
+    require(model is not None and (int(model[1]), int(model[2])) == (16, 40652),
+            'slow ZKIR complexity model changed')
 
     paired_dest = output / 'generated/paired'
     paired_log = output / 'paired-refusal.log'
@@ -175,7 +191,12 @@ def main() -> None:
                'typescript_generated': ts_files, 'typescript_compile': ts,
                'typescript_runtime_log_sha256': sha256(output / 'typescript-runtime.log'),
                'result_and_ledger': EXPECTED, 'public_operations': 315,
-               'zkir_sha256': sha256(zkir), 'zkir_size': zkir.stat().st_size,
+               'zkir_sha256': sha256(raw_zkir), 'zkir_size': raw_zkir.stat().st_size,
+               'zkir_model': {'k': 16, 'rows': 40652,
+                              'log_sha256': sha256(output / 'zkir-model.log'),
+                              'model_input_sha256': sha256(model_input),
+                              'bzkir_sha256': sha256(output / 'model-input.bzkir')},
+               'zkir_tool_sha256': sha256(zkir_tool), 'zkir_store': zkir_store,
                'paired_rust_refusal': paired,
                'constant_index_diagnostic': mutant_gate,
                'proof_execution': False, 'funded_application': False,
