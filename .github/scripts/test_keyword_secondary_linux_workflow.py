@@ -45,6 +45,7 @@ class WorkflowTest(unittest.TestCase):
                     'stage_upstream_keyword_vitest_host.py',
                     'check_upstream_keyword_vitest_host.py',
                     'check_upstream_ledger9_import_ledger_field_proof.py',
+                    'check_upstream_ledger9_bytes_indexed_access_proof.py',
                     'verify_keyword_secondary_linux_receipts.py')
         positions = [workflow.index(name) for name in sequence]
         self.assertEqual(positions, sorted(positions))

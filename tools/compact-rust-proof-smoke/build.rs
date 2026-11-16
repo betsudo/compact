@@ -265,6 +265,32 @@ fn main() {
     }
     println!("cargo::rustc-check-cfg=cfg(compact_for_generic_bound_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_import_ledger_field_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_bytes_indexed_access_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_BYTES_INDEXED_ACCESS_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_BYTES_INDEXED_ACCESS_PROOF").is_some() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_BYTES_INDEXED_ACCESS_GENERATED")
+                .expect("complete pinned Bytes indexed access generated root required"),
+        );
+        assert!(
+            root.is_absolute(),
+            "absolute Bytes indexed access root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/bytes_loop_indexed_access.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete Bytes indexed access member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_bytes_indexed_access_generated");
+    }
     println!("cargo::rerun-if-env-changed=COMPACT_IMPORT_LEDGER_FIELD_GENERATED");
     if std::env::var_os("CARGO_FEATURE_IMPORT_LEDGER_FIELD_PROOF").is_some() {
         let root = std::path::PathBuf::from(

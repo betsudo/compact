@@ -259,7 +259,7 @@ jobs:
           mkdir -p "$MIDNIGHT_PP"
           CARGO_TARGET_DIR="$SECONDARY_CARGO_TARGET" cargo run \
             --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
-            --prepare-proof-material --parameter-k 6 --parameter-k 7 \
+            --prepare-proof-material --parameter-k 6 --parameter-k 7 --parameter-k 8 \
             > "$root/proof-material.json"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command \
             python3 -X faulthandler -u \
@@ -268,6 +268,18 @@ jobs:
             --output "$root/import_proof" --expected-source-sha "$GITHUB_SHA" \
             --cargo-target "$SECONDARY_CARGO_TARGET" \
             | tee "$root/import_proof.stdout.log"
+      - name: Prove and strictly apply indexed Bytes transaction
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-secondary-proof-parameters"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+            tools/compact-rust-backend/check_upstream_ledger9_bytes_indexed_access_proof.py \
+            --bytes-gate "$root/bytes_indexed" --zkir "$SECONDARY_ZKIR" \
+            --output "$root/bytes_proof" --expected-source-sha "$GITHUB_SHA" \
+            --cargo-target "$SECONDARY_CARGO_TARGET" \
+            | tee "$root/bytes_proof.stdout.log"
       - name: Verify retained source, generated artifacts and proof receipts
         env:
           SOURCE_SHA: ${{ github.sha }}

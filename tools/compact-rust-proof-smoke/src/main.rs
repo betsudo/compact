@@ -99,6 +99,19 @@ include!(concat!(
 ))]
 mod import_ledger_field_proof;
 #[cfg(all(
+    feature = "bytes-indexed-access-proof",
+    compact_bytes_indexed_access_generated
+))]
+include!(concat!(
+    env!("COMPACT_BYTES_INDEXED_ACCESS_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    feature = "bytes-indexed-access-proof",
+    compact_bytes_indexed_access_generated
+))]
+mod bytes_indexed_access_proof;
+#[cfg(all(
     any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
     compact_bytes_remaining_proof_generated
 ))]
