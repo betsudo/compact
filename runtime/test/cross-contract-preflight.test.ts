@@ -101,8 +101,9 @@ describe('internal cross-contract preflight', () => {
     const options = { ...inputs(), stateProvider, moduleProvider };
     await expect(preflightCrossContractCall({ ...options, declaration: {} })).rejects.toThrow(/declaration of circuit/);
     await expect(preflightCrossContractCall({ ...options, calleeAddress: 'invalid' })).rejects.toThrow(/not a contract address/);
-    await expect(preflightCrossContractCall({ ...options, calleeAddress: ocrt.dummyContractAddress() }))
-      .rejects.toThrow(/default contract address/);
+    await expect(preflightCrossContractCall({ ...options, calleeAddress: ocrt.dummyContractAddress() })).rejects.toThrow(
+      /default contract address/,
+    );
     expect(stateProvider.getContractState).not.toHaveBeenCalled();
     expect(moduleProvider.resolve).not.toHaveBeenCalled();
   });
@@ -117,27 +118,39 @@ describe('internal cross-contract preflight', () => {
   test('pins the state read before module resolution and refuses missing state', async () => {
     const order: string[] = [];
     const options = inputs();
-    const stateProvider = { getContractState: vi.fn(async (block: string) => {
-      order.push(`state:${block}`);
-      return undefined;
-    }) };
-    const moduleProvider = { resolve: vi.fn(() => {
-      order.push('module');
-      return async () => conformantModule();
-    }) };
-    await expect(preflightCrossContractCall({ ...options, stateProvider, moduleProvider }))
-      .rejects.toThrow(/contract state for callee/);
+    const stateProvider = {
+      getContractState: vi.fn(async (block: string) => {
+        order.push(`state:${block}`);
+        return undefined;
+      }),
+    };
+    const moduleProvider = {
+      resolve: vi.fn(() => {
+        order.push('module');
+        return async () => conformantModule();
+      }),
+    };
+    await expect(preflightCrossContractCall({ ...options, stateProvider, moduleProvider })).rejects.toThrow(
+      /contract state for callee/,
+    );
     expect(order).toEqual([`state:${BLOCK}`]);
     expect(moduleProvider.resolve).not.toHaveBeenCalled();
-    await expect(preflightCrossContractCall({ ...options, parentBlockHash: '' }))
-      .rejects.toThrow(/parent block hash/);
+    await expect(preflightCrossContractCall({ ...options, parentBlockHash: '' })).rejects.toThrow(/parent block hash/);
   });
 
   test('classifies no address binding, provider throw and non-thunk return', async () => {
-    expect((await failure({ ...inputs(), moduleProvider: { resolve: () => undefined } })).failure.kind)
-      .toEqual('UnsupportedImplementation');
+    expect((await failure({ ...inputs(), moduleProvider: { resolve: () => undefined } })).failure.kind).toEqual(
+      'UnsupportedImplementation',
+    );
     const cause = new Error('table unavailable');
-    const thrown = await failure({ ...inputs(), moduleProvider: { resolve: () => { throw cause; } } });
+    const thrown = await failure({
+      ...inputs(),
+      moduleProvider: {
+        resolve: () => {
+          throw cause;
+        },
+      },
+    });
     expect(thrown.failure).toEqual({ kind: 'ProviderThrew', cause });
     const nonThunk = { Contract: class {} };
     const invalid = await failure({
@@ -178,7 +191,9 @@ describe('internal cross-contract preflight', () => {
     const module = { ...conformantModule(), circuitSignatures: {} };
     const result = await failure(inputs(state, module));
     expect(result.failure).toMatchObject({
-      kind: 'NonconformantImplementation', circuitId: CIRCUIT, check: 'Existence',
+      kind: 'NonconformantImplementation',
+      circuitId: CIRCUIT,
+      check: 'Existence',
     });
     expect(operation).not.toHaveBeenCalled();
   });
@@ -202,32 +217,44 @@ describe('internal cross-contract preflight', () => {
   test('classifies absent operation and malformed or missing module fingerprint', async () => {
     const absent = await failure(inputs(stateWithKeys({})));
     expect(absent.failure.kind).toEqual('OperationAbsent');
-    const malformed = await failure(inputs(stateWithKeys(), {
-      ...conformantModule(), expectedVk: { [CIRCUIT]: 'INVALID' },
-    }));
+    const malformed = await failure(
+      inputs(stateWithKeys(), {
+        ...conformantModule(),
+        expectedVk: { [CIRCUIT]: 'INVALID' },
+      }),
+    );
     expect(malformed.failure).toMatchObject({
-      kind: 'MalformedVerifierKeyHash', circuitId: CIRCUIT, recorded: 'INVALID',
+      kind: 'MalformedVerifierKeyHash',
+      circuitId: CIRCUIT,
+      recorded: 'INVALID',
     });
     const missing = await failure(inputs(stateWithKeys(), { ...conformantModule(), expectedVk: {} }));
     expect(missing.failure).toMatchObject({
-      kind: 'ImplementationMismatch', circuitId: CIRCUIT, actual: verifierKeyHashOf(KEY),
+      kind: 'ImplementationMismatch',
+      circuitId: CIRCUIT,
+      actual: verifierKeyHashOf(KEY),
     });
   });
 
   test('classifies called and overlapping verifier key mismatches', async () => {
-    const wrongCalled = await failure(inputs(stateWithKeys(), {
-      ...conformantModule(), expectedVk: { [CIRCUIT]: verifierKeyHashOf(OTHER_KEY) },
-    }));
+    const wrongCalled = await failure(
+      inputs(stateWithKeys(), {
+        ...conformantModule(),
+        expectedVk: { [CIRCUIT]: verifierKeyHashOf(OTHER_KEY) },
+      }),
+    );
     expect(wrongCalled.failure).toEqual({
       kind: 'ImplementationMismatch',
       circuitId: CIRCUIT,
       expected: verifierKeyHashOf(OTHER_KEY),
       actual: verifierKeyHashOf(KEY),
     });
-    const wrongOther = await failure(inputs(stateWithKeys({ [CIRCUIT]: KEY, other: OTHER_KEY }), {
-      ...conformantModule(),
-      expectedVk: { [CIRCUIT]: verifierKeyHashOf(KEY), other: verifierKeyHashOf(KEY) },
-    }));
+    const wrongOther = await failure(
+      inputs(stateWithKeys({ [CIRCUIT]: KEY, other: OTHER_KEY }), {
+        ...conformantModule(),
+        expectedVk: { [CIRCUIT]: verifierKeyHashOf(KEY), other: verifierKeyHashOf(KEY) },
+      }),
+    );
     expect(wrongOther.failure).toEqual({
       kind: 'ImplementationMismatch',
       circuitId: 'other',
@@ -244,7 +271,10 @@ describe('internal cross-contract preflight', () => {
     const module = { ...conformantModule(), Contract: constructor as unknown as Module['Contract'], expectedVk: {} };
     const result = await failure(inputs(state, module));
     expect(result.context).toEqual({
-      callerAddress: CALLER, calleeAddress: CALLEE, calleeCircuitId: CIRCUIT, interfaceName: 'Inner',
+      callerAddress: CALLER,
+      calleeAddress: CALLEE,
+      calleeCircuitId: CIRCUIT,
+      interfaceName: 'Inner',
     });
     expect(state.serialize()).toEqual(before);
     expect(setOperation).not.toHaveBeenCalled();
@@ -260,9 +290,11 @@ describe('internal cross-contract preflight', () => {
       contractState: new ocrt.ContractState(),
       privateState: 0,
     };
-    expect(() => publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK }))
-      .toThrow(/cross-contract context requires Ledger 9 runtime/);
-    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} }))
-      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+    expect(() => publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK })).toThrow(
+      /cross-contract context requires Ledger 9 runtime/,
+    );
+    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} })).toThrow(
+      /cross-contract context requires Ledger 9 runtime/,
+    );
   });
 });

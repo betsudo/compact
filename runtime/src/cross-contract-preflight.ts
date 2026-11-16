@@ -89,11 +89,7 @@ const resolveModule = async (
   return module;
 };
 
-const checkModuleConformance = (
-  declaration: InterfaceDescriptor,
-  module: Module,
-  context: ModuleResolutionContext,
-): void => {
+const checkModuleConformance = (declaration: InterfaceDescriptor, module: Module, context: ModuleResolutionContext): void => {
   const result = checkConformance(declaration, module.circuitSignatures);
   switch (result.outcome) {
     case 'Conformant':
@@ -185,7 +181,9 @@ export const preflightCrossContractCall = async ({
 }: CrossContractPreflightOptions): Promise<CrossContractPreflightResult> => {
   const context: ModuleResolutionContext = { callerAddress, calleeAddress, calleeCircuitId, interfaceName };
   if (!Object.prototype.hasOwnProperty.call(declaration, calleeCircuitId) || declaration[calleeCircuitId] === undefined) {
-    throw new CompactError(`Expected declaration of circuit '${calleeCircuitId}' on contract type '${interfaceName}' to be defined`);
+    throw new CompactError(
+      `Expected declaration of circuit '${calleeCircuitId}' on contract type '${interfaceName}' to be defined`,
+    );
   }
   if (!isContractAddress(calleeAddress)) {
     throw new CompactError(`Value ${calleeAddress} is not a contract address`);
