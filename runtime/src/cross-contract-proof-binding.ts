@@ -14,6 +14,9 @@ import { alignedConcat } from './built-ins.js';
 import { CompactTypeBytes, CompactTypeField, CompactTypeUnsignedInteger } from './compact-types.js';
 import { CompactError } from './error.js';
 import { fromHex } from './utils.js';
+import { assertLiveCircuitCall, queryLedgerState, type CallProofData, type CircuitContext } from './circuit-context.js';
+import type { PartialProofData } from './proof-data.js';
+import { InternalGeneratedContextTransaction } from './internal-generated-context-transaction.js';
 
 const Bytes32Descriptor = new CompactTypeBytes(32);
 const KernelStateFieldIndexDescriptor = new CompactTypeUnsignedInteger(255n, 1);
@@ -221,4 +224,42 @@ export const withVerifiedCallProofBinding = (
   assertPreparedCallProofBinding(prepared);
   const sealed = sealedBindings.get(prepared)!;
   commit(materializeSealedBinding(sealed));
+};
+
+/**
+ * Apply an authenticated callee result to the real caller's Runtime query and
+ * proof transcript. The caller's transaction journal must already be active;
+ * this function checks that exact live frame before changing any cell.
+ * This is an internal commit step, not a public cross-contract call.
+ * @internal
+ */
+export const applyVerifiedCallProofBinding = (
+  journal: InternalGeneratedContextTransaction,
+  caller: CircuitContext,
+  callerProofData: PartialProofData,
+  calleeProofData: CallProofData,
+  prepared: PreparedCallProofBinding,
+): void => {
+  journal.withActiveFrame(caller, callerProofData, () => {
+    assertLiveCircuitCall(caller);
+    if (caller.callProofDataTrace[caller.callProofDataTrace.length - 1] !== calleeProofData) {
+      throw new CompactError('Callee proof data is not the last completed call');
+    }
+    if (calleeProofData.commCommData !== undefined) {
+      throw new CompactError('Callee proof data already has a communication commitment');
+    }
+    withVerifiedCallProofBinding(prepared, (fresh) => {
+      if (
+        calleeProofData.contractAddress !== fresh.calleeAddress ||
+        calleeProofData.circuitId !== fresh.calleeCircuitId ||
+        !sameTree(calleeProofData.input, fresh.callInput) ||
+        !sameTree(calleeProofData.output, fresh.callOutput)
+      ) {
+        throw new CompactError('Completed callee proof data differs from the sealed call binding');
+      }
+      calleeProofData.commCommData = { ...fresh.commCommData };
+      callerProofData.privateTranscriptOutputs = callerProofData.privateTranscriptOutputs.concat(fresh.privateTranscriptOutputs);
+      queryLedgerState(caller, callerProofData, fresh.claimProgram);
+    });
+  });
 };

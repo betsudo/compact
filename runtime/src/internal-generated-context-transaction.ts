@@ -160,6 +160,16 @@ export class InternalGeneratedContextTransaction {
     return this.#poisoned !== undefined;
   }
 
+  /** Refuse an internal commit unless this exact context and proof are journaled now. */
+  withActiveFrame<T>(context: CircuitContext, proofData: PartialProofData, commit: () => T): T {
+    if (this.#poisoned) throw this.#poisoned;
+    const frame = this.#frames[this.#frames.length - 1];
+    if (frame?.context !== context || frame.proofData !== proofData) {
+      throw new CompactError('Generated context commit requires its active transaction journal');
+    }
+    return commit();
+  }
+
   async transact<T>(context: CircuitContext, proofData: PartialProofData, callback: () => T | Promise<T>): Promise<T> {
     if (this.#poisoned) throw this.#poisoned;
     const frame = capture(context, proofData);

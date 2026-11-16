@@ -18,7 +18,12 @@ import {
   enterInternalCallTraceContext,
   finalizeInternalCallProofData,
 } from '../src/internal-call-trace-context.js';
-import { emptyRunningCost } from '../src/circuit-context.js';
+import {
+  bindQuerySourceState,
+  emptyRunningCost,
+  forkCalleeCircuitContext,
+  inheritQuerySourceState,
+} from '../src/circuit-context.js';
 import { InterfaceDescriptor } from '../src/interface-descriptor.js';
 import { Module } from '../src/module.js';
 import { verifierKeyHashOf } from '../src/verifier-key-hash.js';
@@ -120,6 +125,179 @@ describe('internal Ledger 9 call state', () => {
     expect(calls.isActive(B)).toBe(false);
   });
 
+  test('adopts the actual generated root after its pre-call query without rewinding the transcript', async () => {
+    const { calls, root, getContractState } = setup();
+    const context = publicRuntime.createCircuitContext({
+      circuitId: 'caller',
+      contractAddress: A,
+      coinPublicKeyOrZswapState: '0'.repeat(64),
+      contractState: root,
+      privateState: {},
+      parentBlockHash: BLOCK,
+      time: 37,
+    });
+    const original = context.callContext.currentQueryContext;
+    const queried = new ocrt.QueryContext(root.data, A);
+    queried.block = { ...original.block };
+    vi.spyOn(original, 'query').mockReturnValue({
+      context: queried,
+      gasCost: { ...emptyRunningCost(), computeTime: 4n },
+      events: [],
+    } as ReturnType<typeof original.query>);
+    const proofData = {
+      input: { value: [], alignment: [] },
+      publicTranscript: [] as ocrt.Op<ocrt.AlignedValue>[],
+      privateTranscriptOutputs: [],
+    };
+    publicRuntime.queryLedgerState(context, proofData, [{ dup: { n: 0 } }]);
+    expect(proofData.publicTranscript).toEqual([{ dup: { n: 0 } }]);
+    expect(calls.queryContextFor(A)).not.toBe(queried);
+
+    calls.bindRootCircuitContext(context);
+    expect(calls.queryContextFor(A)).toBe(queried);
+    expect(calls.gasCostFor(A)?.computeTime).toBe(4n);
+    const entered = await calls.begin(request(B));
+    expect(getContractState).toHaveBeenCalledExactlyOnceWith(BLOCK, B);
+    expect(calls.queryContextFor(A)).toBe(queried);
+    expect(proofData.publicTranscript).toEqual([{ dup: { n: 0 } }]);
+    entered.end();
+  });
+
+  test('refuses a stale or active generated root before replacing its cached query', async () => {
+    const { calls, root } = setup();
+    const context = publicRuntime.createCircuitContext({
+      circuitId: 'caller',
+      contractAddress: A,
+      coinPublicKeyOrZswapState: '0'.repeat(64),
+      contractState: root,
+      privateState: {},
+      parentBlockHash: BLOCK,
+      time: 37,
+    });
+    const original = calls.queryContextFor(A);
+    context.callContext = { ...context.callContext, parentBlockHash: 'cd'.repeat(32) };
+    expect(() => calls.bindRootCircuitContext(context)).toThrow(/pinned provenance/);
+    expect(calls.queryContextFor(A)).toBe(original);
+    context.callContext = { ...context.callContext, parentBlockHash: BLOCK };
+    const otherState = publicRuntime.createCircuitContext({
+      circuitId: 'caller',
+      contractAddress: A,
+      coinPublicKeyOrZswapState: '0'.repeat(64),
+      contractState: new ocrt.ContractState(),
+      privateState: {},
+      parentBlockHash: BLOCK,
+      time: 37,
+    });
+    expect(() => calls.bindRootCircuitContext(otherState)).toThrow(/differs from the call-state parent-block snapshot/);
+    expect(calls.queryContextFor(A)).toBe(original);
+    const forgedQuery = new ocrt.QueryContext(new ocrt.ContractState().data, A);
+    forgedQuery.block = { ...context.callContext.currentQueryContext.block };
+    context.callContext = { ...context.callContext, currentQueryContext: forgedQuery };
+    context.currentQueryContext = forgedQuery;
+    context.queryContexts[A] = forgedQuery;
+    expect(() => calls.bindRootCircuitContext(context)).toThrow(/different sources/);
+    expect(calls.queryContextFor(A)).toBe(original);
+    const entered = await calls.begin(request(B));
+    expect(() => calls.bindRootCircuitContext(context)).toThrow(/callee is active/);
+    expect(calls.queryContextFor(A)).toBe(original);
+    entered.end();
+  });
+
+  test('forks a separately pinned generated callee without changing the caller', async () => {
+    const { calls, root, getContractState, resolve } = setup();
+    const context = publicRuntime.createCircuitContext({
+      circuitId: 'caller',
+      contractAddress: A,
+      coinPublicKeyOrZswapState: '0'.repeat(64),
+      contractState: root,
+      privateState: { before: 1 },
+      parentBlockHash: BLOCK,
+      time: 37,
+      crossContract: {
+        stateProvider: { getContractState },
+        moduleProvider: { resolve },
+      },
+    });
+    calls.bindRootCircuitContext(context);
+    const entered = await calls.begin(request(B));
+    const child = forkCalleeCircuitContext(context, 'add', B, entered.queryContext, entered.gasCost, entered.deployedState);
+    expect(child.callContext.contractAddress).toBe(B);
+    expect(child.callContext.circuitId).toBe('add');
+    expect(child.callContext.currentPrivateState).toBeUndefined();
+    expect(child.queryContexts[B]).toBe(entered.queryContext);
+    expect(child.gasCosts[B]).toBe(child.callContext.currentGasCost);
+    expect(child.zswapLocalStates[B]).toBe(child.callContext.currentZswapLocalState);
+    expect(child.contractStates[B]).toBe(entered.deployedState);
+    expect(child.activeContracts).toEqual(new Set([A, B]));
+    expect(context.activeContracts).toEqual(new Set([A]));
+    expect(child.callContext.currentQueryContext.block.caller).toEqual({ tag: 'contract', address: A });
+    const generatedCopy = publicRuntime.copyCircuitContext(child);
+    expect(generatedCopy.callContext.contractAddress).toBe(B);
+    expect(() => publicRuntime.assertLiveCircuitCall(generatedCopy)).not.toThrow();
+    const next = new ocrt.QueryContext(entered.deployedState.data, B);
+    next.block = { ...entered.queryContext.block };
+    vi.spyOn(entered.queryContext, 'query').mockReturnValue({
+      context: next,
+      gasCost: { ...emptyRunningCost(), readTime: 2n },
+      events: [],
+    } as ReturnType<typeof entered.queryContext.query>);
+    const proofData = {
+      input: { value: [], alignment: [] },
+      output: { value: [], alignment: [] },
+      publicTranscript: [] as ocrt.Op<ocrt.AlignedValue>[],
+      privateTranscriptOutputs: [],
+    };
+    publicRuntime.queryLedgerState(generatedCopy, proofData, [{ dup: { n: 0 } }]);
+    publicRuntime.finalizeCallProofData(generatedCopy, proofData);
+    expect(generatedCopy.queryContexts[B]).toBe(next);
+    expect(generatedCopy.gasCosts[B].readTime).toBe(2n);
+    expect(generatedCopy.callProofDataTrace).toHaveLength(1);
+    expect(generatedCopy.callProofDataTrace[0].contractAddress).toBe(B);
+    expect(generatedCopy.callProofDataTrace[0].publicTranscript).toEqual([{ dup: { n: 0 } }]);
+    expect(child.callProofDataTrace).toEqual([]);
+    const decoyCaller = new ocrt.QueryContext(entered.deployedState.data, B);
+    decoyCaller.block = { ...next.block, caller: { tag: 'contract', address: C } };
+    vi.spyOn(next, 'query').mockReturnValue({
+      context: decoyCaller,
+      gasCost: emptyRunningCost(),
+      events: [],
+    } as ReturnType<typeof next.query>);
+    expect(() => publicRuntime.queryLedgerState(generatedCopy, proofData, [])).toThrow(/pinned block or call identity/);
+    expect(generatedCopy.callContext.currentQueryContext).toBe(next);
+    expect(context.callContext.contractAddress).toBe(A);
+    expect(context.callContext.currentPrivateState).toEqual({ before: 1 });
+    expect('forkCalleeCircuitContext' in publicRuntime).toBe(false);
+    entered.end();
+  });
+
+  test('refuses a callee query outside the pinned caller identity before publishing a child', async () => {
+    const { calls, root, getContractState, resolve } = setup();
+    const context = publicRuntime.createCircuitContext({
+      circuitId: 'caller',
+      contractAddress: A,
+      coinPublicKeyOrZswapState: '0'.repeat(64),
+      contractState: root,
+      privateState: {},
+      parentBlockHash: BLOCK,
+      time: 37,
+      crossContract: { stateProvider: { getContractState }, moduleProvider: { resolve } },
+    });
+    calls.bindRootCircuitContext(context);
+    const entered = await calls.begin(request(B));
+    const query = entered.queryContext;
+    const before = context.callProofDataTrace.length;
+    expect(() => forkCalleeCircuitContext(context, 'add', B, query, entered.gasCost, new ocrt.ContractState())).toThrow(
+      /different sources/,
+    );
+    query.block = { ...query.block, parentBlockHash: 'cd'.repeat(32) };
+    expect(() => forkCalleeCircuitContext(context, 'add', B, query, entered.gasCost, entered.deployedState)).toThrow(
+      /differs from the caller parent-block snapshot/,
+    );
+    expect(context.callProofDataTrace).toHaveLength(before);
+    expect(context.activeContracts).toEqual(new Set([A]));
+    entered.abort();
+  });
+
   test('failed resolution cannot enter, cache, or mutate the callee', async () => {
     const { calls, callee, getContractState } = setup();
     const before = callee.serialize();
@@ -193,8 +371,16 @@ describe('internal Ledger 9 call state', () => {
       expect(() => calls.advance(b, next, b.gasCost)).toThrow(/pinned parent block or call identity/);
       expect(calls.queryContextFor(B)).toBe(original);
     }
+    const otherState = new ocrt.ContractState();
+    const forged = new ocrt.QueryContext(otherState.data, B);
+    forged.block = { ...original.block };
+    bindQuerySourceState(forged, otherState);
+    expect(() => calls.advance(b, forged, b.gasCost)).toThrow(/different sources/);
+    expect(calls.queryContextFor(B)).toBe(original);
     const valid = new ocrt.QueryContext(b.deployedState.data, B);
     valid.block = { ...original.block };
+    // The real queryLedgerState replacement inherits this private source tag.
+    inheritQuerySourceState(original, valid);
     calls.advance(b, valid, b.gasCost);
     expect(calls.queryContextFor(B)).toBe(valid);
     b.end();
@@ -233,6 +419,7 @@ describe('internal Ledger 9 call state', () => {
     const b = await calls.begin(request(B));
     const next = new ocrt.QueryContext(b.deployedState.data, B);
     next.block = { ...b.queryContext.block };
+    inheritQuerySourceState(b.queryContext, next);
     calls.advance(b, next, { ...emptyRunningCost(), computeTime: 7n });
     b.abort();
     expect(calls.currentAddress).toBe(A);

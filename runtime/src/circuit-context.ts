@@ -26,6 +26,7 @@ import { PartialProofData, ProofData } from './proof-data.js';
 import { CompactError } from './error.js';
 import { CompactTypeBytes } from './compact-types.js';
 import type { ContractModuleProvider, ContractStateProvider } from './providers.js';
+import { isContractAddress } from './utils.js';
 
 /** External circuit name used in generated module metadata. */
 export type CircuitId = string;
@@ -115,6 +116,9 @@ type ContextProvenance = Readonly<{
   contractAddress: ocrt.ContractAddress;
   time: number;
   parentBlockHash?: string;
+  /** The parent contract for a separately pinned callee frame. */
+  callerAddress?: ocrt.ContractAddress;
+  sourceContractState?: ocrt.ContractState;
   initialQueryContext: ocrt.QueryContext;
 }>;
 
@@ -123,6 +127,10 @@ type ContextProvenance = Readonly<{
 const provenanceSymbol = Symbol('compact circuit context provenance');
 const tokenProvenance = new WeakMap<object, ContextProvenance>();
 const contextProvenance = new WeakMap<object, ContextProvenance>();
+const querySourceStates = new WeakMap<ocrt.QueryContext, ocrt.ContractState>();
+const activeSetHas = Set.prototype.has;
+const activeSetForEach = Set.prototype.forEach;
+const activeSetAdd = Set.prototype.add;
 
 const bindProvenance = <PS>(
   context: CircuitContext<PS>,
@@ -143,6 +151,31 @@ const readProvenance = (context: CircuitContext): ContextProvenance => {
     throw new CompactError('Circuit context provenance is missing or changed');
   }
   return (direct ?? carried)!;
+};
+
+/** Source identity is carried privately through generated shallow copies. @internal */
+export const sourceContractStateOf = (context: CircuitContext): ocrt.ContractState | undefined => {
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  return pin.sourceContractState;
+};
+
+/** Bind an on-chain VM query to the deployed state that created its call. @internal */
+export const bindQuerySourceState = (query: ocrt.QueryContext, state: ocrt.ContractState): void => {
+  const existing = querySourceStates.get(query);
+  if (existing !== undefined && existing !== state) throw new CompactError('Query source contract state changed');
+  querySourceStates.set(query, state);
+};
+
+/** Keep the original deployed-state identity across VM query replacements. @internal */
+export const inheritQuerySourceState = (previous: ocrt.QueryContext, next: ocrt.QueryContext): void => {
+  const source = querySourceStates.get(previous);
+  if (source !== undefined) bindQuerySourceState(next, source);
+};
+
+/** Refuse a fork whose query was not produced from this deployed state. @internal */
+export const assertQuerySourceState = (query: ocrt.QueryContext, state: ocrt.ContractState): void => {
+  if (querySourceStates.get(query) !== state) throw new CompactError('Callee query and deployed state have different sources');
 };
 
 const assertFrameProvenance = (context: CircuitContext, pin: ContextProvenance): void => {
@@ -206,6 +239,7 @@ const createInitialQueryContext = (
   if (caller !== undefined) {
     initialQueryContext.block = { ...initialQueryContext.block, caller };
   }
+  if (contractState instanceof ocrt.ContractState) bindQuerySourceState(initialQueryContext, contractState);
   return initialQueryContext;
 };
 
@@ -384,6 +418,7 @@ export function createCircuitContext<PS>(
       contractAddress,
       time: blockTime,
       parentBlockHash,
+      sourceContractState: contractState instanceof ocrt.ContractState ? contractState : undefined,
       initialQueryContext,
     }),
   );
@@ -406,6 +441,95 @@ export const copyCircuitContext = <PS>(context: CircuitContext<PS>): CircuitCont
   return bindProvenance(copy, pin, Object.getOwnPropertyDescriptor(context, provenanceSymbol)!.value as object);
 };
 
+/**
+ * An internal bridge from a pinned generated caller to a separately pinned
+ * callee. A callee cannot be made by changing the caller's callContext: that
+ * would invalidate the immutable source identity of both generated modules.
+ * The later coordinator owns entry, return, and the global transaction.
+ * @internal
+ */
+export const forkCalleeCircuitContext = (
+  caller: CircuitContext,
+  circuitId: CircuitId,
+  contractAddress: ocrt.ContractAddress,
+  initialQueryContext: ocrt.QueryContext,
+  currentGasCost: ocrt.RunningCost,
+  deployedState: ocrt.ContractState,
+): CircuitContext => {
+  assertLiveCircuitCall(caller);
+  const parent = readProvenance(caller);
+  if (!isContractAddress(contractAddress) || contractAddress === ocrt.dummyContractAddress()) {
+    throw new CompactError('Callee context requires a non-default contract address');
+  }
+  if (
+    !circuitId ||
+    !activeSetHas.call(caller.activeContracts, parent.contractAddress) ||
+    activeSetHas.call(caller.activeContracts, contractAddress)
+  ) {
+    throw new CompactError('Callee context requires a declared non-reentrant circuit');
+  }
+  if (
+    initialQueryContext.address !== contractAddress ||
+    initialQueryContext.block.ownAddress !== contractAddress ||
+    initialQueryContext.block.parentBlockHash !== parent.parentBlockHash ||
+    initialQueryContext.block.secondsSinceEpoch !== BigInt(parent.time) ||
+    initialQueryContext.block.caller?.tag !== 'contract' ||
+    initialQueryContext.block.caller.address !== parent.contractAddress
+  ) {
+    throw new CompactError('Callee query differs from the caller parent-block snapshot');
+  }
+  assertQuerySourceState(initialQueryContext, deployedState);
+  if (caller.stateProvider === undefined || caller.moduleProvider === undefined) {
+    throw new CompactError('Callee context requires both cross-contract providers');
+  }
+  const gasCost = { ...currentGasCost };
+  const zswapLocalState = copyEncodedZswapLocalState(
+    caller.zswapLocalStates[contractAddress] ??
+      emptyZswapLocalState(copyEncodedZswapLocalState(caller.callContext.currentZswapLocalState).coinPublicKey),
+  );
+  const callContext: CircuitCallContext = {
+    circuitId,
+    contractAddress,
+    initialQueryContext,
+    currentQueryContext: initialQueryContext,
+    currentGasCost: gasCost,
+    currentPrivateState: undefined,
+    currentZswapLocalState: zswapLocalState,
+    parentBlockHash: parent.parentBlockHash,
+    time: parent.time,
+  };
+  const activeContracts = new Set<ocrt.ContractAddress>();
+  activeSetForEach.call(caller.activeContracts, (address) => activeSetAdd.call(activeContracts, address));
+  activeSetAdd.call(activeContracts, contractAddress);
+  const child: CircuitContext = {
+    ...caller,
+    callContext,
+    queryContexts: { ...caller.queryContexts, [contractAddress]: initialQueryContext },
+    gasCosts: { ...caller.gasCosts, [contractAddress]: gasCost },
+    zswapLocalStates: { ...caller.zswapLocalStates, [contractAddress]: zswapLocalState },
+    contractStates: { ...caller.contractStates, [contractAddress]: deployedState },
+    callProofDataTrace: [...caller.callProofDataTrace],
+    activeContracts,
+    currentPrivateState: undefined,
+    currentZswapLocalState: zswapLocalState,
+    currentQueryContext: initialQueryContext,
+    events: [...caller.events],
+  };
+  return bindProvenance(
+    child,
+    Object.freeze({
+      mode: 'ledger9',
+      circuitId,
+      contractAddress,
+      time: parent.time,
+      parentBlockHash: parent.parentBlockHash,
+      callerAddress: parent.contractAddress,
+      sourceContractState: deployedState,
+      initialQueryContext,
+    }),
+  );
+};
+
 export const assertCircuitQueryIdentity = (context: CircuitContext, query: ocrt.QueryContext): void => {
   const pin = readProvenance(context);
   assertFrameProvenance(context, pin);
@@ -414,7 +538,9 @@ export const assertCircuitQueryIdentity = (context: CircuitContext, query: ocrt.
     query.address !== pin.contractAddress ||
     query.block.ownAddress !== pin.contractAddress ||
     query.block.secondsSinceEpoch !== BigInt(pin.time) ||
-    (pin.parentBlockHash !== undefined && query.block.parentBlockHash !== pin.parentBlockHash)
+    (pin.parentBlockHash !== undefined && query.block.parentBlockHash !== pin.parentBlockHash) ||
+    (pin.callerAddress !== undefined &&
+      (query.block.caller?.tag !== 'contract' || query.block.caller.address !== pin.callerAddress))
   ) {
     throw new CompactError('Ledger 9 query changed the pinned block or call identity');
   }
@@ -590,6 +716,7 @@ export const queryLedgerState = (
           : op,
       ) as ocrt.Op<ocrt.AlignedValue>[],
     );
+    if (ledger9) inheritQuerySourceState(currentQueryContext, res.context);
     // Commit after all identity, transcript and copy checks have succeeded.
     circuitContext.currentQueryContext = res.context;
     if (nextFrame) circuitContext.callContext = nextFrame;

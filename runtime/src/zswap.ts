@@ -17,6 +17,7 @@ import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import {
   assertCircuitQueryIdentity,
   assertLiveCircuitCall,
+  inheritQuerySourceState,
   isLedger9CircuitContext,
   type CircuitContext,
 } from './circuit-context.js';
@@ -320,7 +321,10 @@ export function createZswapOutput(
     Buffer.from(Bytes32Descriptor.fromValue(createCoinCommitment(ownedCoin, ownedRecipient).value)).toString('hex'),
     currentZswapLocalState.currentIndex,
   );
-  if (ledger9) assertCircuitQueryIdentity(circuitContext, nextQueryContext);
+  if (ledger9) {
+    assertCircuitQueryIdentity(circuitContext, nextQueryContext);
+    inheritQuerySourceState(currentQueryContext, nextQueryContext);
+  }
   nextZswapLocalState.currentIndex += 1n;
   nextZswapLocalState.outputs.push({ coinInfo: ownedCoin, recipient: ownedRecipient });
   circuitContext.currentQueryContext = nextQueryContext;

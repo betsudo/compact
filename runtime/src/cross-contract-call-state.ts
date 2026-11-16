@@ -20,7 +20,14 @@
  */
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
-import { emptyRunningCost } from './circuit-context.js';
+import {
+  assertLiveCircuitCall,
+  assertQuerySourceState,
+  bindQuerySourceState,
+  emptyRunningCost,
+  sourceContractStateOf,
+  type CircuitContext,
+} from './circuit-context.js';
 import { CompactError } from './error.js';
 import { InterfaceDescriptor } from './interface-descriptor.js';
 import { Module } from './module.js';
@@ -282,6 +289,7 @@ export class InternalCrossContractCallState {
       parentBlockHash,
       secondsSinceEpoch: BigInt(time),
     };
+    bindQuerySourceState(queryContext, entryState);
     this.#frames = [{ address: entryAddress }];
     this.#active = new Set([entryAddress]);
     this.#queryContexts.set(entryAddress, queryContext);
@@ -316,6 +324,35 @@ export class InternalCrossContractCallState {
   deployedStateFor(address: ocrt.ContractAddress): ocrt.ContractState | undefined {
     this.#requireHealthy();
     return this.#deployedStates.get(address);
+  }
+
+  /**
+   * Adopt the actual generated caller after its already-recorded ledger reads.
+   * The constructor's root query is only a seed; using it for preflight after
+   * generated code has read the ledger would silently rewind the call tree.
+   * This method is internal and performs no provider access or transcript edit.
+   */
+  bindRootCircuitContext(context: CircuitContext): void {
+    this.#requireHealthy();
+    if (this.#frames.length !== 1 || this.#active.size !== 1) {
+      throw new CompactError('Cannot bind a generated root while a callee is active');
+    }
+    assertLiveCircuitCall(context);
+    const root = this.#frames[0].address;
+    if (
+      context.callContext.contractAddress !== root ||
+      context.callContext.parentBlockHash !== this.#snapshot.parentBlockHash ||
+      context.callContext.time !== this.#snapshot.time ||
+      sourceContractStateOf(context) !== this.#deployedStates.get(root) ||
+      !context.activeContracts.has(root)
+    ) {
+      throw new CompactError('Generated root differs from the call-state parent-block snapshot');
+    }
+    assertPinnedContext(context.callContext.currentQueryContext, root, this.#snapshot);
+    assertQuerySourceState(context.callContext.currentQueryContext, this.#deployedStates.get(root)!);
+    this.#queryContexts.set(root, context.callContext.currentQueryContext);
+    this.#gasCosts.set(root, { ...context.callContext.currentGasCost });
+    this.#generation++;
   }
 
   /**
@@ -442,6 +479,7 @@ export class InternalCrossContractCallState {
         parentBlockHash: snapshot.parentBlockHash,
         caller: { tag: 'contract', address: callerAddress },
       };
+      bindQuerySourceState(queryContext, prepared.deployedState);
     } else {
       assertPinnedContext(queryContext, calleeAddress, snapshot);
       queryContext.block = {
@@ -487,6 +525,7 @@ export class InternalCrossContractCallState {
     this.#requireHealthy();
     this.#assertTop(call);
     assertPinnedContext(context, call.calleeAddress, this.#snapshot);
+    assertQuerySourceState(context, call.deployedState);
     this.#queryContexts.set(call.calleeAddress, context);
     this.#gasCosts.set(call.calleeAddress, { ...gasCost });
     this.#generation++;

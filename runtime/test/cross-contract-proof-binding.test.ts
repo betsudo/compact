@@ -48,7 +48,8 @@ describe('internal call proof binding', () => {
   });
 
   test('claim cell binds the callee address, entry point and communication commitment in pinned order', () => {
-    const address = ocrt.sampleContractAddress();
+    // A random address ending in zero is shortened by StateValue canonical decoding.
+    const address = '11'.repeat(32);
     const randomness = ocrt.communicationCommitmentRandomness();
     const binding = prepareCallProofBinding(address, 'transfer', input, output, randomness);
     expect(binding.commCommData).toEqual({
