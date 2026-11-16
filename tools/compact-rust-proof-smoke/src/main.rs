@@ -86,6 +86,19 @@ mod closed_pure_field;
 ))]
 mod for_generic_bound_proof;
 #[cfg(all(
+    feature = "import-ledger-field-proof",
+    compact_import_ledger_field_generated
+))]
+include!(concat!(
+    env!("COMPACT_IMPORT_LEDGER_FIELD_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    feature = "import-ledger-field-proof",
+    compact_import_ledger_field_generated
+))]
+mod import_ledger_field_proof;
+#[cfg(all(
     any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
     compact_bytes_remaining_proof_generated
 ))]

@@ -264,6 +264,32 @@ fn main() {
         println!("cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated");
     }
     println!("cargo::rustc-check-cfg=cfg(compact_for_generic_bound_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_import_ledger_field_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_IMPORT_LEDGER_FIELD_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_IMPORT_LEDGER_FIELD_PROOF").is_some() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_IMPORT_LEDGER_FIELD_GENERATED")
+                .expect("complete pinned import/ledger_field generated root required"),
+        );
+        assert!(
+            root.is_absolute(),
+            "absolute import/ledger_field root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/import_ledger_field.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete import/ledger_field member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_import_ledger_field_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_if_empty_else_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_branches_set_insert_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_IF_BRANCHES_SET_INSERT_GENERATED");
