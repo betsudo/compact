@@ -9,7 +9,10 @@ fn compact_underscore_local_is_addressable_without_admitting_other_underscore_id
     assert!(check_name("_").is_err());
     let checked = check_local_name("_").unwrap();
     assert_eq!(allocate(&checked, "_", []).to_string(), "__compact_local__");
-    assert_eq!(check_local_name(" _").unwrap_err(), crate::RenderError::InvalidIdentifier(" _".into()));
+    assert_eq!(
+        check_local_name(" _").unwrap_err(),
+        crate::RenderError::InvalidIdentifier(" _".into())
+    );
 }
 
 #[test]
