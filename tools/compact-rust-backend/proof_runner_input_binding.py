@@ -68,6 +68,10 @@ def prepare_generated_inputs(root, output, report, execute, feature, digest):
     source_map = {str(Path(path).resolve(strict=True)): sha
                   for field in ("source_hashes", "dependency_source_hashes")
                   for path, sha in report[field].items()}
+    require(all(path not in source_map or source_map[path] == sha
+                for path, sha in report["generated_input_hashes"].items()),
+            "generated input conflicts with source binding")
+    preparation_map = {**source_map, **report["generated_input_hashes"]}
     execute("prepare-runner-inputs", ["cargo", "check", "--profile", "proof-checks",
                                       "--locked", "--offline", "-p", "compact-rust-proof-smoke",
                                       "--features", feature, "--message-format=json"],
@@ -109,11 +113,11 @@ def prepare_generated_inputs(root, output, report, execute, feature, digest):
                         rerun_files.update(p.resolve(strict=True) for p in path.rglob("*") if p.is_file())
                     else:
                         rerun_files.add(path)
-            require(all(str(path) in source_map and digest(path) == source_map[str(path)]
+            require(all(str(path) in preparation_map and digest(path) == preparation_map[str(path)]
                         for path in rerun_files),
-                    "local generated-input source absent from pre-preparation map")
+                    "local generated-input rerun member absent from pre-preparation map")
             owner["rerun_inputs_before_preparation"] = {
-                str(path): source_map[str(path)] for path in sorted(rerun_files)}
+                str(path): preparation_map[str(path)] for path in sorted(rerun_files)}
         owners.append(owner)
     require(owners and generated, "no actual build-generated inputs prepared")
     report["prepared_build_scripts"] = owners

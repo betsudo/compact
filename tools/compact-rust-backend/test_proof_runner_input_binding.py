@@ -67,7 +67,8 @@ class RunnerInputBindingTests(unittest.TestCase):
             package = {"id": "fixture 1.0.0", "name": "fixture", "version": "1.0.0",
                        "source": None, "manifest_path": str(manifest),
                        "targets": [{"kind": ["custom-build"], "src_path": str(owner)}]}
-            report = {"source_hashes": hashes([owner, manifest, rerun, root / "Cargo.lock"])}
+            report = {"source_hashes": hashes([owner, manifest, rerun, root / "Cargo.lock"]),
+                      "generated_input_hashes": {}}
             calls = []
 
             def execute(label, command, stdout=None):
@@ -109,17 +110,19 @@ class RunnerInputBindingTests(unittest.TestCase):
                     digest)
             generated.write_text("pub const PINNED: u8 = 1;\n")
             rerun.write_text("changed after source pin\n")
-            changed_report = {"source_hashes": report["source_hashes"].copy()}
+            changed_report = {"source_hashes": report["source_hashes"].copy(),
+                              "generated_input_hashes": {}}
             changed_output = root / "changed-evidence"
             changed_output.mkdir()
-            with self.assertRaisesRegex(ValueError, "local generated-input source absent"):
+            with self.assertRaisesRegex(ValueError, "local generated-input rerun member absent"):
                 prepare_generated_inputs(root, changed_output, changed_report, execute,
                                          "stateful-product-vector-widening", digest)
             rerun.write_text("original source\n")
-            untracked_report = {"source_hashes": hashes([owner, manifest, root / "Cargo.lock"])}
+            untracked_report = {"source_hashes": hashes([owner, manifest, root / "Cargo.lock"]),
+                                "generated_input_hashes": {}}
             untracked_output = root / "untracked-evidence"
             untracked_output.mkdir()
-            with self.assertRaisesRegex(ValueError, "local generated-input source absent"):
+            with self.assertRaisesRegex(ValueError, "local generated-input rerun member absent"):
                 prepare_generated_inputs(root, untracked_output, untracked_report, execute,
                                          "stateful-product-vector-widening", digest)
 

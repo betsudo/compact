@@ -43,6 +43,17 @@ pub(super) fn try_run(
             Some(super::positional_suite::verify_baseline(arguments))
         }
         ("--positional-call-verify", _) => Some(super::positional_transaction::verify(arguments)),
+        #[cfg(all(
+            any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
+            compact_bytes_remaining_proof_generated
+        ))]
+        ("--bytes-remaining-proof", _) => Some((|| {
+            let root = arguments.next().ok_or("Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected Bytes proof argument".into());
+            }
+            crate::bytes_remaining_proof::run(std::path::Path::new(&root))
+        })()),
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }

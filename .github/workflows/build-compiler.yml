@@ -238,6 +238,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -870,6 +872,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -1168,6 +1172,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -1611,6 +1617,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -1817,6 +1825,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -1980,6 +1990,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -2136,6 +2148,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"
@@ -2274,6 +2288,8 @@ jobs:
 
       - name: Resolve locked ledger proof fixtures
         run: |
+          git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'
           python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'
           cargo fetch --locked
           cargo metadata --locked --offline --format-version 1 > "$RUNNER_TEMP/compact-cargo-metadata.json"

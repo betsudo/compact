@@ -27,6 +27,8 @@ class PublicGateTests(unittest.TestCase):
                     '.github/workflows/rust-backend-checks.yml').read_text()
         public = workflow.split('  public-python:\n', 1)[1].split('  required:\n', 1)[0]
         before, execution = public.split('      - name: Run public unit and sidecar controls\n', 1)
+        self.assertIn('git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git '
+                      '672bd0f226f47a7d036c5c074ce71fbe1af1925e', before)
         setup = before.split('      - name: Install pinned Rust for real Python Clippy regression\n', 1)[1]
         self.assertIn('uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7', setup)
         self.assertIn('toolchain: 1.99.0', setup)
@@ -35,6 +37,24 @@ class PublicGateTests(unittest.TestCase):
         self.assertNotIn('continue-on-error', public)
         self.assertIn('ci_python_checks.py', execution)
         self.assertFalse(any('test_external_library_clippy' in name for name in gate.MANUAL_GRAPH_METHODS))
+
+    def test_compiler_proof_jobs_fetch_pinned_source_before_broad_python_suite(self):
+        workflow = (Path(__file__).resolve().parents[2] /
+                    '.github/workflows/build-compiler.yml').read_text()
+        suite = "python3 -m unittest discover -s tools/compact-rust-backend -p 'test_*.py'"
+        fetch = ('git fetch --no-tags --depth=1 '
+                 'https://github.com/LFDT-Minokawa/compact.git '
+                 '672bd0f226f47a7d036c5c074ce71fbe1af1925e')
+        object_check = ("git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e:"
+                        "test-contracts/primitives/field/casts/to_boolean/compile.pass.test.ts'")
+        self.assertEqual(workflow.count(suite), 8)
+        self.assertEqual(workflow.count(fetch), 8)
+        self.assertEqual(workflow.count(object_check), 8)
+        for section in workflow.split(suite)[:-1]:
+            run = section.rsplit('      - name: Resolve locked ledger proof fixtures\n', 1)[-1]
+            self.assertIn(fetch, run)
+            self.assertIn(object_check, run)
+            self.assertLess(run.index(fetch), run.index(object_check))
 
     def execute(self, action, expected_skips=frozenset()):
         class Probe(unittest.TestCase):

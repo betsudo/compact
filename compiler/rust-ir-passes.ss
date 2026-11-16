@@ -729,6 +729,20 @@
                                   (cons "value" (lower expr^))
                                   (cons "length" len))))]
                   [else #f])
+                ;; The pinned Field cast targets Bytes<4>. Check that the
+                ;; canonical value fits before encoding its four little-endian
+                ;; bytes; slicing the 32-byte representation would incorrectly
+                ;; accept an overflowing Field. Keep other direct widths on
+                ;; the explicit refusal path.
+                (and (= len 4)
+                     (object (cons "kind" "uint_to_bytes")
+                             (cons "value"
+                                   (object (cons "kind" "bytes_to_uint")
+                                           (cons "value"
+                                                 (object (cons "kind" "field_to_bytes32")
+                                                         (cons "value" (lower expr))))
+                                           (cons "max" "4294967295")))
+                             (cons "length" 4)))
                 (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))))
 
       ;; Checked nominal casts on products leave the generated carrier
