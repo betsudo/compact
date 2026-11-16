@@ -40,6 +40,7 @@ CASE = ROOT / 'test-contracts/primitives/bytes/manual_update/slow/large_reconstr
 SOURCE = CASE / 'bytes_manual_update_large_reconstruction.compact'
 MANIFEST = CASE.parent / 'large-reconstruction-original-source-sha256.json'
 EXPECTED = [1, 4, 9, 16, 25, 36, 49, 14, 31, 50]
+RUST_TEST_STACK_BYTES = 64 * 1024 * 1024
 
 
 def originals() -> dict[str, str]:
@@ -207,6 +208,9 @@ def main() -> None:
             'shared Cargo target must be an ordinary directory')
     cargo_env = dict(environment, CARGO_TARGET_DIR=str(cargo_target),
                      CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
+                     # Ten nested dispatch branches inside a stateful Fold
+                     # exceed Darwin's default Rust test-thread stack.
+                     RUST_MIN_STACK=str(RUST_TEST_STACK_BYTES),
                      TS_GAS_READ_TIME=ts_result['gas']['readTime'],
                      TS_GAS_COMPUTE_TIME=ts_result['gas']['computeTime'],
                      TS_GAS_BYTES_WRITTEN=ts_result['gas']['bytesWritten'],
@@ -267,6 +271,7 @@ def main() -> None:
                'cargo_metadata_log_sha256': sha256(output / 'cargo-metadata.log'),
                'cargo_test_log_sha256': sha256(output / 'cargo-test.log'),
                'cargo_target': str(cargo_target),
+               'rust_test_stack_bytes': RUST_TEST_STACK_BYTES,
                'proof_execution': False, 'funded_application': False,
                'limitation': 'fresh k16 proof, funded default-strict application and native Linux integration remain open'}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')

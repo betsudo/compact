@@ -60,6 +60,7 @@ def main() -> None:
             receipt['status'] == 'paired_semantics_qualified' and
             receipt['upstream_commit'] == PINNED and
             receipt['ordered_transcript_parity'] is True and
+            receipt['rust_test_stack_bytes'] == 64 * 1024 * 1024 and
             receipt['proof_execution'] is False and
             receipt['funded_application'] is False,
             'paired semantic receipt identity/status changed')
