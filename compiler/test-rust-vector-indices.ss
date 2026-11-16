@@ -389,4 +389,39 @@
                         (not (rust-vector-index-observations item))
                         (not (rust-vector-domain-certified? item '(1 2))))) copied*)))))
 
+;; The immutable Bytes Fold bridge uses the same ordered occurrence facts.
+;; Confirm that neither a missing or reordered circuit visit nor a copied
+;; bytes-ref occurrence can certify its runtime reducer index.
+(let* ([runtime-ir (analyze (write-source "bytes-fold-domain-observations"
+         "export pure circuit choose(items: Bytes<4>, i: Uint<8>): Uint<8> { return items[i]; }"))]
+       [node (car (byte-nodes runtime-ir))]
+       [src (byte-source node)])
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-ir)])
+    (check 'bytes-fold-source-unique (rust-vector-unique-source? node))
+    (check 'bytes-fold-unobserved (null? (rust-vector-index-observations node)))
+    (observe-rust-vector-index! src 1)
+    (observe-rust-vector-index! src 2)
+    (check 'bytes-fold-order-and-multiplicity
+      (equal? (rust-vector-index-observations node) '(1 2)))
+    (check 'bytes-fold-exact-certification
+      (rust-vector-domain-certified? node '(1 2)))
+    (check 'bytes-fold-missing-observation-refused
+      (not (rust-vector-domain-certified? node '(1 2 3))))
+    (check 'bytes-fold-reordered-observation-refused
+      (not (rust-vector-domain-certified? node '(2 1))))
+    (check 'bytes-fold-runtime-formal-still-refused
+      (not (rust-vector-index node)))
+    (observe-rust-vector-index! src 2)
+    (check 'bytes-fold-extra-observation-refused
+      (not (rust-vector-domain-certified? node '(1 2)))))
+  (let* ([copied (duplicate-bytes runtime-ir)] [copied* (byte-nodes copied)])
+    (check 'bytes-fold-copied-occurrence-count (= (length copied*) 2))
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied)])
+      (observe-rust-vector-index! (byte-source (car copied*)) 1)
+      (check 'bytes-fold-copied-source-refused
+        (for-all (lambda (item)
+                   (and (not (rust-vector-unique-source? item))
+                        (not (rust-vector-index-observations item))
+                        (not (rust-vector-domain-certified? item '(1 2))))) copied*)))))
+
 (printf "~d Rust collection index occurrence controls passed\n" checks)
