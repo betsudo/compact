@@ -190,6 +190,19 @@
                (reverse (index-guards))))))
        (Expression expr)
        (Expression index)
+       ir]
+      ;; Every admitted Vector slice is checked by the circuit constant
+      ;; evaluator. Track the original node independently of source coordinates
+      ;; so an unrelated or duplicated occurrence cannot lend its result.
+      [(vector-slice ,src ,type ,expr ,index ,len)
+       (let ([by-source (vector-ref (collecting) 0)]
+             [by-node (vector-ref (collecting) 1)])
+         (when (source-object? src)
+           (eq-hashtable-set! by-source src
+             (if (eq-hashtable-contains? by-source src) 'ambiguous ir)))
+         (eq-hashtable-set! by-node ir 'unobserved))
+       (Expression expr)
+       (Expression index)
        ir]))
 
   (define (make-rust-vector-index-facts ir)

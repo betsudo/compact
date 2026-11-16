@@ -265,11 +265,53 @@ def main():
             report["compile_fail"][name] = compile_failure(rejected, name, code, source)
         report["source_refusals"] = {}
         for name, message in [("wrong_length", "mismatch between actual return type"), ("wrong_element", "mismatch between actual return type"),
-                ("narrow_return", "mismatch between actual return type"), ("inline_fold", "named Vector fold functions only"), ("binary_fold", "one iterable in Vector fold")]:
+                ("narrow_return", "mismatch between actual return type"), ("binary_fold", "one iterable in Vector fold")]:
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
                 FIXTURES / (name + ".compact"), output / ("refused-" + name)], success=False)
             require(rejected.returncode and message.lower() in rejected.stderr.lower(), "source refusal changed: " + name)
             report["source_refusals"][name] = message
+        # Pinned Vector fold support now accepts this formerly refused inline
+        # reducer. Execute both generated targets and retain the real refusals.
+        inline_source = FIXTURES / "inline_fold.compact"
+        inline_ts = output / "inline-fold-typescript"
+        inline_both = output / "inline-fold-both"
+        run("inline-fold-ts-compile", [compiler, "--target", "ts", "--skip-zk", "--feature-zkir-v3",
+            inline_source, inline_ts])
+        run("inline-fold-paired-compile", [compiler, "--target", "ts", "--target", "rust", "--skip-zk",
+            "--feature-zkir-v3", "--rust-runtime-root", ROOT, inline_source, inline_both])
+        inline_info = json.loads((inline_both / "compiler/contract-info.json").read_text())
+        require(inline_info["circuits"] == [{"name": "value", "pure": True, "proof": False,
+            "arguments": [{"name": name, "type": {"type-name": "Vector", "length": 2,
+                "type": {"type-name": "Uint", "maxval": 255}}} for name in ("input", "seed")],
+            "result-type": {"type-name": "Vector", "length": 2,
+                "type": {"type-name": "Uint", "maxval": 65535}}}],
+            "inline Fold capability or result type changed")
+        for name in ("compiler/contract-info.json", "contract/index.js"):
+            require(digest(inline_ts / name) == digest(inline_both / name),
+                    "paired inline Fold changed generated TypeScript: " + name)
+        inline_manifest = source_manifest_snapshot(inline_both, False)
+        inline_snapshots = {"typescript": inventory(inline_ts), "paired": inventory(inline_both)}
+        run("inline-fold-typescript", ["node", FIXTURES / "inline_fold_acceptance.mjs",
+            inline_both / "contract/index.js"])
+        inline_consumer = output / "inline-fold-consumer"
+        (inline_consumer / "tests").mkdir(parents=True)
+        shutil.copyfile(FIXTURES / "inline_fold_acceptance.rs", inline_consumer / "tests/inline_fold.rs")
+        shutil.copyfile(ROOT / "Cargo.lock", inline_consumer / "Cargo.lock")
+        inline_package = tomllib.loads((inline_both / "contract/Cargo.toml").read_text())["package"]["name"]
+        inline_cargo = inline_consumer / "Cargo.toml"
+        inline_cargo.write_text('[workspace]\n[package]\nname="inline-fold-acceptance-consumer"\n'
+            'version="0.1.0"\nedition="2024"\n[dependencies]\ninline_fold={package='
+            + json.dumps(inline_package) + ',path=' + json.dumps(str(inline_both / "contract")) + '}\n')
+        run("inline-fold-rust-resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
+            "--manifest-path", inline_cargo])
+        inline_rust = run("inline-fold-rust", ["cargo", "test", "--locked", "--offline",
+            "--manifest-path", inline_cargo])
+        require("test result: ok. 1 passed; 0 failed;" in inline_rust.stdout,
+                "generated Rust inline Fold assertion did not pass")
+        report["source_acceptance"] = {"inline_fold": {
+            "source_sha256": digest(inline_source), "manifest": inline_manifest,
+            "generated": inline_snapshots, "rust_consumer_lock_sha256": digest(inline_consumer / "Cargo.lock"),
+            "scope": "generated TypeScript and Rust inline Vector fold result widening"}}
         wrong = copy.deepcopy(reference)
         next(row for row in wrong["rows"] if row["id"] == "small_bounds")["result"]["valueAtoms"] = [[42, 0], [0, 0]]
         wrong_path = output / "changed-result.json"
@@ -329,6 +371,9 @@ def main():
             report["malformed_ir_refusals"][name] = rejected.stderr
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
+        require(inventory(inline_ts) == inline_snapshots["typescript"]
+                and inventory(inline_both) == inline_snapshots["paired"],
+                "accepted inline Fold generated artifact changed")
         for path, sha in pins.items():
             require(digest(ROOT / path) == sha, "source changed: " + path)
         for path, sha in tools.items():

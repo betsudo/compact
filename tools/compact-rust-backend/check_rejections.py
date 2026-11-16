@@ -44,41 +44,38 @@ CASES = {
         "Rust backend does not yet support this opaque type",
         None,
     ),
-    "vector-spread": (
-        'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
-        '  return [...v];\n'
-        '}\n',
-        "Rust backend does not yet support vector spreads",
-        (2, 10),
+    "field-to-bytes-width": (
+        'export pure circuit shorten(f: Field): Bytes<16> { return f as Bytes<16>; }\n',
+        "Rust backend supports Field-to-Bytes<32> casts only",
+        (1, 59),
     ),
-    "tuple-spread": (
-        'export pure circuit pair(v: [Field, Field]): [Field, Field] {\n'
-        '  return [...v];\n'
-        '}\n',
-        "Rust backend does not yet support tuple spreads",
-        (2, 10),
+    "scalar-spread": (
+        'export pure circuit bad(): [] { return [...true]; }\n',
+        "expected tuple/vector spread expression to have a tuple, Vector, or Bytes type but received",
+        None,
     ),
 }
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-# Spread cases are valid TypeScript programs. Unknown opaque types deliberately
-# exercise a shared target refusal; they are not Rust-only language gaps.
+# Field-to-Bytes<16> casts are valid TypeScript programs but remain unsupported
+# by the Rust backend. Unknown opaque types deliberately exercise a shared
+# target refusal; they are not Rust-only language gaps.
 CONTEXT_CASES = {
     "nested": (
-        'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
-        '  return true ? [...v] : v;\n}\n',
-        "nested.compact", (2, 17), False,
+        'export pure circuit shorten(f: Field): Bytes<16> {\n'
+        '  return (true ? f : 1) as Bytes<16>;\n}\n',
+        "nested.compact", (2, 10), False,
     ),
     "constructor": (
-        'export ledger n: Vector<2, Field>;\nconstructor(v: Vector<2, Field>) {\n'
-        '  n = disclose([...v]);\n}\n',
+        'export ledger n: Bytes<16>;\nconstructor(f: Field) {\n'
+        '  n = disclose(f as Bytes<16>);\n}\n',
         "constructor.compact", (3, 16), False,
     ),
     "imported": (
         'import "broken";\n'
-        'export pure circuit value(v: Vector<2, Field>): Vector<2, Field> { return spread(v); }\n',
+        'export pure circuit value(f: Field): Bytes<16> { return shorten(f); }\n',
         "broken.compact", (3, 10), False,
     ),
     "witness": (
@@ -104,8 +101,8 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
     directory = directory / "contexts"
     directory.mkdir()
     (directory / "broken.compact").write_text(
-        "module broken {\nexport pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n"
-        "  return [...v];\n}\n}\n"
+        "module broken {\nexport pure circuit shorten(f: Field): Bytes<16> {\n"
+        "  return f as Bytes<16>;\n}\n}\n"
     )
 
     def compile_source(source: Path, output: Path, target: str):
@@ -130,9 +127,8 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
                 failures.append(f"{name}: shared type refusal control changed:\n{control.stderr}")
         elif control.returncode or not (directory / f"{name}-ts/contract/index.js").is_file():
             failures.append(f"{name}: valid TypeScript control failed:\n{control.stderr}")
-        diagnostic = "Rust backend does not yet support " + (
-            "this opaque type" if opaque else "vector spreads"
-        )
+        diagnostic = ("Rust backend does not yet support this opaque type" if opaque
+                      else "Rust backend supports Field-to-Bytes<32> casts only")
         for output in (directory / name, preserved):
             rejected = compile_source(source_path, output, "rust")
             if (rejected.returncode == 0 or position not in rejected.stderr
@@ -181,6 +177,39 @@ def check_supported_field_to_uint(compactc: str, directory: Path) -> list[str]:
                 failures.append(f"Field-to-Uint {name}/{target}: valid cast did not build:\n"
                                 f"{result.stderr}")
     print(f"Field-to-Uint acceptance: {len(cases)} source contexts checked on TS and Rust")
+    return failures
+
+
+def check_supported_spreads(compactc: str, directory: Path) -> list[str]:
+    """Retain the former Vector and tuple spread refusals as positive controls."""
+    failures = []
+    directory = directory / "supported-spreads"
+    directory.mkdir()
+    cases = {
+        "vector": (
+            'export pure circuit copy(v: Vector<2, Field>): Vector<2, Field> {\n'
+            '  return [...v];\n}\n'
+        ),
+        "tuple": (
+            'export pure circuit copy(v: [Field, Field]): [Field, Field] {\n'
+            '  return [...v];\n}\n'
+        ),
+    }
+    for name, source in cases.items():
+        source_path = directory / f"{name}.compact"
+        source_path.write_text(source)
+        for target, artifacts in (
+            ("ts", ("contract/index.js",)),
+            ("rust", ("contract/lib.rs", "contract/Cargo.toml")),
+        ):
+            output = directory / f"{name}-{target}"
+            result = subprocess.run(
+                [compactc, "--target", target, "--skip-zk", str(source_path), str(output)],
+                capture_output=True, text=True, check=False,
+            )
+            if result.returncode or not all((output / path).is_file() for path in artifacts):
+                failures.append(f"supported {name} spread failed on {target}:\n{result.stderr}")
+    print("Spread acceptance: Vector and tuple sources checked on TS and Rust")
     return failures
 
 
@@ -777,18 +806,19 @@ def main() -> int:
             before = snapshot(existing_output)
             rejected = subprocess.run(
                 [compactc, "--target", "rust", "--skip-zk",
-                 str(directory / "vector-spread.compact"), str(existing_output)],
+                 str(directory / "scalar-spread.compact"), str(existing_output)],
                 capture_output=True, text=True, env=os.environ.copy(), check=False,
             )
             if rejected.returncode == 0 or snapshot(existing_output) != before or any(
                 directory.glob(f".{existing_output.name}.compactc-stage-*")
             ):
-                failures.append("spread rejection changed a complete existing output")
+                failures.append("invalid spread changed a complete existing output")
         failures.extend(check_output_publication(compactc, directory))
         failures.extend(check_output_serialization(compactc, directory))
         failures.extend(check_proof_capabilities(compactc, directory))
         failures.extend(check_context_locations(compactc, directory))
         failures.extend(check_supported_field_to_uint(compactc, directory))
+        failures.extend(check_supported_spreads(compactc, directory))
         failures.extend(check_boolean_typing(compactc, directory))
         failures.extend(check_vector_spread_disclosure(compactc, directory))
         failures.extend(check_contract_dependency_publication(compactc, directory))

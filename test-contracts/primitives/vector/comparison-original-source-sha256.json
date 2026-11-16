@@ -1,0 +1,11 @@
+{
+  "files": {
+    "test-contracts/primitives/vector/equality/semantics/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/vector/equality/semantics/runtime.pass.test.ts": "9805e149f249f4e46f6779a7f6d44de6cf78f48ede2d53745f378e05c3c37632",
+    "test-contracts/primitives/vector/equality/semantics/vector_equality_semantics.compact": "7c98b83f871eb3ad0fcba2d147024163b46c730005c6542876ff5729009b52aa",
+    "test-contracts/primitives/vector/inequality/semantics/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/vector/inequality/semantics/runtime.pass.test.ts": "4ec451393820bc18281c4b7026c8dffc88699c4858a2db6b5b47fb21e25b509c",
+    "test-contracts/primitives/vector/inequality/semantics/vector_inequality_semantics.compact": "9370af9fa888e51135db1fd5157d6d04f0634e9769bf67a6d6ebe5a5b8df9b0b"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}
