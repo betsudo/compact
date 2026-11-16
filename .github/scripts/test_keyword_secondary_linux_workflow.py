@@ -43,6 +43,10 @@ class WorkflowTest(unittest.TestCase):
                    '\x1b[90m (221)\x1b[39m\n')
         self.assertTrue(original_host_counts_match(plain))
         self.assertTrue(original_host_counts_match(colored))
+        with tempfile.TemporaryDirectory() as temporary:
+            log = Path(temporary) / 'original-vitest.log'
+            log.write_text(colored)
+            receipts.host_vitest_log(log, receipts.sha(log))
 
     def test_host_refuses_wrong_counts_markers_and_non_sgr_control(self):
         cases = '      ✓ original case\n' * 221
@@ -54,6 +58,16 @@ class WorkflowTest(unittest.TestCase):
         self.assertFalse(original_host_counts_match(exact.replace('✓', '', 1)))
         self.assertFalse(original_host_counts_match(exact.replace('221 passed',
                                                                   '\x1b[K221 passed')))
+        with tempfile.TemporaryDirectory() as temporary:
+            log = Path(temporary) / 'original-vitest.log'
+            for bad in (exact.replace('Tests  221 passed', 'Tests  220 passed'),
+                        exact.replace('✓', '', 1)):
+                log.write_text(bad)
+                with self.assertRaisesRegex(ValueError, 'original host execution differs'):
+                    receipts.host_vitest_log(log, receipts.sha(log))
+            log.write_text(exact)
+            with self.assertRaisesRegex(ValueError, 'original host execution differs'):
+                receipts.host_vitest_log(log, '0' * 64)
 
     def test_exact_source_and_serial_gate_graph(self):
         workflow = WORKFLOW.read_text()

@@ -28,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
 import proof_runner_input_binding as runner_inputs  # noqa: E402
 from check_upstream_ledger9_field_casts import runtime_identity  # noqa: E402
+from check_upstream_keyword_vitest_host import original_host_counts_match  # noqa: E402
 
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 FAMILIES = {'include': (7, 3, 26), 'prefix': (3, 2, 12),
@@ -94,6 +95,12 @@ def identity(receipt, head, tree):
 
 def log(root, row, key, filename):
     require(sha(root / filename) == row.get(key), f'log hash differs: {root / filename}')
+
+
+def host_vitest_log(path, expected_sha):
+    require(sha(path) == expected_sha and
+            original_host_counts_match(Path(path).read_text()),
+            'original host execution differs')
 
 
 def family(name, root, head, tree, compiler, recipe, runtime):
@@ -277,10 +284,9 @@ def host(root, head, tree, compiler, recipe):
     original_map(staging['original_files'], 418, local=False)
     for name, digest in staging['original_files'].items():
         require(sha(staged / name) == digest, f'host staged original differs: {name}')
-    require(sha(root / 'host/yarn-install.log') == report['yarn_install_log_sha256'] and
-            sha(root / 'host/original-vitest.log') == report['vitest_log_sha256'] and
-            '221 passed (221)' in (root / 'host/original-vitest.log').read_text(),
+    require(sha(root / 'host/yarn-install.log') == report['yarn_install_log_sha256'],
             'original host execution differs')
+    host_vitest_log(root / 'host/original-vitest.log', report['vitest_log_sha256'])
     return sha(root / 'host/receipt.json')
 
 
