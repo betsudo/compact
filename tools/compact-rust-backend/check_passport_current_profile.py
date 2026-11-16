@@ -460,7 +460,9 @@ def main(argv=None):
         if surface != sorted(exports):
             raise ValueError("Passport live TypeScript public export inventory differs")
         profile = f"current-{selected_version}-ledger{LEDGER_VERSION}"
-        reviewed_profile = f"branch-ledger9-runtime{ts_package['version']}-onchain{ONCHAIN_VERSION}"
+        # The reviewed capture is a historical behavior oracle. The live
+        # runtime is independently bound to the selected source above.
+        reviewed_profile = f"branch-ledger9-runtime0.17.0-onchain{ONCHAIN_VERSION}"
         receipt["typescript"] = []
         for family in FAMILIES:
             capture = output / f"{family}.json"

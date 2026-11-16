@@ -1192,6 +1192,7 @@
               (newline)
               (display-string "export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;\n")
               (display-string "export declare const pureCircuits: PureCircuits;\n")
+              (display-string "export declare const circuitSignatures: __compactRuntime.CircuitSignatures;\n")
               ))))
 
       (module (print-contract.js)
@@ -2230,6 +2231,104 @@
                           (list 2 (build-exported-pure-circuits xpelt* uname*) 0 "};"))))
                   (newline))))))
 
+        ;; Match the pinned compiler's machine-readable circuit signature
+        ;; representation.  The current frontend still represents foreign
+        ;; fields and points as named opaques, so recognize those leaves here.
+        (define (signature-comma-separated value*)
+          (if (null? value*) "" (format "~a~{, ~a~}" (car value*) (cdr value*))))
+
+        (define (format-signature-key name)
+          (let ([literal (format-javascript-string name)])
+            (if (string=? name "__proto__") (format "[~a]" literal) literal)))
+
+        (define (format-signature-sequence value*)
+          (cond
+            [(null? value*) "{tag: 'Tuple', types: []}"]
+            [(andmap (lambda (value) (string=? value (car value*))) (cdr value*))
+             (format "{tag: 'Vector', length: ~d, type: ~a}" (length value*) (car value*))]
+            [else (format "{tag: 'Tuple', types: [~a]}" (signature-comma-separated value*))]))
+
+        (define (format-signature-type type)
+          (nanopass-case (Ltypescript Type) type
+            [(tboolean ,src) "{tag: 'Boolean'}"]
+            [(tfield ,src) "{tag: 'Field'}"]
+            [(tunsigned ,src ,nat)
+             (format "{tag: 'Uint', maxval: ~a}" (format-javascript-string (number->string nat)))]
+            [(tbytes ,src ,len) (format "{tag: 'Bytes', length: ~d}" len)]
+            [(topaque ,src ,opaque-type)
+             (if (foreign-native-type? opaque-type)
+                 (format "{tag: ~a}" (format-javascript-string opaque-type))
+                 (format "{tag: 'Opaque', tsType: ~a}" (format-javascript-string opaque-type)))]
+            [(tvector ,src ,len ,type)
+             (if (zero? len)
+                 "{tag: 'Tuple', types: []}"
+                 (format "{tag: 'Vector', length: ~d, type: ~a}"
+                   len (format-signature-type type)))]
+            [(ttuple ,src ,type* ...)
+             (format-signature-sequence (map format-signature-type type*))]
+            [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
+             (format "{tag: 'Struct', name: ~a, elements: [~a]}"
+               (format-javascript-string (symbol->string struct-name))
+               (signature-comma-separated
+                 (map (lambda (elt-name type)
+                        (format "{name: ~a, type: ~a}"
+                          (format-javascript-string (symbol->string elt-name))
+                          (format-signature-type type)))
+                      elt-name* type*)))]
+            [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
+             (format "{tag: 'Enum', name: ~a, elements: [~a]}"
+               (format-javascript-string (symbol->string enum-name))
+               (signature-comma-separated
+                 (map (lambda (name) (format-javascript-string (symbol->string name)))
+                      (cons elt-name elt-name*))))]
+            [(talias ,src ,nominal? ,type-name ,type)
+             (cond
+               [(and nominal? (eq? type-name 'JubjubPoint) (stdlib-src? src))
+                "{tag: 'JubjubPoint'}"]
+               [nominal?
+                (format "{tag: 'Alias', name: ~a, type: ~a}"
+                  (format-javascript-string (symbol->string type-name))
+                  (format-signature-type type))]
+               [else (format-signature-type type)])]
+            [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+             (format "{tag: 'Contract', name: ~a, circuits: {~a}}"
+               (format-javascript-string (symbol->string contract-name))
+               (signature-comma-separated
+                 (map (lambda (elt-name arg-type* result-type)
+                        (format "~a: {argumentTypes: [~a], resultType: ~a}"
+                          (format-signature-key (symbol->string elt-name))
+                          (signature-comma-separated (map format-signature-type arg-type*))
+                          (format-signature-type result-type)))
+                      elt-name* type** type*)))]
+            [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
+             (assert cannot-happen)]
+            [(tunknown) (assert cannot-happen)]))
+
+        (define (print-circuit-signatures xpelt*)
+          (display-string "export const circuitSignatures = {\n")
+          (display-string "  __proto__: null,\n")
+          (for-each
+            (lambda (xpelt)
+              (XPelt-case xpelt
+                [(XPelt-exported-circuit src internal-id arg* type stmt external-name* pure?)
+                 (for-each
+                   (lambda (external-name)
+                     (printf "  ~a: {pure: ~a, provable: ~a, argumentTypes: [~a], resultType: ~a},\n"
+                       (format-signature-key external-name)
+                       (if pure? "true" "false")
+                       (if (memq (string->symbol external-name) (proof-circuit-names))
+                           "true" "false")
+                       (signature-comma-separated
+                         (map (lambda (arg)
+                                (nanopass-case (Ltypescript Argument) arg
+                                  [(,var-name ,type) (format-signature-type type)]))
+                              arg*))
+                       (format-signature-type type)))
+                   external-name*)]
+                [else (void)]))
+            xpelt*)
+          (display-string "};\n\n"))
+
         (define (print-exported-types xpelt*)
           (for-each
             (lambda (xpelt)
@@ -2237,6 +2336,8 @@
                 [(XPelt-type-definition src type-name export-name tvar-name* type)
                  (nanopass-case (Ltypescript Type) type
                    [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
+                    (when (eq? export-name 'circuitSignatures)
+                      (source-errorf src "exported enum name circuitSignatures conflicts with generated circuit metadata export"))
                     (printf "export var ~a;\n" export-name)
                     (printf "(function (~a) {\n" export-name)
                     (let ([elt-name* (cons elt-name elt-name*)])
@@ -2420,6 +2521,7 @@
                 (print-exported-types xpelt*)
                 (print-contract-descriptors src descriptor-id* type*)
                 (print-contract-class src xpelt* uname*)
+                (print-circuit-signatures xpelt*)
                 (for-each print-contract-reference-locations xpelt*)
                 (print-contract-footer)
                 (record-sourcemap-eof! sourcemap-tracker (port-position (current-output-port)))

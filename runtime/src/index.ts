@@ -25,6 +25,7 @@ export * from './circuit-context.js';
 export * from './proof-data.js';
 export * from './witness.js';
 export * from './contract-dependencies.js';
+export * from './interface-descriptor.js';
 export * from './utils.js';
 
 export {

@@ -38,6 +38,7 @@ from check_stateful_product_vector_widening import reject_compiler_overrides, so
 
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(__file__).with_name("tests") / "outer_vector_product_semantics"
+RUNTIME_VERSION = "0.18.0"
 
 
 def require(ok, message):
@@ -47,6 +48,16 @@ def require(ok, message):
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def checked_runtime_version(runtime: Path, source: Path = ROOT / "runtime/package.json") -> str:
+    declared = json.loads(source.read_bytes())
+    packaged = json.loads((runtime / "package.json").read_bytes())
+    require(declared.get("version") == packaged.get("version") == RUNTIME_VERSION,
+            "runtime version differs")
+    require(all(declared.get(key) == packaged.get(key) for key in ("name", "dependencies")),
+            "runtime package metadata differs from source")
+    return RUNTIME_VERSION
 
 
 def main():
@@ -69,7 +80,7 @@ def main():
     for key, path in (("compactc", compiler), ("compactc-scheme", scheme)):
         require(digest(path) == build[key]["sha256"], "compiler executable identity changed")
     runtime = args.ts_runtime.resolve(strict=True)
-    require(json.loads((runtime / "package.json").read_bytes())["version"] == "0.17.0", "runtime version differs")
+    runtime_version = checked_runtime_version(runtime)
     env = dict(os.environ)
     config = reject_compiler_overrides(dict(env))
     env.setdefault("RUSTUP_TOOLCHAIN", "1.99.0")
@@ -208,11 +219,11 @@ def main():
         (out / "package.json").write_text('{"type":"module"}\n')
         bind(out / "package.json")
         ts = out / "ts-results.json"
-        run("fresh-ts", [node, FIXTURES / "capture.mjs", "--generated", out / "generated", "--runtime", runtime, "--version", "0.17.0", "--output", ts])
+        run("fresh-ts", [node, FIXTURES / "capture.mjs", "--generated", out / "generated", "--runtime", runtime, "--version", runtime_version, "--output", ts])
         observed = json.loads(ts.read_bytes())
         require(observed["status"] == "passed" and observed["format"] == "outer-vector-product-widening-ts/v1"
                 and [r["id"] for r in observed["rows"]] == [r["id"] for r in cases], "fresh TS case roster differs")
-        require(observed["runtime"]["path"] == str(runtime) and observed["runtime"]["version"] == "0.17.0"
+        require(observed["runtime"]["path"] == str(runtime) and observed["runtime"]["version"] == runtime_version
                 and observed["node"]["path"] == str(node) and observed["node"]["sha256"] == digest(node), "TS runtime/Node identity differs")
         require(observed["capture"] == {"path": str((FIXTURES / "capture.mjs").resolve()), "sha256": digest(FIXTURES / "capture.mjs")}, "TS capture identity differs")
         require(set(observed["wrappers"]) == {s["role"] for s in definitions}, "TS wrapper roster differs")

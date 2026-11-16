@@ -47,7 +47,7 @@ function inventory(folder) {
 
 const runtime=realpathSync(runtimeRoot),before=inventory(runtime);
 const runtimeManifest=resolve(runtime,'package.json');
-assert.equal(JSON.parse(readFileSync(runtimeManifest)).version,'0.17.0');
+assert.equal(JSON.parse(readFileSync(runtimeManifest)).version,'0.18.0');
 const onchainManifest=createRequire(runtimeManifest).resolve.paths('@midnightntwrk/onchain-runtime-v4')
   .map(path=>resolve(path,'@midnightntwrk/onchain-runtime-v4/package.json')).find(existsSync);
 assert.ok(onchainManifest,'missing paired Onchain Runtime');

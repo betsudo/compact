@@ -647,6 +647,12 @@ jobs:
           nix develop .#compiler --command compactc ./test-center/compact/test.compact "$RUNNER_TEMP/compact-output/"
           nix develop .#compiler --command compactc ./examples/tiny.compact "$RUNNER_TEMP/tiny-output/"
 
+      - name: Check generated circuit signature metadata
+        run: |
+          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          nix develop .#compiler --command node test-contracts/stdlib/metadata/check.mjs \
+            "$COMPACTC" "$TS_RUNTIME" "$RUNNER_TEMP/compact-signature-metadata"
+
       - name: Merge report as ZIP
         run: |
           mv coverage "coverage_$(date +"%Y%m%d%H%M%S")"
