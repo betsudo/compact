@@ -318,6 +318,19 @@ jobs:
             --zkir "$SECONDARY_ZKIR" --output "$root/constructor_proof" \
             --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET" \
             | tee "$root/constructor_proof.stdout.log"
+      - name: Prove and strictly apply two disclose transactions serially
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-secondary-proof-parameters"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+            tools/compact-rust-backend/check_upstream_ledger9_disclose_proofs.py \
+            --disclose-gate "$root/disclose" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+            --zkir "$SECONDARY_ZKIR" --output "$root/disclose_proofs" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET" \
+            | tee "$root/disclose_proofs.stdout.log"
       - name: Verify retained source, generated artifacts and proof receipts
         env:
           SOURCE_SHA: ${{ github.sha }}

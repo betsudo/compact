@@ -91,6 +91,7 @@ class WorkflowTest(unittest.TestCase):
                     'check_upstream_ledger9_import_ledger_field_proof.py',
                     'check_upstream_ledger9_bytes_indexed_access_proof.py',
                     'check_upstream_ledger9_keyword_constructor_parameters_proof.py',
+                    'check_upstream_ledger9_disclose_proofs.py',
                     'verify_keyword_secondary_linux_receipts.py')
         positions = [workflow.index(name) for name in sequence]
         self.assertEqual(positions, sorted(positions))
@@ -98,6 +99,14 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn('needs: [source-preflight, compiler-linux, secondary-semantics]',
                       workflow)
         self.assertNotIn('pull_request:', workflow)
+        self.assertIn('--disclose-gate "$root/disclose"', workflow)
+        self.assertIn('--output "$root/disclose_proofs"', workflow)
+        self.assertIn('--expected-source-sha "$GITHUB_SHA"', workflow)
+        disclose_driver = (ROOT / 'tools/compact-rust-backend/'
+                           'check_upstream_ledger9_disclose_proofs.py').read_text()
+        self.assertIn("case_target = cargo_target / f'disclose-{case}'",
+                      disclose_driver)
+        self.assertIn('physical_sha256(Path(name)) == digest', disclose_driver)
 
     def test_upload_excludes_rebuildable_dependencies_and_targets(self):
         workflow = WORKFLOW.read_text()
@@ -115,6 +124,7 @@ class WorkflowTest(unittest.TestCase):
         self.assertEqual(sum(row[0] for row in receipts.FAMILIES.values()), 86)
         self.assertEqual(sum(row[1] for row in receipts.FAMILIES.values()), 44)
         self.assertTrue(callable(receipts.disclose))
+        self.assertTrue(callable(receipts.disclose_proofs))
         self.assertEqual(len(receipts.HOST_FAMILIES), 20)
         self.assertEqual(receipts.HOST_FAMILIES[-1], 'disclose')
         stage = ast.parse((ROOT / 'tools/compact-rust-backend/'

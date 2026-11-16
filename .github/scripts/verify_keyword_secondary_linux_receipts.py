@@ -885,6 +885,194 @@ def constructor_proof(root, head, tree, zkir):
     return sha(output / 'receipt.json')
 
 
+def disclose_proofs(root, head, tree, compiler, recipe, zkir):
+    output = root / 'disclose_proofs'
+    receipt = load(output / 'receipt.json')
+    identity(receipt, head, tree)
+    recipe_data = load(recipe)
+    require(recipe_data.get('head') == head and recipe_data.get('tree') == tree and
+            recipe_data.get('compactc', {}).get('sha256') == sha(compiler) and
+            recipe_data['compactc'].get('path') == str(compiler.resolve(strict=True)),
+            'disclose proof source-built compiler differs')
+    expected = {
+        'branch_conditions': ('disclose_branch_conditions',
+                              'if_empty_else_branch',
+                              'test-contracts/keywords/if/empty_else_branch/'
+                              'if_empty_else_branch.compact', 7, 106, 9, 4),
+        'branch_conditions_in_constructor': (
+            'disclose_branch_conditions_in_constructor',
+            'type_new_type_of_adt',
+            'test-contracts/keywords/type/new_type_of_adt/'
+            'type_new_type_of_adt.compact', 6, 34, 3, None),
+    }
+    require(receipt.get('format') == 'compact-ledger9-keyword-disclose-proofs/v1' and
+            receipt.get('disclose_gate_sha256') ==
+            sha(root / 'disclose/receipt.json') and
+            receipt.get('compiler_recipe_sha256') == sha(recipe) and
+            receipt.get('proof_body_sha256') == sha(ROOT /
+                'tools/compact-rust-proof-smoke/src/keyword_disclose_proof.rs') and
+            set(receipt.get('cases', {})) == set(expected),
+            'disclose proof exact source, gate or roster differs')
+    tracked = {os.fsdecode(path) for path in subprocess.check_output(
+        ['git', 'ls-files', '-z'], cwd=ROOT).split(b'\0') if path}
+    require(receipt.get('source_count') == len(tracked),
+            'disclose proof tracked source count differs')
+    targets = []
+    for case, config in expected.items():
+        circuit, wrong, wrong_source, k, rows, verify_ops, second = config
+        row = receipt['cases'][case]
+        target = Path(row.get('cargo_target', ''))
+        require(target.is_absolute() and target.is_dir() and
+                not target.is_symlink() and target.name == f'disclose-{case}',
+                f'disclose isolated Cargo target differs: {case}')
+        targets.append(target.resolve(strict=True))
+        base = output / case
+        paired = root / 'disclose' / case / 'paired/product'
+        generated = inventory(paired)
+        wrong_path = ROOT / wrong_source
+        require(row.get('case') == case and
+                row.get('selected_source_export') == circuit and
+                row.get('generated_input_sha256') == generated and
+                row.get('zkir_sha256') == sha(zkir) and
+                row.get('proof_execution') is True and
+                row.get('funded_application') is True and
+                sha(wrong_path) == hashlib.sha256(subprocess.check_output(
+                    ['git', 'show', f'{PINNED}:{wrong_source}'], cwd=ROOT)).hexdigest(),
+                f'disclose proof generated source or wrong verifier differs: {case}')
+        files(base / 'wrong-generated', row['wrong_generated_sha256'])
+        require(sha(base / 'proof-runner') == row.get('runner_sha256') and
+                sha(base / 'proof-runner.d') == row.get('runner_depfile_sha256') and
+                sha(base / 'binding/inputs.json') ==
+                row.get('runner_inventory_sha256'),
+                f'disclose proof runner or binding differs: {case}')
+        source = load(base / 'binding/source-hashes.json')
+        require(set(source) == tracked,
+                f'disclose proof source roster differs: {case}')
+        for name, digest in source.items():
+            require(sha(ROOT / name) == digest,
+                    f'disclose proof source differs: {case}/{name}')
+        declared = load(base / 'binding/inputs.json')
+        require(declared.get('source_hashes') == {
+            str((ROOT / name).resolve(strict=True)): digest
+            for name, digest in source.items()} and
+            declared.get('generated_input_hashes') == {
+                str((paired / name).resolve(strict=True)): digest
+                for name, digest in generated.items()},
+                f'disclose proof prebuild source map differs: {case}')
+        fields = ('source_hashes', 'generated_input_hashes',
+                  'dependency_source_hashes',
+                  'generated_build_inputs_before_compile')
+        inventories = {field: declared.get(field) for field in fields}
+        require(all(isinstance(item, dict) and item
+                    for item in inventories.values()) and
+                all(Path(name).is_relative_to(target) for name in
+                    inventories['generated_build_inputs_before_compile']),
+                f'disclose proof physical inventory incomplete: {case}')
+        for field, mapping in inventories.items():
+            for name, digest in mapping.items():
+                require(re.fullmatch('[0-9a-f]{64}', digest) and sha(name) == digest,
+                        f'disclose proof physical input differs: {case}/{field}/{name}')
+        prereqs = runner_inputs.depfile_prerequisites(
+            (base / 'proof-runner.d').read_text(), ROOT)
+        physical, origins = runner_inputs.qualify_dependency_inputs(
+            prereqs, inventories, sha)
+        require(physical == declared.get('physical_inputs_before_build') and
+                origins == declared.get('physical_input_origins') and
+                len(physical) == row.get('runner_physical_input_count') and
+                origins == row.get('runner_physical_input_origins') and
+                row.get('dependency_refusals') == {
+                    'unknown_dependency_rejected': True,
+                    'tampered_dependency_hash_rejected': True},
+                f'disclose proof physical prerequisite closure differs: {case}')
+        for path in (paired / 'contract/lib.rs',
+                     paired / 'contract/compact-rust-ir.json',
+                     paired / f'zkir/{circuit}.zkir',
+                     ROOT / 'tools/compact-rust-proof-smoke/src/'
+                     'keyword_disclose_proof.rs'):
+            require(str(path.resolve(strict=True)) in physical,
+                    f'disclose proof physical source omitted: {case}/{path}')
+        proof_dir = base / 'proof'
+        files(proof_dir, row['artifact_hashes'])
+        for changed, relative, marker in (
+            ('changed-zkir', f'zkir/{circuit}.zkir', 'raw ZKIR bytes differ'),
+            ('changed-ir', f'{circuit}/contract/compact-rust-ir.json',
+             'complete Rust IR bytes differ')):
+            bad = base / changed
+            require((bad / relative).read_bytes() ==
+                    (proof_dir / relative).read_bytes() + b' ' and
+                    marker in (base / f'{changed}.log').read_text() and
+                    not list(bad.rglob('*.proof')),
+                    f'disclose pre-key changed-input refusal differs: {case}/{changed}')
+        summary = load(proof_dir / f'{circuit}-proof-result.json')
+        require(summary == row.get('proof_summary') and
+                summary.get('format') == 'compact-ledger9-keyword-disclose-proof/v1' and
+                summary.get('case') == case and
+                summary.get('selected_source_export_proved') == circuit and
+                summary.get('status') == 'passed' and
+                summary.get('result') == summary.get('ledger_x') == 3 and
+                summary.get('original_second_result') == second and
+                summary.get('public_verify_ops') == verify_ops and
+                summary.get('private_transcript_outputs') == 0 and
+                summary.get('strict_application') == 'default' and
+                summary.get('positive_fee_dust_spends') == 1 and
+                summary.get('replay_refusal') == 'IntentAlreadyExists' and
+                summary.get('transaction_proof_version') == 3 and
+                all(summary.get(field) is True for field in (
+                    'standalone_verified_separately',
+                    'wrong_verifier_rejected_at_preparation',
+                    'wrong_verifier_proof_rejected', 'corrupt_proof_rejected',
+                    'changed_binding_rejected', 'replay_unchanged')),
+                f'disclose proof verification, funding or replay differs: {case}')
+        prefix = f'keyword-disclose-{case}'
+        require((proof_dir / f'{prefix}-ledger-after.bin').read_bytes() ==
+                (proof_dir / f'{prefix}-ledger-replay.bin').read_bytes() and
+                (proof_dir / f'{prefix}.proof').read_bytes() !=
+                (proof_dir / f'{prefix}-transaction.proof').read_bytes() and
+                len((proof_dir / f'{prefix}.proof').read_bytes()) ==
+                summary.get('standalone_proof_bytes') and
+                len((proof_dir / f'{prefix}-transaction.proof').read_bytes()) ==
+                summary.get('transaction_proof_bytes'),
+                f'disclose proof artifacts or replay state differ: {case}')
+        require(sha(proof_dir / f'{circuit}/contract/compact-rust-ir.json') ==
+                sha(paired / 'contract/compact-rust-ir.json') and
+                sha(proof_dir / f'zkir/{circuit}.zkir') ==
+                sha(paired / f'zkir/{circuit}.zkir') and
+                sha(proof_dir / f'zkir/{wrong}.zkir') ==
+                sha(base / f'wrong-generated/zkir/{wrong}.zkir'),
+                f'disclose exact generated proof input differs: {case}')
+        keys = row.get('keygen', {})
+        require(set(keys) == {circuit, wrong} and
+                keys[circuit]['k'] == keys[wrong]['k'] == k and
+                keys[circuit]['rows'] == rows and
+                keys[circuit]['verifier_sha256'] !=
+                keys[wrong]['verifier_sha256'],
+                f'disclose key model or wrong verifier differs: {case}')
+        for name, key in keys.items():
+            require(sha(proof_dir / f'keys/{name}.prover') ==
+                    key.get('prover_sha256') and
+                    sha(proof_dir / f'keys/{name}.verifier') ==
+                    key.get('verifier_sha256') and
+                    sha(proof_dir / f'zkir/{name}.bzkir') ==
+                    key.get('binary_zkir_sha256'),
+                    f'disclose key artifact differs: {case}/{name}')
+        material = row.get('material', {})
+        require(material.get('mode') == 'verify-only' and
+                material.get('verification') ==
+                'all files checked against locked upstream SHA256 tables' and
+                {6, 7} <= {item['k'] for item in material['parameters']} and
+                set(row.get('material_hashes', {})) ==
+                {item['name'] for item in
+                 material['assets'] + material['parameters']},
+                f'disclose verified proving material differs: {case}')
+        for name, digest in row['material_hashes'].items():
+            require(not Path(name).is_absolute() and '..' not in Path(name).parts and
+                    sha(Path(material['cache_directory']) / name) == digest,
+                    f'disclose proving material differs: {case}/{name}')
+    require(len(set(targets)) == 2 and targets[0].parent == targets[1].parent,
+            'disclose proof Cargo targets overlap')
+    return sha(output / 'receipt.json')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--all', type=Path, required=True)
@@ -918,6 +1106,8 @@ def main():
     hashes['import_proof'] = proof(root, head, tree, args.zkir)
     hashes['bytes_proof'] = bytes_proof(root, head, tree, args.zkir)
     hashes['constructor_proof'] = constructor_proof(root, head, tree, args.zkir)
+    hashes['disclose_proofs'] = disclose_proofs(root, head, tree, args.compiler,
+                                               args.compiler_recipe, args.zkir)
     summary = {'status': 'passed', 'head': head, 'tree': tree,
                'platform': 'Linux x86_64', 'upstream_commit': PINNED,
                'families': [*FAMILIES, 'disclose'],
@@ -925,17 +1115,21 @@ def main():
                'host_tests': 263, 'receipt_hashes': hashes,
                'proof_execution': True, 'funded_application': True,
                'proved_exports': ['import/ledger_field', 'bytes/loops/indexed_access',
-                                  'constructor/parameters'],
+                                  'constructor/parameters',
+                                  'disclose/branch_conditions',
+                                  'disclose/branch_conditions_in_constructor'],
                'limits': ['other stateful keyword and Bytes paths have no proof claim',
                           'constructor execution unproved',
                           'proof features qualified in separate Cargo invocations',
-                          'disclose keyword proofs and funded application remain open',
+                          'other disclose exports have no proof or funded claim',
                           'cross-contract transaction outside this gate']}
     args.summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': head, 'host_tests': 263,
                       'proved_exports': ['import/ledger_field',
                                          'bytes/loops/indexed_access',
-                                         'constructor/parameters']}))
+                                         'constructor/parameters',
+                                         'disclose/branch_conditions',
+                                         'disclose/branch_conditions_in_constructor']}))
 
 
 if __name__ == '__main__':

@@ -222,6 +222,7 @@ def qualified_case(case: str, gate_root: Path, gate: dict, compiler: Path,
             all(sha256(proof / name) == digest for name, digest in input_hashes.items()),
             'proof source, generated artifact or proving material drifted')
     return {'case':case, 'selected_source_export':circuit,
+            'cargo_target':str(cargo_target),
             'generated_input_sha256':selected_files,
             'wrong_generated_sha256':wrong_files,
             'runner_sha256':runner_sha, 'runner_depfile_sha256':depfile_sha,
@@ -278,9 +279,18 @@ def main() -> None:
     output.mkdir(parents=True)
     results = {}
     for case in CASES:
+        case_target = cargo_target / f'disclose-{case}'
+        require(not case_target.exists() and not case_target.is_symlink(),
+                f'fresh isolated disclose Cargo target required: {case}')
+        case_target.mkdir()
         results[case] = qualified_case(case, gate_root, gate, compiler, scheme, zkir,
-                                       cargo_target, parameter_cache, source_before,
+                                       case_target, parameter_cache, source_before,
                                        source, output / case)
+    for case in CASES:
+        bound = json.loads((output / case / 'binding/inputs.json').read_text())
+        require(all(physical_sha256(Path(name)) == digest for name, digest in
+                    bound['physical_inputs_before_build'].items()),
+                f'disclose physical runner input changed after both cases: {case}')
     require(source_state() == source and tracked_source_hashes() == source_before,
             'source changed across two disclose proofs')
     receipt = {**source, 'format':'compact-ledger9-keyword-disclose-proofs/v1',
