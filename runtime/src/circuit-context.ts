@@ -109,6 +109,62 @@ export interface CircuitContext<PS = any> {
   events: LogEvent[];
 }
 
+type ContextProvenance = Readonly<{
+  mode: 'ledger9' | 'legacy';
+  circuitId: string;
+  contractAddress: ocrt.ContractAddress;
+  time: number;
+  parentBlockHash?: string;
+  initialQueryContext: ocrt.QueryContext;
+}>;
+
+// The symbol carries a nonforgeable token through generated shallow spreads;
+// the actual pin stays in private WeakMaps. A removed or forged token refuses.
+const provenanceSymbol = Symbol('compact circuit context provenance');
+const tokenProvenance = new WeakMap<object, ContextProvenance>();
+const contextProvenance = new WeakMap<object, ContextProvenance>();
+
+const bindProvenance = <PS>(
+  context: CircuitContext<PS>,
+  pin: ContextProvenance,
+  token: object = Object.freeze({}),
+): CircuitContext<PS> => {
+  tokenProvenance.set(token, pin);
+  Object.defineProperty(context, provenanceSymbol, { value: token, enumerable: true });
+  contextProvenance.set(context, pin);
+  return context;
+};
+
+const readProvenance = (context: CircuitContext): ContextProvenance => {
+  const direct = contextProvenance.get(context);
+  const token = Object.getOwnPropertyDescriptor(context, provenanceSymbol)?.value;
+  const carried = token !== null && typeof token === 'object' ? tokenProvenance.get(token) : undefined;
+  if ((direct && carried !== direct) || (!direct && !carried)) {
+    throw new CompactError('Circuit context provenance is missing or changed');
+  }
+  return (direct ?? carried)!;
+};
+
+const assertFrameProvenance = (context: CircuitContext, pin: ContextProvenance): void => {
+  const frame = context.callContext;
+  if (
+    frame?.circuitId !== pin.circuitId ||
+    frame.contractAddress !== pin.contractAddress ||
+    frame.time !== pin.time ||
+    frame.parentBlockHash !== pin.parentBlockHash ||
+    frame.initialQueryContext !== pin.initialQueryContext
+  ) {
+    throw new CompactError('Circuit call frame changed its pinned provenance');
+  }
+};
+
+/** The mode is authenticated independently of mutable call-frame fields. */
+export const isLedger9CircuitContext = (context: CircuitContext): boolean => {
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  return pin.mode === 'ledger9';
+};
+
 /**
  * @internal
  */
@@ -222,10 +278,11 @@ export function createCircuitContext<PS>(
   time?: number,
 ): CircuitContext<PS> {
   let contractAddress: ocrt.ContractAddress;
+  const objectForm = arguments.length === 1;
   let circuitId = '';
   let parentBlockHash: string | undefined;
   let crossContract: CrossContractInputs | undefined;
-  if (arguments.length === 1) {
+  if (objectForm) {
     const options = contractAddressOrOptions as HostCircuitContextOptions<PS>;
     if (
       typeof options !== 'object' ||
@@ -302,7 +359,7 @@ export function createCircuitContext<PS>(
     parentBlockHash,
     time: blockTime,
   };
-  return {
+  const context: CircuitContext<PS> = {
     callContext,
     queryContexts: { [contractAddress]: initialQueryContext },
     gasCosts: { [contractAddress]: currentGasCost },
@@ -319,26 +376,45 @@ export function createCircuitContext<PS>(
     gasLimit,
     events: [],
   };
+  return bindProvenance(
+    context,
+    Object.freeze({
+      mode: objectForm ? 'ledger9' : 'legacy',
+      circuitId,
+      contractAddress,
+      time: blockTime,
+      parentBlockHash,
+      initialQueryContext,
+    }),
+  );
 }
 
 /** Copy the call containers; the active set is intentionally shared across a call tree. */
-export const copyCircuitContext = <PS>(context: CircuitContext<PS>): CircuitContext<PS> => ({
-  ...context,
-  callContext: { ...context.callContext },
-  queryContexts: { ...context.queryContexts },
-  gasCosts: { ...context.gasCosts },
-  zswapLocalStates: { ...context.zswapLocalStates },
-  contractStates: { ...context.contractStates },
-  callProofDataTrace: [...context.callProofDataTrace],
-  events: [...context.events],
-});
+export const copyCircuitContext = <PS>(context: CircuitContext<PS>): CircuitContext<PS> => {
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  const copy: CircuitContext<PS> = {
+    ...context,
+    callContext: { ...context.callContext },
+    queryContexts: { ...context.queryContexts },
+    gasCosts: { ...context.gasCosts },
+    zswapLocalStates: { ...context.zswapLocalStates },
+    contractStates: { ...context.contractStates },
+    callProofDataTrace: [...context.callProofDataTrace],
+    events: [...context.events],
+  };
+  return bindProvenance(copy, pin, Object.getOwnPropertyDescriptor(context, provenanceSymbol)!.value as object);
+};
 
-export const assertCircuitQueryIdentity = (frame: CircuitCallContext, query: ocrt.QueryContext): void => {
+export const assertCircuitQueryIdentity = (context: CircuitContext, query: ocrt.QueryContext): void => {
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  if (pin.mode !== 'ledger9') throw new CompactError('Ledger 9 query requires an object-form context');
   if (
-    query.address !== frame.contractAddress ||
-    query.block.ownAddress !== frame.contractAddress ||
-    query.block.secondsSinceEpoch !== BigInt(frame.time) ||
-    (frame.parentBlockHash !== undefined && query.block.parentBlockHash !== frame.parentBlockHash)
+    query.address !== pin.contractAddress ||
+    query.block.ownAddress !== pin.contractAddress ||
+    query.block.secondsSinceEpoch !== BigInt(pin.time) ||
+    (pin.parentBlockHash !== undefined && query.block.parentBlockHash !== pin.parentBlockHash)
   ) {
     throw new CompactError('Ledger 9 query changed the pinned block or call identity');
   }
@@ -346,8 +422,11 @@ export const assertCircuitQueryIdentity = (frame: CircuitCallContext, query: ocr
 
 /** Refuse stale live cells before a Ledger 9 query or proof entry. */
 export const assertLiveCircuitCall = (context: CircuitContext): void => {
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  if (pin.mode !== 'ledger9') throw new CompactError('Ledger 9 live call requires an object-form context');
   const frame = context.callContext;
-  const address = frame.contractAddress;
+  const address = pin.contractAddress;
   if (
     !frame.circuitId ||
     context.queryContexts[address] !== frame.currentQueryContext ||
@@ -356,8 +435,29 @@ export const assertLiveCircuitCall = (context: CircuitContext): void => {
   ) {
     throw new CompactError('Ledger 9 live call cells are incomplete or stale');
   }
-  assertCircuitQueryIdentity(frame, frame.initialQueryContext);
-  assertCircuitQueryIdentity(frame, frame.currentQueryContext);
+  assertCircuitQueryIdentity(context, frame.initialQueryContext);
+  assertCircuitQueryIdentity(context, frame.currentQueryContext);
+};
+
+const queryContextMode = (context: CircuitContext): ContextProvenance['mode'] | 'synthetic' => {
+  // Generated ledger readers use a minimal synthetic context and no factory
+  // provenance. They cannot finalize a call or perform Zswap operations.
+  const unbranded = !contextProvenance.has(context) && Object.getOwnPropertyDescriptor(context, provenanceSymbol) === undefined;
+  const frame = context.callContext as Partial<CircuitCallContext> | undefined;
+  if (
+    unbranded &&
+    frame?.circuitId === undefined &&
+    context.queryContexts === undefined &&
+    context.gasCosts === undefined &&
+    context.zswapLocalStates === undefined &&
+    context.stateProvider === undefined &&
+    context.moduleProvider === undefined
+  ) {
+    return 'synthetic';
+  }
+  const pin = readProvenance(context);
+  assertFrameProvenance(context, pin);
+  return pin.mode;
 };
 
 /** Append the current completed call after a generated circuit returns proof data. */
@@ -429,22 +529,32 @@ export const queryLedgerState = (
   try {
     // The Runtime 0.18 generated reader has only the top-level cell. Ledger 9
     // circuits use the call frame, which is also the source for per-address maps.
-    const ledger9 = circuitContext.callContext?.circuitId !== undefined && circuitContext.callContext.circuitId !== '';
+    const mode = queryContextMode(circuitContext);
+    const ledger9 = mode === 'ledger9';
     if (ledger9) assertLiveCircuitCall(circuitContext);
-    const currentQueryContext = ledger9 ? circuitContext.callContext.currentQueryContext : circuitContext.currentQueryContext;
+    const currentQueryContext = ledger9
+      ? circuitContext.callContext.currentQueryContext
+      : mode === 'synthetic'
+        ? (circuitContext.callContext?.currentQueryContext ?? circuitContext.currentQueryContext)
+        : circuitContext.currentQueryContext;
     const res = currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
-    if (ledger9) assertCircuitQueryIdentity(circuitContext.callContext, res.context);
+    if (ledger9) assertCircuitQueryIdentity(circuitContext, res.context);
     const frame = circuitContext.callContext;
-    const nextGasCost: ocrt.RunningCost | undefined = frame
-      ? {
-          readTime: frame.currentGasCost.readTime + res.gasCost.readTime,
-          computeTime: frame.currentGasCost.computeTime + res.gasCost.computeTime,
-          bytesWritten: frame.currentGasCost.bytesWritten + res.gasCost.bytesWritten,
-          bytesDeleted: frame.currentGasCost.bytesDeleted + res.gasCost.bytesDeleted,
-        }
-      : undefined;
+    const nextGasCost: ocrt.RunningCost | undefined =
+      frame && mode !== 'synthetic'
+        ? {
+            readTime: frame.currentGasCost.readTime + res.gasCost.readTime,
+            computeTime: frame.currentGasCost.computeTime + res.gasCost.computeTime,
+            bytesWritten: frame.currentGasCost.bytesWritten + res.gasCost.bytesWritten,
+            bytesDeleted: frame.currentGasCost.bytesDeleted + res.gasCost.bytesDeleted,
+          }
+        : undefined;
     const nextFrame =
-      frame && nextGasCost ? { ...frame, currentQueryContext: res.context, currentGasCost: nextGasCost } : undefined;
+      frame && mode === 'synthetic'
+        ? { ...frame, currentQueryContext: res.context }
+        : frame && nextGasCost
+          ? { ...frame, currentQueryContext: res.context, currentGasCost: nextGasCost }
+          : undefined;
     const nextQueryContexts =
       frame && circuitContext.queryContexts !== undefined
         ? { ...circuitContext.queryContexts, [frame.contractAddress]: res.context }

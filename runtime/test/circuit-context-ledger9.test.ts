@@ -145,7 +145,7 @@ describe('Ledger 9 public context cells', () => {
     stale.queryContexts[address] = new ocrt.QueryContext(new ocrt.ContractState().data, address);
     expect(() => finalizeCallProofData(stale, proofData())).toThrow(/live call cells are incomplete or stale/);
     const legacy = createCircuitContext(address, '0'.repeat(64), new ocrt.ContractState(), {});
-    expect(() => finalizeCallProofData(legacy, proofData())).toThrow(/live call cells are incomplete or stale/);
+    expect(() => finalizeCallProofData(legacy, proofData())).toThrow(/requires an object-form context/);
   });
 
   test('refuses a VM query that changes the parent-block identity without writing cells', () => {
@@ -163,6 +163,67 @@ describe('Ledger 9 public context cells', () => {
     expect(context.callContext.currentQueryContext).toBe(query);
     expect(context.queryContexts[address]).toBe(query);
     expect(partial.publicTranscript).toEqual([]);
+  });
+
+  test('refuses a cleared visible parent hash in query, coin write and finalization', () => {
+    const context = createCircuitContext(options());
+    const query = vi.spyOn(context.callContext.currentQueryContext, 'query');
+    context.callContext = { ...context.callContext, parentBlockHash: undefined };
+    expect(() => queryLedgerState(context, proofData(), [])).toThrow(/changed its pinned provenance/);
+    expect(query).not.toHaveBeenCalled();
+    const coin = { nonce: new Uint8Array(32), color: new Uint8Array(32), value: 5n };
+    const recipient = {
+      is_left: false,
+      left: { bytes: new Uint8Array(32) },
+      right: { bytes: ocrt.encodeContractAddress(ocrt.sampleContractAddress()) },
+    };
+    expect(() => createZswapOutput(context, coin, recipient)).toThrow(/changed its pinned provenance/);
+    expect(() => finalizeCallProofData(context, proofData())).toThrow(/changed its pinned provenance/);
+    expect(context.callProofDataTrace).toEqual([]);
+  });
+
+  test('refuses a blank circuit ID in query, coin input and finalization', () => {
+    const context = createCircuitContext(options());
+    const query = vi.spyOn(context.callContext.currentQueryContext, 'query');
+    context.callContext = { ...context.callContext, circuitId: '' };
+    expect(() => queryLedgerState(context, proofData(), [])).toThrow(/changed its pinned provenance/);
+    expect(query).not.toHaveBeenCalled();
+    expect(() =>
+      createZswapInput(context, {
+        nonce: new Uint8Array(32),
+        color: new Uint8Array(32),
+        value: 5n,
+        mt_index: 0n,
+      }),
+    ).toThrow(/changed its pinned provenance/);
+    expect(() => finalizeCallProofData(context, proofData())).toThrow(/changed its pinned provenance/);
+    expect(context.callContext.currentZswapLocalState.inputs).toEqual([]);
+  });
+
+  test('carries a private pin through shallow spreads and rejects a stripped token', () => {
+    const root = createCircuitContext(options());
+    const shallow = { ...root, callContext: { ...root.callContext, circuitId: '' } };
+    expect(() => queryLedgerState(shallow, proofData(), [])).toThrow(/changed its pinned provenance/);
+    const stripped = { ...root };
+    for (const symbol of Object.getOwnPropertySymbols(stripped)) {
+      delete (stripped as unknown as Record<symbol, unknown>)[symbol];
+    }
+    expect(() => queryLedgerState(stripped, proofData(), [])).toThrow(/provenance is missing or changed/);
+  });
+
+  test('retains positional Runtime 0.18 calls through shallow spreads', () => {
+    const legacy = createCircuitContext(address, '0'.repeat(64), new ocrt.ContractState(), {});
+    const shallow = { ...legacy };
+    const query = shallow.currentQueryContext;
+    const result = new ocrt.QueryContext(new ocrt.ContractState().data, address);
+    vi.spyOn(query, 'query').mockReturnValue({
+      context: result,
+      gasCost: emptyRunningCost(),
+      events: [],
+    } as ReturnType<typeof query.query>);
+    expect(queryLedgerState(shallow, proofData(), [])).toEqual([]);
+    expect(shallow.currentQueryContext).toBe(result);
+    expect(legacy.currentQueryContext).toBe(query);
   });
 
   test('does not publish query cells when a VM read result is missing', () => {
