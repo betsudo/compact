@@ -38,6 +38,8 @@ import resolve_ledger_test_static as ledger_static
 ROOT = Path(__file__).resolve().parents[2]
 PROOF_BODY = ROOT / 'tools/compact-rust-proof-smoke/src/bytes_large_reconstruction_proof.rs'
 PROOF_BODY_SHA256 = '1e8eaee307833cd7ec20b20ad0cdeb2b630017e2ed3c769dd79cb68da3e0067a'
+PROOF_DISPATCH = ROOT / 'tools/compact-rust-proof-smoke/src/main.rs'
+PROOF_WORKER_STACK_BYTES = 64 * 1024 * 1024
 CIRCUIT = 'bytes_manual_update_large_reconstruction'
 CASE = 'primitives/bytes/manual_update/slow/large_reconstruction'
 WRONG = 'bytes_large_reconstruction_wrong_verifier'
@@ -151,6 +153,9 @@ def main() -> None:
     require(PROOF_BODY.is_file() and not PROOF_BODY.is_symlink() and
             sha256(PROOF_BODY) == PROOF_BODY_SHA256,
             'dedicated signed bytes-large-reconstruction proof body changed')
+    require(PROOF_DISPATCH.is_file() and not PROOF_DISPATCH.is_symlink() and
+            '.stack_size(64 * 1024 * 1024)' in PROOF_DISPATCH.read_text(),
+            'explicit proof worker stack changed')
     output = args.output.resolve()
     require(not output.exists() and not args.output.is_symlink(), 'new proof output required')
     gate_root = args.semantic_gate.resolve(strict=True)
@@ -232,12 +237,12 @@ def main() -> None:
             'insufficient free disk before dedicated proof runner build')
     env = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', RUSTUP_TOOLCHAIN='1.99.0',
                CARGO_INCREMENTAL='0', CARGO_PROFILE_DEV_DEBUG='0',
-               RUST_MIN_STACK=str(2 * 1024 * 1024),
                COMPACT_BYTES_LARGE_RECONSTRUCTION_GENERATED=str(paired),
                COMPACT_BYTES_LARGE_RECONSTRUCTION_GATE=str(gate_root),
                CARGO_TARGET_DIR=str(cargo_target),
                MIDNIGHT_PP=str(parameter_cache))
     env.pop('MIDNIGHT_PROOF_SERVER', None)
+    env.pop('RUST_MIN_STACK', None)
     metadata = run(['cargo', '+1.99.0', 'metadata', '--locked', '--offline',
                     '--format-version', '1'], output / 'metadata.log', env)
     static = ledger_static.resolve(json.loads(metadata.stdout),
@@ -395,7 +400,7 @@ def main() -> None:
               'wrong_generated_sha256':wrong_generated_hashes,
               'zkir_sha256':sha256(zkir), 'ledger_static':static,
               'resource_preflight':preflight,
-              'rust_min_stack_bytes':2 * 1024 * 1024,
+              'proof_worker_stack_bytes':PROOF_WORKER_STACK_BYTES,
               'material':verified, 'material_hashes':material_hashes,
               'keygen':keys, 'proof_summary':summary, 'artifact_hashes':files(proof),
               'command_logs_sha256':{path.name:sha256(path) for path in
@@ -404,6 +409,7 @@ def main() -> None:
               'resource_preflight_sha256':sha256(output / 'resource-preflight.json'),
               'proof_execution':True, 'funded_application':True,
               'limitations':['constructor execution was not proved',
+                             'proof runner uses an explicit 64 MiB worker stack; default-stack proof execution is unqualified',
                              'native Linux integration remains pending']}
     (output / 'receipt.json').write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status':'passed', 'head':source['head'], 'output':str(output)}))
