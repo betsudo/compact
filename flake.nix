@@ -740,6 +740,17 @@
             shellHook = runtime-shell-hook;
           };
 
+          # The pinned root wrapper needs both the guarded compiler and a
+          # built runtime package with declarations for generated imports.
+          devShells.test-contracts = pkgs.mkShell {
+            packages = [
+              packages.compactc-test-contracts
+              packages.runtime.package
+              pkgs.nodejs
+            ];
+            COMPACT_RUNTIME_PKG = "${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime";
+          };
+
           devShells.dapp = packages.runtime.mkShell {
             packages = [
               packages.compactc
