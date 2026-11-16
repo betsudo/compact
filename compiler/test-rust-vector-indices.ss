@@ -352,4 +352,41 @@
     (observe-rust-vector-index! (byte-source node) 1)
     (check 'bytes-runtime-formal-refused (not (rust-vector-index node)))))
 
+;; A static Fold can reuse one analyzed occurrence across iterations. Retain
+;; the evaluator's complete successful visit sequence separately from the
+;; existing single-index fact, whose ambiguity remains a refusal. A copied
+;; source occurrence cannot borrow either observation sequence.
+(let* ([runtime-ir (analyze (write-source "fold-domain-observations"
+         "export pure circuit choose(items: Vector<4, Field>, i: Uint<8>): Field { return items[i]; }"))]
+       [node (car (nodes runtime-ir))])
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-ir)])
+    (check 'fold-domain-source-unique (rust-vector-unique-source? node))
+    (check 'fold-domain-unobserved (null? (rust-vector-index-observations node)))
+    (observe-rust-vector-index! (source node) 1)
+    (observe-rust-vector-index! (source node) 2)
+    (check 'fold-domain-order-and-multiplicity
+      (equal? (rust-vector-index-observations node) '(1 2)))
+    (check 'fold-domain-exact-certification
+      (rust-vector-domain-certified? node '(1 2)))
+    (check 'fold-domain-missing-observation-refused
+      (not (rust-vector-domain-certified? node '(1 2 3))))
+    (check 'fold-domain-mismatched-value-refused
+      (not (rust-vector-domain-certified? node '(1 3))))
+    (check 'fold-domain-reversed-order-refused
+      (not (rust-vector-domain-certified? node '(2 1))))
+    (check 'fold-domain-does-not-admit-direct-dynamic (not (rust-vector-index node)))
+    (observe-rust-vector-index! (source node) 2)
+    (check 'fold-domain-extra-observation-retained
+      (equal? (rust-vector-index-observations node) '(1 2 2)))
+    (check 'fold-domain-extra-observation-refused
+      (not (rust-vector-domain-certified? node '(1 2)))))
+  (let* ([copied (duplicate runtime-ir)] [copied* (nodes copied)])
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied)])
+      (observe-rust-vector-index! (source (car copied*)) 1)
+      (check 'fold-domain-duplicate-source-refused
+        (for-all (lambda (item)
+                   (and (not (rust-vector-unique-source? item))
+                        (not (rust-vector-index-observations item))
+                        (not (rust-vector-domain-certified? item '(1 2))))) copied*)))))
+
 (printf "~d Rust collection index occurrence controls passed\n" checks)

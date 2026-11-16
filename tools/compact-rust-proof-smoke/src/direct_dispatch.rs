@@ -39,10 +39,46 @@ pub(super) fn try_run(
     let selector = first?.to_str()?;
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
+        #[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
+        ("--if-empty-else-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("if/empty_else_branch proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected if/empty_else_branch proof argument".into());
+            }
+            crate::if_empty_else_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "if-branches-set-insert-proof",
+            compact_if_branches_set_insert_generated
+        ))]
+        ("--if-branches-set-insert-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("if/branches_write_ledger proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected if/branches_write_ledger proof argument".into());
+            }
+            crate::if_branches_set_insert_proof::run(std::path::Path::new(&root))
+        })()),
         ("--positional-baseline-verify", _) => {
             Some(super::positional_suite::verify_baseline(arguments))
         }
         ("--positional-call-verify", _) => Some(super::positional_transaction::verify(arguments)),
+        #[cfg(all(
+            feature = "for-generic-bound-proof",
+            compact_for_generic_bound_generated
+        ))]
+        ("--for-generic-bound-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("for/generic_bound proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected for/generic_bound proof argument".into());
+            }
+            crate::for_generic_bound_proof::run(std::path::Path::new(&root))
+        })()),
         #[cfg(all(
             any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
             compact_bytes_remaining_proof_generated

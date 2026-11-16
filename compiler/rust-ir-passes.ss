@@ -279,6 +279,10 @@
           (source-errorf src "foreign field or coordinate operation expects one argument"))
         (object (cons "kind" kind) (cons "value" (lower (car args)))))
       (define current-variable-types (make-parameter #f))
+      ;; An inline Fold over literal unsigned items can give its reducer a
+      ;; closed index domain. Key it by the analyzed item formal and scope it
+      ;; only to that reducer body.
+      (define current-static-fold-index-domains (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
       ;; Keep ordinary expressions and constructor value initializers on their
       ;; existing cast transport; parameterize restores this scope afterward.
@@ -679,6 +683,56 @@
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
 
+      ;; Only an if in discarded sequence-step position needs a Unit branch
+      ;; join. An inlined lambda returning a default Field is represented as
+      ;; an empty let around a Field literal. This restricted shape gives a
+      ;; checked binding type for evaluating that value before discarding it;
+      ;; other source expressions retain the existing sequence-step refusal.
+      (define (literal-field-ir? value)
+        (let ([kind^ (assoc "kind" value)])
+          (and kind^
+               (cond
+                 [(equal? (cdr kind^) "field_literal") #t]
+                 [(equal? (cdr kind^) "let")
+                  (let ([bindings (assoc "bindings" value)]
+                        [body (assoc "body" value)])
+                    (and bindings (vector? (cdr bindings))
+                         (zero? (vector-length (cdr bindings)))
+                         body (literal-field-ir? (cdr body))))]
+                 [else #f]))))
+
+      (define (discarded-field-ir src value)
+        (let ([name (make-source-id src 'discarded_field)])
+          (object (cons "kind" "let")
+                  (cons "bindings"
+                    (vector (object (cons "name" (sourced-rust-var-name name))
+                                    (cons "ty" (kind "field"))
+                                    (cons "value" value))))
+                  (cons "body" (kind "unit")))))
+
+      (define (discarded-expression-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (call-with-rust-origin "expression" (expression-origin expr)
+             (expression-origin-preserve? expr)
+             (lambda ()
+               (object (cons "kind" "if")
+                       (cons "condition" (expression-ir expr0 src))
+                       (cons "then" (discarded-expression-ir expr1 src))
+                       (cons "otherwise" (discarded-expression-ir expr2 src))))
+             (expression-operation-origin expr))]
+          [else
+           (let ([value (expression-ir expr owner-src)])
+             (if (literal-field-ir? value)
+                 (discarded-field-ir owner-src value)
+                 value))]))
+
+      (define (sequence-step-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (discarded-expression-ir expr owner-src)]
+          [else (expression-ir expr owner-src)]))
+
       ;; Rust's existing type-ir erases numeric aliases to the same carrier.
       ;; Use the bridge's shared analyzed-bound query for typed expressions and
       ;; cast annotations too; do not mistake an aliased Uint for a new value.
@@ -886,6 +940,78 @@
                  `(let* ,src (((,var-name ,type) ,expr)
                               ((,index-name ,index-type) ,index))
                     (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
+
+      (define (literal-fold-index-domain expr len item-type)
+        (define (literal arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(single ,src ,expr^)
+             (nanopass-case (Lnodisclose Expression) expr^
+               [(quote ,src^ ,datum)
+                (and (integer? datum) (exact? datum) (>= datum 0) datum)]
+               [else #f])]
+            [else #f]))
+        (let ([maximum (rust-unsigned-maximum item-type)])
+          (and maximum (> len 0) (<= len 8)
+               (nanopass-case (Lnodisclose Expression) expr
+                 [(tuple ,src ,tuple-arg* ...)
+                  (let ([indices (map literal tuple-arg*)])
+                    (and (= (length indices) len)
+                         (for-all (lambda (index) (and index (<= index maximum))) indices)
+                         (cons maximum indices)))]
+                 [else #f]))))
+
+      ;; The Fold item is still a runtime formal, but an exact literal source
+      ;; limits its values. Keep direct dynamic indexes refused. Both the
+      ;; indexed operand and the index must be side-effect-free references;
+      ;; this preserves their source evaluation order without duplicating an
+      ;; effect in the conditional branches. A forged out-of-domain item fails.
+      (define (static-fold-vector-ref-ir original src type value index lower)
+        (and (rust-vector-unique-source? original)
+             (nanopass-case (Lnodisclose Expression) index
+               [(var-ref ,src^ ,var-name)
+                (nanopass-case (Lnodisclose Expression) value
+                  [(var-ref ,src^^ ,var-name^)
+                   (let* ([domains (current-static-fold-index-domains)]
+                          [domain (and domains (eq-hashtable-ref domains var-name #f))]
+                          [width (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
+                                   [(tvector ,src^^^ ,len ,type^) len]
+                                   [else #f])])
+                     (and domain width
+                          (for-all (lambda (k) (< k width)) (cdr domain))
+                          ;; The same circuit evaluator that admits each
+                          ;; position must have visited this exact occurrence
+                          ;; once per literal item, in the same order. The
+                          ;; admitted index is a bare formal, so it contains
+                          ;; no hidden subtraction or assertion guard.
+                          (rust-vector-domain-certified? original (cdr domain))
+                          (let ([maximum (car domain)]
+                                [indices (cdr domain)]
+                                [name (rust-var-name var-name)])
+                            (define (item) (object (cons "kind" "parameter") (cons "name" name)))
+                            (define (same k)
+                              (object (cons "kind" "equal")
+                                      (cons "left" (item))
+                                      (cons "right" (object (cons "kind" "unsigned_literal")
+                                                            (cons "value" (number->string k))
+                                                            (cons "max" (number->string maximum))))))
+                            (define (project k)
+                              (object (cons "kind" "tuple_index")
+                                      (cons "value" (lower value))
+                                      (cons "index" k)))
+                            (let loop ([remaining indices])
+                              (if (null? (cdr remaining))
+                                  (object (cons "kind" "sequence")
+                                          (cons "steps" (vector
+                                            (object (cons "kind" "assert")
+                                                    (cons "condition" (same (car remaining)))
+                                                    (cons "message" "index outside static Fold domain"))))
+                                          (cons "value" (project (car remaining))))
+                                  (object (cons "kind" "if")
+                                          (cons "condition" (same (car remaining)))
+                                          (cons "then" (project (car remaining)))
+                                          (cons "otherwise" (loop (cdr remaining)))))))))]
+                  [else #f])]
+               [else #f])))
 
       (define (byte-vector-type src len)
         (with-output-language (Lnodisclose Type)
@@ -1410,7 +1536,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (expression-ir expr src)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (expression-ir expr src))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -1823,7 +1949,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (typed-expression-ir expr expected-type src source-type)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (typed-expression-ir expr expected-type src source-type))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (if mbits
@@ -2780,6 +2906,61 @@
            (unit-return-type? type)]
           [else #f]))
 
+      ;; A selected Set insertion can be the value of a Unit return. Keep it
+      ;; in the ordered return body; lowering it as an ordinary nested value
+      ;; would either drop the mutation or evaluate it outside its branch.
+      (define (unit-set-insert-return-leaf? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
+           (nanopass-case (Lnodisclose ADT-Op) adt-op
+             [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
+              (and (eq? adt-name 'Set) (eq? ledger-op 'insert)
+                   (eq? op-class 'update)
+                   (= (length expr*) 1) (pair? path-elt*)
+                   (for-all pure-unit-set-insert-argument? expr*)
+                   (unit-return-type? type))])]
+          [else #f]))
+
+      ;; The branch's compiler-created argument bindings may contain casts
+      ;; and conditionals, but no call, witness, or ledger operation. Those
+      ;; effects need a separate ordered return qualification.
+      (define (pure-unit-set-insert-argument? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(quote ,src ,datum) #t]
+          [(var-ref ,src ,var-name) #t]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (pure-unit-set-insert-argument? expr)]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (pure-unit-set-insert-argument? expr1)
+                (pure-unit-set-insert-argument? expr2))]
+          [else #f]))
+
+      (define (unit-set-insert-return-branch? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [else (unit-set-insert-return-leaf? expr)]))
+
+      (define (terminal-unit-set-insert-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (terminal-unit-set-insert-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (unit-set-insert-return-branch? expr1)
+                (unit-set-insert-return-branch? expr2))]
+          [else #f]))
+
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
       ;; nonliteral conversions select this owner through the value predicate.
@@ -2957,9 +3138,15 @@
                    (cons "otherwise"
                          (stateful-return-plan-ir expr2 expected-type src environment witness-ids finish)))]
           [else
-           (object (cons "kind" "value")
-                   (cons "value"
-                         (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids))))]))
+           (if (and (unit-return-type? expected-type)
+                    (unit-set-insert-return-leaf? expr))
+               (object (cons "kind" "sequence")
+                       (cons "actions" (vector (state-action-ir expr owner-src environment witness-ids)))
+                       (cons "result" (object (cons "kind" "value")
+                                              (cons "value" (finish (kind "unit"))))))
+               (object (cons "kind" "value")
+                       (cons "value"
+                             (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))))]))
 
       ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
       ;; The paired schema20 consumer checks every annotation independently.
@@ -3019,12 +3206,27 @@
           [(circuit ,src^ (,arg* ...) ,type ,expr)
            (let ([variable-types (if (current-variable-types)
                                      (hashtable-copy (current-variable-types) #t)
-                                     (make-eq-hashtable))])
+                                     (make-eq-hashtable))]
+                 [index-domains (if (current-static-fold-index-domains)
+                                    (hashtable-copy (current-static-fold-index-domains) #t)
+                                    (make-eq-hashtable))])
+             (unless (= (length arg*) (+ 1 (length map-args)))
+               (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
+             (for-each
+               (lambda (arg map-arg)
+                 (nanopass-case (Lnodisclose Argument) arg
+                   [(,var-name ,type^)
+                    (nanopass-case (Lnodisclose Map-Argument) map-arg
+                      [(,expr1 ,type1 ,type2)
+                       (let ([domain (literal-fold-index-domain expr1 len type2)])
+                         (when domain (eq-hashtable-set! index-domains var-name domain)))])]))
+               (cdr arg*) map-args)
              (for-each (lambda (arg)
                          (nanopass-case (Lnodisclose Argument) arg
                            [(,var-name ,type^)
                             (eq-hashtable-set! variable-types var-name type^)])) arg*)
-             (parameterize ([current-variable-types variable-types])
+             (parameterize ([current-variable-types variable-types]
+                            [current-static-fold-index-domains index-domains])
                (emit (map (lambda (arg) (argument-ir arg src)) arg*)
                  (lambda ()
                    (if (stateful-body-has-storage-mutation? expr)
@@ -3187,8 +3389,10 @@
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
           [(vector-ref ,src ,type ,expr ,index)
-           (stateful-expression-ir
-             (resolved-vector-expression value-expr src type expr index) owner-src witness-ids)]
+           (or (static-fold-vector-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids)))
+               (stateful-expression-ir
+                 (resolved-vector-expression value-expr src type expr index) owner-src witness-ids))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
@@ -3801,9 +4005,11 @@
                       [local-vector-widening? (stateful-local-vector-widening? expr)]
                       [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
                                              (has-unit-mutation-initializer? expr)
-                                             (and (not (unit-return-type? type))
-                                                  (or (terminal-storage-mutation-conditional? expr)
-                                                      (lexical-storage-mutation-return? expr))))]
+                                             (or (and (unit-return-type? type)
+                                                      (terminal-unit-set-insert-return? expr))
+                                                 (and (not (unit-return-type? type))
+                                                      (or (terminal-storage-mutation-conditional? expr)
+                                                          (lexical-storage-mutation-return? expr)))))]
                       [all-names (if (member internal-name names)
                                      names
                                      (append names (list internal-name)))])

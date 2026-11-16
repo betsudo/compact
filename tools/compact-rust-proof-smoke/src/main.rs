@@ -24,6 +24,11 @@
     any(feature = "bytes-equality-proof", feature = "bytes-fold-boolean-proof"),
     allow(clippy::bool_comparison)
 )]
+// The pinned if original deliberately repeats the same selected Set.insert.
+#![cfg_attr(
+    feature = "if-branches-set-insert-proof",
+    allow(clippy::if_same_then_else)
+)]
 
 mod adt_list_bytes;
 mod adt_list_enum;
@@ -45,8 +50,41 @@ mod asset_watch_write;
 mod asset_writable;
 mod bboard;
 mod boolean_pair_assert;
+#[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
+include!(concat!(
+    env!("COMPACT_IF_EMPTY_ELSE_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
+mod if_empty_else_proof;
+#[cfg(all(
+    feature = "if-branches-set-insert-proof",
+    compact_if_branches_set_insert_generated
+))]
+include!(concat!(
+    env!("COMPACT_IF_BRANCHES_SET_INSERT_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    feature = "if-branches-set-insert-proof",
+    compact_if_branches_set_insert_generated
+))]
+mod if_branches_set_insert_proof;
+#[cfg(all(
+    feature = "for-generic-bound-proof",
+    compact_for_generic_bound_generated
+))]
+include!(concat!(
+    env!("COMPACT_FOR_GENERIC_BOUND_GENERATED"),
+    "/contract/lib.rs"
+));
 mod canonical_output_order;
 mod closed_pure_field;
+#[cfg(all(
+    feature = "for-generic-bound-proof",
+    compact_for_generic_bound_generated
+))]
+mod for_generic_bound_proof;
 #[cfg(all(
     any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
     compact_bytes_remaining_proof_generated

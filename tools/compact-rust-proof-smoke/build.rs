@@ -263,6 +263,81 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_for_generic_bound_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_if_empty_else_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_if_branches_set_insert_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_IF_BRANCHES_SET_INSERT_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_IF_BRANCHES_SET_INSERT_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_IF_BRANCHES_SET_INSERT_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute if/branches_write_ledger root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/if_branches_write_ledger.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete if/branches_write_ledger member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_if_branches_set_insert_generated");
+    }
+    println!("cargo::rerun-if-env-changed=COMPACT_IF_EMPTY_ELSE_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_IF_EMPTY_ELSE_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_IF_EMPTY_ELSE_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute if/empty_else_branch root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/if_empty_else_branch.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete if/empty_else_branch member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_if_empty_else_generated");
+    }
+    println!("cargo::rerun-if-env-changed=COMPACT_FOR_GENERIC_BOUND_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_FOR_GENERIC_BOUND_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_FOR_GENERIC_BOUND_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute for/generic_bound root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/for_generic_bound.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete for/generic_bound member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_for_generic_bound_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_stateful_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED");
     if std::env::var_os("CARGO_FEATURE_STATEFUL_PRODUCT_VECTOR_WIDENING").is_some()
