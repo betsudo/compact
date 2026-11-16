@@ -998,7 +998,7 @@
                [else #f])]
             [else #f]))
         (let ([maximum (rust-unsigned-maximum item-type)])
-          (and maximum (> len 0) (<= len 8)
+          (and maximum (> len 0) (<= len 10)
                (nanopass-case (Lnodisclose Expression) expr
                  [(tuple ,src ,tuple-arg* ...)
                   (let ([indices (map literal tuple-arg*)])

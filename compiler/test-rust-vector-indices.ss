@@ -389,6 +389,46 @@
                         (not (rust-vector-index-observations item))
                         (not (rust-vector-domain-certified? item '(1 2))))) copied*)))))
 
+;; The slow Bytes reconstruction has three distinct base_data[i] occurrences:
+;; one in the condition and one in each conditional arm. The circuit evaluator
+;; visits both arms for every literal iteration, so every exact occurrence must
+;; independently attest the entire ten-item domain. No one occurrence can lend
+;; its observations to another, and extra visits cannot certify the domain.
+(let* ([runtime-ir (analyze (write-source "ten-step-vector-domain-observations"
+         "export pure circuit choose(base_data: Vector<10, Uint<8>>, i: Uint<8>): Uint<8> { return (base_data[i] > 50 ? (base_data[i] - 50) : base_data[i]) as Uint<8>; }"))]
+       [original* (nodes runtime-ir)]
+       [domain '(0 1 2 3 4 5 6 7 8 9)])
+  (check 'ten-step-three-original-occurrences (= (length original*) 3))
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-ir)])
+    (for-each
+      (lambda (node)
+        (check 'ten-step-source-unique (rust-vector-unique-source? node))
+        (check 'ten-step-unobserved-refused
+          (not (rust-vector-domain-certified? node domain)))
+        (for-each (lambda (index) (observe-rust-vector-index! (source node) index)) domain)
+        (check 'ten-step-exact-ordered-domain
+          (rust-vector-domain-certified? node domain))
+        (check 'ten-step-reordered-domain-refused
+          (not (rust-vector-domain-certified? node (reverse domain))))
+        (check 'ten-step-short-domain-refused
+          (not (rust-vector-domain-certified? node (cdr domain))))
+        (check 'ten-step-direct-dynamic-refused (not (rust-vector-index node))))
+      original*)
+    (observe-rust-vector-index! (source (car original*)) 9)
+    (check 'ten-step-extra-visit-refused
+      (not (rust-vector-domain-certified? (car original*) domain)))
+    (check 'ten-step-other-occurrences-unchanged
+      (for-all (lambda (node) (rust-vector-domain-certified? node domain))
+               (cdr original*))))
+  (let* ([copied (duplicate runtime-ir)] [copied* (nodes copied)])
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied)])
+      (check 'ten-step-copied-occurrences-present (= (length copied*) 6))
+      (for-each (lambda (index) (observe-rust-vector-index! (source (car copied*)) index))
+                domain)
+      (check 'ten-step-copied-source-refused
+        (for-all (lambda (node) (not (rust-vector-domain-certified? node domain)))
+                 copied*)))))
+
 ;; The immutable Bytes Fold bridge uses the same ordered occurrence facts.
 ;; Confirm that neither a missing or reordered circuit visit nor a copied
 ;; bytes-ref occurrence can certify its runtime reducer index.

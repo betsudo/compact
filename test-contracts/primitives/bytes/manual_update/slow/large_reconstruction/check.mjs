@@ -15,6 +15,7 @@
 
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 
 const entry = process.argv[2];
@@ -37,4 +38,24 @@ assert.deepStrictEqual(
 );
 assert.ok(call.proofData);
 assert.strictEqual(call.proofData.publicTranscript.length, 315);
+if (process.argv[3]) {
+  await writeFile(process.argv[3], JSON.stringify({
+    result: [...call.result],
+    ledger: [...generated.ledger(call.context.currentQueryContext.state).manual_update_large_result],
+    public_operations: call.proofData.publicTranscript.length,
+    private_operations: call.proofData.privateTranscriptOutputs.length,
+    gas: Object.fromEntries(Object.entries(call.context.gasCost)
+      .map(([key, value]) => [key, value.toString()])),
+  }, null, 2) + '\n');
+}
+if (process.argv[4]) {
+  await writeFile(process.argv[4], JSON.stringify(call.proofData.publicTranscript,
+    (_, value) => {
+      if (value instanceof Uint8Array) return [...value];
+      if (value instanceof Map || typeof value === 'bigint') {
+        throw new Error('Uncertified public transcript value shape');
+      }
+      return value;
+    }) + '\n');
+}
 console.log('large_reconstruction: original result, ledger, and 315 operations passed');
