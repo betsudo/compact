@@ -204,14 +204,17 @@
              (has-substring? refusal "cross-contract calls are not yet supported")))
       (printf "ordinary ~a refusal: ~a\n" (if v3? 'v3 'v2) refusal)))
   '(#t #f))
-(define internal-printer-refusal
+(define internal-printer-result
   (guard (condition [else (format-condition condition)])
     (parameterize ([feature-zkir-v3 #t]
                    [compile-contract-statements #t]
                    [skip-zk #t])
-      (generate-everything caller-source (format "~a/internal-print-refusal" target)))
-    #f))
-(check 'internal-statement-printer-still-refuses
-  (and (string? internal-printer-refusal)
-       (has-substring? internal-printer-refusal "contract types are not yet implemented")))
+      (generate-everything caller-source (format "~a/internal-print" target)))
+    #t))
+(check 'internal-statement-printer-reaches-guarded-call
+  (and (eq? internal-printer-result #t)
+       (has-substring?
+         (call-with-input-file (format "~a/internal-print/contract/index.js" target)
+           get-string-all)
+         "await __compactRuntime.crossContractCall({")))
 (printf "EntryPoint source statement: ~d checks passed; proof/runtime gates pending.\n" checks)
