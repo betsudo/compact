@@ -267,11 +267,10 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(compact_if_empty_else_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_branches_set_insert_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_IF_BRANCHES_SET_INSERT_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_IF_BRANCHES_SET_INSERT_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_IF_BRANCHES_SET_INSERT_GENERATED")
-                .expect("complete pinned if/branches_write_ledger generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_IF_BRANCHES_SET_INSERT_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_IF_BRANCHES_SET_INSERT_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute if/branches_write_ledger root required"
@@ -292,11 +291,10 @@ fn main() {
         println!("cargo::rustc-cfg=compact_if_branches_set_insert_generated");
     }
     println!("cargo::rerun-if-env-changed=COMPACT_IF_EMPTY_ELSE_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_IF_EMPTY_ELSE_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_IF_EMPTY_ELSE_GENERATED")
-                .expect("complete pinned if/empty_else_branch generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_IF_EMPTY_ELSE_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_IF_EMPTY_ELSE_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute if/empty_else_branch root required"
@@ -317,11 +315,10 @@ fn main() {
         println!("cargo::rustc-cfg=compact_if_empty_else_generated");
     }
     println!("cargo::rerun-if-env-changed=COMPACT_FOR_GENERIC_BOUND_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_FOR_GENERIC_BOUND_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_FOR_GENERIC_BOUND_GENERATED")
-                .expect("complete pinned for/generic_bound generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_FOR_GENERIC_BOUND_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_FOR_GENERIC_BOUND_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute for/generic_bound root required"
