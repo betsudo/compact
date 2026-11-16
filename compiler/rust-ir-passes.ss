@@ -325,6 +325,11 @@
       ;; closed index domain. Key it by the analyzed item formal and scope it
       ;; only to that reducer body.
       (define current-static-fold-index-domains (make-parameter #f))
+      ;; Preserve only pure, fixed byte constructors in lexical scope. A
+      ;; Bytes-valued Fold source must come from this map before its item can
+      ;; receive a circuit-certified index domain.
+      (define current-static-byte-bindings (make-parameter #f))
+      (define current-static-byte-fold-index-domains (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
       ;; Keep ordinary expressions and constructor value initializers on their
       ;; existing cast transport; parameterize restores this scope afterward.
@@ -1002,6 +1007,45 @@
                          (cons maximum indices)))]
                  [else #f]))))
 
+      (define (literal-byte-binding-value expr bindings)
+        (define (byte expr)
+          (nanopass-case (Lnodisclose Expression) expr
+            [(quote ,src ,datum)
+             (and (integer? datum) (exact? datum) (<= 0 datum 255) datum)]
+            [(safe-cast ,src ,type ,type^ ,expr^)
+             (let ([target (rust-unsigned-maximum type)]
+                   [source (rust-unsigned-maximum type^)]
+                   [value (byte expr^)])
+               (and target source value (<= value source target) value))]
+            [else #f]))
+        (define (part arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(single ,src ,expr^)
+             (let ([value (byte expr^)])
+               (and value (list value)))]
+            [(spread ,src ,nat (bytes->vector ,src^ ,len (var-ref ,src^^ ,var-name)))
+             (let ([bytes (eq-hashtable-ref bindings var-name #f)])
+               (and bytes (= nat len) (= (length bytes) len) bytes))]
+            [else #f]))
+        (nanopass-case (Lnodisclose Expression) expr
+          [(vector->bytes ,src ,len (vector ,src^ ,tuple-arg* ...))
+           (and (integer? len) (exact? len) (<= 0 len 9)
+                (let ([parts (map part tuple-arg*)])
+                  (and (for-all (lambda (part) part) parts)
+                       (let ([bytes (apply append parts)])
+                         (and (= (length bytes) len) bytes)))))]
+          [else #f]))
+
+      (define (literal-byte-fold-index-domain expr len item-type)
+        (let ([bindings (current-static-byte-bindings)]
+              [maximum (rust-unsigned-maximum item-type)])
+          (and bindings maximum (= maximum 255) (> len 0) (<= len 8)
+               (nanopass-case (Lnodisclose Expression) expr
+                 [(var-ref ,src ,var-name)
+                  (let ([bytes (eq-hashtable-ref bindings var-name #f)])
+                    (and bytes (= (length bytes) len) (cons maximum bytes)))]
+                 [else #f]))))
+
       ;; The Fold item is still a runtime formal, but an exact literal source
       ;; limits its values. Keep direct dynamic indexes refused. Both the
       ;; indexed operand and the index must be side-effect-free references;
@@ -1047,6 +1091,58 @@
                                             (object (cons "kind" "assert")
                                                     (cons "condition" (same (car remaining)))
                                                     (cons "message" "index outside static Fold domain"))))
+                                          (cons "value" (project (car remaining))))
+                                  (object (cons "kind" "if")
+                                          (cons "condition" (same (car remaining)))
+                                          (cons "then" (project (car remaining)))
+                                          (cons "otherwise" (loop (cdr remaining)))))))))]
+                  [else #f])]
+               [else #f])))
+
+      (define (static-fold-bytes-ref-ir original src type value index lower)
+        (and (rust-vector-unique-source? original)
+             (nanopass-case (Lnodisclose Expression) index
+               [(var-ref ,src^ ,var-name)
+                (nanopass-case (Lnodisclose Expression) value
+                  [(var-ref ,src^^ ,var-name^)
+                   (let* ([domains (current-static-byte-fold-index-domains)]
+                          [domain (and domains (eq-hashtable-ref domains var-name #f))]
+                          [bindings (current-static-byte-bindings)]
+                          [operand (and bindings (eq-hashtable-ref bindings var-name^ #f))]
+                          [width (bytes-carrier-width type)])
+                     (and domain operand width (= (length operand) width)
+                          (for-all (lambda (k) (< k width)) (cdr domain))
+                          ;; Only the circuit evaluator can attest that this
+                          ;; exact Bytes-ref occurrence saw every immutable
+                          ;; item once and in source order.
+                          (rust-vector-domain-certified? original (cdr domain))
+                          (let ([maximum (car domain)]
+                                [indices (cdr domain)]
+                                [name (rust-var-name var-name)])
+                            (define (item)
+                              (object (cons "kind" "parameter") (cons "name" name)))
+                            (define (same k)
+                              (object (cons "kind" "equal")
+                                      (cons "left" (item))
+                                      (cons "right"
+                                        (object (cons "kind" "unsigned_literal")
+                                                (cons "value" (number->string k))
+                                                (cons "max" (number->string maximum))))))
+                            (define (project k)
+                              (object (cons "kind" "bytes_to_uint")
+                                      (cons "value"
+                                        (object (cons "kind" "bytes_slice")
+                                                (cons "value" (lower value))
+                                                (cons "start" k)
+                                                (cons "length" 1)))
+                                      (cons "max" "255")))
+                            (let loop ([remaining indices])
+                              (if (null? (cdr remaining))
+                                  (object (cons "kind" "sequence")
+                                          (cons "steps" (vector
+                                            (object (cons "kind" "assert")
+                                                    (cons "condition" (same (car remaining)))
+                                                    (cons "message" "index outside static Bytes Fold domain"))))
                                           (cons "value" (project (car remaining))))
                                   (object (cons "kind" "if")
                                           (cons "condition" (same (car remaining)))
@@ -2334,25 +2430,34 @@
       ;; bindings. Keep Counter lookup in that same lexical scope when a Fold
       ;; appears inside an initializer or an ordinary value expression.
       (define (stateful-bindings-ir local* value* src environment witness-ids emit)
-        (let loop ([locals local*] [values value*]
-                   [environment environment] [bindings '()])
-          (if (null? locals)
-              (parameterize ([current-counter-environment environment])
-                (emit (list->vector (reverse bindings)) environment))
-              (nanopass-case (Lnodisclose Argument) (car locals)
-                [(,var-name ,type)
-                 (let ([binding
-                         (parameterize ([current-counter-environment environment])
-                           (object (cons "name" (sourced-rust-var-name var-name))
-                                   (cons "ty" (type-ir type src))
-                                   (cons "value"
-                                         (stateful-typed-expression-ir (car values) type src witness-ids))))])
-                   (loop (cdr locals) (cdr values)
-                         (cons (cons var-name
-                                     (object (cons "kind" "parameter")
-                                             (cons "name" (rust-var-name var-name))))
-                               environment)
-                         (cons binding bindings)))]))))
+        (let ([byte-bindings (if (current-static-byte-bindings)
+                                 (hashtable-copy (current-static-byte-bindings) #t)
+                                 (make-eq-hashtable))])
+          (parameterize ([current-static-byte-bindings byte-bindings])
+            (let loop ([locals local*] [values value*]
+                       [environment environment] [bindings '()])
+              (if (null? locals)
+                  (parameterize ([current-counter-environment environment])
+                    (emit (list->vector (reverse bindings)) environment))
+                  (nanopass-case (Lnodisclose Argument) (car locals)
+                    [(,var-name ,type)
+                     (let* ([value (car values)]
+                            [binding
+                              (parameterize ([current-counter-environment environment])
+                                (object (cons "name" (sourced-rust-var-name var-name))
+                                        (cons "ty" (type-ir type src))
+                                        (cons "value"
+                                          (stateful-typed-expression-ir value type src witness-ids))))]
+                            [width (bytes-carrier-width type)]
+                            [bytes (and width (literal-byte-binding-value value byte-bindings))])
+                       (eq-hashtable-set! byte-bindings var-name
+                         (and bytes (= (length bytes) width) bytes))
+                       (loop (cdr locals) (cdr values)
+                             (cons (cons var-name
+                                         (object (cons "kind" "parameter")
+                                                 (cons "name" (rust-var-name var-name))))
+                                   environment)
+                             (cons binding bindings)))]))))))
 
       (define (state-action-ir expr owner-src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
@@ -3251,7 +3356,10 @@
                                      (make-eq-hashtable))]
                  [index-domains (if (current-static-fold-index-domains)
                                     (hashtable-copy (current-static-fold-index-domains) #t)
-                                    (make-eq-hashtable))])
+                                    (make-eq-hashtable))]
+                 [byte-index-domains (if (current-static-byte-fold-index-domains)
+                                         (hashtable-copy (current-static-byte-fold-index-domains) #t)
+                                         (make-eq-hashtable))])
              (unless (= (length arg*) (+ 1 (length map-args)))
                (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
              (for-each
@@ -3260,15 +3368,19 @@
                    [(,var-name ,type^)
                     (nanopass-case (Lnodisclose Map-Argument) map-arg
                       [(,expr1 ,type1 ,type2)
-                       (let ([domain (literal-fold-index-domain expr1 len type2)])
-                         (when domain (eq-hashtable-set! index-domains var-name domain)))])]))
+                       (let ([domain (literal-fold-index-domain expr1 len type2)]
+                             [byte-domain (literal-byte-fold-index-domain expr1 len type2)])
+                         (when domain (eq-hashtable-set! index-domains var-name domain))
+                         (when byte-domain
+                           (eq-hashtable-set! byte-index-domains var-name byte-domain)))])]))
                (cdr arg*) map-args)
              (for-each (lambda (arg)
                          (nanopass-case (Lnodisclose Argument) arg
                            [(,var-name ,type^)
                             (eq-hashtable-set! variable-types var-name type^)])) arg*)
              (parameterize ([current-variable-types variable-types]
-                            [current-static-fold-index-domains index-domains])
+                            [current-static-fold-index-domains index-domains]
+                            [current-static-byte-fold-index-domains byte-index-domains])
                (emit (map (lambda (arg) (argument-ir arg src)) arg*)
                  (lambda ()
                    (if (stateful-body-has-storage-mutation? expr)
@@ -3701,8 +3813,10 @@
            (bytes-slice-ir src expr index len
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(bytes-ref ,src ,type ,expr ,index)
-           (bytes-ref-ir value-expr src type expr index
-             (lambda (value) (stateful-expression-ir value src witness-ids)))]
+           (or (static-fold-bytes-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids)))
+               (bytes-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids))))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(field->bytes ,src ,len ,expr)
