@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Run nineteen pinned keyword families through the original Vitest host."""
+"""Run twenty pinned keyword families through the original Vitest host."""
 
 import argparse
 import json

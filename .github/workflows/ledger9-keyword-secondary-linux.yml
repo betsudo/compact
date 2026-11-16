@@ -220,6 +220,17 @@ jobs:
               "$checker" "${arguments[@]}" \
               | tee "$RUNNER_TEMP/keyword-secondary-semantic-evidence/$gate.stdout.log"
           done
+      - name: Run pinned small keyword families and constructor Rust result
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_small_keywords.py \
+              --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+              --ts-runtime "$SECONDARY_RUNTIME" \
+              --cargo-target "$SECONDARY_CARGO_TARGET" \
+              --output "$root/small_keywords" | tee "$root/small_keywords.stdout.log"
       - name: Run Bytes indexed and static controls serially
         run: |
           set -euo pipefail
@@ -238,7 +249,7 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command \
             scheme --program compiler/test-rust-vector-indices.ss "$root/bytes-occurrences" \
               | tee "$root/bytes-occurrences.stdout.log"
-      - name: Run all 221 original twelve-family host tests
+      - name: Run all 263 original twenty-family host tests
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
@@ -280,6 +291,19 @@ jobs:
             --output "$root/bytes_proof" --expected-source-sha "$GITHUB_SHA" \
             --cargo-target "$SECONDARY_CARGO_TARGET" \
             | tee "$root/bytes_proof.stdout.log"
+      - name: Prove and strictly apply constructor parameters transaction
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-secondary-proof-parameters"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+            tools/compact-rust-backend/check_upstream_ledger9_keyword_constructor_parameters_proof.py \
+            --grouped-gate "$root/small_keywords" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+            --zkir "$SECONDARY_ZKIR" --output "$root/constructor_proof" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET" \
+            | tee "$root/constructor_proof.stdout.log"
       - name: Verify retained source, generated artifacts and proof receipts
         env:
           SOURCE_SHA: ${{ github.sha }}
