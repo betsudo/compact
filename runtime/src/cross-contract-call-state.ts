@@ -120,37 +120,80 @@ const emptyEffects = (): ocrt.Effects => ({
   claimedUnshieldedSpends: new Map(),
 });
 
+// Capture native methods once; a generated callback may shadow instance methods
+// and iterators, but a rollback must read the actual backing containers.
+const typedArrayLength = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype), 'length')!.get!;
+const typedArraySet = Uint8Array.prototype.set;
+const mapForEach = Map.prototype.forEach;
+const mapClear = Map.prototype.clear;
+const mapSet = Map.prototype.set;
+const setForEach = Set.prototype.forEach;
+const setClear = Set.prototype.clear;
+const setAdd = Set.prototype.add;
+
+const snapshotOwnDescriptors = (value: object): (() => void) => {
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  for (const descriptor of Object.values(descriptors)) {
+    if (!('value' in descriptor)) throw new CompactError('Cannot snapshot an accessor call-state container');
+  }
+  return () => {
+    for (const key of Reflect.ownKeys(value)) {
+      if (!Object.prototype.hasOwnProperty.call(descriptors, key) && !Reflect.deleteProperty(value, key)) {
+        throw new CompactError('Could not remove an added call-state property');
+      }
+    }
+    for (const key of Reflect.ownKeys(descriptors)) {
+      Object.defineProperty(value, key, descriptors[key as keyof typeof descriptors]);
+    }
+  };
+};
+
 /** Keep the original mutable containers and restore their contents on abort. */
-const snapshotMutable = (value: unknown, seen = new WeakSet<object>()): (() => void) => {
+export const snapshotInternalMutable = (value: unknown, seen = new WeakSet<object>()): (() => void) => {
   if (value === null || typeof value !== 'object') return () => {};
   if (seen.has(value)) throw new CompactError('Cannot snapshot a cyclic call-state container');
   seen.add(value);
   if (value instanceof Uint8Array) {
-    const bytes = Uint8Array.from(value);
-    return () => Uint8Array.prototype.set.call(value, bytes);
+    const bytes = new Uint8Array(typedArrayLength.call(value) as number);
+    typedArraySet.call(bytes, value);
+    const restoreOwn = snapshotOwnDescriptors(value);
+    return () => {
+      typedArraySet.call(value, bytes);
+      restoreOwn();
+    };
   }
   if (value instanceof Map) {
-    const entries = Array.from(value, ([key, item]) => ({
-      key,
-      item,
-      restoreKey: snapshotMutable(key, seen),
-      restoreItem: snapshotMutable(item, seen),
-    }));
+    const restoreOwn = snapshotOwnDescriptors(value);
+    const entries: { key: unknown; item: unknown; restoreKey: () => void; restoreItem: () => void }[] = [];
+    mapForEach.call(value, (item, key) => {
+      entries.push({
+        key,
+        item,
+        restoreKey: snapshotInternalMutable(key, seen),
+        restoreItem: snapshotInternalMutable(item, seen),
+      });
+    });
     return () => {
       for (const entry of entries) {
         entry.restoreKey();
         entry.restoreItem();
       }
-      value.clear();
-      for (const { key, item } of entries) value.set(key, item);
+      mapClear.call(value);
+      for (const { key, item } of entries) mapSet.call(value, key, item);
+      restoreOwn();
     };
   }
   if (value instanceof Set) {
-    const entries = Array.from(value, (item) => ({ item, restore: snapshotMutable(item, seen) }));
+    const restoreOwn = snapshotOwnDescriptors(value);
+    const entries: { item: unknown; restore: () => void }[] = [];
+    setForEach.call(value, (item) => {
+      entries.push({ item, restore: snapshotInternalMutable(item, seen) });
+    });
     return () => {
       for (const entry of entries) entry.restore();
-      value.clear();
-      for (const { item } of entries) value.add(item);
+      setClear.call(value);
+      for (const { item } of entries) setAdd.call(value, item);
+      restoreOwn();
     };
   }
   if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
@@ -160,12 +203,14 @@ const snapshotMutable = (value: unknown, seen = new WeakSet<object>()): (() => v
   const entries = Reflect.ownKeys(descriptors).map((key) => {
     const descriptor = descriptors[key as keyof typeof descriptors];
     if (!('value' in descriptor)) throw new CompactError('Cannot snapshot an accessor call-state container');
-    return { key, descriptor, restore: snapshotMutable(descriptor.value, seen) };
+    return { key, descriptor, restore: snapshotInternalMutable(descriptor.value, seen) };
   });
   return () => {
     for (const entry of entries) entry.restore();
     for (const key of Reflect.ownKeys(value)) {
-      if (!Object.prototype.hasOwnProperty.call(descriptors, key)) Reflect.deleteProperty(value, key);
+      if (!Object.prototype.hasOwnProperty.call(descriptors, key) && !Reflect.deleteProperty(value, key)) {
+        throw new CompactError('Could not remove an added call-state property');
+      }
     }
     // Restore array length before reintroducing any removed numeric indices.
     if (Array.isArray(value)) value.length = descriptors.length.value as number;
@@ -372,18 +417,18 @@ export class InternalCrossContractCallState {
           effects,
           commitmentIndices,
           ownCommitmentIndices: Object.getOwnPropertyDescriptor(context, 'comIndices'),
-          restoreBlock: snapshotMutable(block),
-          restoreEffects: snapshotMutable(effects),
-          restoreCommitmentIndices: snapshotMutable(commitmentIndices),
+          restoreBlock: snapshotInternalMutable(block),
+          restoreEffects: snapshotInternalMutable(effects),
+          restoreCommitmentIndices: snapshotInternalMutable(commitmentIndices),
         };
       }),
-      gasFields: Array.from(new Set(this.#gasCosts.values()), (cost) => snapshotMutable(cost)),
+      gasFields: Array.from(new Set(this.#gasCosts.values()), (cost) => snapshotInternalMutable(cost)),
       stateFields: Array.from(new Set([...this.#deployedStates.values(), prepared.deployedState]), (state) => ({
         state,
         balance: state.balance,
         data: state.data,
         maintenanceAuthority: state.maintenanceAuthority,
-        restoreBalance: snapshotMutable(state.balance),
+        restoreBalance: snapshotInternalMutable(state.balance),
       })),
     };
     let queryContext = this.#queryContexts.get(calleeAddress);
