@@ -201,6 +201,7 @@
               #f)])
       (check (if v3? 'ordinary-v3-refuses 'ordinary-v2-refuses)
         (and (string? refusal)
-             (has-substring? refusal "cross-contract calls are not yet supported")))))
+             (has-substring? refusal "cross-contract calls are not yet supported")))
+      (printf "ordinary ~a refusal: ~a\n" (if v3? 'v3 'v2) refusal)))
   '(#t #f))
 (printf "EntryPoint source statement: ~d checks passed; proof/runtime gates pending.\n" checks)
