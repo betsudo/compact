@@ -508,11 +508,20 @@
        [effectful (analyze (write-source "ten-step-wrapper-effectful"
          (string-append
            "circuit identity(v: Vector<10, Uint<100>>): Vector<10, Uint<100>> { return v; } "
-           "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; total = 0; for (const i of 0..10) { total = (total + (identity(base_data)[i] as Uint<16>)) as Uint<16>; } return total; }")))])
+           "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; total = 0; for (const i of 0..10) { total = (total + (identity(base_data)[i] as Uint<16>)) as Uint<16>; } return total; }")))]
+       [indirect (analyze (write-source "ten-step-wrapper-indirect-producer"
+         (string-append
+           "circuit produce(): [Uint<1>, Uint<4>, Uint<9>, Uint<16>, Uint<25>, Uint<36>, Uint<49>, Uint<64>, Uint<81>, Uint<100>] { return [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; } "
+           "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = produce(); total = 0; for (const i of 0..10) { total = (total + (base_data[i] as Uint<16>)) as Uint<16>; } return total; }")))])
   (check 'ten-step-wrapper-positive-projection
     (project-index-ir positive (observed-index-facts positive)))
   (check 'ten-step-wrapper-effectful-refused
     (eq? (project-index-ir effectful (observed-index-facts effectful)) 'refused))
+  ;; A producer call evaluated into a local binding before the Fold is safe:
+  ;; the indexed operand remains a single bare reference and dispatch never
+  ;; re-evaluates its initializer. Only a call inside the operand is refused.
+  (check 'ten-step-wrapper-indirect-producer-once
+    (project-index-ir indirect (observed-index-facts indirect)))
   (for-each
     (lambda (label pass)
       (let ([forged (pass positive)])

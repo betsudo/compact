@@ -1089,7 +1089,11 @@
                           [domain (and domains (eq-hashtable-ref domains var-name #f))]
                           [width (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
                                    [(tvector ,src^^^ ,len ,type^) len]
-                                   [else #f])])
+                                   [else #f])]
+                          [item-maximum (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
+                                          [(tvector ,src^^^ ,len ,type^)
+                                           (rust-unsigned-maximum type^)]
+                                          [else #f])])
                      (and domain width
                           (for-all (lambda (k) (< k width)) (cdr domain))
                           ;; The same circuit evaluator that admits each
@@ -1109,9 +1113,19 @@
                                                             (cons "value" (number->string k))
                                                             (cons "max" (number->string maximum))))))
                             (define (project k)
-                              (object (cons "kind" "tuple_index")
-                                      (cons "value" (lower value))
-                                      (cons "index" k)))
+                              (let ([selected (object (cons "kind" "tuple_index")
+                                                      (cons "value" (lower value))
+                                                      (cons "index" k))])
+                                ;; A tuple-backed Vector retains each source
+                                ;; element's narrower Uint bound in Rust IR.
+                                ;; Widen the selected value to the admitted
+                                ;; Vector item bound before joining the arms.
+                                (nanopass-case (Lnodisclose Expression) value
+                                  [(safe-cast ,src^ ,type^ ,type^^ ,expr^)
+                                   (object (cons "kind" "unsigned_cast")
+                                           (cons "max" (number->string item-maximum))
+                                           (cons "value" selected))]
+                                  [else selected])))
                             (let loop ([remaining indices])
                               (if (null? (cdr remaining))
                                   (object (cons "kind" "sequence")
