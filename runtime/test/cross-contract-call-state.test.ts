@@ -66,7 +66,7 @@ const setup = () => {
 };
 
 describe('internal Ledger 9 call state', () => {
-  test('pins a frozen parent-block identity and keeps the Runtime 0.18 public boundary closed', () => {
+  test('pins a frozen parent-block identity and keeps the public call export closed', () => {
     const { calls, root } = setup();
     expect(calls.snapshot).toEqual({ parentBlockHash: BLOCK, time: 37 });
     expect(Object.isFrozen(calls.snapshot)).toBe(true);
@@ -87,11 +87,10 @@ describe('internal Ledger 9 call state', () => {
       contractState: new ocrt.ContractState(),
       privateState: 0,
     };
-    expect(() => publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK })).toThrow(
-      /cross-contract context requires Ledger 9 runtime/,
-    );
-    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} })).toThrow(
-      /cross-contract context requires Ledger 9 runtime/,
+    const context = publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK });
+    expect(context.callContext.currentQueryContext.block.parentBlockHash).toBe(BLOCK);
+    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} as never })).toThrow(
+      /cross-contract providers require a pinned parent block/,
     );
   });
 

@@ -14,9 +14,10 @@
 // limitations under the License.
 
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
-import { CircuitContext } from './circuit-context.js';
+import { assertCircuitQueryIdentity, assertLiveCircuitCall, type CircuitContext } from './circuit-context.js';
 import { Bytes32Descriptor, Recipient } from './compact-types.js';
 import { createCoinCommitment } from './internal-coin-commitment.js';
+import { CompactError } from './error.js';
 import { toHex } from './utils.js';
 
 /**
@@ -137,6 +138,67 @@ export interface EncodedZswapLocalState {
   }[];
 }
 
+const ownValue = <T>(object: object, key: string): T => {
+  const descriptor = Object.getOwnPropertyDescriptor(object, key);
+  if (!descriptor || !('value' in descriptor)) {
+    throw new CompactError(`Encoded Zswap ${key} must be an own data field`);
+  }
+  return descriptor.value as T;
+};
+
+const typedArrayLength = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype), 'length')!.get!;
+const typedArraySet = Uint8Array.prototype.set;
+
+const copyBytes = (bytes: Uint8Array): Uint8Array => {
+  if (!(bytes instanceof Uint8Array)) throw new CompactError('Encoded Zswap bytes must be a Uint8Array');
+  let length: number;
+  try {
+    length = typedArrayLength.call(bytes) as number;
+  } catch {
+    throw new CompactError('Encoded Zswap bytes must have a valid typed-array buffer');
+  }
+  const owned = new Uint8Array(length);
+  typedArraySet.call(owned, bytes);
+  return owned;
+};
+
+const copyDense = <T, R>(items: T[], copy: (item: T) => R): R[] => {
+  if (!Array.isArray(items)) throw new CompactError('Encoded Zswap items must be an array');
+  const owned: R[] = [];
+  for (let index = 0; index < items.length; index++) {
+    owned.push(copy(ownValue<T>(items, String(index))));
+  }
+  return owned;
+};
+
+const copyCoin = (coin: EncodedShieldedCoinInfo): EncodedShieldedCoinInfo => ({
+  nonce: copyBytes(ownValue(coin, 'nonce')),
+  color: copyBytes(ownValue(coin, 'color')),
+  value: ownValue(coin, 'value'),
+});
+
+const copyQualifiedCoin = (coin: EncodedQualifiedShieldedCoinInfo): EncodedQualifiedShieldedCoinInfo => ({
+  ...copyCoin(coin),
+  mt_index: ownValue(coin, 'mt_index'),
+});
+
+const copyRecipient = (recipient: EncodedRecipient): EncodedRecipient => ({
+  is_left: ownValue(recipient, 'is_left'),
+  left: { bytes: copyBytes(ownValue(ownValue(recipient, 'left'), 'bytes')) },
+  right: { bytes: copyBytes(ownValue(ownValue(recipient, 'right'), 'bytes')) },
+});
+
+/** Defensive byte and array copy for Ledger 9 context cells. */
+export const copyEncodedZswapLocalState = (state: EncodedZswapLocalState): EncodedZswapLocalState => ({
+  coinPublicKey: { bytes: copyBytes(ownValue(ownValue(state, 'coinPublicKey'), 'bytes')) },
+  currentIndex: ownValue(state, 'currentIndex'),
+  inputs: copyDense(ownValue<EncodedQualifiedShieldedCoinInfo[]>(state, 'inputs'), copyQualifiedCoin),
+  outputs: copyDense(ownValue<EncodedZswapLocalState['outputs']>(state, 'outputs'), (output) => ({
+    coinInfo: copyCoin(ownValue(output, 'coinInfo')),
+    recipient: copyRecipient(ownValue(output, 'recipient')),
+  })),
+});
+
 /**
  * Constructs a new {@link EncodedZswapLocalState} with the given coin public key. The result can be used to create a
  * {@link ConstructorContext}.
@@ -209,10 +271,21 @@ export function createZswapInput(
   circuitContext: CircuitContext,
   qualifiedShieldedCoinInfo: EncodedQualifiedShieldedCoinInfo,
 ): [] {
-  circuitContext.currentZswapLocalState = {
-    ...circuitContext.currentZswapLocalState,
-    inputs: circuitContext.currentZswapLocalState.inputs.concat(qualifiedShieldedCoinInfo),
-  };
+  const current = circuitContext.callContext?.circuitId
+    ? circuitContext.callContext.currentZswapLocalState
+    : circuitContext.currentZswapLocalState;
+  const ledger9 = Boolean(circuitContext.callContext?.circuitId);
+  if (ledger9) assertLiveCircuitCall(circuitContext);
+  const next = ledger9 ? copyEncodedZswapLocalState(current) : { ...current, inputs: [...current.inputs] };
+  next.inputs.push(ledger9 ? copyQualifiedCoin(qualifiedShieldedCoinInfo) : qualifiedShieldedCoinInfo);
+  circuitContext.currentZswapLocalState = next;
+  if (circuitContext.callContext !== undefined) {
+    circuitContext.callContext = { ...circuitContext.callContext, currentZswapLocalState: next };
+    circuitContext.zswapLocalStates = {
+      ...circuitContext.zswapLocalStates,
+      [circuitContext.callContext.contractAddress]: next,
+    };
+  }
   return [];
 }
 
@@ -229,21 +302,37 @@ export function createZswapOutput(
   coinInfo: EncodedShieldedCoinInfo,
   recipient: EncodedRecipient,
 ): [] {
-  const nextQueryContext = circuitContext.currentQueryContext.insertCommitment(
-    Buffer.from(Bytes32Descriptor.fromValue(createCoinCommitment(coinInfo, recipient).value)).toString('hex'),
-    circuitContext.currentZswapLocalState.currentIndex,
+  const ledger9 = Boolean(circuitContext.callContext?.circuitId);
+  if (ledger9) assertLiveCircuitCall(circuitContext);
+  const currentQueryContext = ledger9 ? circuitContext.callContext.currentQueryContext : circuitContext.currentQueryContext;
+  const currentZswapLocalState = ledger9
+    ? circuitContext.callContext.currentZswapLocalState
+    : circuitContext.currentZswapLocalState;
+  const ownedCoin = ledger9 ? copyCoin(coinInfo) : coinInfo;
+  const ownedRecipient = ledger9 ? copyRecipient(recipient) : recipient;
+  const nextZswapLocalState = ledger9
+    ? copyEncodedZswapLocalState(currentZswapLocalState)
+    : { ...currentZswapLocalState, outputs: [...currentZswapLocalState.outputs] };
+  const nextQueryContext = currentQueryContext.insertCommitment(
+    Buffer.from(Bytes32Descriptor.fromValue(createCoinCommitment(ownedCoin, ownedRecipient).value)).toString('hex'),
+    currentZswapLocalState.currentIndex,
   );
+  if (ledger9) assertCircuitQueryIdentity(circuitContext.callContext, nextQueryContext);
+  nextZswapLocalState.currentIndex += 1n;
+  nextZswapLocalState.outputs.push({ coinInfo: ownedCoin, recipient: ownedRecipient });
   circuitContext.currentQueryContext = nextQueryContext;
-  // Keep the host view fresh without changing a shallow-copied input context.
-  circuitContext.callContext = { ...circuitContext.callContext, currentQueryContext: nextQueryContext };
-  circuitContext.currentZswapLocalState = {
-    ...circuitContext.currentZswapLocalState,
-    currentIndex: circuitContext.currentZswapLocalState.currentIndex + 1n,
-    outputs: circuitContext.currentZswapLocalState.outputs.concat({
-      coinInfo,
-      recipient,
-    }),
-  };
+  circuitContext.currentZswapLocalState = nextZswapLocalState;
+  // Replacement cells keep a shallow-copied input context as a snapshot.
+  if (circuitContext.callContext !== undefined) {
+    circuitContext.callContext = {
+      ...circuitContext.callContext,
+      currentQueryContext: nextQueryContext,
+      currentZswapLocalState: nextZswapLocalState,
+    };
+    const address = circuitContext.callContext.contractAddress;
+    circuitContext.queryContexts = { ...circuitContext.queryContexts, [address]: nextQueryContext };
+    circuitContext.zswapLocalStates = { ...circuitContext.zswapLocalStates, [address]: nextZswapLocalState };
+  }
   return [];
 }
 
@@ -253,6 +342,10 @@ export function createZswapOutput(
  * @param circuitContext The current circuit context.
  */
 export function ownPublicKey(circuitContext: CircuitContext<unknown>): EncodedCoinPublicKey {
+  if (circuitContext.callContext?.circuitId) {
+    assertLiveCircuitCall(circuitContext);
+    return { bytes: copyBytes(circuitContext.callContext.currentZswapLocalState.coinPublicKey.bytes) };
+  }
   return circuitContext.currentZswapLocalState.coinPublicKey;
 }
 
@@ -267,5 +360,9 @@ export const hasCoinCommitment = (
   context: CircuitContext,
   coinInfo: EncodedShieldedCoinInfo,
   recipient: EncodedRecipient,
-): boolean =>
-  context.currentQueryContext.comIndices.has(toHex(Bytes32Descriptor.fromValue(createCoinCommitment(coinInfo, recipient).value)));
+): boolean => {
+  if (context.callContext?.circuitId) assertLiveCircuitCall(context);
+  return (context.callContext?.circuitId ? context.callContext.currentQueryContext : context.currentQueryContext).comIndices.has(
+    toHex(Bytes32Descriptor.fromValue(createCoinCommitment(coinInfo, recipient).value)),
+  );
+};

@@ -20,10 +20,12 @@ import {
   EncodedZswapLocalState,
   ZswapLocalState,
   encodeZswapLocalState,
+  copyEncodedZswapLocalState,
 } from './zswap.js';
 import { PartialProofData, ProofData } from './proof-data.js';
 import { CompactError } from './error.js';
 import { CompactTypeBytes } from './compact-types.js';
+import type { ContractModuleProvider, ContractStateProvider } from './providers.js';
 
 /** External circuit name used in generated module metadata. */
 export type CircuitId = string;
@@ -33,15 +35,56 @@ export type LogEvent = Extract<ocrt.GatherResult, { tag: 'log' }>['content'] & {
   address: ocrt.ContractAddress;
 };
 
+/** The proof data for one completed call in depth-first completion order. */
+export interface CallProofData extends ProofData {
+  circuitId: CircuitId;
+  contractAddress: ocrt.ContractAddress;
+  initialQueryContext: ocrt.QueryContext;
+  finalQueryContext: ocrt.QueryContext;
+  zswapLocalState: EncodedZswapLocalState;
+  commCommData?: {
+    commComm: ocrt.CommunicationCommitment;
+    commCommRand: ocrt.CommunicationCommitmentRand;
+  };
+}
+
+export type CallProofDataTrace = CallProofData[];
+
+/** The live per-contract frame used by generated Ledger 9 circuits. */
+export interface CircuitCallContext<PS = any> {
+  circuitId: CircuitId;
+  contractAddress: ocrt.ContractAddress;
+  initialQueryContext: ocrt.QueryContext;
+  currentQueryContext: ocrt.QueryContext;
+  currentGasCost: ocrt.RunningCost;
+  currentPrivateState: PS | undefined;
+  currentZswapLocalState: EncodedZswapLocalState;
+  parentBlockHash?: string;
+  time: number;
+}
+
+export type CallContext<PS = any> = CircuitCallContext<PS>;
+
+export type CrossContractInputs = {
+  readonly stateProvider: ContractStateProvider;
+  readonly moduleProvider: ContractModuleProvider;
+};
+
 /**
  * The external information accessible from within a Compact circuit call
  */
 export interface CircuitContext<PS = any> {
-  /**
-   * Host compatibility view of the executing contract's ledger state. This is
-   * deliberately smaller than the pinned runtime's cross-contract CallContext.
-   */
-  callContext: { currentQueryContext: ocrt.QueryContext };
+  /** Live call frame; its cells alias the entry in each per-address map. */
+  callContext: CircuitCallContext<PS>;
+  queryContexts: Record<ocrt.ContractAddress, ocrt.QueryContext>;
+  gasCosts: Record<ocrt.ContractAddress, ocrt.RunningCost>;
+  zswapLocalStates: Record<ocrt.ContractAddress, EncodedZswapLocalState>;
+  contractStates: Record<ocrt.ContractAddress, ocrt.ContractState>;
+  callProofDataTrace: CallProofDataTrace;
+  stateProvider?: ContractStateProvider;
+  moduleProvider?: ContractModuleProvider;
+  /** Shared across copies so a future coordinator can refuse re-entry. */
+  activeContracts: Set<ocrt.ContractAddress>;
   /**
    * The current private state for the contract.
    */
@@ -63,7 +106,7 @@ export interface CircuitContext<PS = any> {
    */
   gasLimit?: ocrt.RunningCost;
   /** Events emitted by successful calls, in execution order. */
-  events?: readonly LogEvent[];
+  events: LogEvent[];
 }
 
 /**
@@ -89,7 +132,9 @@ const coerceToChargedState = (contractState: ocrt.ContractState | ocrt.StateValu
 const createInitialQueryContext = (
   contractState: ocrt.ContractState | ocrt.StateValue | ocrt.ChargedState,
   contractAddress: ocrt.ContractAddress,
-  time?: number,
+  time: number,
+  parentBlockHash?: string,
+  caller?: ocrt.PublicAddress,
 ): ocrt.QueryContext => {
   const initialQueryContext = new ocrt.QueryContext(coerceToChargedState(contractState), contractAddress);
   const balance = contractState instanceof ocrt.ContractState ? contractState.balance : new Map();
@@ -97,8 +142,14 @@ const createInitialQueryContext = (
     ...initialQueryContext.block,
     balance,
     ownAddress: contractAddress,
-    secondsSinceEpoch: BigInt(time ?? Math.floor(Date.now() / 1_000)),
+    secondsSinceEpoch: BigInt(time),
   };
+  if (parentBlockHash !== undefined) {
+    initialQueryContext.block = { ...initialQueryContext.block, parentBlockHash };
+  }
+  if (caller !== undefined) {
+    initialQueryContext.block = { ...initialQueryContext.block, caller };
+  }
   return initialQueryContext;
 };
 
@@ -135,10 +186,8 @@ const isEncodedZswapLocalState = (value: any): value is EncodedZswapLocalState =
 };
 
 /**
- * The root test-contracts host uses the object-form constructor from the
- * pinned Ledger 9 runtime. Runtime 0.18 still executes positional contexts;
- * this form accepts the same local inputs without claiming cross-contract
- * context support.
+ * The pinned Ledger 9 object form. Positional Runtime 0.18 calls remain valid
+ * and have no circuit ID or cross-contract providers.
  */
 export interface HostCircuitContextOptions<PS> {
   circuitId: string;
@@ -150,7 +199,7 @@ export interface HostCircuitContextOptions<PS> {
   costModel?: ocrt.CostModel;
   time?: number;
   parentBlockHash?: string;
-  crossContract?: unknown;
+  crossContract?: CrossContractInputs;
 }
 
 export function createCircuitContext<PS>(options: HostCircuitContextOptions<PS>): CircuitContext<PS>;
@@ -173,11 +222,16 @@ export function createCircuitContext<PS>(
   time?: number,
 ): CircuitContext<PS> {
   let contractAddress: ocrt.ContractAddress;
+  let circuitId = '';
+  let parentBlockHash: string | undefined;
+  let crossContract: CrossContractInputs | undefined;
   if (arguments.length === 1) {
     const options = contractAddressOrOptions as HostCircuitContextOptions<PS>;
     if (
-      typeof options !== 'object' || options === null ||
+      typeof options !== 'object' ||
+      options === null ||
       typeof options.circuitId !== 'string' ||
+      options.circuitId.length === 0 ||
       !('contractAddress' in options) ||
       !('coinPublicKeyOrZswapState' in options) ||
       !('contractState' in options) ||
@@ -185,8 +239,21 @@ export function createCircuitContext<PS>(
     ) {
       throw new CompactError('createCircuitContext: invalid object-form context options');
     }
-    if (options.parentBlockHash !== undefined || options.crossContract !== undefined) {
-      throw new CompactError('createCircuitContext: cross-contract context requires Ledger 9 runtime');
+    circuitId = options.circuitId;
+    parentBlockHash = options.parentBlockHash;
+    crossContract = options.crossContract;
+    if (parentBlockHash !== undefined && !/^[0-9a-f]{64}$/.test(parentBlockHash)) {
+      throw new CompactError('createCircuitContext: parent block hash must be canonical Bytes<32>');
+    }
+    if (
+      crossContract !== undefined &&
+      (typeof crossContract !== 'object' ||
+        crossContract === null ||
+        parentBlockHash === undefined ||
+        typeof crossContract.stateProvider?.getContractState !== 'function' ||
+        typeof crossContract.moduleProvider?.resolve !== 'function')
+    ) {
+      throw new CompactError('createCircuitContext: cross-contract providers require a pinned parent block');
     }
     contractAddress = options.contractAddress;
     coinPublicKeyOrZswapState = options.coinPublicKeyOrZswapState;
@@ -201,7 +268,11 @@ export function createCircuitContext<PS>(
   if (coinPublicKeyOrZswapState === undefined || contractState === undefined) {
     throw new CompactError('createCircuitContext: missing coin key or contract state');
   }
-  const initialQueryContext = createInitialQueryContext(contractState, contractAddress, time);
+  const blockTime = time ?? Math.floor(Date.now() / 1_000);
+  if (!Number.isSafeInteger(blockTime) || blockTime < 0) {
+    throw new CompactError('createCircuitContext: block time must be a non-negative integer');
+  }
+  const initialQueryContext = createInitialQueryContext(contractState, contractAddress, blockTime, parentBlockHash);
 
   let zswapLocalState: EncodedZswapLocalState;
 
@@ -215,9 +286,32 @@ export function createCircuitContext<PS>(
     // It's a CoinPublicKey or EncodedCoinPublicKey, create empty state
     zswapLocalState = emptyZswapLocalState(coinPublicKeyOrZswapState);
   }
+  if (circuitId) {
+    zswapLocalState = copyEncodedZswapLocalState(zswapLocalState);
+  }
 
+  const currentGasCost = emptyRunningCost();
+  const callContext: CircuitCallContext<PS> = {
+    circuitId,
+    contractAddress,
+    initialQueryContext,
+    currentQueryContext: initialQueryContext,
+    currentGasCost,
+    currentPrivateState: privateState,
+    currentZswapLocalState: zswapLocalState,
+    parentBlockHash,
+    time: blockTime,
+  };
   return {
-    callContext: { currentQueryContext: initialQueryContext },
+    callContext,
+    queryContexts: { [contractAddress]: initialQueryContext },
+    gasCosts: { [contractAddress]: currentGasCost },
+    zswapLocalStates: { [contractAddress]: zswapLocalState },
+    contractStates: Object.create(null) as Record<ocrt.ContractAddress, ocrt.ContractState>,
+    callProofDataTrace: [],
+    stateProvider: crossContract?.stateProvider,
+    moduleProvider: crossContract?.moduleProvider,
+    activeContracts: new Set([contractAddress]),
     currentPrivateState: privateState as PS,
     currentZswapLocalState: zswapLocalState,
     currentQueryContext: initialQueryContext,
@@ -226,6 +320,63 @@ export function createCircuitContext<PS>(
     events: [],
   };
 }
+
+/** Copy the call containers; the active set is intentionally shared across a call tree. */
+export const copyCircuitContext = <PS>(context: CircuitContext<PS>): CircuitContext<PS> => ({
+  ...context,
+  callContext: { ...context.callContext },
+  queryContexts: { ...context.queryContexts },
+  gasCosts: { ...context.gasCosts },
+  zswapLocalStates: { ...context.zswapLocalStates },
+  contractStates: { ...context.contractStates },
+  callProofDataTrace: [...context.callProofDataTrace],
+  events: [...context.events],
+});
+
+export const assertCircuitQueryIdentity = (frame: CircuitCallContext, query: ocrt.QueryContext): void => {
+  if (
+    query.address !== frame.contractAddress ||
+    query.block.ownAddress !== frame.contractAddress ||
+    query.block.secondsSinceEpoch !== BigInt(frame.time) ||
+    (frame.parentBlockHash !== undefined && query.block.parentBlockHash !== frame.parentBlockHash)
+  ) {
+    throw new CompactError('Ledger 9 query changed the pinned block or call identity');
+  }
+};
+
+/** Refuse stale live cells before a Ledger 9 query or proof entry. */
+export const assertLiveCircuitCall = (context: CircuitContext): void => {
+  const frame = context.callContext;
+  const address = frame.contractAddress;
+  if (
+    !frame.circuitId ||
+    context.queryContexts[address] !== frame.currentQueryContext ||
+    context.gasCosts[address] !== frame.currentGasCost ||
+    context.zswapLocalStates[address] !== frame.currentZswapLocalState
+  ) {
+    throw new CompactError('Ledger 9 live call cells are incomplete or stale');
+  }
+  assertCircuitQueryIdentity(frame, frame.initialQueryContext);
+  assertCircuitQueryIdentity(frame, frame.currentQueryContext);
+};
+
+/** Append the current completed call after a generated circuit returns proof data. */
+export const finalizeCallProofData = (context: CircuitContext, proofData: ProofData): void => {
+  const frame = context.callContext;
+  const address = frame.contractAddress;
+  assertLiveCircuitCall(context);
+  context.callProofDataTrace = [
+    ...context.callProofDataTrace,
+    {
+      ...proofData,
+      circuitId: frame.circuitId,
+      contractAddress: address,
+      initialQueryContext: frame.initialQueryContext,
+      finalQueryContext: frame.currentQueryContext,
+      zswapLocalState: frame.currentZswapLocalState,
+    },
+  ];
+};
 
 /**
  * Function for creating an initial running cost of zero.
@@ -274,20 +425,38 @@ export const queryLedgerState = (
   circuitContext: CircuitContext,
   partialProofData: PartialProofData,
   program: ocrt.Op<null>[],
-): ocrt.AlignedValue | ocrt.GatherResult[] => {
+): ocrt.AlignedValue | ocrt.GatherResult[] | undefined => {
   try {
-    const res = circuitContext.currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
-    circuitContext.currentQueryContext = res.context;
-    // Generated circuits shallow-copy their input context. Rebind rather than
-    // mutating the nested view so an earlier circuit result stays a snapshot.
-    // Generated ledger readers use a minimal synthetic context without this view.
-    if (circuitContext.callContext !== undefined) {
-      circuitContext.callContext = { ...circuitContext.callContext, currentQueryContext: res.context };
-    }
+    // The Runtime 0.18 generated reader has only the top-level cell. Ledger 9
+    // circuits use the call frame, which is also the source for per-address maps.
+    const ledger9 = circuitContext.callContext?.circuitId !== undefined && circuitContext.callContext.circuitId !== '';
+    if (ledger9) assertLiveCircuitCall(circuitContext);
+    const currentQueryContext = ledger9 ? circuitContext.callContext.currentQueryContext : circuitContext.currentQueryContext;
+    const res = currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
+    if (ledger9) assertCircuitQueryIdentity(circuitContext.callContext, res.context);
+    const frame = circuitContext.callContext;
+    const nextGasCost: ocrt.RunningCost | undefined = frame
+      ? {
+          readTime: frame.currentGasCost.readTime + res.gasCost.readTime,
+          computeTime: frame.currentGasCost.computeTime + res.gasCost.computeTime,
+          bytesWritten: frame.currentGasCost.bytesWritten + res.gasCost.bytesWritten,
+          bytesDeleted: frame.currentGasCost.bytesDeleted + res.gasCost.bytesDeleted,
+        }
+      : undefined;
+    const nextFrame =
+      frame && nextGasCost ? { ...frame, currentQueryContext: res.context, currentGasCost: nextGasCost } : undefined;
+    const nextQueryContexts =
+      frame && circuitContext.queryContexts !== undefined
+        ? { ...circuitContext.queryContexts, [frame.contractAddress]: res.context }
+        : undefined;
+    const nextGasCosts =
+      frame && nextGasCost && circuitContext.gasCosts !== undefined
+        ? { ...circuitContext.gasCosts, [frame.contractAddress]: nextGasCost }
+        : undefined;
     // Generated circuits move this internal accumulator to CircuitResults.
     const context = circuitContext as CircuitContext & { gasCost?: ocrt.RunningCost };
     const previous = context.gasCost ?? emptyRunningCost();
-    context.gasCost = {
+    const nextLegacyGasCost = {
       readTime: previous.readTime + res.gasCost.readTime,
       computeTime: previous.computeTime + res.gasCost.computeTime,
       bytesWritten: previous.bytesWritten + res.gasCost.bytesWritten,
@@ -295,13 +464,11 @@ export const queryLedgerState = (
     };
     const logs = res.events
       .filter((event) => event.tag === 'log')
-      .map((event) => ({ ...event.content, address: res.context.address }));
-    if (logs.length !== 0) {
-      circuitContext.events = [...(circuitContext.events ?? []), ...logs];
-    }
+      .map((event) => ({ ...event.content, address: frame?.contractAddress ?? res.context.address }));
+    const nextEvents = logs.length === 0 ? circuitContext.events : [...(circuitContext.events ?? []), ...logs];
     const reads = res.events.filter((e) => e.tag === 'read');
     let i = 0;
-    partialProofData.publicTranscript = partialProofData.publicTranscript.concat(
+    const nextTranscript = partialProofData.publicTranscript.concat(
       program.map((op) =>
         typeof op === 'object' && 'popeq' in op
           ? {
@@ -313,6 +480,14 @@ export const queryLedgerState = (
           : op,
       ) as ocrt.Op<ocrt.AlignedValue>[],
     );
+    // Commit after all identity, transcript and copy checks have succeeded.
+    circuitContext.currentQueryContext = res.context;
+    if (nextFrame) circuitContext.callContext = nextFrame;
+    if (nextQueryContexts) circuitContext.queryContexts = nextQueryContexts;
+    if (nextGasCosts) circuitContext.gasCosts = nextGasCosts;
+    context.gasCost = nextLegacyGasCost;
+    if (logs.length !== 0) circuitContext.events = nextEvents;
+    partialProofData.publicTranscript = nextTranscript;
     if (res.events.length === 1) {
       const event = res.events[0];
       if (event.tag === 'read') {
@@ -416,7 +591,13 @@ export const emitUnpaused = (context: CircuitContext, proofData: PartialProofDat
   return emitEvent(context, proofData, 9n, payload, 0);
 };
 
-const emitEvent = (context: CircuitContext, proofData: PartialProofData, tag: bigint, payload: Uint8Array, length: number): [] => {
+const emitEvent = (
+  context: CircuitContext,
+  proofData: PartialProofData,
+  tag: bigint,
+  payload: Uint8Array,
+  length: number,
+): [] => {
   const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
     tag: 'cell',
     content: { value, alignment: [{ tag: 'atom', value: { tag: 'bytes', length } }] },

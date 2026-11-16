@@ -281,7 +281,7 @@ describe('internal cross-contract preflight', () => {
     expect(constructor).not.toHaveBeenCalled();
   });
 
-  test('leaves the Runtime 0.18 public call boundary refused', () => {
+  test('leaves the public call boundary closed while accepting pinned context metadata', () => {
     expect('crossContractCall' in publicRuntime).toEqual(false);
     const options = {
       circuitId: 'caller',
@@ -290,11 +290,10 @@ describe('internal cross-contract preflight', () => {
       contractState: new ocrt.ContractState(),
       privateState: 0,
     };
-    expect(() => publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK })).toThrow(
-      /cross-contract context requires Ledger 9 runtime/,
-    );
-    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} })).toThrow(
-      /cross-contract context requires Ledger 9 runtime/,
+    const context = publicRuntime.createCircuitContext({ ...options, parentBlockHash: BLOCK });
+    expect(context.callContext.currentQueryContext.block.parentBlockHash).toBe(BLOCK);
+    expect(() => publicRuntime.createCircuitContext({ ...options, crossContract: {} as never })).toThrow(
+      /cross-contract providers require a pinned parent block/,
     );
   });
 });
