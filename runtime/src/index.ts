@@ -26,6 +26,7 @@ export * from './proof-data.js';
 export * from './witness.js';
 export * from './contract-dependencies.js';
 export * from './interface-descriptor.js';
+export * from './conformance.js';
 export * from './utils.js';
 
 export {

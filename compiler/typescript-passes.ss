@@ -174,7 +174,7 @@
           (let ([ldescriptor* (reverse rdescriptor*)])
             (values (map car ldescriptor*) (map cdr ldescriptor*))))))
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (fluid-let ([program-src src])
          (let ([pelt* (map Program-Element pelt*)])
            ; FIXME: assuming we get only (align <value> 1) or (align <value> 8).
@@ -192,7 +192,7 @@
              (with-output-language (Ltypescript Type)
                `(tunsigned ,src ,(- (expt 2 128) 1))))
            (let-values ([(descriptor-id* type*) (get-descriptors)])
-             `(program ,src ((,export-name* ,name*) ...)
+             `(program ,src (,contract-type* ...) ((,export-name* ,name*) ...)
                 (type-descriptors ,descriptor-table (,descriptor-id* ,type*) ...)
                 ,pelt* ...))))])
     (Program-Element : Program-Element (ir) -> Program-Element ()
@@ -1193,6 +1193,7 @@
               (display-string "export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;\n")
               (display-string "export declare const pureCircuits: PureCircuits;\n")
               (display-string "export declare const circuitSignatures: __compactRuntime.CircuitSignatures;\n")
+              (display-string "export declare const declaredInterfaces: __compactRuntime.DeclaredInterfaces;\n")
               ))))
 
       (module (print-contract.js)
@@ -2248,6 +2249,16 @@
              (format "{tag: 'Vector', length: ~d, type: ~a}" (length value*) (car value*))]
             [else (format "{tag: 'Tuple', types: [~a]}" (signature-comma-separated value*))]))
 
+        (define (format-interface-descriptor elt-name* type** type*)
+          (format "{~a}"
+            (signature-comma-separated
+              (map (lambda (elt-name arg-type* result-type)
+                     (format "~a: {argumentTypes: [~a], resultType: ~a}"
+                       (format-signature-key (symbol->string elt-name))
+                       (signature-comma-separated (map format-signature-type arg-type*))
+                       (format-signature-type result-type)))
+                   elt-name* type** type*))))
+
         (define (format-signature-type type)
           (nanopass-case (Ltypescript Type) type
             [(tboolean ,src) "{tag: 'Boolean'}"]
@@ -2291,15 +2302,9 @@
                   (format-signature-type type))]
                [else (format-signature-type type)])]
             [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
-             (format "{tag: 'Contract', name: ~a, circuits: {~a}}"
+             (format "{tag: 'Contract', name: ~a, circuits: ~a}"
                (format-javascript-string (symbol->string contract-name))
-               (signature-comma-separated
-                 (map (lambda (elt-name arg-type* result-type)
-                        (format "~a: {argumentTypes: [~a], resultType: ~a}"
-                          (format-signature-key (symbol->string elt-name))
-                          (signature-comma-separated (map format-signature-type arg-type*))
-                          (format-signature-type result-type)))
-                      elt-name* type** type*)))]
+               (format-interface-descriptor elt-name* type** type*))]
             [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
              (assert cannot-happen)]
             [(tunknown) (assert cannot-happen)]))
@@ -2329,6 +2334,22 @@
             xpelt*)
           (display-string "};\n\n"))
 
+        (define (print-declared-interfaces contract-type*)
+          (if (null? contract-type*)
+              (display-string "export const declaredInterfaces = { __proto__: null };\n\n")
+              (begin
+                (display-string "export const declaredInterfaces = {\n")
+                (display-string "  __proto__: null,\n")
+                (for-each
+                  (lambda (type)
+                    (nanopass-case (Ltypescript Contract-Type) type
+                      [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+                       (printf "  ~a: ~a,\n"
+                         (format-signature-key (symbol->string contract-name))
+                         (format-interface-descriptor elt-name* type** type*))]))
+                  contract-type*)
+                (display-string "};\n\n"))))
+
         (define (print-exported-types xpelt*)
           (for-each
             (lambda (xpelt)
@@ -2338,6 +2359,8 @@
                    [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
                     (when (eq? export-name 'circuitSignatures)
                       (source-errorf src "exported enum name circuitSignatures conflicts with generated circuit metadata export"))
+                    (when (eq? export-name 'declaredInterfaces)
+                      (source-errorf src "exported enum name declaredInterfaces conflicts with generated interface metadata export"))
                     (printf "export var ~a;\n" export-name)
                     (printf "(function (~a) {\n" export-name)
                     (let ([elt-name* (cons elt-name elt-name*)])
@@ -2513,7 +2536,7 @@
         (define (print-contract-footer)
           (display-string "//# sourceMappingURL=index.js.map\n"))
 
-        (define (print-contract.js src descriptor-id* type* xpelt* uname*)
+        (define (print-contract.js src contract-type* descriptor-id* type* xpelt* uname*)
           (parameterize ([current-output-port (get-target-port 'contract.js)])
             (fluid-let ([sourcemap-tracker (make-sourcemap-tracker)])
               (let-values ([(contract-dependency* contract-has-witness-ht) (get-contract-dependencies)])
@@ -2522,6 +2545,7 @@
                 (print-contract-descriptors src descriptor-id* type*)
                 (print-contract-class src xpelt* uname*)
                 (print-circuit-signatures xpelt*)
+                (print-declared-interfaces contract-type*)
                 (for-each print-contract-reference-locations xpelt*)
                 (print-contract-footer)
                 (record-sourcemap-eof! sourcemap-tracker (port-position (current-output-port)))
@@ -2731,12 +2755,12 @@
           [else #f]))
       )
     (Program : Program (ir) -> Program ()
-      [(program ,src ((,export-name* ,name*) ...) (type-descriptors ,descriptor-table^ (,descriptor-id* ,type*) ...) ,pelt* ...)
+      [(program ,src (,contract-type* ...) ((,export-name* ,name*) ...) (type-descriptors ,descriptor-table^ (,descriptor-id* ,type*) ...) ,pelt* ...)
        (let* ([xpelt* (maplr (lambda (x) (Program-Element x (map cons export-name* name*))) pelt*)]
               [uname* (maplr xpelt->uname xpelt*)])
          (print-contract.d.ts src xpelt* uname*)
          (fluid-let ([descriptor-table descriptor-table^])
-           (print-contract.js src descriptor-id* type* xpelt* uname*)))
+           (print-contract.js src contract-type* descriptor-id* type* xpelt* uname*)))
        ir])
     (Program-Element : Program-Element (ir export-alist) -> * (xpelt)
       (definitions

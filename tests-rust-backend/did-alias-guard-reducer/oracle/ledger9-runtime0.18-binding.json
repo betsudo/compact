@@ -1,0 +1,15 @@
+{
+  "format": "compact-ledger9-reducer-capture-binding/v2",
+  "kind": "alias-guard",
+  "source_sha256": "411bb785786295d6a6fbd83f8d97b6a791a0b1c57f78792629853dcf311d3e91",
+  "historical_ledger9_binding_sha256": "1984c3b3f5ea574115100f0bb6d3ffafe41745d4adb8ff6a40bca4ae705e4f96",
+  "compact_runtime": "0.18.0",
+  "onchain_runtime": "4.0.1",
+  "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
+  "runtime_builtins_sha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+  "runtime_source_sha256": "16112f5dbcf9a708ddabe9d99357a0ad77918f65aad8769665edd0f7d0e79b3d",
+  "runtime_closure_sha256": "2353d6f149316c99e67dadb55a34cf397a129cfc4d9f3c87ff304d8f62b10799",
+  "generated_javascript_sha256": "e235e3d2f0e01c543a6bb36f6f6a28a8e6a6b8b11f4aeaff6d1388061cfab8b9",
+  "capture_script_sha256": "57896f2796a13a6f78207c478b197c1ffe933b39fc04fdb8d83b680dd053f97b",
+  "capture_sha256": "e4f76fb2e9a5f599816d15503dc360b3675522cb2945e55252bc0659b7e286e5"
+}

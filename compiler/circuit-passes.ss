@@ -28,7 +28,7 @@
 
   (define-pass drop-ledger-runtime : Lnodisclose (ir) -> Lposttypescript ()
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)
        `(program ,src ((,export-name* ,name*) ...)
           ,(fold-right
              (lambda (pelt pelt*)

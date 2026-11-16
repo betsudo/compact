@@ -27,6 +27,7 @@ const [
   opaquePath,
   opaquePointPath,
   protoPath,
+  contractArgumentPath,
 ] = process.argv.slice(2);
 if (
   !basicPath ||
@@ -36,29 +37,42 @@ if (
   !sequencesPath ||
   !opaquePath ||
   !opaquePointPath ||
-  !protoPath
+  !protoPath ||
+  !contractArgumentPath
 ) {
   throw Error(
-    "Usage: node check-signatures.mjs <basic-build> <composites-build> <p256-tags-build> <curves-build> <sequences-build> <opaque-build> <opaque-point-build> <proto-build>",
+    "Usage: node check-signatures.mjs <basic-build> <composites-build> <p256-tags-build> <curves-build> <sequences-build> <opaque-build> <opaque-point-build> <proto-build> <contract-argument-build>",
   );
 }
 const load = async (path) =>
   import(pathToFileURL(resolve(path, "contract/index.js")));
-const [basic, composites, p256, curves, sequences, opaque, opaquePoint, proto] =
-  await Promise.all(
-    [
-      basicPath,
-      compositesPath,
-      p256Path,
-      curvesPath,
-      sequencesPath,
-      opaquePath,
-      opaquePointPath,
-      protoPath,
-    ].map(load),
-  );
+const [
+  basic,
+  composites,
+  p256,
+  curves,
+  sequences,
+  opaque,
+  opaquePoint,
+  proto,
+  contractArgument,
+] = await Promise.all(
+  [
+    basicPath,
+    compositesPath,
+    p256Path,
+    curvesPath,
+    sequencesPath,
+    opaquePath,
+    opaquePointPath,
+    protoPath,
+    contractArgumentPath,
+  ].map(load),
+);
 
 const s = basic.circuitSignatures;
+assert.equal(Object.getPrototypeOf(basic.declaredInterfaces), null);
+assert.equal(basic.declaredInterfaces.constructor, undefined);
 assert.equal(Object.getPrototypeOf(s), null);
 assert.equal(s.constructor, undefined);
 assert.equal(s.toString, undefined);
@@ -173,4 +187,17 @@ assert.deepEqual(opaquePoint.circuitSignatures.opaquePoint.argumentTypes, [
 assert.deepEqual(Object.keys(proto.circuitSignatures), ["__proto__"]);
 assert.equal(Object.hasOwn(proto.circuitSignatures, "__proto__"), true);
 assert.equal(Object.getPrototypeOf(proto.circuitSignatures), null);
+const adderType =
+  contractArgument.circuitSignatures.takesAdder.argumentTypes[0];
+const u64 = { tag: "Uint", maxval: (2n ** 64n - 1n).toString() };
+assert.deepEqual(adderType, {
+  tag: "Contract",
+  name: "Adder",
+  circuits: {
+    addTo: { argumentTypes: [u64], resultType: u64 },
+    peek: { argumentTypes: [], resultType: { tag: "Field" } },
+  },
+});
+assert.deepEqual(Object.keys(contractArgument.declaredInterfaces), []);
+assert.equal(Object.getPrototypeOf(contractArgument.declaredInterfaces), null);
 console.log("pinned circuit signature assertions passed");

@@ -1,0 +1,15 @@
+{
+  "format": "compact-ledger9-reducer-capture-binding/v2",
+  "kind": "point-guard",
+  "source_sha256": "fa46c08ef5a54c8fe987be9bc1ffa40f223f663630d5bc73f73050a7ecacaf55",
+  "historical_ledger9_binding_sha256": "82ed3bea599ec9a17a821a299440909c68e7fbc2367f22c1a2bfc3835bd748b1",
+  "compact_runtime": "0.18.0",
+  "onchain_runtime": "4.0.1",
+  "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
+  "runtime_builtins_sha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+  "runtime_source_sha256": "16112f5dbcf9a708ddabe9d99357a0ad77918f65aad8769665edd0f7d0e79b3d",
+  "runtime_closure_sha256": "2353d6f149316c99e67dadb55a34cf397a129cfc4d9f3c87ff304d8f62b10799",
+  "generated_javascript_sha256": "e77df87f2f41df593b455e40862de689c4a3b6336270732cf88700b141d3d4d3",
+  "capture_script_sha256": "57896f2796a13a6f78207c478b197c1ffe933b39fc04fdb8d83b680dd053f97b",
+  "capture_sha256": "7a245630b5407c55aca0abc5e5fd2a25a9b4e2a51c09930c712e80a6ac493f1d"
+}
