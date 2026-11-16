@@ -10,6 +10,7 @@ import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import { describe, expect, test, vi } from 'vitest';
 import { InternalCrossContractCallState } from '../src/cross-contract-call-state.js';
 import { emptyRunningCost } from '../src/circuit-context.js';
+import { CompactTypeUnsignedInteger } from '../src/compact-types.js';
 import { InterfaceDescriptor } from '../src/interface-descriptor.js';
 import {
   advanceInternalCallTraceContext,
@@ -17,6 +18,7 @@ import {
   createInternalCallTraceContext,
   enterInternalCallTraceContext,
   finalizeInternalCallProofData,
+  queryInternalCallTraceContext,
   restoreInternalCallerTraceContext,
 } from '../src/internal-call-trace-context.js';
 import { Module } from '../src/module.js';
@@ -86,7 +88,144 @@ const nextQuery = (previous: ocrt.QueryContext): ocrt.QueryContext => {
   return next;
 };
 
+const callerFirstRead = (indexValue = 0n): ocrt.Op<null>[] => {
+  const index = new CompactTypeUnsignedInteger(255n, 1);
+  return [
+    { dup: { n: 0 } },
+    {
+      idx: {
+        cached: false,
+        pushPath: false,
+        path: [{ tag: 'value', value: { value: index.toValue(indexValue), alignment: index.alignment() } }],
+      },
+    },
+    // The original generated Caller emits `undefined` before VM read insertion.
+    { popeq: { cached: false, result: undefined } } as unknown as ocrt.Op<null>,
+  ];
+};
+
+const entryPointReadContext = () => {
+  const state = new ocrt.ContractState();
+  state.data = new ocrt.ChargedState(
+    ocrt.StateValue.newArray().arrayPush(
+      ocrt.StateValue.newCell({
+        value: [ocrt.encodeContractAddress(B)],
+        alignment: [{ tag: 'atom', value: { tag: 'bytes', length: 32 } }],
+      }),
+    ),
+  );
+  const queryContext = new ocrt.QueryContext(state.data, A);
+  queryContext.block = {
+    ...queryContext.block,
+    ownAddress: A,
+    parentBlockHash: BLOCK,
+    secondsSinceEpoch: 37n,
+  };
+  return createInternalCallTraceContext({
+    circuitId: 'pay',
+    contractAddress: A,
+    queryContext,
+    zswapLocalState: emptyZswapLocalState('0'.repeat(64)),
+    privateState: 7,
+    parentBlockHash: BLOCK,
+    time: 37,
+  });
+};
+
 describe('internal pinned call trace cells', () => {
+  test('routes the original Caller first ledger read through replacement query and gas cells', () => {
+    const root = entryPointReadContext();
+    const originalState = root.callContext.currentQueryContext.state.toString();
+    const inputProof = proofData();
+    const result = queryInternalCallTraceContext(root, inputProof, callerFirstRead(), ocrt.CostModel.initialCostModel());
+    expect(result.read?.value[0]).toEqual(ocrt.encodeContractAddress(B));
+    expect(result.context).not.toBe(root);
+    expect(result.context.callContext.currentQueryContext).toBe(result.context.queryContexts[A]);
+    expect(result.context.callContext.currentGasCost).toBe(result.context.gasCosts[A]);
+    expect(result.context.callContext.currentZswapLocalState).toBe(result.context.zswapLocalStates[A]);
+    expect(result.context.callContext.currentQueryContext).not.toBe(root.callContext.currentQueryContext);
+    expect(result.context.callContext.currentGasCost.readTime).toBeGreaterThan(0n);
+    expect(result.context.callContext.currentQueryContext.state.toString()).toBe(originalState);
+    expect(root.callContext.currentQueryContext.state.toString()).toBe(originalState);
+    expect(root.callContext.currentGasCost).toEqual(emptyRunningCost());
+    expect(inputProof.publicTranscript).toEqual([]);
+    expect(result.partialProofData.publicTranscript).toHaveLength(3);
+    expect(result.partialProofData.publicTranscript[2]).toEqual({
+      popeq: { cached: false, result: result.read },
+    });
+  });
+
+  test('query errors and changed block or address discard copied context and transcript', () => {
+    for (const changed of ['block', 'address'] as const) {
+      const root = entryPointReadContext();
+      const inputProof = proofData();
+      const firstRead = callerFirstRead();
+      const valid = root.callContext.currentQueryContext.query(firstRead, ocrt.CostModel.initialCostModel());
+      let changedContext: ocrt.QueryContext;
+      if (changed === 'block') {
+        changedContext = new ocrt.QueryContext(valid.context.state, A);
+        changedContext.block = { ...valid.context.block, parentBlockHash: 'cd'.repeat(32) };
+      } else {
+        changedContext = new ocrt.QueryContext(valid.context.state, B);
+        changedContext.block = { ...valid.context.block, ownAddress: B };
+      }
+      expect(changedContext.address).toBe(changed === 'address' ? B : A);
+      expect(changedContext.block.parentBlockHash).toBe(changed === 'block' ? 'cd'.repeat(32) : BLOCK);
+      const result = { context: changedContext, gasCost: valid.gasCost, events: valid.events } as ReturnType<
+        ocrt.QueryContext['query']
+      >;
+      const querySpy = vi.spyOn(root.callContext.currentQueryContext, 'query').mockReturnValue(result);
+      expect(() => queryInternalCallTraceContext(root, inputProof, firstRead, ocrt.CostModel.initialCostModel())).toThrow(
+        'pinned parent block or call identity',
+      );
+      expect(querySpy).toHaveBeenCalledOnce();
+      expect(root.callContext.currentQueryContext).toBe(root.queryContexts[A]);
+      expect(root.callContext.currentGasCost).toEqual(emptyRunningCost());
+      expect(root.events).toEqual([]);
+      expect(inputProof.publicTranscript).toEqual([]);
+    }
+    const root = entryPointReadContext();
+    const inputProof = proofData();
+    expect(() =>
+      queryInternalCallTraceContext(root, inputProof, callerFirstRead(9n), ocrt.CostModel.initialCostModel()),
+    ).toThrow();
+    expect(root.callContext.currentQueryContext).toBe(root.queryContexts[A]);
+    expect(inputProof.publicTranscript).toEqual([]);
+  });
+
+  test('tags VM logs with the live address and preserves unrelated address cells', () => {
+    const root = entryPointReadContext();
+    const other = new ocrt.QueryContext(new ocrt.ContractState().data, B);
+    root.queryContexts[B] = other;
+    root.gasCosts[B] = { ...emptyRunningCost(), computeTime: 19n };
+    const inputProof = proofData();
+    const cell = (value: ocrt.Value, length: number): ocrt.EncodedStateValue => ({
+      tag: 'cell',
+      content: { value, alignment: [{ tag: 'atom', value: { tag: 'bytes', length } }] },
+    });
+    const logProgram: ocrt.Op<null>[] = [
+      {
+        push: {
+          storage: false,
+          value: {
+            tag: 'array',
+            content: [cell(ocrt.bigIntToValue(1n), 4), cell(ocrt.bigIntToValue(8n), 1), cell([new Uint8Array()], 0)],
+          },
+        },
+      },
+      'log',
+    ];
+    const result = queryInternalCallTraceContext(root, inputProof, logProgram, ocrt.CostModel.initialCostModel());
+    expect(result.read).toBeUndefined();
+    expect(result.context.events).toHaveLength(1);
+    expect(result.context.events[0]).toMatchObject({ address: A, version: 1, eventType: 'paused' });
+    expect(result.context.queryContexts[B]).toBe(other);
+    expect(result.context.gasCosts[B]).toEqual({ ...emptyRunningCost(), computeTime: 19n });
+    expect(root.events).toEqual([]);
+    expect(root.callContext.currentGasCost).toEqual(emptyRunningCost());
+    expect(inputProof.publicTranscript).toEqual([]);
+    expect(result.partialProofData.publicTranscript).toEqual(logProgram);
+  });
   test('binds original EntryPoint fixture bytes and keeps the public host context closed', () => {
     expect(digest('../../test-center/composable/EntryPoint/Callee.compact')).toBe(
       '89263a08b98928b7b9c4b750588c6bc2226784ceaf62a660511042c2126a51c7',
@@ -99,6 +238,7 @@ describe('internal pinned call trace cells', () => {
     );
     expect('crossContractCall' in publicRuntime).toBe(false);
     expect('createInternalCallTraceContext' in publicRuntime).toBe(false);
+    expect('queryInternalCallTraceContext' in publicRuntime).toBe(false);
   });
 
   test('copies all mutable containers and keeps per-address live cells aligned', async () => {

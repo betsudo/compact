@@ -14,7 +14,7 @@ import type { ActiveCall } from './cross-contract-call-state.js';
 import { emptyRunningCost } from './circuit-context.js';
 import type { LogEvent } from './circuit-context.js';
 import { CompactError } from './error.js';
-import type { ProofData } from './proof-data.js';
+import type { PartialProofData, ProofData } from './proof-data.js';
 import { emptyZswapLocalState } from './zswap.js';
 import type { EncodedZswapLocalState } from './zswap.js';
 
@@ -174,6 +174,62 @@ export const advanceInternalCallTraceContext = (
   next.gasCosts[address] = nextGasCost;
   next.zswapLocalStates[address] = zswapLocalState;
   return next;
+};
+
+/**
+ * Execute one pinned VM query on an internal call copy. The VM returns a new
+ * QueryContext; neither the source trace nor the source transcript is written
+ * until its address and block identity have been checked.
+ */
+export const queryInternalCallTraceContext = (
+  context: InternalCallTraceContext,
+  partialProofData: PartialProofData,
+  program: ocrt.Op<null>[],
+  costModel: ocrt.CostModel,
+  gasLimit?: ocrt.RunningCost,
+): { context: InternalCallTraceContext; partialProofData: PartialProofData; read: ocrt.AlignedValue | undefined } => {
+  const frame = context.callContext;
+  const address = frame.contractAddress;
+  if (
+    context.queryContexts[address] !== frame.currentQueryContext ||
+    context.gasCosts[address] !== frame.currentGasCost ||
+    context.zswapLocalStates[address] !== frame.currentZswapLocalState
+  ) {
+    throw new CompactError('Trace live call cells differ from their per-address cells');
+  }
+  assertPinned(frame.currentQueryContext, address, context.parentBlockHash, context.time);
+  try {
+    const result = frame.currentQueryContext.query(program, costModel, gasLimit);
+    const nextGasCost: ocrt.RunningCost = {
+      readTime: frame.currentGasCost.readTime + result.gasCost.readTime,
+      computeTime: frame.currentGasCost.computeTime + result.gasCost.computeTime,
+      bytesWritten: frame.currentGasCost.bytesWritten + result.gasCost.bytesWritten,
+      bytesDeleted: frame.currentGasCost.bytesDeleted + result.gasCost.bytesDeleted,
+    };
+    const next = advanceInternalCallTraceContext(context, result.context, nextGasCost, frame.currentZswapLocalState);
+    next.events = [
+      ...next.events,
+      ...result.events.filter((event) => event.tag === 'log').map((event) => ({ ...event.content, address })),
+    ];
+    const reads = result.events.filter((event) => event.tag === 'read');
+    let readIndex = 0;
+    const nextProofData: PartialProofData = {
+      ...partialProofData,
+      publicTranscript: partialProofData.publicTranscript.concat(
+        program.map((op) =>
+          typeof op === 'object' && 'popeq' in op ? { popeq: { ...op.popeq, result: reads[readIndex++].content } } : op,
+        ) as ocrt.Op<ocrt.AlignedValue>[],
+      ),
+    };
+    return {
+      context: next,
+      partialProofData: nextProofData,
+      read: result.events.length === 1 && result.events[0].tag === 'read' ? result.events[0].content : undefined,
+    };
+  } catch (error) {
+    if (error instanceof Error) throw new CompactError(error.toString());
+    throw error;
+  }
 };
 
 /** Append one completed call, after the generated circuit has produced proof data. */
