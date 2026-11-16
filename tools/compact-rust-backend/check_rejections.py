@@ -44,12 +44,6 @@ CASES = {
         "Rust backend does not yet support this opaque type",
         None,
     ),
-    "field-to-uint": (
-        'export ledger n: Uint<64>;\n'
-        'export circuit narrow(f: Field): Uint<64> { return f as Uint<64>; }\n',
-        "Rust backend does not yet support Field-to-Uint downcasts",
-        None,
-    ),
     "vector-spread": (
         'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
         '  return [...v];\n'
@@ -69,22 +63,22 @@ CASES = {
 ROOT = Path(__file__).resolve().parents[2]
 
 
-# Cast cases are valid TypeScript programs. Unknown opaque types deliberately
+# Spread cases are valid TypeScript programs. Unknown opaque types deliberately
 # exercise a shared target refusal; they are not Rust-only language gaps.
 CONTEXT_CASES = {
     "nested": (
-        'export pure circuit narrow(f: Field): Uint<64> {\n'
-        '  return (true ? f : 1) as Uint<64>;\n}\n',
-        "nested.compact", (2, 10), False,
+        'export pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n'
+        '  return true ? [...v] : v;\n}\n',
+        "nested.compact", (2, 17), False,
     ),
     "constructor": (
-        'export ledger n: Uint<64>;\nconstructor(f: Field) {\n'
-        '  n = disclose(f as Uint<64>);\n}\n',
+        'export ledger n: Vector<2, Field>;\nconstructor(v: Vector<2, Field>) {\n'
+        '  n = disclose([...v]);\n}\n',
         "constructor.compact", (3, 16), False,
     ),
     "imported": (
         'import "broken";\n'
-        'export pure circuit value(f: Field): Uint<64> { return narrow(f); }\n',
+        'export pure circuit value(v: Vector<2, Field>): Vector<2, Field> { return spread(v); }\n',
         "broken.compact", (3, 10), False,
     ),
     "witness": (
@@ -110,8 +104,8 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
     directory = directory / "contexts"
     directory.mkdir()
     (directory / "broken.compact").write_text(
-        "module broken {\nexport pure circuit narrow(f: Field): Uint<64> {\n"
-        "  return f as Uint<64>;\n}\n}\n"
+        "module broken {\nexport pure circuit spread(v: Vector<2, Field>): Vector<2, Field> {\n"
+        "  return [...v];\n}\n}\n"
     )
 
     def compile_source(source: Path, output: Path, target: str):
@@ -137,7 +131,7 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
         elif control.returncode or not (directory / f"{name}-ts/contract/index.js").is_file():
             failures.append(f"{name}: valid TypeScript control failed:\n{control.stderr}")
         diagnostic = "Rust backend does not yet support " + (
-            "this opaque type" if opaque else "Field-to-Uint downcasts"
+            "this opaque type" if opaque else "vector spreads"
         )
         for output in (directory / name, preserved):
             rejected = compile_source(source_path, output, "rust")
@@ -154,6 +148,40 @@ def check_context_locations(compactc: str, directory: Path) -> list[str]:
         print(f"Context {name}: {position}; TS {'shared refusal' if opaque else 'accepted'}")
     return failures
 
+
+def check_supported_field_to_uint(compactc: str, directory: Path) -> list[str]:
+    """Pin accepted Field-to-Uint casts in pure and stateful source contexts."""
+    failures = []
+    directory = directory / "field-to-uint"
+    directory.mkdir()
+    cases = {
+        "pure": 'export pure circuit narrow(f: Field): Uint<64> { return f as Uint<64>; }\n',
+        "nested": (
+            'export pure circuit narrow(f: Field): Uint<64> {\n'
+            '  return (true ? f : 1) as Uint<64>;\n}\n'
+        ),
+        "constructor": (
+            'export ledger n: Uint<64>;\n'
+            'constructor(f: Field) { n = disclose(f as Uint<64>); }\n'
+        ),
+    }
+    for name, source in cases.items():
+        source_path = directory / f"{name}.compact"
+        source_path.write_text(source)
+        for target, artifacts in (
+            ("ts", ("contract/index.js",)),
+            ("rust", ("contract/lib.rs", "contract/Cargo.toml")),
+        ):
+            output = directory / f"{name}-{target}"
+            result = subprocess.run(
+                [compactc, "--target", target, "--skip-zk", str(source_path), str(output)],
+                capture_output=True, text=True, check=False,
+            )
+            if result.returncode or not all((output / path).is_file() for path in artifacts):
+                failures.append(f"Field-to-Uint {name}/{target}: valid cast did not build:\n"
+                                f"{result.stderr}")
+    print(f"Field-to-Uint acceptance: {len(cases)} source contexts checked on TS and Rust")
+    return failures
 
 
 # These source constructs are checked by the shared frontend before either
@@ -760,6 +788,7 @@ def main() -> int:
         failures.extend(check_output_serialization(compactc, directory))
         failures.extend(check_proof_capabilities(compactc, directory))
         failures.extend(check_context_locations(compactc, directory))
+        failures.extend(check_supported_field_to_uint(compactc, directory))
         failures.extend(check_boolean_typing(compactc, directory))
         failures.extend(check_vector_spread_disclosure(compactc, directory))
         failures.extend(check_contract_dependency_publication(compactc, directory))

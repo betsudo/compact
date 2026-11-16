@@ -48,6 +48,30 @@ def depfile_prerequisites(raw, base=ROOT):
     return paths
 
 
+def qualify_worktree_inputs(prerequisites, root, sources, generated):
+    """Bind checkout-local prerequisites to their prebuild producer inventory.
+
+    Cargo's OUT_DIR can live under the checkout's target directory, so a
+    checkout-local path is not necessarily a tracked source file.
+    """
+    qualified, origins = {}, {}
+    for path in sorted(prerequisites):
+        if not Path(path).is_relative_to(root):
+            continue
+        bindings = {role: inventory[path] for role, inventory in (
+            ("source_hashes", sources),
+            ("generated_build_inputs_before_compile", generated),
+        ) if path in inventory}
+        require(bindings and len(set(bindings.values())) == 1,
+                "runner worktree dependency was not pinned before build: " + path)
+        sha = next(iter(bindings.values()))
+        require(Path(path).is_file() and digest(path) == sha,
+                "runner worktree dependency changed after prebuild binding: " + path)
+        qualified[path] = sha
+        origins[path] = sorted(bindings)
+    return qualified, origins
+
+
 def validate_summary(summary, generated):
     require(summary["format"] == "compact-vector-product-elements-proof/v3" and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False and summary["all_exports_proved"] is False,
@@ -332,18 +356,16 @@ def run(args):
                              *sorted((generated / source / "contract/checked-programs").glob("*.json")),
                              ir, goldens / "artifacts.json", *sorted((goldens / "checked-programs").glob("*.json"))])
         require(all(str(path.resolve(strict=True)) in tracked for path in required), "runner omitted actual SDK/Program dependency")
+        worktree_inputs, worktree_origins = qualify_worktree_inputs(
+            tracked, ROOT, report["source_hashes"], report["generated_build_inputs_before_compile"])
         physical_inputs = {str(Path(p).resolve(strict=True)): sha for field in ["source_hashes", "generated_input_hashes", "dependency_source_hashes", "generated_build_inputs_before_compile"] for p, sha in report[field].items()}
-        target_directory = Path(env.get("CARGO_TARGET_DIR", ROOT / "target")).resolve(strict=True)
-        worktree_inputs, generated_build_inputs = common.pin_runner_worktree_inputs(
-            tracked, ROOT, target_directory, report["source_hashes"],
-            report["generated_build_inputs_before_compile"])
         actual_files = set(tracked)
         require(actual_files and all(p in physical_inputs and digest(p) == physical_inputs[p] for p in actual_files),
                 "actual runner dependency missing from physical prebuild input map")
         report["runner_physical_inputs_before_build"] = {p: physical_inputs[p] for p in sorted(actual_files)}
         report["runner_depfile"].update(membership_status="passed", all_generated_includes=True,
                 worktree_inputs_pinned_before_build=worktree_inputs,
-                generated_build_inputs_pinned_before_build=generated_build_inputs)
+                worktree_input_origins=worktree_origins)
         execute("runner-clippy", ["cargo", "clippy", "--profile", "proof-checks", "--locked", "--offline", "-p",
                                   "compact-rust-proof-smoke", "--features", "vector-product-elements", "--bin", "compact-rust-proof-smoke", "--", "-D", "warnings"])
         for source in SOURCES:
