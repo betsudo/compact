@@ -29,6 +29,16 @@ FAIL = {'non_constant_bound', 'return_in_body', 'return_in_body_of_constructor',
         'return_in_body_of_lambda', 'return_in_body_of_map_callback'}
 ORIGINAL_RESULTS = {'generic_bound': 5, 'return_in_lambda_in_body': 7,
                     'zero_iteration': 0}
+SYNTHETIC_RESULTS = {'repeated_values': 4, 'iterable_once': 5}
+STATIC_ROSTER = {'effectful_operand': (True, False),
+                 'shadowed_formal': (True, False),
+                 'out_of_range': (False, False),
+                 'cap_eight': (True, True),
+                 'cap_nine': (True, False),
+                 'guarded_item': (True, False),
+                 'mixed_literal': (True, False),
+                 'nested_scope': (True, False),
+                 'direct_dynamic': (False, False)}
 
 
 def require(value, message):
@@ -184,8 +194,16 @@ def semantic(receipt, output, *, source, compiler, recipe, runtime):
     for name, digest in local.items():
         require(sha(ROOT / name) == digest, f'local for adapter changed: {name}')
     generated = receipt.get('generated')
-    require(isinstance(generated, dict) and set(generated) == PASS,
+    require(isinstance(generated, dict) and
+            set(generated) == PASS | set(SYNTHETIC_RESULTS),
             'for generated case roster differs')
+    synthetic = receipt.get('synthetic_sources')
+    require(isinstance(synthetic, dict) and set(synthetic) == set(SYNTHETIC_RESULTS),
+            'synthetic source roster differs')
+    for name, digest in synthetic.items():
+        path = output / 'synthetic' / name / f'{name}.compact'
+        require(path.is_file() and not path.is_symlink() and sha(path) == digest,
+                f'synthetic source differs: {name}')
     require(inventory(output / 'generated') == receipt.get('generated_files_sha256'),
             'for generated artifact inventory differs')
     for name, modes in generated.items():
@@ -200,7 +218,8 @@ def semantic(receipt, output, *, source, compiler, recipe, runtime):
                 paths.update({'rust_sha256': base / 'contract/lib.rs',
                               'rust_ir_sha256': base / 'contract/compact-rust-ir.json'})
             if name != 'return_in_lambda_in_body':
-                paths['zkir_sha256'] = base / f'zkir/for_{name}.zkir'
+                circuit = f'for_{name}' if name in PASS else 'for_generic_bound'
+                paths['zkir_sha256'] = base / f'zkir/{circuit}.zkir'
             require(set(row) == set(paths), f'for artifact keys differ: {name}/{mode}')
             for key, path in paths.items():
                 require(path.is_file() and not path.is_symlink() and sha(path) == row[key],
@@ -214,9 +233,10 @@ def semantic(receipt, output, *, source, compiler, recipe, runtime):
         if name != 'return_in_lambda_in_body':
             require(modes['typescript']['zkir_sha256'] == modes['both']['zkir_sha256'],
                     f'for TS/paired raw ZKIR differs: {name}')
-        original_test = (ROOT / FAMILY / name / 'runtime.pass.test.ts').read_text()
-        require(f'expect(result).toEqual({ORIGINAL_RESULTS[name]}n)' in original_test,
-                f'original for runtime assertion differs: {name}')
+        if name in PASS:
+            original_test = (ROOT / FAMILY / name / 'runtime.pass.test.ts').read_text()
+            require(f'expect(result).toEqual({ORIGINAL_RESULTS[name]}n)' in original_test,
+                    f'original for runtime assertion differs: {name}')
     refusals = receipt.get('refusals')
     require(isinstance(refusals, dict) and set(refusals) == FAIL,
             'for original refusal roster differs')
@@ -239,8 +259,8 @@ def semantic(receipt, output, *, source, compiler, recipe, runtime):
                 f'for target diagnostic drift: {name}')
     cargo_log = output / 'cargo-test.log'
     require(sha(cargo_log) == receipt.get('rust_test_log_sha256') and
-            'test result: ok. 3 passed; 0 failed;' in cargo_log.read_text(),
-            'three generated Rust for consumers did not pass')
+            'test result: ok. 5 passed; 0 failed;' in cargo_log.read_text(),
+            'five generated Rust for consumers did not pass')
 
 
 def proof(receipt, output, *, source, semantic_receipt, semantic_path,
@@ -362,24 +382,22 @@ def main():
              recipe=Path(args.compiler_recipe).resolve(strict=True),
              runtime=Path(args.runtime).resolve(strict=True))
     refusals_root = Path(args.refusals).resolve(strict=True)
-    gate_log(Path(args.refusals_log), {'status':'passed', 'cases':7})
+    gate_log(Path(args.refusals_log), {'status':'passed', 'cases':len(STATIC_ROSTER)})
     negative = load(refusals_root / 'receipt.json')
-    require(negative.get('status') == 'passed' and len(negative.get('cases', {})) == 7 and
+    require(negative.get('status') == 'passed' and
+            len(negative.get('cases', {})) == len(STATIC_ROSTER) and
             negative.get('compiler_sha256') == sha(args.compiler) and
             negative.get('upstream_commit') == PINNED and
             negative.get('original_sha256') ==
             receipt['original_files'][str(FAMILY / 'generic_bound/for_generic_bound.compact')],
             'static-domain refusal receipt differs')
-    static_roster = {'effectful_operand':True, 'shadowed_formal':True,
-                     'out_of_range':False, 'cap_nine':True, 'guarded_item':True,
-                     'nested_scope':True, 'direct_dynamic':False}
-    require(set(negative['cases']) == set(static_roster), 'static-domain probe roster differs')
-    for name, ts_passes in static_roster.items():
+    require(set(negative['cases']) == set(STATIC_ROSTER), 'static-domain probe roster differs')
+    for name, (ts_passes, paired_passes) in STATIC_ROSTER.items():
         row = negative['cases'][name]
         folder = refusals_root / name
         require(sha(folder / f'{name}.compact') == row['source_sha256'],
                 f'static-domain probe source differs: {name}')
-        for mode, success in (('typescript', ts_passes), ('paired', False)):
+        for mode, success in (('typescript', ts_passes), ('paired', paired_passes)):
             result = row[mode]
             require((result['exit'] == 0) == success and
                     result['output_published'] is success and

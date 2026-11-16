@@ -72,3 +72,37 @@ fn original_generic_bound_and_recorded_replay() {
     tagged_serialize(replay.context.state.get_ref(), &mut replay_bytes).unwrap();
     assert_eq!(replay_bytes, ordinary_bytes);
 }
+
+// Synthetic controls around the intact original: duplicate literal positions
+// must execute twice, and a circuit-supplied iterable must execute once.
+#[test]
+fn repeated_values_preserve_both_iterations() {
+    let fresh = || repeated_values::ledger_contract::initial_state(
+        ConstructorContext::new(())
+    ).unwrap().into_circuit_context(ContractAddress::default());
+    let ordinary = repeated_values::ledger_contract::for_generic_bound(fresh()).unwrap();
+    assert_eq!(ordinary.result.value(), 4);
+    assert_eq!(repeated_values::ledger_contract::PublicStateView::from(&ordinary)
+               .total().unwrap().value(), 4);
+    let recorded = repeated_values::ledger_contract::recorded::for_generic_bound(fresh()).unwrap();
+    assert_eq!(recorded.execution.result.value(), 4);
+    assert_eq!(recorded.execution.public_state(), ordinary.public_state());
+    assert_eq!(recorded.execution.gas_cost, ordinary.gas_cost);
+    assert_eq!(recorded.public.verify_ops().len(), 18);
+}
+
+#[test]
+fn source_iterable_executes_once() {
+    let fresh = || iterable_once::ledger_contract::initial_state(
+        ConstructorContext::new(())
+    ).unwrap().into_circuit_context(ContractAddress::default());
+    let ordinary = iterable_once::ledger_contract::for_generic_bound(fresh()).unwrap();
+    assert_eq!(ordinary.result.value(), 5);
+    assert_eq!(iterable_once::ledger_contract::PublicStateView::from(&ordinary)
+               .total().unwrap().value(), 5);
+    let recorded = iterable_once::ledger_contract::recorded::for_generic_bound(fresh()).unwrap();
+    assert_eq!(recorded.execution.result.value(), 5);
+    assert_eq!(recorded.execution.public_state(), ordinary.public_state());
+    assert_eq!(recorded.execution.gas_cost, ordinary.gas_cost);
+    assert_eq!(recorded.public.verify_ops().len(), 24);
+}

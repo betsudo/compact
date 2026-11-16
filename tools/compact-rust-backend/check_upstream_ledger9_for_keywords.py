@@ -41,6 +41,22 @@ ORIGINAL_EXPECTATIONS = {'generic_bound': 'expect(result).toEqual(5n)',
                          'zero_iteration': 'expect(result).toEqual(0n)'}
 
 
+def synthetic_sources():
+    original = (ROOT / FAMILY / 'generic_bound/for_generic_bound.compact').read_text()
+    repeated = original.replace('S..E', '[1, 1]', 1)
+    once = (original.replace('S..E', 'indices()', 1)
+            .replace('v[i]', 'v[1]', 1)
+            .replace('circuit sum_range',
+                     'circuit indices(): Vector<2, Uint<8>> { '
+                     'total = (total + 1) as Uint<16>; return [1, 2]; }\n\n'
+                     'circuit sum_range', 1))
+    require(repeated != original and once != original and
+            'for (const i of [1, 1])' in repeated and
+            'for (const i of indices())' in once,
+            'synthetic for controls no longer match the original')
+    return {'repeated_values': repeated, 'iterable_once': once}
+
+
 def original_inventory():
     files = json.loads(MANIFEST.read_text())
     expected = {str(FAMILY / case / name) for case in PASS
@@ -121,9 +137,18 @@ def main():
     (output / 'package.json').write_text('{"type":"module"}\n')
     env = dict(os.environ, COMPACTC_SCHEME=str(scheme), RUSTUP_TOOLCHAIN='1.99.0')
     generated = {}
-    for case in PASS:
+    runtime_cases = {case: ROOT / FAMILY / case / f'for_{case}.compact'
+                     for case in PASS}
+    synthetic = synthetic_sources()
+    synthetic_hashes = {}
+    for case, text in synthetic.items():
+        contract = output / 'synthetic' / case / f'{case}.compact'
+        contract.parent.mkdir(parents=True)
+        contract.write_text(text)
+        runtime_cases[case] = contract
+        synthetic_hashes[case] = sha256(contract)
+    for case, contract in runtime_cases.items():
         generated[case] = {}
-        contract = ROOT / FAMILY / case / f'for_{case}.compact'
         for mode in ('typescript', 'both'):
             destination = output / 'generated' / case / mode
             command = [str(compiler), '--target', 'ts']
@@ -133,15 +158,16 @@ def main():
             command += ['--feature-zkir-v3', '--skip-zk', '--compact-path',
                         str(ROOT / 'compiler'), str(contract), str(destination)]
             run(command, output / f'{case}-{mode}-compile.log', env)
-            proof = case in ('generic_bound', 'zero_iteration')
+            proof = case != 'return_in_lambda_in_body'
             check_manifest(destination, require_zkir=proof)
             info = destination / 'compiler/contract-info.json'
             circuits = json.loads(info.read_text())['circuits']
-            require(len(circuits) == 1 and circuits[0]['name'] == f'for_{case}' and
+            circuit = (f'for_{case}' if case in PASS else 'for_generic_bound')
+            require(len(circuits) == 1 and circuits[0]['name'] == circuit and
                     circuits[0]['proof'] is proof and circuits[0]['pure'] is not proof,
                     f'for capability changed: {case}')
             if proof:
-                require((destination / f'zkir/for_{case}.zkir').is_file(),
+                require((destination / f'zkir/{circuit}.zkir').is_file(),
                         f'for proof-required ZKIR missing: {case}')
             else:
                 require(not (destination / 'zkir').exists(),
@@ -157,7 +183,7 @@ def main():
                    'manifest_sha256': sha256(destination / 'compiler/contract-manifest.json'),
                    'runtime_log_sha256': sha256(runtime_log)}
             if proof:
-                row['zkir_sha256'] = sha256(destination / f'zkir/for_{case}.zkir')
+                row['zkir_sha256'] = sha256(destination / f'zkir/{circuit}.zkir')
             if mode == 'both':
                 row['rust_sha256'] = sha256(target / 'lib.rs')
                 row['rust_ir_sha256'] = sha256(target / 'compact-rust-ir.json')
@@ -216,7 +242,7 @@ def main():
     shutil.copyfile(ROOT / 'Cargo.lock', consumer / 'Cargo.lock')
     dependencies = []
     paths = []
-    for case in PASS:
+    for case in runtime_cases:
         target = output / 'generated' / case / 'both/contract'
         paths.append(target)
         package = tomllib.loads((target / 'Cargo.toml').read_text())['package']['name']
@@ -248,10 +274,12 @@ def main():
          '--manifest-path', str(manifest), '--test', 'for_original'],
         output / 'cargo-test.log', cargo_env)
     rust_log = (output / 'cargo-test.log').read_text()
-    require('test result: ok. 3 passed; 0 failed;' in rust_log and
+    require('test result: ok. 5 passed; 0 failed;' in rust_log and
             'test original_generic_bound_and_recorded_replay ... ok' in rust_log and
             'test original_return_in_nested_lambda ... ok' in rust_log and
-            'test original_zero_iteration_and_recorded_replay ... ok' in rust_log,
+            'test original_zero_iteration_and_recorded_replay ... ok' in rust_log and
+            'test repeated_values_preserve_both_iterations ... ok' in rust_log and
+            'test source_iterable_executes_once ... ok' in rust_log,
             'for Rust consumer assertions did not pass')
     require(source_state() == source and runtime_identity(runtime) == runtime_before and
             compiler_recipe_identity(args.compiler_recipe, source, compiler, scheme) == recipe and
@@ -262,7 +290,8 @@ def main():
     receipt = {**source, 'status': 'passed', 'source_clean': True,
                'platform': os.uname().sysname + ' ' + os.uname().machine,
                'upstream_commit': PINNED, 'original_files': originals,
-               'local_sources': local_sources, 'generated': generated,
+               'local_sources': local_sources, 'synthetic_sources': synthetic_hashes,
+               'generated': generated,
                'generated_files_sha256': generated_before, 'refusals': refusals,
                'compiler_recipe': recipe, 'compiler_sha256': sha256(compiler),
                'scheme_sha256': sha256(scheme), 'runtime': runtime_before,

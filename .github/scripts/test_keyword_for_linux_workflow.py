@@ -15,6 +15,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOW = ROOT / '.github/workflows/ledger9-keyword-for-linux.yml'
 PROOF_GATE = ROOT / 'tools/compact-rust-backend/check_upstream_ledger9_for_generic_bound_proof.py'
+STATIC_GATE = ROOT / 'tools/compact-rust-backend/check_static_for_index_domain.py'
 VERIFIER = ROOT / '.github/scripts/verify_keyword_for_linux_receipts.py'
 spec = importlib.util.spec_from_file_location('verify_keyword_for_linux_receipts', VERIFIER)
 assert spec and spec.loader
@@ -25,9 +26,21 @@ proof_spec = importlib.util.spec_from_file_location('check_for_generic_bound_pro
 assert proof_spec and proof_spec.loader
 proof_gate = importlib.util.module_from_spec(proof_spec)
 proof_spec.loader.exec_module(proof_gate)
+static_spec = importlib.util.spec_from_file_location('check_static_for_index_domain', STATIC_GATE)
+assert static_spec and static_spec.loader
+static_gate = importlib.util.module_from_spec(static_spec)
+static_spec.loader.exec_module(static_gate)
 
 
 class KeywordForLinuxWorkflowControls(unittest.TestCase):
+    def test_static_producer_and_verifier_rosters_match(self):
+        original = static_gate.ORIGINAL.read_text()
+        variants = static_gate.variants(original)
+        self.assertEqual(set(variants), set(verifier.STATIC_ROSTER))
+        for name, (_, ts_passes, refusal) in variants.items():
+            self.assertEqual(verifier.STATIC_ROSTER[name],
+                             (ts_passes, ts_passes and refusal is None))
+
     def test_selected_sha_and_fail_closed_graph(self):
         text = WORKFLOW.read_text()
         self.assertIn("'codex/ledger9-keyword-for-linux/*'", text)

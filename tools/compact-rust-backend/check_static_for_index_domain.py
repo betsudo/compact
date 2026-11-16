@@ -50,6 +50,10 @@ def variants(source):
                      True, 'no unique constant-valued Vector index'),
         'guarded_item': (replace('v[i]', 'v[i - 0]'),
                          True, 'no unique constant-valued Vector index'),
+        # The circuit can evaluate the cast, but the Fold source is no longer
+        # an exact tuple of unsigned literals certified by the Rust bridge.
+        'mixed_literal': (replace('S..E', '[1, 1 as Uint<8>]'),
+                          True, 'no unique constant-valued Vector index'),
         'nested_scope': (replace(
             'total = (total + (v[i] as Uint<16>)) as Uint<16>;',
             'for (const j of 0..2) {\n'
