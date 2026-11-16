@@ -1051,13 +1051,41 @@
       ;; indexed operand and the index must be side-effect-free references;
       ;; this preserves their source evaluation order without duplicating an
       ;; effect in the conditional branches. A forged out-of-domain item fails.
+      (define (static-fold-vector-operand? value type src)
+        (nanopass-case (Lnodisclose Expression) value
+          [(var-ref ,src^ ,var-name) #t]
+          ;; A heterogeneous tuple binding is inserted as a safe-cast when
+          ;; the source indexes it as a Vector. The wrapper is
+          ;; pure and contains one bare reference, so each selected dispatch
+          ;; arm evaluates it exactly once. Keep calls, storage reads, nested
+          ;; casts and narrowing conversions outside this admission.
+          [(safe-cast ,src^ ,type^ ,type^^ ,expr^)
+           (and (nanopass-case (Lnodisclose Expression) expr^
+                  [(var-ref ,src^^ ,var-name) #t]
+                  [else #f])
+                (equal? (type-ir type^ src) (type-ir (vector-carrier-type type) src))
+                (nanopass-case (Lnodisclose Type) (vector-carrier-type type^)
+                  [(tvector ,src^^ ,len ,type1)
+                   (let ([maximum (rust-unsigned-maximum type1)])
+                     (and maximum
+                          (nanopass-case (Lnodisclose Type) type^^
+                            [(ttuple ,src^^^ ,type* ...)
+                             (and (= (length type*) len)
+                                  (for-all
+                                    (lambda (item)
+                                      (let ([bound (rust-unsigned-maximum item)])
+                                        (and bound (<= bound maximum))))
+                                    type*))]
+                            [else #f])))]
+                  [else #f]))]
+          [else #f]))
+
       (define (static-fold-vector-ref-ir original src type value index lower)
         (and (rust-vector-unique-source? original)
+             (static-fold-vector-operand? value type src)
              (nanopass-case (Lnodisclose Expression) index
                [(var-ref ,src^ ,var-name)
-                (nanopass-case (Lnodisclose Expression) value
-                  [(var-ref ,src^^ ,var-name^)
-                   (let* ([domains (current-static-fold-index-domains)]
+                (let* ([domains (current-static-fold-index-domains)]
                           [domain (and domains (eq-hashtable-ref domains var-name #f))]
                           [width (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
                                    [(tvector ,src^^^ ,len ,type^) len]
@@ -1096,7 +1124,6 @@
                                           (cons "condition" (same (car remaining)))
                                           (cons "then" (project (car remaining)))
                                           (cons "otherwise" (loop (cdr remaining)))))))))]
-                  [else #f])]
                [else #f])))
 
       (define (static-fold-bytes-ref-ir original src type value index lower)
