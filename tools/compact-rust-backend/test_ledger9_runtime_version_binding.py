@@ -85,12 +85,11 @@ class RuntimeVersionBinding(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'runtime package metadata differs'):
             gate.checked_runtime_version(self.runtime, self.source)
 
-    def test_did_oracle_version_changes_without_case_changes(self):
+    def test_did_historical_oracle_retains_original_version_and_cases(self):
         oracle = json.loads(ORACLE.read_text())
         source = json.loads((gate.ROOT / 'runtime/package.json').read_text())
-        self.assertEqual(oracle['runtime_version'], source['version'])
-        self.assertEqual(oracle['runtime_version'], gate.RUNTIME_VERSION)
-        self.assertIn('source-built 0.18.0', oracle['claim'])
+        self.assertEqual(source['version'], gate.RUNTIME_VERSION)
+        self.assertEqual(oracle['runtime_version'], '0.17.0')
         self.assertEqual(len(oracle['cases']), 12)
         canonical = json.dumps(oracle['cases'], sort_keys=True,
                                separators=(',', ':')).encode()

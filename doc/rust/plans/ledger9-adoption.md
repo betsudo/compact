@@ -32,7 +32,7 @@ contract entry and matching runtime. It accepts `initial`, `set`, `map`, or
 their own state bytes with the retained transition captures.
 
 The separate `capture-ledger9-paired-collection-v018.mjs` runner compiles those
-three sources itself with compiler 0.31.213 and the built Compact Runtime
+three sources itself with the version-pinned compiler and the built Compact Runtime
 0.18.0 package. It checks generated metadata and manifest hashes, Onchain
 Runtime 4.0.1 module identity, the exact initial and four transition state
 bytes against the independent oracles, and records all four gas fields per step. Set,
@@ -82,7 +82,7 @@ The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.1
 The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
 path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
 fresh output directory. It compiles the checked-in Counter itself, checks
-compiler 0.31.213, language 0.23.105 and runtime 0.18.0 in both generated
+compiler 0.31.214, language 0.23.105 and runtime 0.18.0 in both generated
 metadata files, verifies the manifest hashes, and checks Onchain Runtime
 4.0.1 module identity. Its capture records the source, supplied compiler,
 generated JavaScript and declaration, runtime and official oracle hashes,
@@ -93,7 +93,7 @@ historical fixture matrix, qualify Rust parity or make a proof claim.
 The file hashes identify observed bytes and do not attest how a supplied
 compiler executable or runtime package was built.
 
-Build `.#compactc` and `.#runtime.package`. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
+To reproduce the historical Runtime `0.17.0` capture, build `.#compactc` and `.#runtime.package` from `7d11604cb6ccdec1115dd7d7e9bc4dbcda23e986`, which introduced the paired capture. Generate Counter with `--target ts --target rust --rust-require-recording --skip-zk`. With the packed runtime and its locked dependencies available to Node, run `runtime-rs/tests/fixtures/capture-ledger9-paired-counter.mjs` on the generated `contract/index.js`. The capture checks the shared Ledger 9 module identity and exact before/after contract bytes against the official oracle. The generated Rust consumer matched those bytes, all four gas fields and the typed return. Its two ZKIR files were byte-identical to the qualified standalone and funded proof inputs.
 
 The native macOS arm64 Nix runtime and compiler packages built, the runtime tests passed, and the compiler suite passed in both existing JavaScript check modes.
 
