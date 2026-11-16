@@ -173,7 +173,7 @@ def rust_result(case: str, contract: Path, folder: Path,
         prefix += (
             'struct Secret;\n'
             'impl generated::ledger_contract::TryWitnesses<u64> for Secret {'
-            'fn secret(&self, context: generated::runtime::context::WitnessContext<' 
+            'fn secret(&self, context: generated::runtime::context::WitnessContext<'
             "'_, u64, generated::ledger_contract::LedgerView<'_>>)"
             ' -> Result<(u64,generated::runtime::Field),generated::runtime::CompactError> {'
             'let value=*context.private_state-10;'
