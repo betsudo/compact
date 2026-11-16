@@ -226,9 +226,16 @@ jobs:
         run: |
           set -euo pipefail
           export CARGO_TARGET_DIR="$GROUPED_TARGET"
-          test -d test-contracts/node_modules/vitest
-          test ! -e node_modules
-          ln -s test-contracts/node_modules node_modules
+          # Begin root Vitest path setup: retain every existing dependency tree.
+          test -f test-contracts/node_modules/vitest/vitest.mjs
+          if [[ ! -e node_modules && ! -L node_modules ]]; then
+            ln -s test-contracts/node_modules node_modules
+          elif [[ -d node_modules && ! -L node_modules &&
+                  ! -e node_modules/vitest && ! -L node_modules/vitest ]]; then
+            ln -s ../test-contracts/node_modules/vitest node_modules/vitest
+          fi
+          test -f node_modules/vitest/vitest.mjs
+          # End root Vitest path setup.
           curves_utils="$PWD/test-contracts/node_modules/@noble/curves/utils.js"
           test -f "$curves_utils"
           mkdir -p "$GROUPED_TARGET"

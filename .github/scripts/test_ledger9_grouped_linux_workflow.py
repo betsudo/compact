@@ -16,6 +16,8 @@
 """Fail-closed static checks for the dedicated exact-head native Linux gate."""
 
 from pathlib import Path
+import subprocess
+import tempfile
 import unittest
 
 
@@ -77,7 +79,10 @@ def validate_workflow(text: str) -> None:
         require_fragment(consumer, f"{owner}.log")
         require_fragment(consumer, f"{count} passed \\({count}\\)")
     require_fragment(consumer, '--allow-pragma-probe')
+    require_fragment(consumer, 'test -f test-contracts/node_modules/vitest/vitest.mjs')
     require_fragment(consumer, 'ln -s test-contracts/node_modules node_modules')
+    require_fragment(consumer, 'ln -s ../test-contracts/node_modules/vitest node_modules/vitest')
+    require_fragment(consumer, 'test -f node_modules/vitest/vitest.mjs')
     for owner in ('check_upstream_ledger9_bytes_large_reconstruction_gap.py',
                   'check_upstream_ledger9_bytes_large_reconstruction_proof.py',
                   'audit_upstream_ledger9_bytes_large_reconstruction_proof.py'):
@@ -129,6 +134,51 @@ class GroupedLinuxWorkflowControls(unittest.TestCase):
             with self.subTest(owner=owner):
                 with self.assertRaises(ValueError):
                     validate_workflow(text.replace(owner, 'removed', 1))
+
+    def test_vitest_setup_preserves_existing_trees_and_refuses_invalid_ones(self):
+        text = WORKFLOW.read_text()
+        script = section(
+            text,
+            '# Begin root Vitest path setup: retain every existing dependency tree.\n',
+            '          # End root Vitest path setup.',
+        )
+        self.assertNotIn('rm ', script)
+        self.assertNotIn('ln -sfn', script)
+        for case in ('absent', 'existing-empty', 'existing-valid',
+                     'existing-invalid', 'dangling-root-link'):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                test_vitest = root / 'test-contracts/node_modules/vitest'
+                test_vitest.mkdir(parents=True)
+                (test_vitest / 'vitest.mjs').write_text('test fixture\n')
+                node_modules = root / 'node_modules'
+                if case.startswith('existing-'):
+                    node_modules.mkdir()
+                if case == 'existing-valid':
+                    current = node_modules / 'vitest'
+                    current.mkdir()
+                    (current / 'vitest.mjs').write_text('retain existing\n')
+                if case == 'existing-invalid':
+                    (node_modules / 'vitest').mkdir()
+                if case == 'dangling-root-link':
+                    node_modules.symlink_to('missing')
+                result = subprocess.run(['bash', '-euo', 'pipefail', '-c', script],
+                                        cwd=root, capture_output=True, text=True)
+                if case in ('existing-invalid', 'dangling-root-link'):
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertTrue((node_modules / 'vitest').is_dir()
+                                    if case == 'existing-invalid' else node_modules.is_symlink())
+                    continue
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertTrue((node_modules / 'vitest/vitest.mjs').is_file())
+                if case == 'absent':
+                    self.assertTrue(node_modules.is_symlink())
+                elif case == 'existing-empty':
+                    self.assertTrue((node_modules / 'vitest').is_symlink())
+                else:
+                    self.assertFalse((node_modules / 'vitest').is_symlink())
+                    self.assertEqual((node_modules / 'vitest/vitest.mjs').read_text(),
+                                     'retain existing\n')
 
     def test_root_host_wrapper_and_proof_material_are_owned(self):
         flake = (ROOT / 'flake.nix').read_text()
