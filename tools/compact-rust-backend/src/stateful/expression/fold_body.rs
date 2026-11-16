@@ -272,14 +272,14 @@ fn block(mut statements: Vec<syn::Stmt>, tail: syn::Expr) -> syn::Expr {
     syn::Expr::Block(value)
 }
 fn conditional(condition: syn::Expr, then: syn::Expr, otherwise: syn::Expr) -> syn::Expr {
-    // The closure is invoked only for the chosen arm. Passing its Result
-    // through the helper preserves `?` propagation and the original order of
-    // context, gas, and public transcript effects.
-    syn::parse_quote! {
-        if #condition {
-            __compact_fold_branch(|| -> Result<_, runtime::CompactError> { Ok(#then) })?
-        } else {
-            __compact_fold_branch(|| -> Result<_, runtime::CompactError> { Ok(#otherwise) })?
-        }
-    }
+    let mut value: syn::ExprIf = syn::parse_quote!(if __condition {
+    } else {
+    });
+    value.cond = Box::new(condition);
+    let syn::Expr::Block(then) = then else {
+        unreachable!("Fold then block");
+    };
+    value.then_branch = then.block;
+    *value.else_branch.as_mut().expect("Fold else block").1 = otherwise;
+    syn::Expr::If(value)
 }
