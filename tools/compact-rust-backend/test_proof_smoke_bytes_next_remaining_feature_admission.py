@@ -31,8 +31,12 @@ FEATURES = ('CARGO_FEATURE_BYTES_FOLD_CONDITIONAL_PROOF',
             'CARGO_FEATURE_BYTES_LOOP_SPREAD_PROOF',
             'CARGO_FEATURE_BYTES_LOOP_ITERATION_PROOF',
             'CARGO_FEATURE_BYTES_MANUAL_UPDATE_PROOF')
+NEXT_FEATURES = ('CARGO_FEATURE_BYTES_FOLD_BOOLEAN_PROOF',
+                 'CARGO_FEATURE_BYTES_LOOP_EMPTY_PROOF')
 GENERATED = 'COMPACT_BYTES_NEXT_REMAINING_GENERATED'
 CFG = 'cargo::rustc-cfg=compact_bytes_next_remaining_proof_generated'
+NEXT_GENERATED = 'COMPACT_BYTES_NEXT_GENERATED'
+NEXT_CFG = 'cargo::rustc-cfg=compact_bytes_next_proof_generated'
 
 
 class RemainingBytesAdmission(unittest.TestCase):
@@ -49,14 +53,18 @@ class RemainingBytesAdmission(unittest.TestCase):
     def tearDownClass(cls):
         cls.temp.cleanup()
 
-    def run_script(self, features=(), root=None):
+    def run_script(self, features=(), root=None, *, next_features=(), next_root=None):
         env = os.environ.copy()
-        for key in FEATURES + (GENERATED,):
+        for key in FEATURES + NEXT_FEATURES + (GENERATED, NEXT_GENERATED):
             env.pop(key, None)
         for key in features:
             env[key] = '1'
+        for key in next_features:
+            env[key] = '1'
         if root is not None:
             env[GENERATED] = str(root)
+        if next_root is not None:
+            env[NEXT_GENERATED] = str(next_root)
         return subprocess.run([str(self.binary)], cwd=ROOT, env=env,
                               capture_output=True, text=True)
 
@@ -95,6 +103,31 @@ class RemainingBytesAdmission(unittest.TestCase):
         refused = self.run_script(FEATURES, self.complete_root())
         self.assertNotEqual(refused.returncode, 0)
         self.assertIn('one remaining Bytes proof crate per generated runner', refused.stderr)
+
+    def test_next_features_skip_without_root_and_refuse_ambiguous_root(self):
+        broad = self.run_script(FEATURES, next_features=NEXT_FEATURES)
+        self.assertEqual(broad.returncode, 0, broad.stderr)
+        self.assertNotIn(CFG, broad.stdout)
+        self.assertNotIn(NEXT_CFG, broad.stdout)
+        ambiguous = self.run_script(next_features=NEXT_FEATURES,
+                                    next_root=self.complete_root())
+        self.assertNotEqual(ambiguous.returncode, 0)
+        self.assertIn('one next Bytes proof crate per runner', ambiguous.stderr)
+
+    def test_selected_next_feature_requires_complete_root(self):
+        root = self.complete_root()
+        for feature in NEXT_FEATURES:
+            with self.subTest(feature=feature):
+                absent = self.run_script(next_features=(feature,))
+                self.assertNotEqual(absent.returncode, 0)
+                self.assertIn('complete next Bytes generated root required', absent.stderr)
+                selected = self.run_script(next_features=(feature,), next_root=root)
+                self.assertEqual(selected.returncode, 0, selected.stderr)
+                self.assertIn(NEXT_CFG, selected.stdout)
+        (root / 'contract/rust-capabilities.json').unlink()
+        incomplete = self.run_script(next_features=(NEXT_FEATURES[0],), next_root=root)
+        self.assertNotEqual(incomplete.returncode, 0)
+        self.assertIn('complete next Bytes generated member required', incomplete.stderr)
 
 
 if __name__ == '__main__':

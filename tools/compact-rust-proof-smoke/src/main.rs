@@ -19,9 +19,11 @@
 //! program and checks it against the fixture's known ZKIR encoding. The call
 //! commitment uses the value-field encoding from ledger-8's Intent::add_call.
 //! Deployment combines the generated constructor state with the emitted key.
-#![cfg_attr(feature = "bytes-equality-proof", allow(clippy::bool_comparison))]
-// The pinned Fold original asserts `== true`; preserve its generated Rust unchanged.
-#![cfg_attr(feature = "bytes-fold-boolean-proof", allow(clippy::bool_comparison))]
+// Both pinned originals assert `== true`; preserve generated Rust unchanged.
+#![cfg_attr(
+    any(feature = "bytes-equality-proof", feature = "bytes-fold-boolean-proof"),
+    allow(clippy::bool_comparison)
+)]
 
 mod adt_list_bytes;
 mod adt_list_enum;

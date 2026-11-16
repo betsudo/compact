@@ -196,14 +196,15 @@ fn main() {
     println!("cargo::rerun-if-env-changed=COMPACT_BYTES_NEXT_GENERATED");
     let fold = std::env::var_os("CARGO_FEATURE_BYTES_FOLD_BOOLEAN_PROOF").is_some();
     let empty_loop = std::env::var_os("CARGO_FEATURE_BYTES_LOOP_EMPTY_PROOF").is_some();
-    assert!(
-        !(fold && empty_loop),
-        "one next Bytes proof crate per runner"
-    );
-    if fold || empty_loop {
+    let next_root = std::env::var_os("COMPACT_BYTES_NEXT_GENERATED");
+    // Workspace --all-features checks select both flags without a generated
+    // crate. A proof run selects one flag and supplies its exact root.
+    if fold && empty_loop {
+        assert!(next_root.is_none(), "one next Bytes proof crate per runner");
+    }
+    if fold ^ empty_loop {
         let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_BYTES_NEXT_GENERATED")
-                .expect("complete next Bytes generated root required"),
+            next_root.expect("complete next Bytes generated root required"),
         );
         assert!(
             root.is_absolute(),
