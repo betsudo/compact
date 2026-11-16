@@ -250,6 +250,9 @@
                 */test-contracts/stdlib/secp256k1/bitcoin_kat/secp256k1_bitcoin_kat.compact)
                   expected=3f600e9c25498b8cd6c8b82270286aa58d864f1fe9a7e10ee1a01315c8c9b086
                   ;;
+                */test-contracts/stdlib/secp256k1/base/roundtrip/secp256k1_base_roundtrip.compact)
+                  expected=c05e619523818a4bc6e870c367516edfc9fc8c42b4e0236c3f4687661e3a1548
+                  ;;
                 */test-contracts/stdlib/secp256k1/ecdsa_verify/secp256k1_ecdsa_verify.compact)
                   expected=83aaf4309bbaa741537371d6d23ea55b46282abd892c255075c0b60fb3b16462
                   ;;
@@ -264,6 +267,9 @@
                   ;;
                 */test-contracts/stdlib/secp256r1/ecdsa_verify/secp256r1_ecdsa_verify.compact)
                   expected=ce45565985916e21c16ec14ed351a05eaa44da144d08ff30fde682dcc646db30
+                  ;;
+                */test-contracts/stdlib/secp256r1/base/roundtrip/secp256r1_base_roundtrip.compact)
+                  expected=9f2a45968d342ef39ead91389665df952925f6e31bb725fdce2bf1f862bef9f9
                   ;;
                 */test-contracts/stdlib/secp256r1/sha256_kat/secp256r1_sha256_kat.compact)
                   expected=d174d86cf6e3af7be6d5a05485c8c3a39fb1b202f8e467e06fc1b8785e46540e
