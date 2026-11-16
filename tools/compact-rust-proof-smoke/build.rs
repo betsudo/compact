@@ -390,11 +390,10 @@ fn main() {
         println!("cargo::rustc-cfg=compact_for_generic_bound_generated");
     }
     println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_KEYWORD_CONSTRUCTOR_PARAMETERS_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED")
-                .expect("complete pinned constructor/parameters generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_KEYWORD_CONSTRUCTOR_PARAMETERS_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute constructor/parameters root required"
@@ -421,11 +420,10 @@ fn main() {
     println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_CASE");
     println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_CIRCUIT");
     println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_WRONG");
-    if std::env::var_os("CARGO_FEATURE_KEYWORD_DISCLOSE_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_KEYWORD_DISCLOSE_GENERATED")
-                .expect("complete pinned disclose generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_KEYWORD_DISCLOSE_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_KEYWORD_DISCLOSE_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         let case =
             std::env::var("COMPACT_KEYWORD_DISCLOSE_CASE").expect("pinned disclose case required");
         let cfg = match case.as_str() {
