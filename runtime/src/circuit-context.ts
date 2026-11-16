@@ -35,6 +35,11 @@ export type LogEvent = Extract<ocrt.GatherResult, { tag: 'log' }>['content'] & {
  */
 export interface CircuitContext<PS = any> {
   /**
+   * Host compatibility view of the executing contract's ledger state. This is
+   * deliberately smaller than the pinned runtime's cross-contract CallContext.
+   */
+  callContext: { currentQueryContext: ocrt.QueryContext };
+  /**
    * The current private state for the contract.
    */
   currentPrivateState: PS;
@@ -209,6 +214,7 @@ export function createCircuitContext<PS>(
   }
 
   return {
+    callContext: { currentQueryContext: initialQueryContext },
     currentPrivateState: privateState as PS,
     currentZswapLocalState: zswapLocalState,
     currentQueryContext: initialQueryContext,
@@ -269,6 +275,12 @@ export const queryLedgerState = (
   try {
     const res = circuitContext.currentQueryContext.query(program, circuitContext.costModel, circuitContext.gasLimit);
     circuitContext.currentQueryContext = res.context;
+    // Generated circuits shallow-copy their input context. Rebind rather than
+    // mutating the nested view so an earlier circuit result stays a snapshot.
+    // Generated ledger readers use a minimal synthetic context without this view.
+    if (circuitContext.callContext !== undefined) {
+      circuitContext.callContext = { ...circuitContext.callContext, currentQueryContext: res.context };
+    }
     // Generated circuits move this internal accumulator to CircuitResults.
     const context = circuitContext as CircuitContext & { gasCost?: ocrt.RunningCost };
     const previous = context.gasCost ?? emptyRunningCost();
