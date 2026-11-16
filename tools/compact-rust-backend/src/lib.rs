@@ -1827,6 +1827,15 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
 // child diagnostics and structured Rust expression emission.
 fn infallible_constructor_condition(value: &Expr) -> bool {
     match value {
+        Expr::If {
+            condition,
+            then,
+            otherwise,
+        } => {
+            infallible_constructor_condition(condition)
+                && infallible_constructor_condition(then)
+                && infallible_constructor_condition(otherwise)
+        }
         Expr::Equal { left, right } | Expr::NotEqual { left, right } => {
             infallible_constructor_condition(left) && infallible_constructor_condition(right)
         }

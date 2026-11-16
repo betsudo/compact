@@ -4346,6 +4346,19 @@
                                    (if (empty-constructor-expression? expr)
                                        '()
                                        (list (constructor-step-ir expr parameters bindings src witness-ids)))))))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (object (cons "kind" "if")
+                   (cons "condition"
+                         (parameterize ([current-constructor-condition? #t])
+                           (expression-ir expr0 src)))
+                   (cons "then_steps"
+                         (if (empty-constructor-expression? expr1)
+                             (vector)
+                             (vector (constructor-step-ir expr1 parameters bindings src witness-ids))))
+                   (cons "otherwise_steps"
+                         (if (empty-constructor-expression? expr2)
+                             (vector)
+                             (vector (constructor-step-ir expr2 parameters bindings src witness-ids)))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
