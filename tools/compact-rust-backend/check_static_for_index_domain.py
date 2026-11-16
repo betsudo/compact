@@ -63,7 +63,17 @@ def variants(source):
                      .replace('sum_range<1, 3>', 'sum_range<0, 9>')
                      .replace('[1, 2, 3, 4]',
                               '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]'),
-                     True, 'no unique constant-valued Vector index'),
+                     True, None),
+        'cap_ten': (source.replace('Vector<4, Uint<8>>', 'Vector<10, Uint<8>>')
+                    .replace('sum_range<1, 3>', 'sum_range<0, 10>')
+                    .replace('[1, 2, 3, 4]',
+                             '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]'),
+                    True, None),
+        'cap_eleven': (source.replace('Vector<4, Uint<8>>', 'Vector<11, Uint<8>>')
+                       .replace('sum_range<1, 3>', 'sum_range<0, 11>')
+                       .replace('[1, 2, 3, 4]',
+                                '[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]'),
+                       True, 'no unique constant-valued Vector index'),
         'guarded_item': (replace('v[i]', 'v[i - 0]'),
                          True, 'no unique constant-valued Vector index'),
         # The circuit can evaluate the cast, but the Fold source is no longer
@@ -125,7 +135,7 @@ def main():
     receipt = {'status': 'passed', 'upstream_commit': PINNED,
                'original_sha256': hashlib.sha256(original).hexdigest(),
                'compiler_sha256': sha256(compiler), 'cases': results,
-               'limit': 'literal-domain dispatch admits at most eight items'}
+               'limit': 'literal Vector Fold domain dispatch admits at most ten items'}
     (args.output / 'receipt.json').write_text(json.dumps(receipt, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'cases': len(results)}))
 

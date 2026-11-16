@@ -106,6 +106,19 @@ pub(super) fn try_run(
             crate::bytes_indexed_access_proof::run(std::path::Path::new(&root))
         })()),
         #[cfg(all(
+            feature = "bytes-large-reconstruction-proof",
+            compact_bytes_large_reconstruction_generated
+        ))]
+        ("--bytes-large-reconstruction-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("slow Bytes reconstruction proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected slow Bytes reconstruction proof argument".into());
+            }
+            crate::bytes_large_reconstruction_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
             feature = "keyword-constructor-parameters-proof",
             compact_keyword_constructor_parameters_generated
         ))]
