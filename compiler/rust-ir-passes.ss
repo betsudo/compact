@@ -35,6 +35,48 @@
     (definitions
       (define (object . fields) (origin-object fields))
 
+      ;; Included modules can contribute distinct ledger slots with the same
+      ;; source spelling. Keep the existing Rust name for unique slots and
+      ;; disambiguate only colliding spellings by their certified root index.
+      (define duplicate-ledger-field-names '())
+      (define all-ledger-field-names '())
+
+      (define (rust-ledger-field-name ledger-field-name index)
+        (let ([name (symbol->string (id-sym ledger-field-name))])
+          (if (member name duplicate-ledger-field-names)
+              (let loop ([candidate (string-append name "__compact_index_"
+                                                (number->string index))])
+                (if (member candidate all-ledger-field-names)
+                    (loop (string-append candidate "__"))
+                    candidate))
+              name)))
+
+      (define (ledger-array-names pl-array)
+        (nanopass-case (Lnodisclose Public-Ledger-Array) pl-array
+          [(public-ledger-array ,pl-array-elt* ...)
+           (apply append
+             (map (lambda (element)
+                    (nanopass-case (Lnodisclose Public-Ledger-Array-Element) element
+                      [,pl-array (ledger-array-names pl-array)]
+                      [(,src ,ledger-field-name (,path-index* ...) ,type)
+                       (list (symbol->string (id-sym ledger-field-name)))]))
+                  pl-array-elt*))]))
+
+      (define (ledger-declaration-names pelt)
+        (nanopass-case (Lnodisclose Program-Element) pelt
+          [(public-ledger-declaration ,pl-array ,lconstructor)
+           (ledger-array-names pl-array)]
+          [else '()]))
+
+      (define (find-duplicate-ledger-names names)
+        (let ([seen (make-hashtable string-hash string=?)] [duplicates '()])
+          (for-each (lambda (name)
+                      (if (hashtable-ref seen name #f)
+                          (set! duplicates (cons name duplicates))
+                          (hashtable-set! seen name #t)))
+                    names)
+          duplicates))
+
       ;; Propagate-ledger-paths emits array indices followed by typed Map
       ;; keys. A one-key suffix denotes a lookup in the selected child.
       (define (nested-map-path? path-elt*)
@@ -60,7 +102,7 @@
         (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
           [(,src^ ,type ,expr)
            (object (cons "kind" "nested_map_lookup")
-                   (cons "field" (symbol->string (id-sym ledger-field-name)))
+                   (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                    (cons "index" (car path-elt*))
                    (cons "outer" (lower expr type src^))
                    (cons "inner" (lower inner inner-type src)))]))
@@ -1555,25 +1597,25 @@
                    (lambda (arg ty) (typed-expression-ir arg ty src)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "counter_less_than")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "threshold" (typed-expression-ir (car expr*) (car type*) src)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map) (memq ledger-op '(member lookup)) (= (length expr*) 1))
                  (object (cons "kind" (if (eq? ledger-op 'member) "map_member" "map_lookup"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
@@ -2205,33 +2247,33 @@
              [(tadt ,src^ ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
               (cond
                 [(eq? adt-name 'Counter)
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration" (kind "counter")))]
                 [(and (eq? adt-name '__compact_Cell) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "cell")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'Set) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "set")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'List) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "list")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'Map) (= (length adt-arg*) 2))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
@@ -2239,7 +2281,7 @@
                                        (cons "key" (type-ir (car adt-arg*) src))
                                        (cons "value" (type-ir (cadr adt-arg*) src)))))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree)) (= (length adt-arg*) 2))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
@@ -2416,27 +2458,27 @@
                       (eq? ledger-op 'increment)
                       (= (length expr*) 1))
                  (object (cons "kind" "counter_increment")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*) environment src)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'decrement)
                       (= (length expr*) 1))
                  (object (cons "kind" "counter_decrement")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*) environment src)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "counter_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name '__compact_Cell)
                       (eq? ledger-op 'write)
                       (= (length expr*) 1))
                  (object (cons "kind" "cell_write")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (eq? adt-name '__compact_Cell)
@@ -2446,21 +2488,21 @@
                  (let ([default-value (with-output-language (Lnodisclose Expression)
                                         `(default ,src ,(car adt-arg*)))])
                    (object (cons "kind" "cell_write")
-                           (cons "field" (symbol->string (id-sym ledger-field-name)))
+                           (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                            (cons "index" (car path-elt*))
                            (cons "value" (stateful-expression-ir default-value src witness-ids))))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name '__compact_Cell)
                       (eq? ledger-op 'writeCoin)
                       (= (length expr*) 2))
                  (object (cons "kind" "cell_write_coin")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "coin" (stateful-typed-expression-ir (car expr*) (car type*) src witness-ids))
                          (cons "recipient" (stateful-typed-expression-ir (cadr expr*) (cadr type*) src witness-ids)))]
@@ -2468,7 +2510,7 @@
                       (eq? ledger-op 'insertCoin)
                       (= (length expr*) 2))
                  (object (cons "kind" "set_insert_coin")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "coin" (typed-expression-ir (car expr*) (car type*) src))
                          (cons "recipient" (typed-expression-ir (cadr expr*) (cadr type*) src)))]
@@ -2476,40 +2518,40 @@
                       (eq? ledger-op 'remove)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "set_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'pushFront)
                       (= (length expr*) 1))
                  (object (cons "kind" "list_push_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (expression-ir (car expr*) src)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'popFront)
                       (null? expr*))
                  (object (cons "kind" "list_pop_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "list_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
                       (= (length expr*) 2) (nested-map-path? path-elt*))
                  (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
                    [(,src^ ,type ,expr)
                     (object (cons "kind" "nested_map_insert")
-                            (cons "field" (symbol->string (id-sym ledger-field-name)))
+                            (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                             (cons "index" (car path-elt*))
                             (cons "outer" (typed-expression-ir expr type src^))
                             (cons "inner" (typed-expression-ir (car expr*) (car adt-arg*) src))
@@ -2517,7 +2559,7 @@
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
                       (= (length expr*) 2) (eq? (ledger-default-kind (cadr expr*)) 'Map))
                  (object (cons "kind" "map_init_child")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
@@ -2525,14 +2567,14 @@
                           (and (eq? ledger-op 'insert) (= (length expr*) 2)
                                (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
                  (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 2))
                  (object (cons "kind" "map_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))
                          (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))]
@@ -2540,14 +2582,14 @@
                       (eq? ledger-op 'remove)
                       (= (length expr*) 1))
                  (object (cons "kind" "map_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "map_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'resetToDefault)
@@ -2555,13 +2597,13 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_reset_to_default"
                                           "historic_merkle_reset_to_default"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'HistoricMerkleTree)
                       (eq? ledger-op 'resetHistory)
                       (null? expr*))
                  (object (cons "kind" "historic_merkle_reset_history")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'insert)
@@ -2569,7 +2611,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert"
                                           "historic_merkle_insert"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -2578,7 +2620,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_index"
                                           "historic_merkle_insert_index"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids))
                          (cons "position" (stateful-expression-ir (cadr expr*) src witness-ids)))]
@@ -2588,7 +2630,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_hash"
                                           "historic_merkle_insert_hash"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "hash" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -2597,7 +2639,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_hash_index"
                                           "historic_merkle_insert_hash_index"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "hash" (stateful-expression-ir (car expr*) src witness-ids))
                          (cons "position" (stateful-expression-ir (cadr expr*) src witness-ids)))]
@@ -2607,7 +2649,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_index_default"
                                           "historic_merkle_insert_index_default"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "position" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [else (source-errorf src "Rust backend does not yet support this ledger operation")])])]
@@ -3532,25 +3574,25 @@
                    (lambda (arg ty) (stateful-typed-expression-ir arg ty src witness-ids)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "counter_less_than")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "threshold" (stateful-typed-expression-ir (car expr*) (car type*) src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "map_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'lookup) (= (length expr*) 1))
@@ -3558,20 +3600,20 @@
                      (nested-map-lookup-ir src ledger-field-name path-elt* (car expr*) (car adt-arg*)
                        (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids)))
                      (object (cons "kind" "map_lookup")
-                             (cons "field" (symbol->string (id-sym ledger-field-name)))
+                             (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                              (cons "index" (car path-elt*))
                              (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids))))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'length) (null? expr*))
                  (object (cons "kind" "list_length")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "list_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'head) (null? expr*))
                  (object (cons "kind" "list_head")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "ty" (type-ir type src)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -3580,24 +3622,24 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_check_root"
                                           "historic_merkle_check_root"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "root" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "set_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'size) (null? expr*))
                  (object (cons "kind" "set_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "map_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'size) (null? expr*))
                  (object (cons "kind" "map_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
           [(safe-cast ,src ,type ,type^ ,expr)
@@ -3890,7 +3932,7 @@
                       (eq? ledger-op 'read)
                       (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "expression")
@@ -3899,32 +3941,32 @@
                       (eq? ledger-op 'read)
                       (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'member)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'size)
                       (null? expr*))
                  (object (cons "kind" "set_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "set_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'member)
                       (= (length expr*) 1))
                  (object (cons "kind" "map_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
@@ -3934,38 +3976,38 @@
                      (object (cons "kind" "expression")
                              (cons "value" (stateful-expression-ir return-expr src witness-ids)))
                      (object (cons "kind" "map_lookup")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'size)
                       (null? expr*))
                  (object (cons "kind" "map_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "map_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'length)
                       (null? expr*))
                  (object (cons "kind" "list_length")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "list_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'head)
                       (null? expr*))
                  (object (cons "kind" "list_head")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'isFull)
@@ -3973,7 +4015,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_is_full"
                                           "historic_merkle_is_full"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'checkRoot)
@@ -3981,7 +4023,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_check_root"
                                           "historic_merkle_check_root"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "root" (expression-ir (car expr*) src)))]
                 [else (source-errorf src "Rust backend does not yet support this ledger return operation")])])]
@@ -4260,63 +4302,63 @@
               (cond
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'increment) (= (length expr*) 1))
                  (object (cons "kind" "counter_increment")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*)
                                                            (constructor-counter-environment parameters bindings)
                                                            src)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'decrement) (= (length expr*) 1))
                  (object (cons "kind" "counter_decrement")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*)
                                                            (constructor-counter-environment parameters bindings)
                                                            src)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "counter_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'insert) (= (length expr*) 1))
                  (object (cons "kind" "set_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'remove) (= (length expr*) 1))
                  (object (cons "kind" "set_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "set_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'pushFront) (= (length expr*) 1))
                  (object (cons "kind" "list_push_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'popFront) (null? expr*))
                  (object (cons "kind" "list_pop_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "list_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (or (and (eq? ledger-op 'insertDefault) (= (length expr*) 1))
                           (and (eq? ledger-op 'insert) (= (length expr*) 2)
                                (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
                  (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
                                                            parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert) (= (length expr*) 2))
                  (object (cons "kind" "map_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
                                                            parameters bindings src witness-ids))
@@ -4324,13 +4366,13 @@
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'remove) (= (length expr*) 1))
                  (object (cons "kind" "map_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
                                                            parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "map_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'write) (= (length expr*) 1))
                  (nanopass-case (Lnodisclose Expression) (car expr*)
@@ -4339,12 +4381,12 @@
                       (unless (or binding (memq var-name parameters))
                         (source-errorf src1 "Rust constructor Cell initializer must be a constructor parameter or literal"))
                       (object (cons "kind" "cell_write")
-                              (cons "field" (symbol->string (id-sym ledger-field-name)))
+                              (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                               (cons "index" (car path-elt*))
                               (cons "value" (expression-ir (car expr*) src))))]
                    [else
                     (object (cons "kind" "cell_write")
-                            (cons "field" (symbol->string (id-sym ledger-field-name)))
+                            (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                             (cons "index" (car path-elt*))
                             (cons "value" (if (null? adt-arg*)
                                               (expression-ir (car expr*) src)
@@ -4426,6 +4468,9 @@
        (hashtable-clear! curve-group-natives)
        (set! struct-shape-names '())
        (set! used-struct-names '())
+       (set! all-ledger-field-names (apply append (map ledger-declaration-names pelt*)))
+       (set! duplicate-ledger-field-names
+         (find-duplicate-ledger-names all-ledger-field-names))
        (index-function-names pelt*)
        (index-native-witnesses pelt*)
        (for-each index-callables pelt*)
