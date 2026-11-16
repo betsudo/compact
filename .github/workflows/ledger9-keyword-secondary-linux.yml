@@ -231,6 +231,20 @@ jobs:
               --ts-runtime "$SECONDARY_RUNTIME" \
               --cargo-target "$SECONDARY_CARGO_TARGET" \
               --output "$root/small_keywords" | tee "$root/small_keywords.stdout.log"
+      - name: Run circuit, pure and disclose original keyword gates serially
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          for gate in circuit pure disclose; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+              python3 -X faulthandler -u \
+              "tools/compact-rust-backend/check_upstream_ledger9_${gate}_keywords.py" \
+              --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+              --ts-runtime "$SECONDARY_RUNTIME" \
+              --cargo-target "$SECONDARY_CARGO_TARGET" \
+              --output "$root/$gate" | tee "$root/$gate.stdout.log"
+          done
       - name: Run Bytes indexed and static controls serially
         run: |
           set -euo pipefail

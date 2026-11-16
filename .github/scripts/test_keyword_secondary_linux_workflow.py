@@ -80,7 +80,9 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn('export-shell: true', workflow)
         self.assertIn('for gate in include prefix assert module export import_type',
                       workflow)
+        self.assertIn('for gate in circuit pure disclose', workflow)
         sequence = ('check_upstream_ledger9_small_keywords.py',
+                    'Run circuit, pure and disclose original keyword gates serially',
                     'check_upstream_ledger9_bytes_indexed_access.py',
                     'check_static_bytes_fold_index_domain.py',
                     'test-rust-vector-indices.ss',
@@ -109,9 +111,10 @@ class WorkflowTest(unittest.TestCase):
     def test_family_and_host_roster(self):
         self.assertEqual(list(receipts.FAMILIES),
                          ['include', 'prefix', 'assert', 'module',
-                          'export', 'import_type'])
-        self.assertEqual(sum(row[0] for row in receipts.FAMILIES.values()), 68)
-        self.assertEqual(sum(row[1] for row in receipts.FAMILIES.values()), 35)
+                          'export', 'import_type', 'circuit', 'pure'])
+        self.assertEqual(sum(row[0] for row in receipts.FAMILIES.values()), 86)
+        self.assertEqual(sum(row[1] for row in receipts.FAMILIES.values()), 44)
+        self.assertTrue(callable(receipts.disclose))
         self.assertEqual(len(receipts.HOST_FAMILIES), 20)
         self.assertEqual(receipts.HOST_FAMILIES[-1], 'disclose')
         stage = ast.parse((ROOT / 'tools/compact-rust-backend/'

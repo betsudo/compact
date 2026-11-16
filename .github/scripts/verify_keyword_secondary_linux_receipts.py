@@ -33,7 +33,8 @@ from check_upstream_keyword_vitest_host import original_host_counts_match  # noq
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 FAMILIES = {'include': (7, 3, 26), 'prefix': (3, 2, 12),
             'assert': (6, 5, 17), 'module': (8, 4, 20),
-            'export': (5, 1, 11), 'import_type': (39, 20, 99)}
+            'export': (5, 1, 11), 'import_type': (39, 20, 99),
+            'circuit': (14, 8, 36), 'pure': (4, 1, 9)}
 HOST_FAMILIES = ('reserved', 'const', 'import', 'type', 'for', 'return',
                  'if', 'include', 'prefix', 'assert', 'module', 'export',
                  'circuit', 'pure', 'constructor', 'ledger', 'pragma', 'sealed',
@@ -203,12 +204,38 @@ def family(name, root, head, tree, compiler, recipe, runtime):
                                 sha(base / 'cargo-test.log') ==
                                 row['rust_test_log_sha256'],
                                 f'{name}/{case} Rust consumer differs')
+                        if name in {'circuit', 'pure'}:
+                            consumer = ('original_circuit.rs' if name == 'circuit'
+                                        else 'original_pure.rs')
+                            require(sha(product / 'contract/tests' / consumer) ==
+                                    row.get('rust_test_sha256') and
+                                    sha(base / 'cargo-check.log') ==
+                                    row.get('cargo_check_sha256'),
+                                    f'{name}/{case} Rust result differs')
             else:
                 require(row.get('exit_code') != 0 and
                         row.get('output_absent') is True and not product.exists() and
                         sha(base / 'diagnostic.log') == row.get('diagnostic_sha256'),
                         f'{name}/{case}/{mode} refusal differs')
+                if name in {'circuit', 'pure'}:
+                    require('/' + row.get('original_regex', '') + '/' in
+                            (ROOT / original).read_text(),
+                            f'{name}/{case} original refusal regex differs')
         require(len(outcomes) == 1, f'{name}/{case} paired outcome differs')
+        if name in {'circuit', 'pure'}:
+            if positive:
+                ts = modes['typescript']['generated_files']
+                paired = modes['paired']['generated_files']
+                require(ts.get('contract/index.js') ==
+                        paired.get('contract/index.js') and
+                        all(ts[key] == paired.get(key) for key in ts
+                            if key.startswith('zkir/') or
+                            key == 'compiler/contract-info.json'),
+                        f'{name}/{case} generated TS/ZKIR parity differs')
+            else:
+                require(modes['typescript']['diagnostic_sha256'] ==
+                        modes['paired']['diagnostic_sha256'],
+                        f'{name}/{case} paired refusal differs')
         accepted_seen += True in outcomes
     require(accepted_seen == accepted, f'{name} accepted case count differs')
     require(seen_compile == {path for path in originals
@@ -218,6 +245,34 @@ def family(name, root, head, tree, compiler, recipe, runtime):
         require(receipt.get('rust_executed_count') == 20 and
                 receipt.get('proof_execution') is False,
                 'import/type Rust result roster or proof scope differs')
+    if name == 'pure':
+        require(receipt.get('runtime_assertion_count') == 2,
+                'pure original assertion count differs')
+    if name == 'circuit':
+        controls = receipt.get('controls')
+        require(isinstance(controls, dict) and set(controls) ==
+                {'vector_width_refusal', 'vector_narrowing_refusal',
+                 'vector_overflow_refusal', 'unrelated_return_refusal'},
+                'circuit control roster differs')
+        require(receipt.get('control_sources_sha256') == {
+            control: sha(ROOT / 'tools/compact-rust-backend/tests' /
+                        f'ledger9_circuit_{control}.compact')
+            for control in controls}, 'circuit control source differs')
+        for control, modes in controls.items():
+            require(set(modes) == {'typescript', 'paired'},
+                    f'circuit control modes differ: {control}')
+            for mode, row in modes.items():
+                base = root / 'controls' / control / mode
+                if row.get('accepted'):
+                    require(control == 'unrelated_return_refusal' and
+                            mode == 'typescript', 'unexpected circuit control acceptance')
+                    files(base / 'product', row.get('generated_files'))
+                else:
+                    require(row.get('accepted') is False and
+                            row.get('output_absent') is True and
+                            not (base / 'product').exists() and
+                            sha(base / 'diagnostic.log') == row.get('diagnostic_sha256'),
+                            f'circuit control refusal differs: {control}/{mode}')
     return sha(root / 'receipt.json')
 
 
@@ -290,6 +345,108 @@ def host(root, head, tree, compiler, recipe):
             'original host execution differs')
     host_vitest_log(root / 'host/original-vitest.log', report['vitest_log_sha256'])
     return sha(root / 'host/receipt.json')
+
+
+def disclose(root, head, tree, compiler, recipe, runtime):
+    receipt = load(root / 'receipt.json')
+    source = receipt.get('source', {})
+    require(receipt.get('status') == 'passed' and
+            receipt.get('upstream_commit') == PINNED and
+            source == {'head': head, 'tree': tree},
+            'disclose exact source or status differs')
+    manifest = ROOT / 'test-contracts/keywords/disclose/original-source-sha256.json'
+    originals = load(manifest).get('files')
+    expected = {'branch_conditions', 'branch_conditions_in_constructor',
+                'param_to_ledger_undisclosed',
+                'unexported_circuit_parameters', 'vector_element_condition'}
+    accepted = expected - {'param_to_ledger_undisclosed',
+                           'vector_element_condition'}
+    require(receipt.get('format') == 'ledger9-pinned-disclose-keywords/v1' and
+            source == {'head': head, 'tree': tree} and
+            receipt.get('manifest_sha256') == sha(manifest) and
+            receipt.get('originals') == originals and
+            receipt.get('gate_sha256') == sha(ROOT /
+                'tools/compact-rust-backend/check_upstream_ledger9_disclose_keywords.py') and
+            receipt.get('compiler_recipe', {}).get('sha256') == sha(recipe) and
+            receipt['compiler_recipe'].get('head') == head and
+            receipt['compiler_recipe'].get('tree') == tree and
+            receipt.get('runtime') == runtime_identity(runtime) and
+            receipt.get('qualification', '').endswith(
+                'fresh proofs and funded application remain separate'),
+            'disclose source, compiler, runtime or proof scope differs')
+    original_map(originals, 13)
+    results = receipt.get('cases')
+    require(isinstance(results, dict) and set(results) == expected,
+            'disclose case roster differs')
+    for case, modes in results.items():
+        require(set(modes) == {'typescript', 'paired'},
+                f'disclose mode roster differs: {case}')
+        compile_test = (f'test-contracts/keywords/disclose/{case}/compile.' +
+                        ('pass' if case in accepted else 'fail') + '.test.ts')
+        require(compile_test in originals, f'disclose original test absent: {case}')
+        for mode, row in modes.items():
+            base = root / case / mode
+            product = base / 'product'
+            command = row.get('command', [])
+            require(command and command[0] == str(compiler.resolve()) and
+                    str(ROOT / f'test-contracts/keywords/disclose/{case}') in
+                    command[-2] and
+                    (('--target' in command and 'rust' in command) ==
+                     (mode == 'paired')) and
+                    sha(base / 'compile.log') == row.get('compile_log_sha256'),
+                    f'disclose source command or compile log differs: {case}/{mode}')
+            if case in accepted:
+                require(product.is_dir() and not product.is_symlink() and
+                        row.get('output_absent') is None,
+                        f'disclose generated product absent: {case}/{mode}')
+                files(product, row.get('generated_files'))
+                callback = (f'test-contracts/keywords/disclose/{case}/'
+                            'runtime.pass.test.ts')
+                require(callback in originals and
+                        sha(base / 'runtime.pass.test.ts') == originals[callback] and
+                        sha(base / 'runtime.log') == row.get('runtime_log_sha256') and
+                        'original disclose runtime passed' in
+                        (base / 'runtime.log').read_text() and
+                        all(sha(base / name) == digest
+                            for name, digest in row.get('adapter_files', {}).items()),
+                        f'disclose original callback differs: {case}/{mode}')
+                info = load(product / 'compiler/contract-info.json')
+                circuits = info.get('circuits', [])
+                require(len(circuits) == 1 and
+                        circuits[0].get('name') == 'disclose_' + case and
+                        circuits[0].get('proof') ==
+                        (case in {'branch_conditions',
+                                  'branch_conditions_in_constructor'}),
+                        f'disclose generated capability differs: {case}/{mode}')
+                if mode == 'paired':
+                    require(sha(product / 'contract/tests/original_disclose.rs') ==
+                            row.get('rust_test_sha256') and
+                            sha(base / 'cargo-test.log') ==
+                            row.get('rust_test_log_sha256') and
+                            sha(base / 'cargo-check.log') ==
+                            row.get('cargo_check_sha256'),
+                            f'disclose generated Rust result differs: {case}')
+            else:
+                require(row.get('output_absent') is True and not product.exists() and
+                        not list(base.glob('.product.compactc-stage-*')) and
+                        '/' + row.get('original_regex', '') + '/' in
+                        (ROOT / compile_test).read_text() and
+                        re.search(row.get('original_regex', '(?!)'),
+                                  (base / 'compile.log').read_text()) is not None,
+                        f'disclose original refusal differs: {case}/{mode}')
+        if case in accepted:
+            ts = modes['typescript']['generated_files']
+            paired = modes['paired']['generated_files']
+            require(ts.get('contract/index.js') == paired.get('contract/index.js') and
+                    all(ts[name] == paired.get(name) for name in ts
+                        if name.startswith('zkir/') or
+                        name == 'compiler/contract-info.json'),
+                    f'disclose paired TS/ZKIR differs: {case}')
+        else:
+            require(modes['typescript']['original_regex'] ==
+                    modes['paired']['original_regex'],
+                    f'disclose refusal regex differs: {case}')
+    return sha(root / 'receipt.json')
 
 
 def small_keywords(root, head, tree, compiler, recipe, runtime):
@@ -748,6 +905,9 @@ def main():
     hashes = {name: family(name, root / name, head, tree,
                            args.compiler, args.compiler_recipe, args.runtime)
               for name in FAMILIES}
+    hashes['disclose'] = disclose(root / 'disclose', head, tree,
+                                 args.compiler, args.compiler_recipe,
+                                 args.runtime)
     hashes['small_keywords'] = small_keywords(root / 'small_keywords', head, tree,
                                              args.compiler, args.compiler_recipe,
                                              args.runtime)
@@ -760,7 +920,8 @@ def main():
     hashes['constructor_proof'] = constructor_proof(root, head, tree, args.zkir)
     summary = {'status': 'passed', 'head': head, 'tree': tree,
                'platform': 'Linux x86_64', 'upstream_commit': PINNED,
-               'families': list(FAMILIES), 'host_families': HOST_FAMILIES,
+               'families': [*FAMILIES, 'disclose'],
+               'host_families': HOST_FAMILIES,
                'host_tests': 263, 'receipt_hashes': hashes,
                'proof_execution': True, 'funded_application': True,
                'proved_exports': ['import/ledger_field', 'bytes/loops/indexed_access',
@@ -768,7 +929,7 @@ def main():
                'limits': ['other stateful keyword and Bytes paths have no proof claim',
                           'constructor execution unproved',
                           'proof features qualified in separate Cargo invocations',
-                          'disclose keyword originals have host outcome only',
+                          'disclose keyword proofs and funded application remain open',
                           'cross-contract transaction outside this gate']}
     args.summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': head, 'host_tests': 263,
