@@ -22,7 +22,10 @@
   ;; The v2 compiler remains the Ledger 8 language profile. The explicit
   ;; ZKIR v3 target selects the language version shipped by Compact 0.36.0.
   (define ledger8-language-version (make-version 'language 0 23 105))
-  (define ledger9-language-version (make-version 'language 0 28 0))
+  ;; Host version readers select the single literal make-version form above.
+  (define ledger9-language-major 0)
+  (define ledger9-language-version
+    (make-version 'language ledger9-language-major 28 0))
 
   (define (selected-language-version)
     (if (feature-zkir-v3) ledger9-language-version ledger8-language-version))
