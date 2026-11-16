@@ -252,12 +252,14 @@ fn render_control_expression(
                         let (__compact_next_context, __compact_branch_value) = if #condition {
                             __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
                                 #(#then_statements)*
-                                Ok((context, #then_value))
+                                let __compact_branch_value = #then_value;
+                                Ok((context, __compact_branch_value))
                             })?
                         } else {
                             __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
                                 #(#else_statements)*
-                                Ok((context, #else_value))
+                                let __compact_branch_value = #else_value;
+                                Ok((context, __compact_branch_value))
                             })?
                         };
                         context = __compact_next_context;

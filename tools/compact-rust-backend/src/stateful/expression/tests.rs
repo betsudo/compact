@@ -658,6 +658,11 @@ fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
         generated.matches("__compact_query_branch").count() >= 6,
         "nested query arms must call their out-of-line helper: {generated}"
     );
+    assert!(generated.contains("let __compact_branch_value ="));
+    assert!(
+        !generated.contains("Ok ((context , {"),
+        "a nested query value must be evaluated before its context is moved"
+    );
 
     let pure = Declarations::default().lower(conditional(
         *parameter("boolean"),
