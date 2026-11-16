@@ -14,6 +14,7 @@ import {
   frHexToAlignedValue,
   kernelClaimContractCallProgram,
   prepareCallProofBinding,
+  withVerifiedCallProofBinding,
 } from '../src/cross-contract-proof-binding.js';
 import * as publicRuntime from '../src/index.js';
 
@@ -152,9 +153,60 @@ describe('internal call proof binding', () => {
     expect(() => assertPreparedCallProofBinding(changedOpcode)).toThrow(/changed after commitment/);
   });
 
+  test('deleted array entries cannot bypass the guard at any nested proof level', () => {
+    const fresh = () => prepareCallProofBinding(ocrt.sampleContractAddress(), 'transfer', input, output);
+    const deletedOpcode = fresh();
+    Reflect.deleteProperty(deletedOpcode.claimProgram, '5');
+    expect(() => assertPreparedCallProofBinding(deletedOpcode)).toThrow(/changed after commitment/);
+    const deletedValue = fresh();
+    Reflect.deleteProperty(deletedValue.callOutput.value, '0');
+    expect(() => assertPreparedCallProofBinding(deletedValue)).toThrow(/changed after commitment/);
+    const deletedAlignment = fresh();
+    Reflect.deleteProperty(deletedAlignment.callOutput.alignment, '0');
+    expect(() => assertPreparedCallProofBinding(deletedAlignment)).toThrow(/changed after commitment/);
+    const deletedTranscript = fresh();
+    Reflect.deleteProperty(deletedTranscript.privateTranscriptOutputs, '1');
+    expect(() => assertPreparedCallProofBinding(deletedTranscript)).toThrow(/changed after commitment/);
+  });
+
+  test('accessor operands refuse without invoking the getter and a fresh sealed copy is consumed synchronously', () => {
+    const fresh = () => prepareCallProofBinding(ocrt.sampleContractAddress(), 'transfer', input, output);
+    const accessor = fresh();
+    let getterCalls = 0;
+    Object.defineProperty(accessor.claimProgram[5], 'concat', {
+      enumerable: true,
+      configurable: true,
+      get: () => {
+        getterCalls++;
+        return { cached: true, n: 160 };
+      },
+    });
+    expect(() => assertPreparedCallProofBinding(accessor)).toThrow(/changed after commitment/);
+    expect(getterCalls).toBe(0);
+    let committed = false;
+    expect(() =>
+      withVerifiedCallProofBinding(accessor, () => {
+        committed = true;
+      }),
+    ).toThrow(/changed after commitment/);
+    expect(committed).toBe(false);
+    const valid = fresh();
+    withVerifiedCallProofBinding(valid, (sealedCopy) => {
+      committed = true;
+      expect(sealedCopy).not.toBe(valid);
+      expect(sealedCopy.callOutput).not.toBe(valid.callOutput);
+      expect(sealedCopy.claimProgram).not.toBe(valid.claimProgram);
+      valid.claimProgram[5] = { concat: { cached: true, n: 159 } };
+      expect(sealedCopy.claimProgram[5]).toEqual({ concat: { cached: true, n: 160 } });
+      expect(sealedCopy.privateTranscriptOutputs[0]).toEqual(output);
+    });
+    expect(committed).toBe(true);
+  });
+
   test('the host Runtime public surface stays closed', () => {
     expect('crossContractCall' in publicRuntime).toBe(false);
     expect('prepareCallProofBinding' in publicRuntime).toBe(false);
+    expect('withVerifiedCallProofBinding' in publicRuntime).toBe(false);
     expect('kernelClaimContractCallProgram' in publicRuntime).toBe(false);
   });
 });

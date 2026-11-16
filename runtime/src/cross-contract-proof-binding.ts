@@ -32,32 +32,42 @@ const copyAlignedValue = ({ value, alignment }: ocrt.AlignedValue): ocrt.Aligned
 
 const sameTree = (left: unknown, right: unknown): boolean => {
   if (left instanceof Uint8Array || right instanceof Uint8Array) {
-    return (
-      left instanceof Uint8Array &&
-      right instanceof Uint8Array &&
-      left.length === right.length &&
-      left.every((byte, index) => byte === right[index])
-    );
+    if (!(left instanceof Uint8Array) || !(right instanceof Uint8Array) || left.length !== right.length) return false;
+    if (Reflect.ownKeys(left).length !== left.length || Reflect.ownKeys(right).length !== right.length) return false;
+    for (let index = 0; index < left.length; index++) {
+      const actual = Object.getOwnPropertyDescriptor(left, String(index));
+      const expected = Object.getOwnPropertyDescriptor(right, String(index));
+      if (!actual || !expected || !('value' in actual) || !('value' in expected) || actual.value !== expected.value) return false;
+    }
+    return true;
   }
   if (Array.isArray(left) || Array.isArray(right)) {
-    return (
-      Array.isArray(left) &&
-      Array.isArray(right) &&
-      left.length === right.length &&
-      left.every((value, index) => sameTree(value, right[index]))
-    );
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) return false;
+    // An array's only own keys must be its dense indices and `length`.
+    if (Reflect.ownKeys(left).length !== left.length + 1 || Reflect.ownKeys(right).length !== right.length + 1) return false;
+    for (let index = 0; index < left.length; index++) {
+      const actual = Object.getOwnPropertyDescriptor(left, String(index));
+      const expected = Object.getOwnPropertyDescriptor(right, String(index));
+      if (!actual || !expected || !('value' in actual) || !('value' in expected) || !sameTree(actual.value, expected.value)) {
+        return false;
+      }
+    }
+    return true;
   }
   if (left !== null && right !== null && typeof left === 'object' && typeof right === 'object') {
-    const leftRecord = left as Record<string, unknown>;
-    const rightRecord = right as Record<string, unknown>;
-    const leftKeys = Object.keys(leftRecord).sort();
-    const rightKeys = Object.keys(rightRecord).sort();
-    return (
-      sameTree(leftKeys, rightKeys) &&
-      leftKeys.every(
-        (key) => Object.prototype.hasOwnProperty.call(rightRecord, key) && sameTree(leftRecord[key], rightRecord[key]),
-      )
-    );
+    const leftKeys = Reflect.ownKeys(left);
+    const rightKeys = Reflect.ownKeys(right);
+    if (leftKeys.length !== rightKeys.length || leftKeys.some((key) => typeof key !== 'string' || !rightKeys.includes(key))) {
+      return false;
+    }
+    for (const key of leftKeys) {
+      const actual = Object.getOwnPropertyDescriptor(left, key);
+      const expected = Object.getOwnPropertyDescriptor(right, key);
+      if (!actual || !expected || !('value' in actual) || !('value' in expected) || !sameTree(actual.value, expected.value)) {
+        return false;
+      }
+    }
+    return true;
   }
   return left === right;
 };
@@ -145,6 +155,20 @@ type SealedBinding = {
 
 const sealedBindings = new WeakMap<PreparedCallProofBinding, SealedBinding>();
 
+const materializeSealedBinding = (sealed: SealedBinding): PreparedCallProofBinding => {
+  const callInput = copyAlignedValue(sealed.input);
+  const callOutput = copyAlignedValue(sealed.output);
+  return {
+    calleeAddress: sealed.calleeAddress,
+    calleeCircuitId: sealed.calleeCircuitId,
+    callInput,
+    callOutput,
+    commCommData: { commComm: sealed.commComm, commCommRand: sealed.commCommRand },
+    privateTranscriptOutputs: [callOutput, frHexToAlignedValue(sealed.commCommRand)],
+    claimProgram: kernelClaimContractCallProgram(sealed.calleeAddress, sealed.calleeCircuitId, sealed.commComm),
+  };
+};
+
 /** Compute, but do not apply, a returned call's communication and claim data. */
 export const prepareCallProofBinding = (
   calleeAddress: ocrt.ContractAddress,
@@ -181,21 +205,20 @@ export const prepareCallProofBinding = (
 export const assertPreparedCallProofBinding = (prepared: PreparedCallProofBinding): void => {
   const sealed = sealedBindings.get(prepared);
   if (
-    sealed === undefined ||
-    prepared.calleeAddress !== sealed.calleeAddress ||
-    prepared.calleeCircuitId !== sealed.calleeCircuitId ||
-    prepared.commCommData?.commComm !== sealed.commComm ||
-    prepared.commCommData?.commCommRand !== sealed.commCommRand ||
-    !sameTree(prepared.callInput, sealed.input) ||
-    !sameTree(prepared.callOutput, sealed.output) ||
-    !sameTree(prepared.privateTranscriptOutputs?.[0], sealed.output) ||
-    !sameTree(prepared.privateTranscriptOutputs?.[1], frHexToAlignedValue(sealed.commCommRand)) ||
-    !sameTree(
-      prepared.claimProgram,
-      kernelClaimContractCallProgram(sealed.calleeAddress, sealed.calleeCircuitId, sealed.commComm),
-    ) ||
-    ocrt.communicationCommitment(prepared.callInput, prepared.callOutput, sealed.commCommRand) !== sealed.commComm
+    !sealed ||
+    ocrt.communicationCommitment(sealed.input, sealed.output, sealed.commCommRand) !== sealed.commComm ||
+    !sameTree(prepared, materializeSealedBinding(sealed))
   ) {
     throw new CompactError('Prepared cross-contract proof binding changed after commitment');
   }
+};
+
+/** Validate and synchronously consume a fresh copy; no exposed object is trusted at commit. */
+export const withVerifiedCallProofBinding = (
+  prepared: PreparedCallProofBinding,
+  commit: (fresh: PreparedCallProofBinding) => void,
+): void => {
+  assertPreparedCallProofBinding(prepared);
+  const sealed = sealedBindings.get(prepared)!;
+  commit(materializeSealedBinding(sealed));
 };
