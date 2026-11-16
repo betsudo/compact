@@ -192,6 +192,52 @@
             checkPhase = "";
           });
 
+          # The pinned root test host invokes these fixtures without compilerArgs.
+          # Keep the compiler's legacy default and its explicit v3 refusals;
+          # select v3 only for these byte-exact upstream compile-pass cases.
+          packages.compactc-test-contracts = pkgs.writeShellScriptBin "compactc" ''
+            compiler=${packages.compactc}/bin/compactc
+            for arg in "$@"; do
+              case "$arg" in
+                --target|--target=*) exec "$compiler" "$@" ;;
+              esac
+            done
+            for arg in "$@"; do
+              expected=
+              case "$arg" in
+                */test-contracts/stdlib/curve25519/base/roundtrip/curve25519_base_roundtrip.compact)
+                  expected=4cb617334d5ab3fd810968345cd7e564be9d9ad6c0e7616e1b2fe13fe8ab38c8
+                  ;;
+                */test-contracts/stdlib/curve25519/scalar/roundtrip/curve25519_scalar_roundtrip.compact)
+                  expected=7e3b76271c55a71e492941398837427309d54cb32d0b33ef4660c2c6e3999c4a
+                  ;;
+                */test-contracts/stdlib/curve25519/default/maybe_either/curve25519_default_maybe_either.compact)
+                  expected=d753887f22666a4e58ed472e282ea9d0051376230ae439ea2772824de86d279a
+                  ;;
+                */test-contracts/stdlib/curve25519/verify/curve25519_verify.compact)
+                  expected=0208874ed5764915789f0d19d5892cd346b836d9d304f2d6e899b0c674a040c1
+                  ;;
+                */test-contracts/stdlib/foreign_field/self_subtract/foreign_field_self_subtract.compact)
+                  expected=5a3322fc1c889390fd3a620dd905e01c96bb81808af0e7ef587ab4f5f598c26a
+                  ;;
+              esac
+              if [ -n "$expected" ]; then
+                if ! { [ "$#" -eq 2 ] && [ "$1" = "$arg" ]; } &&
+                   ! { [ "$#" -eq 3 ] && [ "$1" = --skip-zk ] && [ "$2" = "$arg" ]; }; then
+                  echo "compactc-test-contracts: unexpected arguments for pinned fixture" >&2
+                  exit 1
+                fi
+                digest=$(${pkgs.coreutils}/bin/sha256sum "$arg" | ${pkgs.coreutils}/bin/cut -d ' ' -f 1)
+                if [ "$digest" != "$expected" ]; then
+                  echo "compactc-test-contracts: pinned fixture hash changed" >&2
+                  exit 1
+                fi
+                exec "$compiler" --feature-zkir-v3 "$@"
+              fi
+            done
+            exec "$compiler" "$@"
+          '';
+
           packages.compact-rust-cli = rust-cli-platform.buildRustPackage ({
             pname = "compact-rust-cli";
             version = "0.2.0";
