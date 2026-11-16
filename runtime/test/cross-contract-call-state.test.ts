@@ -271,6 +271,64 @@ describe('internal Ledger 9 call state', () => {
     expect(getContractState).toHaveBeenCalledTimes(1);
   });
 
+  test('abort restores in-place VM, gas, and provider balance writes through original aliases', async () => {
+    const { calls, root, callee } = setup();
+    const providerBalance = callee.balance;
+    Object.defineProperty(callee, 'balance', { value: providerBalance, writable: true, configurable: true });
+    const first = await calls.begin(request(B));
+    first.end();
+    const query = calls.queryContextFor(B)!;
+    // Current wasm accessors return fresh values; emulate a generated VM that
+    // exposes mutable own cells so the rollback boundary must restore aliases.
+    Object.defineProperties(query, {
+      effects: { value: query.effects, writable: true, configurable: true },
+      block: { value: query.block, writable: true, configurable: true },
+      comIndices: { value: query.comIndices, writable: true, configurable: true },
+    });
+    const effects = query.effects;
+    const block = query.block;
+    const balance = block.balance;
+    const nullifiers = effects.claimedNullifiers;
+    const mints = effects.shieldedMints;
+    const indices = query.comIndices;
+    const gas = calls.gasCostFor(B)!;
+    const rootBalance = calls.queryContextFor(A)!.block.balance;
+    expect(rootBalance).not.toBe(root.balance);
+    expect(balance).not.toBe(callee.balance);
+    nullifiers.push('aa'.repeat(32));
+    mints.set('bb'.repeat(32), 2n);
+    balance.set('cc'.repeat(32), 3n);
+    indices.set('dd'.repeat(32), 4n);
+    gas.readTime = 5n;
+    const second = await calls.begin(request(B));
+    // A cached callee is reset for the call, but all earlier aliases must be
+    // restored if that call fails after a generated VM or provider mutation.
+    second.queryContext.effects.claimedNullifiers.push('ee'.repeat(32));
+    second.queryContext.effects.shieldedMints.set('ff'.repeat(32), 7n);
+    second.queryContext.block.balance.set('11'.repeat(32), 8n);
+    second.queryContext.comIndices.set('22'.repeat(32), 9n);
+    second.gasCost.readTime = 12n;
+    callee.balance.set('33'.repeat(32), 10n);
+    second.abort();
+    expect(query.effects).toBe(effects);
+    expect(query.block).toBe(block);
+    expect(effects.claimedNullifiers).toBe(nullifiers);
+    expect(effects.shieldedMints).toBe(mints);
+    expect(block.balance).toBe(balance);
+    expect(query.comIndices).toBe(indices);
+    expect(calls.gasCostFor(B)).toBe(gas);
+    expect(nullifiers).toEqual(['aa'.repeat(32)]);
+    expect(mints.get('bb'.repeat(32))).toBe(2n);
+    expect(mints.has('ff'.repeat(32))).toBe(false);
+    expect(balance.get('cc'.repeat(32))).toBe(3n);
+    expect(balance.has('11'.repeat(32))).toBe(false);
+    expect(indices.get('dd'.repeat(32))).toBe(4n);
+    expect(indices.has('22'.repeat(32))).toBe(false);
+    expect(gas.readTime).toBe(5n);
+    expect(callee.balance.has('33'.repeat(32))).toBe(false);
+    expect(callee.balance).toBe(providerBalance);
+  });
+
   test('aborting a parent rolls back a completed nested call and its cached effects', async () => {
     const { calls, getContractState } = setup();
     const seededC = await calls.begin(request(C));
@@ -333,6 +391,40 @@ describe('internal Ledger 9 call state', () => {
     expect(race.currentAddress).toBe(A);
     expect(race.queryContextFor(B)).toBeUndefined();
     expect(race.queryContextFor(C)).toBeUndefined();
+  });
+
+  test('the call-state transaction owner unwinds nested work after a callback failure', async () => {
+    const { calls, callee } = setup();
+    const rootQuery = calls.queryContextFor(A);
+    const before = callee.serialize();
+    await expect(
+      calls.transact(request(B), async (b) => {
+        expect('end' in b).toBe(false);
+        expect('abort' in b).toBe(false);
+        expect('deployedState' in b).toBe(false);
+        expect('module' in b).toBe(false);
+        const c = await calls.begin(request(C));
+        b.queryContext.block.balance.set('aa'.repeat(32), 7n);
+        c.queryContext.effects = { ...c.queryContext.effects, claimedNullifiers: ['bb'.repeat(32)] };
+        throw new Error('generated VM failed after nested entry');
+      }),
+    ).rejects.toThrow('generated VM failed after nested entry');
+    expect(calls.currentAddress).toBe(A);
+    expect(calls.isActive(B)).toBe(false);
+    expect(calls.isActive(C)).toBe(false);
+    expect(calls.queryContextFor(A)).toBe(rootQuery);
+    expect(calls.queryContextFor(B)).toBeUndefined();
+    expect(calls.queryContextFor(C)).toBeUndefined();
+    expect(callee.serialize()).toEqual(before);
+  });
+
+  test('the call-state transaction owner commits a completed leaf and releases re-entry', async () => {
+    const { calls } = setup();
+    const result = await calls.transact(request(B), async (call) => call.calleeAddress);
+    expect(result).toBe(B);
+    expect(calls.queryContextFor(B)).toBeDefined();
+    expect(calls.currentAddress).toBe(A);
+    expect(calls.isActive(B)).toBe(false);
   });
 
   test('aborting state and discarding a copied trace leave the original EntryPoint caller intact', async () => {

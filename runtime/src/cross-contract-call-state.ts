@@ -62,6 +62,9 @@ export type ActiveCall = Readonly<{
   abort(): void;
 }>;
 
+/** The state callback cannot finish the handle or mutate provider-owned objects. */
+export type ActiveCallView = Pick<ActiveCall, 'callerAddress' | 'calleeAddress' | 'calleeCircuitId' | 'queryContext' | 'gasCost'>;
+
 type RollbackSnapshot = {
   readonly queryContexts: Map<ocrt.ContractAddress, ocrt.QueryContext>;
   readonly gasCosts: Map<ocrt.ContractAddress, ocrt.RunningCost>;
@@ -71,6 +74,17 @@ type RollbackSnapshot = {
     readonly context: ocrt.QueryContext;
     readonly block: ocrt.CallContext;
     readonly effects: ocrt.Effects;
+    readonly restoreBlock: () => void;
+    readonly restoreEffects: () => void;
+    readonly restoreCommitmentIndices: () => void;
+  }>;
+  readonly gasFields: ReadonlyArray<() => void>;
+  readonly stateFields: ReadonlyArray<{
+    readonly state: ocrt.ContractState;
+    readonly balance: ocrt.ContractState['balance'];
+    readonly data: ocrt.ContractState['data'];
+    readonly maintenanceAuthority: ocrt.ContractState['maintenanceAuthority'];
+    readonly restoreBalance: () => void;
   }>;
 };
 
@@ -91,6 +105,61 @@ const emptyEffects = (): ocrt.Effects => ({
   unshieldedOutputs: new Map(),
   claimedUnshieldedSpends: new Map(),
 });
+
+/** Keep the original mutable containers and restore their contents on abort. */
+const snapshotMutable = (value: unknown, seen = new WeakSet<object>()): (() => void) => {
+  if (value === null || typeof value !== 'object') return () => {};
+  if (seen.has(value)) throw new CompactError('Cannot snapshot a cyclic call-state container');
+  seen.add(value);
+  if (value instanceof Uint8Array) {
+    const bytes = Uint8Array.from(value);
+    return () => Uint8Array.prototype.set.call(value, bytes);
+  }
+  if (value instanceof Map) {
+    const entries = Array.from(value, ([key, item]) => ({
+      key,
+      item,
+      restoreKey: snapshotMutable(key, seen),
+      restoreItem: snapshotMutable(item, seen),
+    }));
+    return () => {
+      for (const entry of entries) {
+        entry.restoreKey();
+        entry.restoreItem();
+      }
+      value.clear();
+      for (const { key, item } of entries) value.set(key, item);
+    };
+  }
+  if (value instanceof Set) {
+    const entries = Array.from(value, (item) => ({ item, restore: snapshotMutable(item, seen) }));
+    return () => {
+      for (const entry of entries) entry.restore();
+      value.clear();
+      for (const { item } of entries) value.add(item);
+    };
+  }
+  if (!Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
+    throw new CompactError('Cannot snapshot an unfamiliar call-state container');
+  }
+  const descriptors = Object.getOwnPropertyDescriptors(value);
+  const entries = Reflect.ownKeys(descriptors).map((key) => {
+    const descriptor = descriptors[key as keyof typeof descriptors];
+    if (!('value' in descriptor)) throw new CompactError('Cannot snapshot an accessor call-state container');
+    return { key, descriptor, restore: snapshotMutable(descriptor.value, seen) };
+  });
+  return () => {
+    for (const entry of entries) entry.restore();
+    for (const key of Reflect.ownKeys(value)) {
+      if (!Object.prototype.hasOwnProperty.call(descriptors, key)) Reflect.deleteProperty(value, key);
+    }
+    // Restore array length before reintroducing any removed numeric indices.
+    if (Array.isArray(value)) value.length = descriptors.length.value as number;
+    for (const { key, descriptor } of entries) {
+      if (key !== 'length') Object.defineProperty(value, key, descriptor);
+    }
+  };
+};
 
 const assertAddress = (address: ocrt.ContractAddress): void => {
   if (!isContractAddress(address)) {
@@ -145,7 +214,7 @@ export class InternalCrossContractCallState {
     queryContext.block = {
       ...queryContext.block,
       ownAddress: entryAddress,
-      balance: entryState.balance,
+      balance: new Map(entryState.balance),
       parentBlockHash,
       secondsSinceEpoch: BigInt(time),
     };
@@ -178,6 +247,41 @@ export class InternalCrossContractCallState {
 
   deployedStateFor(address: ocrt.ContractAddress): ocrt.ContractState | undefined {
     return this.#deployedStates.get(address);
+  }
+
+  /**
+   * Own the call-state half of one execution. A thrown state callback unwinds
+   * nested frames before restoring this call's query, gas, and balance cells.
+   * The generated circuit context and transcript need their own owner before
+   * this can be used as a public cross-contract call.
+   */
+  async transact<T>(request: InternalCallRequest, execute: (call: ActiveCallView) => Promise<T>): Promise<T> {
+    const call = await this.begin(request);
+    const view: ActiveCallView = Object.freeze({
+      callerAddress: call.callerAddress,
+      calleeAddress: call.calleeAddress,
+      calleeCircuitId: call.calleeCircuitId,
+      get queryContext() {
+        return call.queryContext;
+      },
+      get gasCost() {
+        return call.gasCost;
+      },
+    });
+    try {
+      const result = await execute(view);
+      this.#assertTop(call);
+      call.end();
+      return result;
+    } catch (error) {
+      // A nested call may have entered before the failure. Its rollback must
+      // run first, even if the user callback did not get a chance to do so.
+      while (this.#frames.some((frame) => frame.call === call) && this.#frames[this.#frames.length - 1].call !== call) {
+        this.#frames[this.#frames.length - 1].call!.abort();
+      }
+      if (this.#frames[this.#frames.length - 1].call === call) call.abort();
+      throw error;
+    }
   }
 
   /** Resolve first, then enter. Re-entry is rejected before touching providers. */
@@ -225,6 +329,17 @@ export class InternalCrossContractCallState {
         context,
         block: context.block,
         effects: context.effects,
+        restoreBlock: snapshotMutable(context.block),
+        restoreEffects: snapshotMutable(context.effects),
+        restoreCommitmentIndices: snapshotMutable(context.comIndices),
+      })),
+      gasFields: Array.from(new Set(this.#gasCosts.values()), (cost) => snapshotMutable(cost)),
+      stateFields: Array.from(new Set([...this.#deployedStates.values(), prepared.deployedState]), (state) => ({
+        state,
+        balance: state.balance,
+        data: state.data,
+        maintenanceAuthority: state.maintenanceAuthority,
+        restoreBalance: snapshotMutable(state.balance),
       })),
     };
     let queryContext = this.#queryContexts.get(calleeAddress);
@@ -232,7 +347,7 @@ export class InternalCrossContractCallState {
       queryContext = new ocrt.QueryContext(prepared.deployedState.data, calleeAddress);
       queryContext.block = {
         ...queryContext.block,
-        balance: prepared.deployedState.balance,
+        balance: new Map(prepared.deployedState.balance),
         ownAddress: calleeAddress,
         secondsSinceEpoch: BigInt(snapshot.time),
         parentBlockHash: snapshot.parentBlockHash,
@@ -293,9 +408,19 @@ export class InternalCrossContractCallState {
     // not run assertPinnedContext before restoring the saved fields.
     this.#assertTopHandle(call);
     const rollback = this.#frames[this.#frames.length - 1].rollback!;
-    for (const { context, block, effects } of rollback.queryFields) {
+    for (const { context, block, effects, restoreBlock, restoreEffects, restoreCommitmentIndices } of rollback.queryFields) {
+      restoreBlock();
+      restoreEffects();
+      restoreCommitmentIndices();
       context.block = block;
       context.effects = effects;
+    }
+    for (const restore of rollback.gasFields) restore();
+    for (const { state, balance, data, maintenanceAuthority, restoreBalance } of rollback.stateFields) {
+      restoreBalance();
+      state.balance = balance;
+      state.data = data;
+      state.maintenanceAuthority = maintenanceAuthority;
     }
     this.#queryContexts.clear();
     for (const [address, context] of rollback.queryContexts) this.#queryContexts.set(address, context);
