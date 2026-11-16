@@ -267,11 +267,10 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(compact_import_ledger_field_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_bytes_indexed_access_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_BYTES_INDEXED_ACCESS_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_BYTES_INDEXED_ACCESS_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_BYTES_INDEXED_ACCESS_GENERATED")
-                .expect("complete pinned Bytes indexed access generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_BYTES_INDEXED_ACCESS_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_BYTES_INDEXED_ACCESS_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute Bytes indexed access root required"
@@ -292,11 +291,10 @@ fn main() {
         println!("cargo::rustc-cfg=compact_bytes_indexed_access_generated");
     }
     println!("cargo::rerun-if-env-changed=COMPACT_IMPORT_LEDGER_FIELD_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_IMPORT_LEDGER_FIELD_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_IMPORT_LEDGER_FIELD_GENERATED")
-                .expect("complete pinned import/ledger_field generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_IMPORT_LEDGER_FIELD_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_IMPORT_LEDGER_FIELD_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute import/ledger_field root required"
