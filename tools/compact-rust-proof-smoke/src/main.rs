@@ -58,6 +58,19 @@ include!(concat!(
 #[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
 mod if_empty_else_proof;
 #[cfg(all(
+    feature = "if-branches-set-insert-proof",
+    compact_if_branches_set_insert_generated
+))]
+include!(concat!(
+    env!("COMPACT_IF_BRANCHES_SET_INSERT_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    feature = "if-branches-set-insert-proof",
+    compact_if_branches_set_insert_generated
+))]
+mod if_branches_set_insert_proof;
+#[cfg(all(
     feature = "for-generic-bound-proof",
     compact_for_generic_bound_generated
 ))]
