@@ -3,6 +3,17 @@
 # This file is part of Compact.
 # Copyright (C) 2026 Midnight Foundation
 # SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """Prove the pinned for/generic_bound export with a funded strict local call."""
 
@@ -25,7 +36,7 @@ import resolve_ledger_test_static as ledger_static
 
 ROOT = Path(__file__).resolve().parents[2]
 PROOF_BODY = ROOT / 'tools/compact-rust-proof-smoke/src/for_generic_bound_proof.rs'
-PROOF_BODY_SHA256 = '715a31326e61662cb6b5492706764b085b593211542d0df7f73db3eb2c5bb9aa'
+PROOF_BODY_SHA256 = 'ca60907993b2b9f9f2f4112eeb76549b703a805d9380761a5fc80136292c4a94'
 GENERIC = 'for_generic_bound'
 WRONG = 'for_zero_iteration'
 
