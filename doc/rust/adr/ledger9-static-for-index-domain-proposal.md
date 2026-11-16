@@ -71,6 +71,7 @@ The bounded original case is locally compatible under the recorded Darwin eviden
 ## Tracking
 
 - Focused implementation: [betsudo/compact #750](https://github.com/betsudo/compact/issues/750).
+- Related bounded follow-ups: [#753](https://github.com/betsudo/compact/issues/753) certifies a static index domain carried through an immutable `Bytes` binding; [#754](https://github.com/betsudo/compact/issues/754) covers the ten-step slow reconstruction beyond this proposal's eight-item dispatch cap.
 - Coverage and compiler owners: [#727](https://github.com/betsudo/compact/issues/727), [#728](https://github.com/betsudo/compact/issues/728); native integration: [#732](https://github.com/betsudo/compact/issues/732).
 - Pinned upstream fixture: [source](https://github.com/LFDT-Minokawa/compact/blob/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/keywords/for/generic_bound/for_generic_bound.compact), [original assertion](https://github.com/LFDT-Minokawa/compact/blob/672bd0f226f47a7d036c5c074ce71fbe1af1925e/test-contracts/keywords/for/generic_bound/runtime.pass.test.ts).
 - Language authority: [Compact reference, `for` statements](https://docs.midnight.network/compact/reference/compact-reference#for-statements), [generic bounds release note](https://github.com/midnightntwrk/compact/releases/tag/compactc-v0.31.0).
