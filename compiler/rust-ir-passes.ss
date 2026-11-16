@@ -967,9 +967,11 @@
                   (cons "start" start)
                   (cons "length" length))))
 
-      (define (bytes-ref-ir src type value index lower)
+      (define (bytes-ref-ir original src type value index lower)
         (let ([width (bytes-carrier-width type)]
-              [position (maybe-nonnegative-integer-literal index src)])
+              [position (or (maybe-nonnegative-integer-literal index src)
+                            (and (eq? (rust-vector-index-guard-state original) 'safe)
+                                 (rust-vector-index original)))])
           (unless width
             (source-errorf src "Rust backend requires a Bytes indexing operand"))
           (unless position
@@ -1277,8 +1279,11 @@
                    (cons "length" len))]
           [(bytes-slice ,src ,type ,expr ,index ,len)
            (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
-          [(bytes-ref ,src ,type ,expr ,index)
-           (bytes-ref-ir src type expr index (lambda (value) (expression-ir value src)))]
+          [(bytes-ref ,src ,type ,expr^ ,index)
+           ;; The outer expr is the exact analyzed Bytes-ref occurrence. The
+           ;; operand is a distinct child and must not shadow that identity.
+           (bytes-ref-ir expr src type expr^ index
+             (lambda (operand) (expression-ir operand src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (expression-ir value src)))]
           [(field->bytes ,src ,len ,expr)
@@ -1880,7 +1885,13 @@
 
       (define (rust-function-name function-name)
         (or (eq-hashtable-ref function-rust-names function-name #f)
-            (symbol->string (id-sym function-name))))
+            (let ([name (id-sym function-name)])
+              ;; Compact permits an import alias named _, but Rust reserves
+              ;; that spelling for a pattern. Keep its lexical identity in
+              ;; the source ID and give only the private Rust binding a name.
+              (if (eq? name '_)
+                  (format "__compact_function_underscore_~a" (id-uniq function-name))
+                  (symbol->string name)))))
 
       (define (index-function-names pelt*)
         (let ([counts (make-eq-hashtable)])
@@ -1905,10 +1916,25 @@
             pelt*)))
 
       (define (exported-names function-name export-alist)
+        (define (rust-export-name source-name)
+          (if (eq? source-name '_)
+              ;; The public Rust method cannot be spelled _. Avoid aliases
+              ;; already exported by this source, including a user's chosen
+              ;; spelling of the fallback itself.
+              (let loop ([suffix 0])
+                (let ([candidate (if (= suffix 0)
+                                     "__compact_export_underscore"
+                                     (format "__compact_export_underscore_~a" suffix))])
+                  (if (ormap (lambda (entry)
+                               (string=? candidate (symbol->string (car entry))))
+                             export-alist)
+                      (loop (+ suffix 1))
+                      candidate)))
+              (symbol->string source-name)))
         (fold-right
           (lambda (entry names)
             (if (eq? (cdr entry) function-name)
-                (cons (symbol->string (car entry)) names)
+                (cons (rust-export-name (car entry)) names)
                 names))
           '()
           export-alist))
@@ -2044,7 +2070,12 @@
                         (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-index*))
              (source-errorf src "Rust backend requires an array-index ledger path"))
            (with-source src
-             (nanopass-case (Lnodisclose Type) type
+             (let unwrap-alias ([type type])
+               (nanopass-case (Lnodisclose Type) type
+             [(talias ,src^ ,nominal? ,type-name ,type^)
+              ;; Ledger ADT operations survive a Compact `new type` alias.
+              ;; The generated storage carrier already erases that wrapper.
+              (unwrap-alias type^)]
              [(tadt ,src^ ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
               (cond
                 [(eq? adt-name 'Counter)
@@ -2092,7 +2123,7 @@
                                        (cons "depth" (car adt-arg*))
                                        (cons "ty" (type-ir (cadr adt-arg*) src)))))]
                 [else (source-errorf src "Rust backend does not yet support this ledger ADT")])]
-             [else (source-errorf src "Rust backend does not yet support this ledger field type")]))]
+             [else (source-errorf src "Rust backend does not yet support this ledger field type")])))]
           [else (source-errorf owner-src "Rust backend does not yet support this ledger field shape")]))
 
       (define (ledger-array-ir pl-array owner-src)
@@ -3424,7 +3455,7 @@
            (bytes-slice-ir src expr index len
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(bytes-ref ,src ,type ,expr ,index)
-           (bytes-ref-ir src type expr index
+           (bytes-ref-ir value-expr src type expr index
              (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (bytes-cast-ir src type len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]

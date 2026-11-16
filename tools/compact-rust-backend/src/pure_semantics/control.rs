@@ -19,7 +19,7 @@ use super::{
     carrier::fold_carrier,
     children::Children,
     declarations::PureDeclarations,
-    identifier::check_name,
+    identifier::check_local_name,
     scope::{LocalScope, TypeBoundsSession},
     sink::{ExpressionSink, Typed},
     visitor::ExpressionVisitor,
@@ -202,7 +202,7 @@ where
     let mut scope = LocalScope::new(outer);
     let mut checked = Vec::new();
     for binding in bindings {
-        let name = check_name(&binding.name)?;
+        let name = check_local_name(&binding.name)?;
         let value =
             ExpressionVisitor::new(scope.bindings(), declarations).visit(&binding.value, sink)?;
         if value.ty != binding.ty {

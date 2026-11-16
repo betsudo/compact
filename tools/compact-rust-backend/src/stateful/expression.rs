@@ -246,7 +246,7 @@ fn render_control_expression(
             let mut locals = parameters.clone();
             let mut effect = false;
             for binding in bindings {
-                ident(&binding.name)?;
+                crate::pure_semantics::identifier::check_local_name(&binding.name)?;
                 let (rendered, actual, binding_effect) = render_state_expression_observed(
                     &binding.value,
                     &locals,

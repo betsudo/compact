@@ -191,6 +191,24 @@
        (Expression expr)
        (Expression index)
        ir]
+      ;; Bytes share the circuit evaluator's constant-index rule. Collect the
+      ;; original occurrence before lowering so a circuit observation cannot
+      ;; be borrowed by a different ref with the same source coordinates.
+      [(bytes-ref ,src ,type ,expr ,index)
+       (let ([by-source (vector-ref (collecting) 0)]
+             [by-node (vector-ref (collecting) 1)])
+         (when (source-object? src)
+           (eq-hashtable-set! by-source src
+             (if (eq-hashtable-contains? by-source src) 'ambiguous ir)))
+         (when (constant-shaped? index)
+           (eq-hashtable-set! by-node ir 'unobserved)
+           (parameterize ([index-guards '()])
+             (collect-index-guards index)
+             (eq-hashtable-set! (vector-ref (collecting) 2) ir
+               (reverse (index-guards))))))
+       (Expression expr)
+       (Expression index)
+       ir]
       ;; Every admitted Vector slice is checked by the circuit constant
       ;; evaluator. Track the original node independently of source coordinates
       ;; so an unrelated or duplicated occurrence cannot lend its result.

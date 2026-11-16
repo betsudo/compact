@@ -71,6 +71,20 @@ pub(crate) fn check_name(name: &str) -> Result<CheckedName, RenderError> {
         .ok_or_else(|| RenderError::InvalidIdentifier(name.to_owned()))
 }
 
+/// Compact admits `_` as a *local* binding that may be referenced. Rust uses
+/// `_` only as a discard pattern, so the local allocator gives it a private
+/// Rust name. Keep the ordinary identifier policy for parameters and headers.
+pub(crate) fn check_local_name(name: &str) -> Result<CheckedName, RenderError> {
+    if name == "_" {
+        Ok(CheckedName {
+            text: "_".to_owned(),
+            raw: false,
+        })
+    } else {
+        check_name(name)
+    }
+}
+
 fn parse_identifier(input: &str) -> Option<(&str, bool)> {
     // The pinned token-stream lexer strips exactly one initial byte-order mark.
     let input = input.strip_prefix('\u{feff}').unwrap_or(input);
