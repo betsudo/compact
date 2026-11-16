@@ -10,6 +10,7 @@ import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import { describe, expect, test } from 'vitest';
 import { CompactTypeField } from '../src/compact-types.js';
 import {
+  assertPreparedCallProofBinding,
   frHexToAlignedValue,
   kernelClaimContractCallProgram,
   prepareCallProofBinding,
@@ -53,7 +54,9 @@ describe('internal call proof binding', () => {
       commComm: ocrt.communicationCommitment(input, output, randomness),
       commCommRand: randomness,
     });
-    expect(binding.privateTranscriptOutputs[0]).toBe(output);
+    expect(binding.privateTranscriptOutputs[0]).toEqual(output);
+    expect(binding.privateTranscriptOutputs[0]).not.toBe(output);
+    expect(() => assertPreparedCallProofBinding(binding)).not.toThrow();
     expect(binding.privateTranscriptOutputs[1]).toEqual(frHexToAlignedValue(randomness));
     expect(binding.claimProgram.map((op) => (typeof op === 'string' ? op : Object.keys(op)[0]))).toEqual([
       'swap',
@@ -96,7 +99,8 @@ describe('internal call proof binding', () => {
     const changed = { value: [Uint8Array.of(5)], alignment: CompactTypeField.alignment() };
     const changedBinding = prepareCallProofBinding(address, 'transfer', input, changed, randomness);
     expect(binding.privateTranscriptOutputs).toHaveLength(2);
-    expect(binding.privateTranscriptOutputs[0]).toBe(output);
+    expect(binding.privateTranscriptOutputs[0]).toEqual(output);
+    expect(binding.privateTranscriptOutputs[0]).not.toBe(output);
     expect(binding.privateTranscriptOutputs[1]).toEqual(frHexToAlignedValue(randomness));
     expect(changedBinding.commCommData.commComm).not.toBe(binding.commCommData.commComm);
     expect(input.value[0]).toEqual(Uint8Array.of(3));
@@ -110,6 +114,42 @@ describe('internal call proof binding', () => {
     expect(() => frHexToAlignedValue('1')).toThrow(/Fr hex/);
     expect(() => kernelClaimContractCallProgram(address, 'transfer', 'zz')).toThrow(/Fr hex/);
     expect(() => prepareCallProofBinding(address, 'transfer', input, output, 'zz')).toThrow();
+  });
+
+  test('mutating source values after preparation cannot change the committed snapshots', () => {
+    const sourceInput = { value: [Uint8Array.of(3)], alignment: CompactTypeField.alignment() };
+    const sourceOutput = { value: [Uint8Array.of(4)], alignment: CompactTypeField.alignment() };
+    const randomness = ocrt.communicationCommitmentRandomness();
+    const binding = prepareCallProofBinding(ocrt.sampleContractAddress(), 'transfer', sourceInput, sourceOutput, randomness);
+    const committed = binding.commCommData.commComm;
+    sourceInput.value[0][0] = 8;
+    sourceOutput.value[0][0] = 9;
+    sourceOutput.alignment[0] = { tag: 'atom', value: { tag: 'bytes', length: 1 } };
+    expect(binding.callInput.value[0]).toEqual(Uint8Array.of(3));
+    expect(binding.callOutput.value[0]).toEqual(Uint8Array.of(4));
+    expect(binding.privateTranscriptOutputs[0]).toBe(binding.callOutput);
+    expect(binding.callOutput.alignment).toEqual(CompactTypeField.alignment());
+    expect(binding.commCommData.commComm).toBe(committed);
+    expect(() => assertPreparedCallProofBinding(binding)).not.toThrow();
+  });
+
+  test('mutating returned output, randomness, identity, claim cell or opcode refuses before commit', () => {
+    const fresh = () => prepareCallProofBinding(ocrt.sampleContractAddress(), 'transfer', input, output);
+    const changedOutput = fresh();
+    changedOutput.privateTranscriptOutputs[0].value[0][0] ^= 1;
+    expect(() => assertPreparedCallProofBinding(changedOutput)).toThrow(/changed after commitment/);
+    const changedRandomness = fresh();
+    changedRandomness.privateTranscriptOutputs[1].value[0][0] ^= 1;
+    expect(() => assertPreparedCallProofBinding(changedRandomness)).toThrow(/changed after commitment/);
+    const changedIdentity = fresh();
+    Object.assign(changedIdentity, { calleeCircuitId: 'decoy' });
+    expect(() => assertPreparedCallProofBinding(changedIdentity)).toThrow(/changed after commitment/);
+    const changedCell = fresh();
+    changedCell.claimProgram[4] = { push: { storage: false, value: ocrt.StateValue.newNull().encode() } };
+    expect(() => assertPreparedCallProofBinding(changedCell)).toThrow(/changed after commitment/);
+    const changedOpcode = fresh();
+    changedOpcode.claimProgram[5] = { concat: { cached: true, n: 159 } };
+    expect(() => assertPreparedCallProofBinding(changedOpcode)).toThrow(/changed after commitment/);
   });
 
   test('the host Runtime public surface stays closed', () => {

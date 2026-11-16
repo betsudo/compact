@@ -18,6 +18,50 @@ import { fromHex } from './utils.js';
 const Bytes32Descriptor = new CompactTypeBytes(32);
 const KernelStateFieldIndexDescriptor = new CompactTypeUnsignedInteger(255n, 1);
 
+const copyAlignment = (alignment: ocrt.Alignment): ocrt.Alignment =>
+  alignment.map((segment) =>
+    segment.tag === 'atom'
+      ? { tag: 'atom', value: { ...segment.value } }
+      : { tag: 'option', value: segment.value.map(copyAlignment) },
+  );
+
+const copyAlignedValue = ({ value, alignment }: ocrt.AlignedValue): ocrt.AlignedValue => ({
+  value: value.map((bytes) => Uint8Array.from(bytes)),
+  alignment: copyAlignment(alignment),
+});
+
+const sameTree = (left: unknown, right: unknown): boolean => {
+  if (left instanceof Uint8Array || right instanceof Uint8Array) {
+    return (
+      left instanceof Uint8Array &&
+      right instanceof Uint8Array &&
+      left.length === right.length &&
+      left.every((byte, index) => byte === right[index])
+    );
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return (
+      Array.isArray(left) &&
+      Array.isArray(right) &&
+      left.length === right.length &&
+      left.every((value, index) => sameTree(value, right[index]))
+    );
+  }
+  if (left !== null && right !== null && typeof left === 'object' && typeof right === 'object') {
+    const leftRecord = left as Record<string, unknown>;
+    const rightRecord = right as Record<string, unknown>;
+    const leftKeys = Object.keys(leftRecord).sort();
+    const rightKeys = Object.keys(rightRecord).sort();
+    return (
+      sameTree(leftKeys, rightKeys) &&
+      leftKeys.every(
+        (key) => Object.prototype.hasOwnProperty.call(rightRecord, key) && sameTree(leftRecord[key], rightRecord[key]),
+      )
+    );
+  }
+  return left === right;
+};
+
 const bytes32Value = (bytes: Uint8Array): ocrt.AlignedValue => ({
   value: Bytes32Descriptor.toValue(bytes),
   alignment: Bytes32Descriptor.alignment(),
@@ -77,6 +121,10 @@ export const kernelClaimContractCallProgram = (
 ];
 
 export interface PreparedCallProofBinding {
+  readonly calleeAddress: ocrt.ContractAddress;
+  readonly calleeCircuitId: string;
+  readonly callInput: ocrt.AlignedValue;
+  readonly callOutput: ocrt.AlignedValue;
   readonly commCommData: {
     readonly commComm: ocrt.CommunicationCommitment;
     readonly commCommRand: ocrt.CommunicationCommitmentRand;
@@ -86,6 +134,17 @@ export interface PreparedCallProofBinding {
   readonly claimProgram: ocrt.Op<null>[];
 }
 
+type SealedBinding = {
+  readonly calleeAddress: ocrt.ContractAddress;
+  readonly calleeCircuitId: string;
+  readonly input: ocrt.AlignedValue;
+  readonly output: ocrt.AlignedValue;
+  readonly commComm: ocrt.CommunicationCommitment;
+  readonly commCommRand: ocrt.CommunicationCommitmentRand;
+};
+
+const sealedBindings = new WeakMap<PreparedCallProofBinding, SealedBinding>();
+
 /** Compute, but do not apply, a returned call's communication and claim data. */
 export const prepareCallProofBinding = (
   calleeAddress: ocrt.ContractAddress,
@@ -94,11 +153,49 @@ export const prepareCallProofBinding = (
   output: ocrt.AlignedValue,
   randomness: ocrt.CommunicationCommitmentRand = ocrt.communicationCommitmentRandomness(),
 ): PreparedCallProofBinding => {
-  const commComm = ocrt.communicationCommitment(input, output, randomness);
+  const callInput = copyAlignedValue(input);
+  const callOutput = copyAlignedValue(output);
+  const commComm = ocrt.communicationCommitment(callInput, callOutput, randomness);
   const commCommRand = randomness;
-  return {
+  const prepared: PreparedCallProofBinding = {
+    calleeAddress,
+    calleeCircuitId,
+    callInput,
+    callOutput,
     commCommData: { commComm, commCommRand },
-    privateTranscriptOutputs: [output, frHexToAlignedValue(commCommRand)],
+    privateTranscriptOutputs: [callOutput, frHexToAlignedValue(commCommRand)],
     claimProgram: kernelClaimContractCallProgram(calleeAddress, calleeCircuitId, commComm),
   };
+  sealedBindings.set(prepared, {
+    calleeAddress,
+    calleeCircuitId,
+    input: copyAlignedValue(callInput),
+    output: copyAlignedValue(callOutput),
+    commComm,
+    commCommRand,
+  });
+  return prepared;
+};
+
+/** Validate every exposed mutable byte/operation before a future synchronous commit. */
+export const assertPreparedCallProofBinding = (prepared: PreparedCallProofBinding): void => {
+  const sealed = sealedBindings.get(prepared);
+  if (
+    sealed === undefined ||
+    prepared.calleeAddress !== sealed.calleeAddress ||
+    prepared.calleeCircuitId !== sealed.calleeCircuitId ||
+    prepared.commCommData?.commComm !== sealed.commComm ||
+    prepared.commCommData?.commCommRand !== sealed.commCommRand ||
+    !sameTree(prepared.callInput, sealed.input) ||
+    !sameTree(prepared.callOutput, sealed.output) ||
+    !sameTree(prepared.privateTranscriptOutputs?.[0], sealed.output) ||
+    !sameTree(prepared.privateTranscriptOutputs?.[1], frHexToAlignedValue(sealed.commCommRand)) ||
+    !sameTree(
+      prepared.claimProgram,
+      kernelClaimContractCallProgram(sealed.calleeAddress, sealed.calleeCircuitId, sealed.commComm),
+    ) ||
+    ocrt.communicationCommitment(prepared.callInput, prepared.callOutput, sealed.commCommRand) !== sealed.commComm
+  ) {
+    throw new CompactError('Prepared cross-contract proof binding changed after commitment');
+  }
 };
