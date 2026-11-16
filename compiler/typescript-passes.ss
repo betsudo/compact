@@ -1218,6 +1218,8 @@
               (newline)
               (display-string "export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;\n")
               (display-string "export declare const pureCircuits: PureCircuits;\n")
+              (when (emit-verifier-key-metadata)
+                (display-string "export declare const expectedVk: Record<string, string>;\n"))
               (display-string "export declare const circuitSignatures: __compactRuntime.CircuitSignatures;\n")
               (display-string "export declare const declaredInterfaces: __compactRuntime.DeclaredInterfaces;\n")
               ))))
@@ -2377,6 +2379,17 @@
             xpelt*)
           (display-string "};\n\n"))
 
+        (define (print-expected-vk)
+          (display-string "export const expectedVk = {\n")
+          (display-string "  __proto__: null,\n")
+          (for-each
+            (lambda (pair)
+              (printf "  ~a: ~a,\n"
+                (format-signature-key (car pair))
+                (format-javascript-string (cdr pair))))
+            (verifier-key-hashes))
+          (display-string "};\n\n"))
+
         (define (print-declared-interfaces contract-type*)
           (if (null? contract-type*)
               (display-string "export const declaredInterfaces = { __proto__: null };\n\n")
@@ -2400,6 +2413,8 @@
                 [(XPelt-type-definition src type-name export-name tvar-name* type)
                  (nanopass-case (Ltypescript Type) type
                    [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
+                    (when (and (emit-verifier-key-metadata) (eq? export-name 'expectedVk))
+                      (source-errorf src "exported enum name expectedVk conflicts with generated verifier metadata export"))
                     (when (eq? export-name 'circuitSignatures)
                       (source-errorf src "exported enum name circuitSignatures conflicts with generated circuit metadata export"))
                     (when (eq? export-name 'declaredInterfaces)
@@ -2587,6 +2602,7 @@
                 (print-exported-types xpelt*)
                 (print-contract-descriptors src descriptor-id* type*)
                 (print-contract-class src xpelt* uname*)
+                (when (emit-verifier-key-metadata) (print-expected-vk))
                 (print-circuit-signatures xpelt*)
                 (print-declared-interfaces contract-type*)
                 (for-each print-contract-reference-locations xpelt*)

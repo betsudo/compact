@@ -17,6 +17,7 @@
 
 (library (passes)
   (export generate-everything
+          collect-verifier-key-hashes
           pass-name-condition?
           condition-pass-name
           )
@@ -47,6 +48,19 @@
 
   (define zkir-warning-issued (make-parameter #f))
 
+  ;; The internal module probe fingerprints only compiled verifier bytes.
+  ;; Explicit --skip-zk carries no verifier agreement claim.
+  (define (collect-verifier-key-hashes output-directory-pathname proof-circuit-name* skip?)
+    (if skip?
+        '()
+        (map
+          (lambda (name)
+            (let ([pathname (format "~a/keys/~a.verifier" output-directory-pathname name)])
+              (unless (file-exists? pathname)
+                (external-errorf "missing compiled verifier key for ~s" name))
+              (cons (symbol->string name) (sha256-file pathname))))
+          proof-circuit-name*)))
+
   (define generate-everything
     (case-lambda
       [(pathname output-directory-pathname)
@@ -58,6 +72,8 @@
        (when test-hook (unless (procedure? test-hook) (internal-errorf 'generate-everything "invalid test-hook ~s" test-hook)))
        (when (and (skip-ts) (not (emit-rust-ir)))
          (external-errorf "--skip-ts requires --emit-rust-ir"))
+       (when (and (emit-verifier-key-metadata) (not (feature-zkir-v3)))
+         (external-errorf "internal verifier metadata requires ZKIR v3"))
        (parameterize ([source-directory (path-parent pathname)]
                       [source-file-name (path-last (path-root pathname))]
                       [target-directory output-directory-pathname]
@@ -184,7 +200,12 @@
                              '((contract.js . "contract/index.js")
                                (contract.d.ts . "contract/index.d.ts")
                                (contract.js.map . "contract/index.js.map"))
-                             (parameterize ([proof-circuit-names proof-circuit-name*])
+                             (parameterize ([proof-circuit-names proof-circuit-name*]
+                                            [verifier-key-hashes
+                                              (if (emit-verifier-key-metadata)
+                                                  (collect-verifier-key-hashes
+                                                    output-directory-pathname proof-circuit-name* (skip-zk))
+                                                  '())])
                                (run-passes typescript-passes analyzed-ir))))
                           (let ([manifest-pathname* created-file*])
                             (with-target-ports

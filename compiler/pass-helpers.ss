@@ -19,7 +19,7 @@
   (export target-ports get-target-port target-directory source-directory source-file-name
           find-source-pathname
           contract-ht contract-info-pathname
-          proof-circuit-names
+          proof-circuit-names verifier-key-hashes
           define-passes define-checker checkers
           passrec-name passrec-pass passrec-unparse passrec-pretty-formats)
   (import (except (chezscheme) errorf)
@@ -64,6 +64,7 @@
 
   (define contract-ht (make-parameter #f))
   (define proof-circuit-names (make-parameter '()))
+  (define verifier-key-hashes (make-parameter '()))
 
   (define-record-type passrec
     (nongenerative)
