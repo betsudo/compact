@@ -28,12 +28,32 @@ from check_upstream_ledger9_field_casts import require, sha256, source_state
 
 ROOT = Path(__file__).resolve().parents[2]
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
-FAMILIES = ('reserved', 'const', 'import', 'type', 'for', 'return', 'if')
+# Each tuple is (original files, compile pass, compile fail, runtime pass,
+# runtime fail). Count the pinned tree before staging so adding or dropping a
+# case cannot silently change the host's coverage claim.
+FAMILY_COUNTS = {
+    'reserved': (96, 0, 48, 0, 0),
+    'const': (57, 11, 12, 11, 0),
+    'import': (56, 11, 11, 11, 0),
+    'type': (43, 9, 8, 9, 0),
+    'for': (23, 3, 7, 3, 0),
+    'return': (35, 3, 13, 3, 0),
+    'if': (6, 2, 0, 2, 0),
+    'include': (26, 3, 4, 3, 0),
+    'prefix': (12, 2, 1, 2, 0),
+    'assert': (17, 5, 1, 3, 2),
+    'module': (20, 4, 4, 4, 0),
+    'export': (11, 1, 4, 1, 0),
+}
+FAMILIES = tuple(FAMILY_COUNTS)
 HOST = ('.gitignore', '.prettierignore', '.prettierrc.json', '.yarnrc.yml',
         'README.md', 'compact-test-fixture-reporter.ts',
         'compact-test-orchestrator.test.ts', 'compact-test-runner.ts',
         'compact-test.ts', 'package.json', 'test.sh', 'tsconfig.json',
         'types.ts', 'utils.ts', 'vitest.config.ts', 'yarn.lock')
+ORIGINAL_COUNT = len(HOST) + sum(row[0] for row in FAMILY_COUNTS.values())
+CASE_COUNT = sum(row[1] + row[2] for row in FAMILY_COUNTS.values())
+HOST_TEST_COUNT = sum(sum(row[1:]) for row in FAMILY_COUNTS.values())
 
 
 def pinned_bytes(name: str) -> bytes:
@@ -60,17 +80,28 @@ def main() -> None:
         names = subprocess.check_output(
             ['git', 'ls-tree', '-r', '--name-only', PINNED,
              f'test-contracts/keywords/{family}'], cwd=ROOT, text=True).splitlines()
+        observed = (len(names),) + tuple(
+            sum(Path(name).name == kind for name in names)
+            for kind in ('compile.pass.test.ts', 'compile.fail.test.ts',
+                         'runtime.pass.test.ts', 'runtime.fail.test.ts'))
+        require(observed == FAMILY_COUNTS[family],
+                f'pinned {family} host case/file roster changed: {observed}')
         filenames.update(names)
-    require(len(filenames) == len(HOST) + 316,
-            'pinned seven-family host roster changed')
+    require(len(filenames) == ORIGINAL_COUNT and CASE_COUNT == 167 and
+            HOST_TEST_COUNT == 221,
+            'pinned twelve-family host roster changed')
     tests = output / 'test-contracts'
     originals = {}
     for name in sorted(filenames):
         content = pinned_bytes(name)
         local = ROOT / name
-        if local.is_file():
+        if name.startswith('test-contracts/keywords/'):
+            require(local.is_file() and not local.is_symlink() and
+                    local.read_bytes() == content,
+                    f'pinned keyword original missing or changed: {name}')
+        elif local.is_file():
             require(not local.is_symlink() and local.read_bytes() == content,
-                    f'pinned original changed: {name}')
+                    f'pinned host original changed: {name}')
         destination = output / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(content)
@@ -98,7 +129,9 @@ def main() -> None:
             'pinned host bytes or source changed during staging')
     report = {**source, 'status': 'staged', 'upstream_commit': PINNED,
               'original_files': originals, 'original_count': len(originals),
-              'families': FAMILIES, 'runtime': str(runtime),
+              'families': FAMILIES, 'family_counts': FAMILY_COUNTS,
+              'case_count': CASE_COUNT, 'host_test_count': HOST_TEST_COUNT,
+              'runtime': str(runtime),
               'runtime_package_sha256': sha256(runtime / 'package.json'),
               'runtime_entry_sha256': sha256(entry),
               'adapter_sha256': sha256(adapter / 'index.js'),

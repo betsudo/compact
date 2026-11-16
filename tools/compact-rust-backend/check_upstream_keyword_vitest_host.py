@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Run all seven pinned keyword families through the original Vitest host."""
+"""Run all twelve pinned keyword families through the original Vitest host."""
 
 import argparse
 import json
@@ -27,7 +27,10 @@ import subprocess
 from check_upstream_ledger9_field_casts import (
     compiler_recipe_identity, require, sha256, source_state,
 )
-from stage_upstream_keyword_vitest_host import FAMILIES, HOST, PINNED, ROOT
+from stage_upstream_keyword_vitest_host import (
+    CASE_COUNT, FAMILIES, FAMILY_COUNTS, HOST_TEST_COUNT,
+    ORIGINAL_COUNT, PINNED, ROOT,
+)
 
 
 def run(command: list[str], cwd: Path, log: Path,
@@ -55,12 +58,16 @@ def main() -> None:
     require(staging['status'] == 'staged' and staging['head'] == source['head'] and
             staging['tree'] == source['tree'] and staging['upstream_commit'] == PINNED and
             tuple(staging['families']) == FAMILIES and
-            staging['original_count'] == len(HOST) + 316 and
+            {family: tuple(row) for family, row in
+             staging['family_counts'].items()} == FAMILY_COUNTS and
+            staging['original_count'] == ORIGINAL_COUNT and
+            staging['case_count'] == CASE_COUNT and
+            staging['host_test_count'] == HOST_TEST_COUNT and
             staging['stager_sha256'] == sha256(ROOT /
                 'tools/compact-rust-backend/stage_upstream_keyword_vitest_host.py'),
             'exact-head complete host staging receipt required')
     originals = staging['original_files']
-    require(len(originals) == len(HOST) + 316 and
+    require(len(originals) == ORIGINAL_COUNT and
             all(sha256(stage / name) == digest for name, digest in originals.items()),
             'byte-exact pinned original host files required')
     runtime = Path(staging['runtime']).resolve(strict=True)
@@ -91,8 +98,8 @@ def main() -> None:
     selected = [f'keywords/{family}' for family in FAMILIES]
     result = run(['node', 'compact-test-runner.ts', *selected,
                   '--maxWorkers=1'], tests, output / 'original-vitest.log', env)
-    require(re.search(r'Tests\s+177 passed \(177\)', result.stdout) is not None
-            and result.stdout.count('✓') == 177 and
+    require(re.search(r'Tests\s+221 passed \(221\)', result.stdout) is not None
+            and result.stdout.count('✓') == HOST_TEST_COUNT and
             re.search(r'Test Files\s+1 passed \(1\)', result.stdout) is not None,
             'original keyword host count changed')
     require(source_state() == source and
@@ -101,8 +108,12 @@ def main() -> None:
             compiler_recipe_identity(args.compiler_recipe, source, compiler,
                                      scheme) == recipe,
             'source, original host, adapter or compiler changed during Vitest')
-    counts = {'cases': 138, 'compile_pass': 39, 'compile_fail': 99,
-              'runtime_pass': 39, 'host_tests': 177}
+    counts = {'cases': CASE_COUNT,
+              'compile_pass': sum(row[1] for row in FAMILY_COUNTS.values()),
+              'compile_fail': sum(row[2] for row in FAMILY_COUNTS.values()),
+              'runtime_pass': sum(row[3] for row in FAMILY_COUNTS.values()),
+              'runtime_fail': sum(row[4] for row in FAMILY_COUNTS.values()),
+              'host_tests': HOST_TEST_COUNT}
     report = {**source, 'status': 'passed', 'upstream_commit': PINNED,
               'platform': os.uname().sysname + ' ' + os.uname().machine,
               'counts': counts, 'families': FAMILIES,
@@ -122,7 +133,7 @@ def main() -> None:
     (output / 'receipt.json').write_text(json.dumps(report, indent=2,
                                                    sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'],
-                      'cases': 138, 'host_tests': 177}))
+                      'cases': CASE_COUNT, 'host_tests': HOST_TEST_COUNT}))
 
 
 if __name__ == '__main__':
