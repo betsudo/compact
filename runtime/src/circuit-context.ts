@@ -25,6 +25,9 @@ import { PartialProofData, ProofData } from './proof-data.js';
 import { CompactError } from './error.js';
 import { CompactTypeBytes } from './compact-types.js';
 
+/** External circuit name used in generated module metadata. */
+export type CircuitId = string;
+
 /** A Ledger VM log with the address of the emitting contract. */
 export type LogEvent = Extract<ocrt.GatherResult, { tag: 'log' }>['content'] & {
   address: ocrt.ContractAddress;
