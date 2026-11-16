@@ -1036,6 +1036,11 @@
               (object (cons "kind" "coerce")
                       (cons "value" normalized) (cons "ty" (type-ir target src))))))
 
+      (define (vector-fold-source-ir src len expr source-type item-type)
+        (if (bytes-carrier-width source-type)
+            (unary-vector-map-source-ir src len expr source-type item-type)
+            (typed-expression-ir expr source-type src)))
+
       (define (multi-vector-map-ir src len arg* result-type body map-arg*)
         (unless (= (length arg*) (length map-arg*))
           (source-errorf src "Vector map argument count differs from its function arity"))
@@ -1330,7 +1335,7 @@
                  (object (cons "kind" "vector_fold_call")
                          (cons "name" (rust-function-name function-name))
                          (cons "initial" (typed-expression-ir expr0 type0 src))
-                         (cons "source" (typed-expression-ir expr1 type1 src))
+                         (cons "source" (vector-fold-source-ir src len expr1 type1 type2))
                          (cons "accumulator" (type-ir type0 src))
                          (cons "element" (type-ir type2 src))
                          (cons "length" len))])]
@@ -1359,7 +1364,7 @@
                                  (cons "accumulator" (argument-ir (car arg*) src))
                                  (cons "items" (vector (argument-ir (cadr arg*) src)))
                                  (cons "initial" (typed-expression-ir expr0 type0 src))
-                                 (cons "sources" (vector (typed-expression-ir expr1 type1 src)))
+                                 (cons "sources" (vector (vector-fold-source-ir src len expr1 type1 type2)))
                                  (cons "body"
                                        (object (cons "kind" "value")
                                                (cons "value" (typed-expression-ir expr type src))))
@@ -2163,6 +2168,28 @@
            (if (null? tuple-arg*)
                (object (cons "kind" "sequence") (cons "actions" (vector)))
                (source-errorf src "Rust backend does not support tuple values as state actions"))]
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (if (= len 0)
+               ;; The reducer is unreachable, but the initial value and each
+               ;; iterable still evaluate in Fold operand order.
+               (object (cons "kind" "sequence")
+                       (cons "actions"
+                             (list->vector
+                               (cons
+                                 (object (cons "kind" "expression")
+                                         (cons "value"
+                                               (stateful-typed-expression-ir
+                                                 expr0 type0 src witness-ids)))
+                                 (map (lambda (arg)
+                                        (nanopass-case (Lnodisclose Map-Argument) arg
+                                          [(,expr ,type1 ,type2)
+                                           (object (cons "kind" "expression")
+                                                   (cons "value"
+                                                         (stateful-typed-expression-ir
+                                                           expr type1 src witness-ids)))]))
+                                      (cons map-arg map-arg*))))))
+               (object (cons "kind" "expression")
+                       (cons "value" (stateful-expression-ir action src witness-ids))))]
           [(seq ,src ,expr* ... ,expr)
            (object (cons "kind" "sequence")
                    (cons "actions"
@@ -2908,6 +2935,20 @@
       (define (stateful-fold-ir src len fun expr0 type0 map-args witness-ids)
         (define (formal name type)
           (object (cons "name" name) (cons "ty" (type-ir type src))))
+        (define (source-ir expr source-type item-type)
+          (let* ([bytes? (bytes-carrier-width source-type)]
+                 [value (stateful-typed-expression-ir expr source-type src witness-ids)])
+            (if (not bytes?)
+                value
+                (let* ([decoded (object (cons "kind" "bytes_to_vector")
+                                        (cons "value" value) (cons "length" len))]
+                       [carrier (byte-vector-type src len)]
+                       [target (with-output-language (Lnodisclose Type)
+                                 `(tvector ,src ,len ,item-type))])
+                  (if (equal? (type-ir carrier src) (type-ir target src))
+                      decoded
+                      (object (cons "kind" "coerce")
+                              (cons "value" decoded) (cons "ty" (type-ir target src))))))))
         (define (emit formals body-ir)
           (unless (= (length formals) (+ 1 (length map-args)))
             (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
@@ -2916,7 +2957,7 @@
                    (map (lambda (arg)
                           (nanopass-case (Lnodisclose Map-Argument) arg
                             [(,expr ,type1 ,type2)
-                             (stateful-typed-expression-ir expr type1 src witness-ids)])) map-args)]
+                             (source-ir expr type1 type2)])) map-args)]
                  [reducer-ir (body-ir)])
             (object (cons "kind" "vector_fold")
                     (cons "accumulator" (car formals))

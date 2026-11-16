@@ -19,7 +19,11 @@
 //! program and checks it against the fixture's known ZKIR encoding. The call
 //! commitment uses the value-field encoding from ledger-8's Intent::add_call.
 //! Deployment combines the generated constructor state with the emitted key.
-#![cfg_attr(feature = "bytes-equality-proof", allow(clippy::bool_comparison))]
+// Both pinned originals assert `== true`; preserve generated Rust unchanged.
+#![cfg_attr(
+    any(feature = "bytes-equality-proof", feature = "bytes-fold-boolean-proof"),
+    allow(clippy::bool_comparison)
+)]
 
 mod adt_list_bytes;
 mod adt_list_enum;
@@ -56,6 +60,50 @@ include!(concat!(
     compact_bytes_remaining_proof_generated
 ))]
 mod bytes_remaining_proof;
+#[cfg(all(
+    any(
+        feature = "bytes-fold-boolean-proof",
+        feature = "bytes-loop-empty-proof"
+    ),
+    compact_bytes_next_proof_generated
+))]
+include!(concat!(
+    env!("COMPACT_BYTES_NEXT_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    any(
+        feature = "bytes-fold-boolean-proof",
+        feature = "bytes-loop-empty-proof"
+    ),
+    compact_bytes_next_proof_generated
+))]
+mod bytes_next_proof;
+#[cfg(all(
+    any(
+        feature = "bytes-fold-conditional-proof",
+        feature = "bytes-fold-summation-proof",
+        feature = "bytes-loop-spread-proof",
+        feature = "bytes-loop-iteration-proof",
+        feature = "bytes-manual-update-proof"
+    ),
+    compact_bytes_next_remaining_proof_generated
+))]
+include!(concat!(
+    env!("COMPACT_BYTES_NEXT_REMAINING_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    any(
+        feature = "bytes-fold-conditional-proof",
+        feature = "bytes-fold-summation-proof",
+        feature = "bytes-loop-spread-proof",
+        feature = "bytes-loop-iteration-proof",
+        feature = "bytes-manual-update-proof"
+    ),
+    compact_bytes_next_remaining_proof_generated
+))]
+mod bytes_next_remaining_proof;
 #[cfg(feature = "component-product-vector-models")]
 mod component_product_vector_models;
 #[cfg(all(

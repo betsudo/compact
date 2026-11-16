@@ -1,0 +1,14 @@
+{
+  "files": {
+    "test-contracts/primitives/bytes/loops/empty_iteration/bytes_loop_empty_iteration.compact": "d9a59db10c0b592f5f69c9e88f68889ee413482707ee23c91d504ca4f2d35990",
+    "test-contracts/primitives/bytes/loops/empty_iteration/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/loops/empty_iteration/runtime.pass.test.ts": "2cca165e59299b2dd7cecb9e747b21be9d6fb03c7842576683701d14460a5ad3",
+    "test-contracts/primitives/bytes/loops/iteration/bytes_loop_iteration.compact": "da0ba62bfaa0cffaf131e13f7a2cf569799b1fa9b940d767680701302b663b5b",
+    "test-contracts/primitives/bytes/loops/iteration/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/loops/iteration/runtime.pass.test.ts": "264b7567a871a5cf3292daf60b413d0e195a51916ad3d3da771d7e9f6daf85d1",
+    "test-contracts/primitives/bytes/loops/spread_iteration/bytes_loop_spread_iteration.compact": "a1495d824945b5a048f23b04839e08bce58c9df36baf35a61e98fd52b68e5cb6",
+    "test-contracts/primitives/bytes/loops/spread_iteration/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/bytes/loops/spread_iteration/runtime.pass.test.ts": "a6b9f46c8026348060a109d9d00de0aee1d9ce3ae5616bf9ae56d6c3d45419ae"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

@@ -54,6 +54,41 @@ pub(super) fn try_run(
             }
             crate::bytes_remaining_proof::run(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            any(
+                feature = "bytes-fold-boolean-proof",
+                feature = "bytes-loop-empty-proof"
+            ),
+            compact_bytes_next_proof_generated
+        ))]
+        ("--bytes-next-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("next Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected next Bytes proof argument".into());
+            }
+            crate::bytes_next_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            any(
+                feature = "bytes-fold-conditional-proof",
+                feature = "bytes-fold-summation-proof",
+                feature = "bytes-loop-spread-proof",
+                feature = "bytes-loop-iteration-proof",
+                feature = "bytes-manual-update-proof"
+            ),
+            compact_bytes_next_remaining_proof_generated
+        ))]
+        ("--bytes-next-remaining-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("remaining Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected remaining Bytes proof argument".into());
+            }
+            crate::bytes_next_remaining_proof::run(std::path::Path::new(&root))
+        })()),
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }
