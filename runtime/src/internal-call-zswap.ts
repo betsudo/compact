@@ -29,9 +29,22 @@ const ownValue = <T>(object: object, key: string): T => {
   return descriptor.value as T;
 };
 
+const typedArrayLength = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(Uint8Array.prototype), 'length')!.get!;
+const typedArraySet = Uint8Array.prototype.set;
+
 const copyBytes = (bytes: Uint8Array): Uint8Array => {
   if (!(bytes instanceof Uint8Array)) throw new CompactError('Encoded Zswap bytes must be a Uint8Array');
-  return Uint8Array.prototype.slice.call(bytes) as Uint8Array;
+  // TypedArray#slice consults Symbol.species, which a subclass may redirect
+  // back to the input. Allocate a base array and copy its raw bytes instead.
+  let length: number;
+  try {
+    length = typedArrayLength.call(bytes) as number;
+  } catch {
+    throw new CompactError('Encoded Zswap bytes must have a valid typed-array buffer');
+  }
+  const copy = new Uint8Array(length);
+  typedArraySet.call(copy, bytes);
+  return copy;
 };
 
 const copyDense = <T, R>(items: T[], copy: (item: T) => R): R[] => {

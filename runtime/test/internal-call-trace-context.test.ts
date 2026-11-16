@@ -382,6 +382,38 @@ describe('internal pinned call trace cells', () => {
     expect(withInput.callContext.currentZswapLocalState.outputs).toEqual([]);
   });
 
+  test('typed-array species cannot alias source coin, recipient, or submitter-key bytes', () => {
+    class AliasingBytes extends Uint8Array {}
+    const aliased = new AliasingBytes(32).fill(7);
+    Object.defineProperty(AliasingBytes, Symbol.species, {
+      value: function () {
+        return aliased;
+      },
+    });
+    expect(Uint8Array.prototype.slice.call(aliased)).toBe(aliased);
+    const root = entryPointReadContext();
+    root.callContext.currentZswapLocalState = {
+      ...root.callContext.currentZswapLocalState,
+      coinPublicKey: { bytes: aliased },
+    };
+    root.zswapLocalStates[A] = root.callContext.currentZswapLocalState;
+    const coin = { ...coinInfo(), nonce: aliased, color: aliased };
+    const target = { ...recipient(B), right: { bytes: aliased } };
+    const input = appendInternalZswapInput(root, { ...coin, mt_index: 0n });
+    const output = appendInternalZswapOutput(input, coin, target);
+    const outputNonce = output.zswapLocalStates[A].outputs[0].coinInfo.nonce;
+    const inputColor = output.zswapLocalStates[A].inputs[0].color;
+    const recipientBytes = output.zswapLocalStates[A].outputs[0].recipient.right.bytes;
+    const submitterBytes = ownInternalZswapPublicKey(output).bytes;
+    for (const copied of [outputNonce, inputColor, recipientBytes, submitterBytes]) {
+      expect(copied).not.toBe(aliased);
+      expect(copied.constructor).toBe(Uint8Array);
+      expect(copied[0]).toBe(7);
+    }
+    aliased[0] = 3;
+    for (const copied of [outputNonce, inputColor, recipientBytes, submitterBytes]) expect(copied[0]).toBe(7);
+  });
+
   test('copies all mutable containers and keeps per-address live cells aligned', async () => {
     const { calls, root } = setup();
     const copy = copyInternalCallTraceContext(root);
