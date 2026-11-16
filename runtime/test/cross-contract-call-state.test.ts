@@ -6,13 +6,23 @@
 
 // Derivative internal call-state tests. The pinned original 14 invocation
 // cases require the future public Ledger 9 cross-contract Runtime API.
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { describe, expect, test, vi } from 'vitest';
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
 import * as publicRuntime from '../src/index.js';
 import { InternalCrossContractCallState } from '../src/cross-contract-call-state.js';
+import {
+  advanceInternalCallTraceContext,
+  createInternalCallTraceContext,
+  enterInternalCallTraceContext,
+  finalizeInternalCallProofData,
+} from '../src/internal-call-trace-context.js';
+import { emptyRunningCost } from '../src/circuit-context.js';
 import { InterfaceDescriptor } from '../src/interface-descriptor.js';
 import { Module } from '../src/module.js';
 import { verifierKeyHashOf } from '../src/verifier-key-hash.js';
+import { emptyZswapLocalState } from '../src/zswap.js';
 
 const A = `0200${'11'.repeat(30)}`;
 const B = `0200${'22'.repeat(30)}`;
@@ -215,5 +225,153 @@ describe('internal Ledger 9 call state', () => {
     release(state());
     await expect(c).rejects.toThrow(/stack changed during preflight/);
     expect(race.queryContextFor(C)).toBeUndefined();
+  });
+
+  test('abort removes a new callee cache and restores the root after an advance', async () => {
+    const { calls, root, callee } = setup();
+    const before = callee.serialize();
+    const rootQuery = calls.queryContextFor(A);
+    const b = await calls.begin(request(B));
+    const next = new ocrt.QueryContext(b.deployedState.data, B);
+    next.block = { ...b.queryContext.block };
+    calls.advance(b, next, { ...emptyRunningCost(), computeTime: 7n });
+    b.abort();
+    expect(calls.currentAddress).toBe(A);
+    expect(calls.isActive(B)).toBe(false);
+    expect(calls.queryContextFor(A)).toBe(rootQuery);
+    expect(calls.queryContextFor(B)).toBeUndefined();
+    expect(calls.gasCostFor(B)).toBeUndefined();
+    expect(calls.deployedStateFor(B)).toBeUndefined();
+    expect(calls.deployedStateFor(A)).toBe(root);
+    expect(callee.serialize()).toEqual(before);
+    expect(() => b.abort()).toThrow(/top of its active stack/);
+  });
+
+  test('abort restores a sequential callee’s prior query object, block and effects', async () => {
+    const { calls, getContractState } = setup();
+    const first = await calls.begin(request(B));
+    first.end();
+    const priorQuery = calls.queryContextFor(B)!;
+    priorQuery.effects = { ...priorQuery.effects, claimedNullifiers: ['aa'.repeat(32)] };
+    const priorBlock = priorQuery.block;
+    const priorEffects = priorQuery.effects;
+    const priorGas = calls.gasCostFor(B);
+    const priorState = calls.deployedStateFor(B);
+    const second = await calls.begin(request(B));
+    expect(second.queryContext).toBe(priorQuery);
+    expect(second.queryContext.effects).not.toBe(priorEffects);
+    expect(second.queryContext.effects.claimedNullifiers).toEqual([]);
+    second.queryContext.effects = { ...second.queryContext.effects, claimedNullifiers: ['bb'.repeat(32)] };
+    second.abort();
+    expect(calls.queryContextFor(B)).toBe(priorQuery);
+    expect(priorQuery.block).toEqual(priorBlock);
+    expect(priorQuery.effects).toEqual(priorEffects);
+    expect(priorQuery.effects.claimedNullifiers).toEqual(['aa'.repeat(32)]);
+    expect(calls.gasCostFor(B)).toBe(priorGas);
+    expect(calls.deployedStateFor(B)).toBe(priorState);
+    expect(getContractState).toHaveBeenCalledTimes(1);
+  });
+
+  test('aborting a parent rolls back a completed nested call and its cached effects', async () => {
+    const { calls, getContractState } = setup();
+    const seededC = await calls.begin(request(C));
+    seededC.end();
+    const priorC = calls.queryContextFor(C)!;
+    const priorCState = calls.deployedStateFor(C);
+    priorC.effects = { ...priorC.effects, claimedNullifiers: ['cc'.repeat(32)] };
+    const priorBlock = priorC.block;
+    const priorEffects = priorC.effects;
+    const b = await calls.begin(request(B));
+    const nestedC = await calls.begin(request(C));
+    expect(nestedC.queryContext).toBe(priorC);
+    expect(nestedC.queryContext.block.caller).toEqual({ tag: 'contract', address: B });
+    nestedC.queryContext.effects = { ...nestedC.queryContext.effects, claimedNullifiers: ['dd'.repeat(32)] };
+    nestedC.end();
+    b.abort();
+    expect(calls.currentAddress).toBe(A);
+    expect(calls.queryContextFor(B)).toBeUndefined();
+    expect(calls.deployedStateFor(B)).toBeUndefined();
+    expect(calls.queryContextFor(C)).toBe(priorC);
+    expect(calls.deployedStateFor(C)).toBe(priorCState);
+    expect(priorC.block).toEqual(priorBlock);
+    expect(priorC.effects).toEqual(priorEffects);
+    expect(priorC.effects.claimedNullifiers).toEqual(['cc'.repeat(32)]);
+    expect(getContractState).toHaveBeenCalledTimes(2);
+  });
+
+  test('abort enforces LIFO but can recover a corrupt callee block', async () => {
+    const { calls } = setup();
+    const b = await calls.begin(request(B));
+    const c = await calls.begin(request(C));
+    expect(() => b.abort()).toThrow(/top of its active stack/);
+    c.queryContext.block = { ...c.queryContext.block, parentBlockHash: 'cd'.repeat(32) };
+    c.abort();
+    expect(calls.currentAddress).toBe(B);
+    expect(calls.queryContextFor(C)).toBeUndefined();
+    b.abort();
+    expect(calls.currentAddress).toBe(A);
+    expect(calls.isActive(B)).toBe(false);
+  });
+
+  test('abort invalidates a pending preflight without letting it commit later', async () => {
+    let release!: (value: ocrt.ContractState) => void;
+    const pending = new Promise<ocrt.ContractState>((resolve) => {
+      release = resolve;
+    });
+    const race = new InternalCrossContractCallState({
+      entryAddress: A,
+      entryState: state(),
+      parentBlockHash: BLOCK,
+      time: 37,
+      stateProvider: { getContractState: async (_hash, address) => (address === C ? pending : state()) },
+      moduleProvider: { resolve: () => async () => module() },
+    });
+    const c = race.begin(request(C));
+    const b = await race.begin(request(B));
+    b.abort();
+    release(state());
+    await expect(c).rejects.toThrow(/stack changed during preflight/);
+    expect(race.currentAddress).toBe(A);
+    expect(race.queryContextFor(B)).toBeUndefined();
+    expect(race.queryContextFor(C)).toBeUndefined();
+  });
+
+  test('aborting state and discarding a copied trace leave the original EntryPoint caller intact', async () => {
+    const callerBytes = readFileSync(new URL('../../test-center/composable/EntryPoint/Caller.compact', import.meta.url));
+    expect(createHash('sha256').update(callerBytes).digest('hex')).toBe(
+      '25a4e30241457760d4c0ec5d317fa283ace17a7b91dd67928a13a6ed390b6df6',
+    );
+    const { calls, root } = setup();
+    const trace = createInternalCallTraceContext({
+      circuitId: 'pay',
+      contractAddress: A,
+      queryContext: calls.queryContextFor(A)!,
+      zswapLocalState: emptyZswapLocalState('0'.repeat(64)),
+      privateState: 0,
+      parentBlockHash: BLOCK,
+      time: 37,
+    });
+    const b = await calls.begin(request(B));
+    const child = enterInternalCallTraceContext(trace, b);
+    const failed = finalizeInternalCallProofData(
+      advanceInternalCallTraceContext(
+        child,
+        child.callContext.currentQueryContext,
+        { ...emptyRunningCost(), readTime: 1n },
+        { ...child.callContext.currentZswapLocalState, currentIndex: 1n },
+      ),
+      {
+        input: { value: [], alignment: [] },
+        output: { value: [], alignment: [] },
+        publicTranscript: [],
+        privateTranscriptOutputs: [],
+      },
+    );
+    expect(failed.callProofDataTrace).toHaveLength(1);
+    b.abort();
+    expect(trace.callProofDataTrace).toEqual([]);
+    expect(trace.zswapLocalStates[B]).toBeUndefined();
+    expect(calls.queryContextFor(B)).toBeUndefined();
+    expect(calls.deployedStateFor(A)).toBe(root);
   });
 });

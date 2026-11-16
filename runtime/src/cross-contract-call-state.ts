@@ -58,11 +58,26 @@ export type ActiveCall = Readonly<{
   readonly queryContext: ocrt.QueryContext;
   readonly gasCost: ocrt.RunningCost;
   end(): void;
+  /** Discard all state-class writes made since this call entered. */
+  abort(): void;
 }>;
+
+type RollbackSnapshot = {
+  readonly queryContexts: Map<ocrt.ContractAddress, ocrt.QueryContext>;
+  readonly gasCosts: Map<ocrt.ContractAddress, ocrt.RunningCost>;
+  readonly deployedStates: Map<ocrt.ContractAddress, ocrt.ContractState>;
+  /** `begin` changes these fields on a cached QueryContext in place. */
+  readonly queryFields: ReadonlyArray<{
+    readonly context: ocrt.QueryContext;
+    readonly block: ocrt.CallContext;
+    readonly effects: ocrt.Effects;
+  }>;
+};
 
 type Frame = {
   readonly address: ocrt.ContractAddress;
   readonly call?: ActiveCall;
+  readonly rollback?: RollbackSnapshot;
 };
 
 const emptyEffects = (): ocrt.Effects => ({
@@ -199,6 +214,19 @@ export class InternalCrossContractCallState {
     if (generation !== this.#generation || callerAddress !== this.currentAddress || this.#active.has(calleeAddress)) {
       throw new CompactError('Cross-contract call stack changed during preflight');
     }
+    // Capture the whole tree before the first assignment. A parent abort must
+    // also undo a successful nested callee, including a sequential callee's
+    // in-place block/effects reset. Generation stays monotonic on rollback.
+    const rollback: RollbackSnapshot = {
+      queryContexts: new Map(this.#queryContexts),
+      gasCosts: new Map(this.#gasCosts),
+      deployedStates: new Map(this.#deployedStates),
+      queryFields: Array.from(new Set(this.#queryContexts.values()), (context) => ({
+        context,
+        block: context.block,
+        effects: context.effects,
+      })),
+    };
     let queryContext = this.#queryContexts.get(calleeAddress);
     if (queryContext === undefined) {
       queryContext = new ocrt.QueryContext(prepared.deployedState.data, calleeAddress);
@@ -236,8 +264,9 @@ export class InternalCrossContractCallState {
         return gasCostForCall();
       },
       end: () => this.end(call),
+      abort: () => this.abort(call),
     });
-    this.#frames.push({ address: calleeAddress, call });
+    this.#frames.push({ address: calleeAddress, call, rollback });
     this.#active.add(calleeAddress);
     this.#generation++;
     return call;
@@ -259,10 +288,34 @@ export class InternalCrossContractCallState {
     this.#generation++;
   }
 
-  #assertTop(call: ActiveCall): void {
+  private abort(call: ActiveCall): void {
+    // A corrupted callee block is precisely when rollback is needed, so do
+    // not run assertPinnedContext before restoring the saved fields.
+    this.#assertTopHandle(call);
+    const rollback = this.#frames[this.#frames.length - 1].rollback!;
+    for (const { context, block, effects } of rollback.queryFields) {
+      context.block = block;
+      context.effects = effects;
+    }
+    this.#queryContexts.clear();
+    for (const [address, context] of rollback.queryContexts) this.#queryContexts.set(address, context);
+    this.#gasCosts.clear();
+    for (const [address, cost] of rollback.gasCosts) this.#gasCosts.set(address, cost);
+    this.#deployedStates.clear();
+    for (const [address, state] of rollback.deployedStates) this.#deployedStates.set(address, state);
+    this.#frames.pop();
+    this.#active.delete(call.calleeAddress);
+    this.#generation++;
+  }
+
+  #assertTopHandle(call: ActiveCall): void {
     if (this.#frames[this.#frames.length - 1].call !== call) {
       throw new CompactError('Cross-contract call must finish at the top of its active stack');
     }
+  }
+
+  #assertTop(call: ActiveCall): void {
+    this.#assertTopHandle(call);
     assertPinnedContext(this.#queryContexts.get(call.calleeAddress)!, call.calleeAddress, this.#snapshot);
   }
 }
