@@ -124,6 +124,13 @@ include!(concat!(
     compact_keyword_constructor_parameters_generated
 ))]
 mod keyword_constructor_parameters_proof;
+#[cfg(all(feature = "keyword-disclose-proof", compact_keyword_disclose_generated))]
+include!(concat!(
+    env!("COMPACT_KEYWORD_DISCLOSE_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(feature = "keyword-disclose-proof", compact_keyword_disclose_generated))]
+mod keyword_disclose_proof;
 #[cfg(all(
     any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
     compact_bytes_remaining_proof_generated
