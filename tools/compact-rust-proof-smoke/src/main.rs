@@ -112,6 +112,19 @@ include!(concat!(
 ))]
 mod bytes_indexed_access_proof;
 #[cfg(all(
+    feature = "keyword-constructor-parameters-proof",
+    compact_keyword_constructor_parameters_generated
+))]
+include!(concat!(
+    env!("COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED"),
+    "/contract/lib.rs"
+));
+#[cfg(all(
+    feature = "keyword-constructor-parameters-proof",
+    compact_keyword_constructor_parameters_generated
+))]
+mod keyword_constructor_parameters_proof;
+#[cfg(all(
     any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
     compact_bytes_remaining_proof_generated
 ))]

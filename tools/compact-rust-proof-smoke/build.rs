@@ -314,6 +314,7 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_import_ledger_field_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_keyword_constructor_parameters_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_empty_else_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_branches_set_insert_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_IF_BRANCHES_SET_INSERT_GENERATED");
@@ -387,6 +388,31 @@ fn main() {
             println!("cargo::rerun-if-changed={}", member.display());
         }
         println!("cargo::rustc-cfg=compact_for_generic_bound_generated");
+    }
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_KEYWORD_CONSTRUCTOR_PARAMETERS_PROOF").is_some() {
+        let root = std::path::PathBuf::from(
+            std::env::var_os("COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED")
+                .expect("complete pinned constructor/parameters generated root required"),
+        );
+        assert!(
+            root.is_absolute(),
+            "absolute constructor/parameters root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/constructor_parameters.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete constructor/parameters member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_keyword_constructor_parameters_generated");
     }
     println!("cargo::rustc-check-cfg=cfg(compact_stateful_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED");

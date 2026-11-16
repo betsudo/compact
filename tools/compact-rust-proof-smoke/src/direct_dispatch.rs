@@ -106,6 +106,19 @@ pub(super) fn try_run(
             crate::bytes_indexed_access_proof::run(std::path::Path::new(&root))
         })()),
         #[cfg(all(
+            feature = "keyword-constructor-parameters-proof",
+            compact_keyword_constructor_parameters_generated
+        ))]
+        ("--keyword-constructor-parameters-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("constructor/parameters proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected constructor/parameters proof argument".into());
+            }
+            crate::keyword_constructor_parameters_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
             any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
             compact_bytes_remaining_proof_generated
         ))]
