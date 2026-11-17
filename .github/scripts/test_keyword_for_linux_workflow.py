@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """Source-only refusal controls for the native Linux for-keyword gate."""
 
+import ast
 import importlib.util
 import json
 from pathlib import Path
@@ -174,6 +175,22 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
                 verifier.proof(proof, base, source=source, semantic_receipt={},
                                semantic_path=base/'semantic.json',
                                semantic_root=base, zkir=base/'zkir')
+
+    def test_proof_producer_reports_verified_clean_source(self):
+        module = ast.parse(PROOF_GATE.read_text())
+        reports = [node.value for node in ast.walk(module)
+                   if isinstance(node, ast.Assign) and
+                   any(isinstance(target, ast.Name) and target.id == 'report'
+                       for target in node.targets)]
+        self.assertEqual(len(reports), 1)
+        self.assertIsInstance(reports[0], ast.Dict)
+        fields = {key.value: value for key, value in
+                  zip(reports[0].keys, reports[0].values)
+                  if isinstance(key, ast.Constant) and isinstance(key.value, str)}
+        self.assertIn('source_clean', fields)
+        self.assertIsInstance(fields['source_clean'], ast.Constant)
+        self.assertIs(fields['source_clean'].value, True)
+        self.assertIn("receipt.get('source_clean') is True", VERIFIER.read_text())
 
     def test_physical_dependency_controls_refuse_unknown_and_tampered(self):
         with tempfile.TemporaryDirectory() as temporary:
