@@ -74,6 +74,7 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::EmitPaused { .. }
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
+        | Expr::KernelUnshieldedEffect { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }
