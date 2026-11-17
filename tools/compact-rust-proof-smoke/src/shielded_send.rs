@@ -43,7 +43,7 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     for (path, expected) in [
         (
             "contract/lib.rs",
-            "0208ef2a7eac22dbb82413651501ab78d7cbd0fd1ab6fb7ec8938b2095b00922",
+            "4ee769974c7896ed75aa78f9092e5c776a6ec6ebd12efbc6676e71aee7d2e465",
         ),
         (
             "zkir/send_to_self.zkir",
