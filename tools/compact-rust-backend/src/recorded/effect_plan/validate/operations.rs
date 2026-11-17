@@ -67,14 +67,19 @@ pub(super) fn validate(
         Operation::KernelSelf => *ty == crate::ir::contract_address_type(),
         Operation::KernelBalance { token } => {
             use_value(token)?;
-            token.ty == crate::coin_shapes::token_type() && *ty == uint(&u128::MAX.to_string())
+            crate::coin_shapes::same_either_instantiation(
+                &token.ty,
+                &crate::coin_shapes::token_type(),
+            ) && *ty == uint(&u128::MAX.to_string())
         }
         Operation::KernelBalanceLessThan { token, amount }
         | Operation::KernelBalanceGreaterThan { token, amount } => {
             use_value(token)?;
             use_value(amount)?;
-            token.ty == crate::coin_shapes::token_type()
-                && amount.ty == uint(&u128::MAX.to_string())
+            crate::coin_shapes::same_either_instantiation(
+                &token.ty,
+                &crate::coin_shapes::token_type(),
+            ) && amount.ty == uint(&u128::MAX.to_string())
                 && *ty == Type::Boolean
         }
         Operation::EmitShieldedSpend(value) | Operation::KernelClaim { value, .. } => {

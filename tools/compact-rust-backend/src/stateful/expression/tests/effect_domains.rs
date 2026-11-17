@@ -211,7 +211,10 @@ fn unshielded_kernel_effects_route_typed_operands_in_source_order() {
 #[test]
 fn balance_reads_require_canonical_token_and_uint128_bound() {
     let declarations = Declarations::default();
-    let token = token_type();
+    let mut token = token_type();
+    if let Type::Struct { name, .. } = &mut token {
+        *name = "EitherCompact3".into();
+    }
     let amount = uint(&u128::MAX.to_string());
     admitted(
         declarations.lower(Expr::KernelBalance {
@@ -241,7 +244,7 @@ fn balance_reads_require_canonical_token_and_uint128_bound() {
             token: parameter("bytes"),
             amount: parameter("absent"),
         })
-        .refused_before_effects(mismatch(token, Type::Bytes { length: 32 }));
+        .refused_before_effects(mismatch(token_type(), Type::Bytes { length: 32 }));
     refused(
         declarations.lower(Expr::KernelBalanceLessThan {
             token: default_value(token_type()),

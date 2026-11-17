@@ -26,7 +26,11 @@ fn amount_type() -> Type {
 
 #[test]
 fn balance_queries_record_typed_token_and_refuse_wrong_domain() {
-    let token = value(0, crate::coin_shapes::token_type());
+    let mut token_type = crate::coin_shapes::token_type();
+    if let Type::Struct { name, .. } = &mut token_type {
+        *name = "EitherCompact3".into();
+    }
+    let token = value(0, token_type);
     let amount = value(
         1,
         Type::Unsigned {

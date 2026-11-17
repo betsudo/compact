@@ -37,7 +37,10 @@ impl Lowerer<'_> {
             | Expr::KernelBalanceGreaterThan { token, .. } => {
                 let token_path = format!("{path}.token");
                 let token = self.expression(token, scope, bindings, &token_path)?;
-                if token.ty != crate::coin_shapes::token_type() {
+                if !crate::coin_shapes::same_either_instantiation(
+                    &token.ty,
+                    &crate::coin_shapes::token_type(),
+                ) {
                     return Err(invalid(
                         &token_path,
                         "Kernel balance requires canonical TokenType",

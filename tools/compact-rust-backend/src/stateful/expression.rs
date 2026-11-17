@@ -1472,7 +1472,7 @@ fn render_effect_operation(
                 environment,
             )?;
             let expected = token_type();
-            if actual != expected {
+            if !same_either_instantiation(&actual, &expected) {
                 return Err(RenderError::TypeMismatch { expected, actual });
             }
             let token_name = syn::Ident::new(
