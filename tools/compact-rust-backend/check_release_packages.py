@@ -26,8 +26,6 @@ import tarfile
 import tempfile
 import tomllib
 
-from consumer_cargo import with_pinned_patches
-
 
 ROOT = Path(__file__).resolve().parents[2]
 MACROS = ROOT / "runtime-rs-macros"
@@ -95,6 +93,15 @@ def compatibility_record() -> dict[str, object]:
         if actual != version or not source_matches:
             raise RuntimeError(f"runtime compatibility dependency mismatch: {name}")
     return record
+
+
+def archive_source_patches(compatibility: dict) -> str:
+    """Restore Git source selectors removed by Cargo's archive normalization."""
+    lines = ["[patch.crates-io]"]
+    for package, source in compatibility.get("ledger_git_sources", {}).items():
+        fields = ", ".join(f"{key} = {json.dumps(value)}" for key, value in source.items())
+        lines.append(f"{json.dumps(package)} = {{ {fields} }}")
+    return "\n".join(lines) + "\n"
 
 
 def package_directory() -> Path:
@@ -217,16 +224,16 @@ def main() -> None:
     from check_standalone_lock import compare_locks
 
     compare_locks(ROOT / "Cargo.lock", ROOT / "tools/compact-rust-backend/Cargo.lock")
-    compatibility_record()
+    compatibility = compatibility_record()
     run("package", "-p", PACKAGES[0], "--allow-dirty")
     packages = [inspect_package(PACKAGES[0])]
 
     # Cargo normalizes the archive to registry dependencies and verifies it
-    # outside the workspace. Pass the same Ledger pins and the local macro
+    # outside the workspace. Pass the runtime source pins and the local macro
     # source through Cargo config, without changing either packaged manifest.
     with tempfile.TemporaryDirectory(prefix="compact-runtime-rehearsal-") as directory:
         config = Path(directory) / "patches.toml"
-        config.write_text(with_pinned_patches("", ROOT)
+        config.write_text(archive_source_patches(compatibility)
                           + f'{PACKAGES[0]} = {{ path = {json.dumps(str(MACROS))} }}\n')
         run("package", "-p", PACKAGES[1], "--allow-dirty", "--config", str(config))
     packages.append(inspect_package(PACKAGES[1]))

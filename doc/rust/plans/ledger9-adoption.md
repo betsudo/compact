@@ -22,20 +22,21 @@ schema 20, or capability schema 3. The trial source closure is:
   helpers resolve curves and proofs within the same Git source without a
   consumer-owned proof patch table;
 - ZKIR v2 `2.2.0` from the same Ledger revision for the retained producer
-  boundary, and ZKIR v3 `3.2.1` from
-  `b4bdaeda1788a8304447498b59710aef54c466f7` for the active proof/tool
-  boundary.
+  boundary, and ZKIR v3 library `3.2.1` from
+  `b4bdaeda1788a8304447498b59710aef54c466f7` for the Rust proof runner.
 
 The runtime manifest selects Ledger 9.1.0.2, storage 3.1.0 and
 transient-crypto 3.1.0 from the single Ledger revision. It selects circuits
 7.3.0, curves 0.3.1, proofs 0.8.2 and zk-stdlib 2.4.0 from the single ZK
-revision. The workspace and every generated Rust root retain the Ledger and
-ZKIR source selectors as `[patch.crates-io]` entries because Cargo patches in
-a dependency repository are not inherited by a downstream root. The four ZK
-packages are no longer repeated there: the active direct dependencies and the
-patch-free upstream manifests close that source graph themselves. The
-compatibility preflight still checks every direct Midnight dependency's exact
-version, Git URL and revision before generation.
+revision. The workspace and source-consumer test manifests retain Ledger and ZKIR
+selectors as `[patch.crates-io]` entries. Cargo resolves these selectors at
+the application root. The four ZK packages close through direct Git
+dependencies and the upstream manifests. The compiler's generated manifests
+emit all recorded selectors. Release rehearsal and offline archive consumption
+also restore the full selector table because Cargo's archive normalization
+rewrites Git dependencies as versioned registry dependencies. The compiler
+checks every direct Midnight dependency's exact version, Git URL and revision
+before generation.
 
 The active proof runner resolves the Ledger-required ZKIR 3.2.1 library from
 the exact Git source above. Compiler and proof qualification continue to use

@@ -140,15 +140,30 @@ class ArchiveConsumerTests(unittest.TestCase):
             ]},
         }
         contracts = {"counter": self.destination}
-        check_graph(metadata, consumer, contracts, archives, entries)
+        check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
 
         lock.write_text(lock_text.replace("1" * 64, "3" * 64))
         with self.assertRaisesRegex(RuntimeError, "archive checksum and source in Cargo.lock"):
-            check_graph(metadata, consumer, contracts, archives, entries)
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
         lock.write_text(lock_text)
         macro_edges.clear()
         with self.assertRaisesRegex(RuntimeError, "archived runtime did not resolve the archived macros"):
-            check_graph(metadata, consumer, contracts, archives, entries)
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
+
+        macro_edges.append({"pkg": MACROS})
+        source = {"git": "https://example.invalid/zk", "rev": "a" * 40}
+        self.compatibility["ledger_git_sources"] = {"midnight-curves": source}
+        self.compatibility["ledger_dependencies"] = {"midnight-curves": "=0.3.1"}
+        archives[RUNTIME].mkdir(parents=True)
+        (archives[RUNTIME] / "Cargo.toml").write_text('[dependencies]\nmidnight-curves = "=0.3.1"\n')
+        curves = {"id": "curves", "name": "midnight-curves", "version": "0.3.1",
+                  "source": f'git+{source["git"]}?rev={source["rev"]}#{source["rev"]}'}
+        metadata["packages"].append(curves)
+        macro_edges.append({"pkg": "curves"})
+        check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
+        curves["source"] = "registry+https://github.com/rust-lang/crates.io-index"
+        with self.assertRaisesRegex(RuntimeError, "midnight-curves did not resolve"):
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
 
 
 if __name__ == "__main__":

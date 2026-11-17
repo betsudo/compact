@@ -30,7 +30,7 @@ import tomllib
 
 from consumer_cargo import with_pinned_patches
 from consumer_safety import check_consumer_safety
-from check_release_packages import LOCKS, compatibility_record
+from check_release_packages import LOCKS, archive_source_patches, compatibility_record
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -197,7 +197,7 @@ def project_contract(
 
 def check_graph(
     metadata: dict, consumer: Path, contracts: dict[str, Path],
-    archives: dict[str, Path], entries: list[dict],
+    archives: dict[str, Path], entries: list[dict], compatibility: dict,
 ) -> None:
     packages = metadata["packages"]
     lock_packages = tomllib.loads((consumer / "Cargo.lock").read_text())["package"]
@@ -227,6 +227,20 @@ def check_graph(
     runtime_id = package_ids[RUNTIME]
     if package_ids[MACROS] not in {dependency["pkg"] for dependency in nodes[runtime_id]["deps"]}:
         raise RuntimeError("archived runtime did not resolve the archived macros")
+    if sources := compatibility.get("ledger_git_sources"):
+        archived_manifest = tomllib.loads((archives[RUNTIME] / "Cargo.toml").read_text())
+        direct = {dep["pkg"] for dep in nodes[runtime_id]["deps"]}
+        for name, dependency in archived_manifest["dependencies"].items():
+            if name not in sources:
+                continue
+            matches = [package for package in packages if package["id"] in direct and package["name"] == name]
+            if not matches and isinstance(dependency, dict) and dependency.get("optional"):
+                continue
+            source = sources[name]
+            expected_source = f'git+{source["git"]}?rev={source["rev"]}#{source["rev"]}'
+            version = compatibility["ledger_dependencies"][name].removeprefix("=")
+            if len(matches) != 1 or matches[0]["source"] != expected_source or matches[0]["version"] != version:
+                raise RuntimeError(f"{name} did not resolve to the archived runtime's pinned Git dependency")
     for name, contract in contracts.items():
         package_name = f"compact-contract-{name}"
         found = [package for package in packages if package["name"] == package_name]
@@ -310,7 +324,7 @@ def main() -> None:
                 for name, contract in contracts.items()
             )
         )
-        (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, ROOT))
+        (consumer / "Cargo.toml").write_text(manifest + "\n" + archive_source_patches(compatibility))
         # Preserve Cargo's Git and registry replacements for the same vendor
         # directory. The staged runtime and macro archives are in that directory.
         (consumer / ".cargo/config.toml").write_text(vendor_config)
@@ -394,7 +408,7 @@ def main() -> None:
         environment.setdefault("CARGO_BUILD_JOBS", "2")
         metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
                                   cwd=consumer, env=environment))
-        check_graph(metadata, consumer, contracts, archives, entries)
+        check_graph(metadata, consumer, contracts, archives, entries, compatibility)
         run(["cargo", "test", "--locked", "--offline", "--quiet"], cwd=consumer, env=environment)
         check_consumer_safety(consumer, environment)
         compile_rejections = {

@@ -24,6 +24,7 @@ from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
@@ -52,6 +53,13 @@ class ReleaseInspectionTests(unittest.TestCase):
         context = patch.object(release, "package_directory", return_value=self.packages)
         context.start()
         self.addCleanup(context.stop)
+
+    def test_archive_rehearsal_uses_validated_source_selectors(self):
+        compatibility = release.compatibility_record()
+        rendered = tomllib.loads(release.archive_source_patches(compatibility))
+        self.assertEqual(rendered["patch"]["crates-io"], compatibility["ledger_git_sources"])
+        self.assertIn("midnight-curves", rendered["patch"]["crates-io"])
+        self.assertEqual(rendered["patch"]["crates-io"]["midnight-zkir-v3"]["package"], "midnight-zkir")
 
     def archive(self, dependency="=0.2.0", record=True):
         name = "midnight-compact-runtime"
