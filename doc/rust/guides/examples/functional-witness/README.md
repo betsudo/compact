@@ -75,7 +75,7 @@ verifier lookup and uses the published v3 prover for the standalone proof. The
 funded transaction uses the Ledger 9 transaction prover. The `proof` feature
 selects the SDK transaction and testkit proof features.
 
-With the exact selected compiler, native `zkir-v3` 3.2.0 and source-built proof material
+With the exact selected compiler, native `zkir-v3` 3.2.1 and source-built proof material
 runner, the maintained gate executes the complete recipe from a fresh directory:
 
 ```sh

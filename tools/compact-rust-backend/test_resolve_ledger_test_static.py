@@ -21,7 +21,7 @@ import hashlib
 import io
 import json
 from pathlib import Path
-import tarfile
+import subprocess
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -34,8 +34,8 @@ class LedgerStaticTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory(prefix="ledger fixture test ")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
-        registry = self.root / "Cargo home" / "registry"
-        self.crate = registry / "src" / "crates-index" / f"{resolver.PACKAGE}-{resolver.VERSION}"
+        self.repository = self.root / "Cargo home" / "git" / "checkouts" / "ledger checkout"
+        self.crate = self.repository / "ledger"
         dust = self.crate / "static/dust"
         dust.mkdir(parents=True)
         (self.crate / "Cargo.toml").write_text(
@@ -48,23 +48,28 @@ class LedgerStaticTests(unittest.TestCase):
             (dust / name).write_bytes(data)
             (dust / (name + ".sha256")).write_text(hashes[name] + "  " + name)
         (dust / "spend.prover.sha256").write_text(resolver.PROVER_HASH + "  spend.prover")
-        self.archive = registry / "cache" / "crates-index" / f"{self.crate.name}.crate"
-        self.archive.parent.mkdir(parents=True)
-        with tarfile.open(self.archive, "w:gz") as archive:
-            archive.add(self.crate, arcname=self.crate.name)
-        checksum = hashlib.sha256(self.archive.read_bytes()).hexdigest()
+        subprocess.run(["git", "init", "-q", str(self.repository)], check=True)
+        subprocess.run(["git", "-C", str(self.repository), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.repository),
+                        "-c", "user.name=Ledger Test", "-c", "user.email=ledger@example.com",
+                        "commit", "-q", "-m", "fixture"], check=True)
+        revision = subprocess.check_output(
+            ["git", "-C", str(self.repository), "rev-parse", "HEAD"], text=True
+        ).strip()
         self.enterContext(patch.object(resolver, "FIXTURE_HASHES", hashes))
-        self.enterContext(patch.object(resolver, "CHECKSUM", checksum))
+        self.enterContext(patch.object(resolver, "REVISION", revision))
+        source = f"git+{resolver.REPOSITORY}?rev={revision}#{revision}"
+        self.enterContext(patch.object(resolver, "SOURCE", source))
         self.package = {"name": resolver.PACKAGE, "version": resolver.VERSION,
                         "source": resolver.SOURCE, "manifest_path": str(self.crate / "Cargo.toml")}
         self.metadata = {"packages": [self.package]}
         self.lock = {"package": [{"name": resolver.PACKAGE, "version": resolver.VERSION,
-                                  "source": resolver.SOURCE, "checksum": checksum}]}
+                                  "source": resolver.SOURCE}]}
 
     def test_locked_package_and_space_path(self):
         result = resolver.resolve(self.metadata, self.lock)
         self.assertEqual(result["static_directory"], str((self.crate / "static").resolve()))
-        self.assertEqual(result["crate_sha256"], resolver.CHECKSUM)
+        self.assertEqual(result["source_revision"], resolver.REVISION)
 
     def test_missing_and_duplicate_packages(self):
         for packages in ([], [self.package, self.package]):
@@ -78,23 +83,23 @@ class LedgerStaticTests(unittest.TestCase):
                 (metadata["packages"] if target == "metadata" else lock["package"])[0][key] = value
                 with self.subTest(key=key, target=target), self.assertRaisesRegex(ValueError, "version/source"):
                     resolver.resolve(metadata, lock)
-    def test_manifest_and_archive_identity(self):
+    def test_manifest_lock_and_commit_identity(self):
         manifest = self.crate / "Cargo.toml"
         original = manifest.read_text()
         manifest.write_text('[package]\nname="other"\nversion.workspace=true\n')
         with self.assertRaisesRegex(ValueError, "manifest identity"):
             resolver.resolve(self.metadata, self.lock)
         manifest.write_text(original + "# altered source\n")
-        with self.assertRaisesRegex(ValueError, "differs from the crate archive"):
+        with self.assertRaisesRegex(ValueError, "differs from the locked Git commit"):
             resolver.resolve(self.metadata, self.lock)
         manifest.write_text(original)
         wrong = copy.deepcopy(self.lock)
         wrong["package"][0]["checksum"] = "0" * 64
-        with self.assertRaisesRegex(ValueError, "lock checksum"):
+        with self.assertRaisesRegex(ValueError, "must not carry"):
             resolver.resolve(self.metadata, wrong)
-        with self.archive.open("ab") as output:
-            output.write(b"tampered")
-        with self.assertRaisesRegex(ValueError, "cached ledger crate checksum"):
+        with patch.object(resolver, "REVISION", "0" * 40), self.assertRaisesRegex(
+            ValueError, "checkout revision"
+        ):
             resolver.resolve(self.metadata, self.lock)
 
     def test_corrupted_missing_and_false_digest_fixtures(self):

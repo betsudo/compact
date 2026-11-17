@@ -16,7 +16,9 @@ Unreleased Ledger 9 migration.
   Ledger and ZK patches as the compiler workspace so transitive dependencies
   cannot fall back to incompatible registry copies. The functional checked
   effect label remains 9.1.0.1 because the 9.1.0.2 client patch does not
-  change Compact language or effect semantics.
+  change Compact language or effect semantics. Active proof consumers use
+  ZKIR 3.2.1; the Passport dogfood fixture retains its pre-migration
+  transient-crypto dependency and is outside this DID/runtime qualification.
 
 - Compare `Opaque<"Uint8Array">` values by length and contents in generated
   TypeScript. Distinct arrays with identical bytes now compare equal.

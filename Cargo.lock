@@ -598,7 +598,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -611,7 +611,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -624,7 +624,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -637,7 +637,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -651,7 +651,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -665,7 +665,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -678,7 +678,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -691,7 +691,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -703,7 +703,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -723,7 +723,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -736,7 +736,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -745,7 +745,7 @@ name = "compact-rust-backend"
 version = "0.2.0"
 dependencies = [
  "fs2",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "prettyplease",
  "proc-macro2",
  "quote 1.0.45",
@@ -784,7 +784,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -796,7 +796,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -817,7 +817,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -832,7 +832,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -888,7 +888,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -900,7 +900,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -913,7 +913,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -926,7 +926,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -939,7 +939,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -976,7 +976,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -1005,7 +1005,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1017,7 +1017,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1029,7 +1029,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1041,7 +1041,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1053,7 +1053,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1065,7 +1065,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1077,7 +1077,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1090,7 +1090,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1102,7 +1102,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1114,7 +1114,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1126,7 +1126,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1138,7 +1138,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1158,7 +1158,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -1172,7 +1172,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1185,7 +1185,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1197,7 +1197,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -1211,7 +1211,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -1345,7 +1345,7 @@ dependencies = [
  "midnight-compact-testkit",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -1359,7 +1359,7 @@ dependencies = [
  "midnight-compact-testkit",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -1373,7 +1373,7 @@ dependencies = [
  "midnight-compact-testkit",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -1545,7 +1545,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1558,7 +1558,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1620,7 +1620,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1632,7 +1632,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1644,7 +1644,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1656,7 +1656,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1669,7 +1669,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1690,8 +1690,8 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
- "midnight-transient-crypto 3.0.1",
+ "midnight-storage",
+ "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1726,7 +1726,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1739,7 +1739,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1761,7 +1761,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1774,7 +1774,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1787,7 +1787,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1800,7 +1800,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1813,8 +1813,8 @@ dependencies = [
  "midnight-coin-structure",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
- "midnight-transient-crypto 3.0.1",
+ "midnight-storage",
+ "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1826,7 +1826,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1838,7 +1838,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1878,7 +1878,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -1901,7 +1901,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2011,7 +2011,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2024,7 +2024,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2037,7 +2037,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2058,7 +2058,7 @@ dependencies = [
  "compact-rust-backend",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2071,7 +2071,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2084,7 +2084,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2115,7 +2115,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2129,7 +2129,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
  "sha2 0.10.9",
 ]
@@ -2142,7 +2142,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2207,7 +2207,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2221,7 +2221,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2243,7 +2243,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2255,7 +2255,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2267,7 +2267,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2279,7 +2279,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2291,7 +2291,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2326,7 +2326,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2339,7 +2339,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2352,7 +2352,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -2372,7 +2372,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2385,7 +2385,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2397,7 +2397,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2471,7 +2471,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2486,7 +2486,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -2500,7 +2500,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2519,7 +2519,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2532,7 +2532,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -2545,7 +2545,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2565,7 +2565,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2577,7 +2577,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2596,7 +2596,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2650,7 +2650,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -2663,7 +2663,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -2677,7 +2677,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -2690,7 +2690,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2702,7 +2702,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2714,7 +2714,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2726,7 +2726,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2741,7 +2741,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde",
  "serde_json",
@@ -2755,7 +2755,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2774,7 +2774,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2786,7 +2786,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2798,7 +2798,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2817,7 +2817,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2847,7 +2847,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2860,7 +2860,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-compact-runtime",
  "midnight-onchain-state",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2873,7 +2873,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2886,7 +2886,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -2943,7 +2943,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2956,7 +2956,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2969,7 +2969,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -2984,7 +2984,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3161,18 +3161,18 @@ dependencies = [
  "midnight-coin-structure",
  "midnight-compact-runtime",
  "midnight-curves 0.3.1",
- "midnight-ledger-v9 1.0.1",
+ "midnight-ledger-v9",
  "midnight-onchain-runtime",
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-proofs 0.8.2",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "midnight-storage-core",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "midnight-zk-stdlib 2.4.0",
  "midnight-zkir 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "midnight-zkir 3.2.0",
+ "midnight-zkir 3.2.1",
  "midnight-zswap",
  "rand 0.8.6",
  "rand_chacha 0.3.1",
@@ -3189,7 +3189,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3201,7 +3201,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3216,7 +3216,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3241,7 +3241,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3255,7 +3255,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3268,7 +3268,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3293,7 +3293,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3305,7 +3305,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3328,7 +3328,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3340,7 +3340,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3352,7 +3352,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3364,7 +3364,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3377,7 +3377,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-coin-structure",
  "midnight-compact-runtime",
- "midnight-ledger-v9 1.0.1",
+ "midnight-ledger-v9",
  "midnight-onchain-state",
  "midnight-serialize",
  "midnight-zswap",
@@ -3412,7 +3412,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "serde",
  "serde_json",
 ]
@@ -3434,7 +3434,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3447,7 +3447,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3459,7 +3459,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3474,7 +3474,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3487,7 +3487,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3517,7 +3517,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3530,7 +3530,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3543,7 +3543,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3556,10 +3556,10 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-coin-structure",
  "midnight-compact-runtime",
- "midnight-ledger-v9 1.0.1",
+ "midnight-ledger-v9",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3573,7 +3573,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3586,10 +3586,10 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-coin-structure",
  "midnight-compact-runtime",
- "midnight-ledger-v9 1.0.1",
+ "midnight-ledger-v9",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3603,7 +3603,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3616,7 +3616,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3638,7 +3638,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-coin-structure",
  "midnight-compact-runtime",
- "midnight-ledger-v9 1.0.1",
+ "midnight-ledger-v9",
  "midnight-onchain-state",
  "midnight-serialize",
  "midnight-zswap",
@@ -3662,7 +3662,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3674,7 +3674,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3719,7 +3719,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3732,8 +3732,8 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
- "midnight-transient-crypto 3.0.1",
+ "midnight-storage",
+ "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -3747,7 +3747,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3760,8 +3760,8 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
- "midnight-transient-crypto 3.0.1",
+ "midnight-storage",
+ "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "serde_json",
 ]
@@ -3813,7 +3813,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3825,7 +3825,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3851,7 +3851,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3874,7 +3874,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -3887,7 +3887,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "num-bigint",
  "serde_json",
 ]
@@ -3901,7 +3901,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3921,7 +3921,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3943,7 +3943,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -3965,7 +3965,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4000,7 +4000,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "serde_json",
 ]
 
@@ -4029,7 +4029,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4042,7 +4042,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4054,7 +4054,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4066,7 +4066,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4098,7 +4098,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4110,7 +4110,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4123,7 +4123,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde_json",
 ]
 
@@ -4138,7 +4138,7 @@ dependencies = [
  "midnight-compact-runtime",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.0.0",
+ "midnight-storage",
  "serde",
  "serde_json",
 ]
@@ -4563,16 +4563,6 @@ dependencies = [
  "option-ext",
  "redox_users",
  "windows-sys 0.48.0",
-]
-
-[[package]]
-name = "dispatch2"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e0e367e4e7da84520dedcac1901e4da967309406d1e51017ae1abfb97adbd38"
-dependencies = [
- "bitflags",
- "objc2",
 ]
 
 [[package]]
@@ -5129,7 +5119,7 @@ dependencies = [
  "cfg-if",
  "nix 0.30.1",
  "widestring",
- "windows 0.61.3",
+ "windows",
 ]
 
 [[package]]
@@ -5783,13 +5773,13 @@ dependencies = [
  "midnight-coin-structure",
  "midnight-compact-runtime-macros",
  "midnight-curves 0.3.1",
- "midnight-ledger-v9 1.0.2",
+ "midnight-ledger-v9",
  "midnight-onchain-runtime",
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-proofs 0.8.2",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-storage-core",
  "midnight-transient-crypto 3.1.0",
  "midnight-zk-stdlib 2.4.0",
@@ -5827,7 +5817,7 @@ dependencies = [
  "midnight-onchain-runtime",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "midnight-zkir 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "midnight-zswap",
  "rand 0.8.6",
@@ -5893,58 +5883,10 @@ dependencies = [
 [[package]]
 name = "midnight-ledger-static"
 version = "10.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a8757a7febfd6a0c8e2701c7a639dee522599aad11b71854545acae5fa4c863"
-dependencies = [
- "proc-macro2",
- "quote 1.0.45",
-]
-
-[[package]]
-name = "midnight-ledger-static"
-version = "10.0.0"
 source = "git+https://github.com/betsudo/midnight-ledger?rev=d1ff7457554fe326dbdc6b19dd9d306d847ce653#d1ff7457554fe326dbdc6b19dd9d306d847ce653"
 dependencies = [
  "proc-macro2",
  "quote 1.0.45",
-]
-
-[[package]]
-name = "midnight-ledger-v9"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dd8a21fcae84dc92c8edf7b31d40260d7a384b26695d1179311cafb28928b83"
-dependencies = [
- "anyhow",
- "derive-where",
- "digest-io",
- "fake",
- "futures",
- "introspection",
- "introspection-derive",
- "is_sorted",
- "itertools",
- "lazy_static",
- "midnight-base-crypto",
- "midnight-coin-structure",
- "midnight-ledger-static 10.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "midnight-onchain-runtime",
- "midnight-serialize",
- "midnight-storage 3.0.0",
- "midnight-transient-crypto 2.2.0",
- "midnight-transient-crypto 3.0.1",
- "midnight-zkir 2.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "midnight-zkir 3.2.0",
- "midnight-zswap",
- "rand 0.8.6",
- "rayon",
- "reqwest 0.13.5",
- "serde",
- "sha2 0.11.1",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "zeroize",
 ]
 
 [[package]]
@@ -5964,15 +5906,18 @@ dependencies = [
  "lazy_static",
  "midnight-base-crypto",
  "midnight-coin-structure",
- "midnight-ledger-static 10.0.0 (git+https://github.com/betsudo/midnight-ledger?rev=d1ff7457554fe326dbdc6b19dd9d306d847ce653)",
+ "midnight-ledger-static",
  "midnight-onchain-runtime",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-transient-crypto 2.2.0",
  "midnight-transient-crypto 3.1.0",
+ "midnight-zkir 2.2.0 (git+https://github.com/betsudo/midnight-ledger?rev=d1ff7457554fe326dbdc6b19dd9d306d847ce653)",
+ "midnight-zkir 3.2.1",
  "midnight-zswap",
  "rand 0.8.6",
  "rayon",
+ "reqwest 0.13.5",
  "serde",
  "sha2 0.11.1",
  "tokio",
@@ -5998,7 +5943,7 @@ dependencies = [
  "midnight-onchain-state",
  "midnight-onchain-vm",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "serde",
@@ -6017,7 +5962,7 @@ dependencies = [
  "midnight-base-crypto",
  "midnight-coin-structure",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-transient-crypto 2.2.0",
  "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
@@ -6038,7 +5983,7 @@ dependencies = [
  "midnight-coin-structure",
  "midnight-onchain-state",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-transient-crypto 3.1.0",
  "rand 0.8.6",
  "rpds",
@@ -6107,25 +6052,6 @@ dependencies = [
  "proc-macro2",
  "quote 1.0.45",
  "syn 2.0.117",
-]
-
-[[package]]
-name = "midnight-storage"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ed12a8b715ff879a11c9a45819f66594a3d8019f8ad9a3421b3fd3a9d6d9838"
-dependencies = [
- "crypto",
- "derive-where",
- "midnight-base-crypto",
- "midnight-serialize",
- "midnight-storage-core",
- "parking_lot",
- "rand 0.8.6",
- "serde",
- "sha2 0.10.9",
- "sysinfo",
- "tempfile",
 ]
 
 [[package]]
@@ -6349,7 +6275,7 @@ dependencies = [
  "midnight-proofs 0.8.2",
  "midnight-serialize",
  "midnight-transient-crypto 2.2.0",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "midnight-zk-stdlib 1.3.0",
  "midnight-zk-stdlib 2.4.0",
  "num-bigint",
@@ -6394,9 +6320,9 @@ dependencies = [
 
 [[package]]
 name = "midnight-zkir"
-version = "3.2.0"
+version = "3.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af98c3ac618f44a609df4963db4be69bed74123a3111b5475e22a81cec4ad857"
+checksum = "4aaeb48ea50efc4ee1dfdeed72ab6f38a64a6bb76b05d95851306a8f4cfd5202"
 dependencies = [
  "anyhow",
  "const-hex",
@@ -6407,7 +6333,7 @@ dependencies = [
  "midnight-curves 0.3.1",
  "midnight-proofs 0.8.2",
  "midnight-serialize",
- "midnight-transient-crypto 3.0.1",
+ "midnight-transient-crypto 3.1.0",
  "midnight-zk-stdlib 2.4.0",
  "num-bigint",
  "num-traits",
@@ -6436,10 +6362,10 @@ dependencies = [
  "lazy_static",
  "midnight-base-crypto",
  "midnight-coin-structure",
- "midnight-ledger-static 10.0.0 (git+https://github.com/betsudo/midnight-ledger?rev=d1ff7457554fe326dbdc6b19dd9d306d847ce653)",
+ "midnight-ledger-static",
  "midnight-onchain-runtime",
  "midnight-serialize",
- "midnight-storage 3.1.0",
+ "midnight-storage",
  "midnight-transient-crypto 2.2.0",
  "midnight-transient-crypto 3.1.0",
  "midnight-zkir 2.2.0 (git+https://github.com/betsudo/midnight-ledger?rev=d1ff7457554fe326dbdc6b19dd9d306d847ce653)",
@@ -6533,15 +6459,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ntapi"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c3b335231dfd352ffb0f8017f3b6027a4917f7df785ea2143d8af2adc66980ae"
-dependencies = [
- "winapi",
-]
-
-[[package]]
 name = "nu-ansi-term"
 version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6593,63 +6510,6 @@ checksum = "91df4bbde75afed763b708b7eee1e8e7651e02d97f6d5dd763e89367e957b23b"
 dependencies = [
  "hermit-abi",
  "libc",
-]
-
-[[package]]
-name = "objc2"
-version = "0.6.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "08849bbd4767dfae9457696856ae1c84fe4e0281bbe4a7abff2d0e06fb7981f8"
-dependencies = [
- "objc2-encode",
-]
-
-[[package]]
-name = "objc2-core-foundation"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536"
-dependencies = [
- "bitflags",
- "dispatch2",
- "objc2",
-]
-
-[[package]]
-name = "objc2-encode"
-version = "4.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef25abbcd74fb2609453eb695bd2f860d389e457f67dc17cafc8b8cbc89d0c33"
-
-[[package]]
-name = "objc2-foundation"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272"
-dependencies = [
- "bitflags",
- "objc2",
-]
-
-[[package]]
-name = "objc2-io-kit"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33fafba39597d6dc1fb709123dfa8289d39406734be322956a69f0931c73bb15"
-dependencies = [
- "libc",
- "objc2-core-foundation",
-]
-
-[[package]]
-name = "objc2-open-directory"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb82bed227edf5201dfedf072bba4015a33d3d4a98519837295a90f0a23f676d"
-dependencies = [
- "objc2",
- "objc2-core-foundation",
- "objc2-foundation",
 ]
 
 [[package]]
@@ -7984,21 +7844,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "sysinfo"
-version = "0.39.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2071df9448915b71c4fe6d25deaf1c22f12bd234f01540b77312bb8e41361e6"
-dependencies = [
- "libc",
- "memchr",
- "ntapi",
- "objc2-core-foundation",
- "objc2-io-kit",
- "objc2-open-directory",
- "windows 0.62.2",
-]
-
-[[package]]
 name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8688,23 +8533,11 @@ version = "0.61.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9babd3a767a4c1aef6900409f85f5d53ce2544ccdfaa86dad48c91782c6d6893"
 dependencies = [
- "windows-collections 0.2.0",
+ "windows-collections",
  "windows-core 0.61.2",
- "windows-future 0.2.1",
+ "windows-future",
  "windows-link 0.1.3",
- "windows-numerics 0.2.0",
-]
-
-[[package]]
-name = "windows"
-version = "0.62.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527fadee13e0c05939a6a05d5bd6eec6cd2e3dbd648b9f8e447c6518133d8580"
-dependencies = [
- "windows-collections 0.3.2",
- "windows-core 0.62.2",
- "windows-future 0.3.2",
- "windows-numerics 0.3.1",
+ "windows-numerics",
 ]
 
 [[package]]
@@ -8714,15 +8547,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3beeceb5e5cfd9eb1d76b381630e82c4241ccd0d27f1a39ed41b2760b255c5e8"
 dependencies = [
  "windows-core 0.61.2",
-]
-
-[[package]]
-name = "windows-collections"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "23b2d95af1a8a14a3c7367e1ed4fc9c20e0a26e79551b1454d72583c97cc6610"
-dependencies = [
- "windows-core 0.62.2",
 ]
 
 [[package]]
@@ -8759,18 +8583,7 @@ checksum = "fc6a41e98427b19fe4b73c550f060b59fa592d7d686537eebf9385621bfbad8e"
 dependencies = [
  "windows-core 0.61.2",
  "windows-link 0.1.3",
- "windows-threading 0.1.0",
-]
-
-[[package]]
-name = "windows-future"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1d6f90251fe18a279739e78025bd6ddc52a7e22f921070ccdc67dde84c605cb"
-dependencies = [
- "windows-core 0.62.2",
- "windows-link 0.2.1",
- "windows-threading 0.2.1",
+ "windows-threading",
 ]
 
 [[package]]
@@ -8815,16 +8628,6 @@ checksum = "9150af68066c4c5c07ddc0ce30421554771e528bde427614c61038bc2c92c2b1"
 dependencies = [
  "windows-core 0.61.2",
  "windows-link 0.1.3",
-]
-
-[[package]]
-name = "windows-numerics"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6e2e40844ac143cdb44aead537bbf727de9b044e107a0f1220392177d15b0f26"
-dependencies = [
- "windows-core 0.62.2",
- "windows-link 0.2.1",
 ]
 
 [[package]]
@@ -8963,15 +8766,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b66463ad2e0ea3bbf808b7f1d371311c80e115c0b71d60efc142cafbcfb057a6"
 dependencies = [
  "windows-link 0.1.3",
-]
-
-[[package]]
-name = "windows-threading"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3949bd5b99cafdf1c7ca86b43ca564028dfe27d66958f2470940f73d86d75b37"
-dependencies = [
- "windows-link 0.2.1",
 ]
 
 [[package]]

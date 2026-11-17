@@ -31,6 +31,11 @@ in a dependency repository are not inherited by a downstream root. The
 compatibility preflight still checks every direct Midnight dependency's exact
 version, Git URL and revision before generation.
 
+The active proof runner resolves the Ledger-required ZKIR 3.2.1 library and
+qualifies contracts with the published 3.2.1 native CLI. The Passport dogfood
+fixture remains on transient-crypto 3.0.1 and is explicitly outside this
+DID/runtime slice; no Passport or VC compatibility claim is inferred.
+
 The functional checked-program label stays `9.1.0.1`: Ledger 9.1.0.2 changes
 client transaction partitioning and decoding, not the Compact language or the
 checked-effect model. Runtime observations and compatibility metadata require

@@ -30,8 +30,8 @@ def checked_file(path):
 
 def require_zkir_version(execute, zkir, path):
     execute([zkir, "--version"], "zkir-version", path)
-    did.require(path.read_text().strip() == "midnight-zkir 3.2.0",
-                "expected published ZKIR v3 3.2.0")
+    did.require(path.read_text().strip() == "midnight-zkir 3.2.1",
+                "expected published ZKIR v3 3.2.1")
 
 
 def model(execute, receipt, zkir, output, geometry):

@@ -25,14 +25,14 @@ midnight-compact-testkit={path="../testkit-rs"}
 
 sha2="=0.10.9"
 
-midnight-ledger={version="=1.0.1",package="midnight-ledger-v9",features=["proving", "test-utilities"],optional=true}
+midnight-ledger={version="=1.0.2",package="midnight-ledger-v9",features=["proving", "test-utilities"],optional=true}
 midnight-zswap={version="=9.0.1",optional=true}
 midnight-base-crypto={version="=1.1.1",optional=true}
 midnight-onchain-state={version="=4.0.1",optional=true}
-midnight-storage={version="=3.0.0",optional=true}
+midnight-storage={version="=3.1.0",optional=true}
 midnight-serialize={version="=1.2.1",optional=true}
-midnight-transient-crypto={version="=3.0.1",optional=true}
-midnight-zkir={version="=3.2.0",optional=true}
+midnight-transient-crypto={version="=3.1.0",optional=true}
+midnight-zkir={version="=3.2.1",optional=true}
 rand={version="=0.8.6",optional=true}
 futures-executor={version="=0.3.32",optional=true}
 tokio={version="=1.50.0",features=["rt"],optional=true}

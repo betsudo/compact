@@ -33,7 +33,7 @@ serde_json = "1"
 hex = "0.4"
 midnight-onchain-state = "=4.0.1"
 midnight-serialize = "=1.2.1"
-midnight-storage = "=3.0.0"
+midnight-storage = "=3.1.0"
 
 # This fixture intentionally returns the same value from both branches to prove
 # that the witness condition still executes, including its failure and gas cost.
