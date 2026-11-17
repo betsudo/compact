@@ -139,21 +139,21 @@
       "source_sha256": "7122de5b894b3da0e356a75a56639b846f64bcd7a2978b17e11a46202ee8d734"
     },
     {
-      "declared_function_signatures_sha256": "c9fc0d6f308e3312d550de398dfdfcd05393a3c6a078812b7dc2f8dcc0f0b44a",
+      "declared_function_signatures_sha256": "95a4c901bb8fbb47a626f8f7d89ac03eebb26ab529c6855a863441598530db1a",
       "metrics": {
         "clone_calls": 37,
         "collect_calls": 0,
-        "distinct_internal_identifiers": 40,
-        "internal_identifier_occurrences": 127,
-        "lines": 496,
-        "literal_unit_bindings": 14,
+        "distinct_internal_identifiers": 33,
+        "internal_identifier_occurrences": 115,
+        "lines": 517,
+        "literal_unit_bindings": 0,
         "longest_internal_identifier": 28,
         "maximum_block_depth": 4,
-        "single_expression_blocks": 14
+        "single_expression_blocks": 16
       },
       "name": "did-point-map-reducer",
       "path": "tests-rust-backend/did-point-map-reducer/lib.rs",
-      "source_sha256": "b2ade6c2cfa82d3f76f910d8e9082dfa3da3193371f5e07626e6e1f36be5a50f"
+      "source_sha256": "60386cfb2df4d64b77ae2907674b3cbe22dae857033ce71d61c5f343df49815b"
     },
     {
       "declared_function_signatures_sha256": "a9c9568116696a7e3d91379d5cfb0a61f888a686def21df37b8a009f0c77a085",

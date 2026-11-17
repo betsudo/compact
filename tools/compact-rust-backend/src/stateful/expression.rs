@@ -202,21 +202,23 @@ fn render_control_expression(
                 return Ok((value, ty, condition_effect || effect));
             }
             let mut then_statements = Vec::new();
+            let mut then_query = false;
             let (then_value, then_ty, then_effect) = render_state_expression_observed(
                 then,
                 parameters,
                 &mut then_statements,
                 next_temp,
-                query_effect,
+                &mut then_query,
                 environment,
             )?;
             let mut else_statements = Vec::new();
+            let mut else_query = false;
             let (else_value, else_ty, else_effect) = render_state_expression_observed(
                 otherwise,
                 parameters,
                 &mut else_statements,
                 next_temp,
-                query_effect,
+                &mut else_query,
                 environment,
             )?;
             if then_ty != else_ty {
@@ -231,13 +233,100 @@ fn render_control_expression(
                 .then_some(then_value);
             let else_value = (!matches!(&else_value, syn::Expr::Tuple(t) if t.elems.is_empty()))
                 .then_some(else_value);
+            *query_effect |= then_query || else_query;
+            if then_query || else_query {
+                // Each selected query arm owns and returns its context. Keeping
+                // the arms in separate native frames bounds debug-build stack
+                // use without reordering gas or public transcript effects.
+                let then_value = then_value.unwrap_or_else(|| syn::parse_quote!(()));
+                let else_value = else_value.unwrap_or_else(|| syn::parse_quote!(()));
+                // A Unit-valued arm still has to evaluate its tail before
+                // moving context, but binding that result trips Clippy's
+                // let_unit_value lint in generated consumers.
+                let branch_tail = |value: syn::Expr| {
+                    if then_ty == Type::Unit {
+                        let inert_unit_value = match &value {
+                            syn::Expr::Tuple(tuple) => tuple.elems.is_empty(),
+                            syn::Expr::Path(_) => true,
+                            syn::Expr::Field(field) => {
+                                matches!(&*field.base, syn::Expr::Path(_))
+                            }
+                            _ => false,
+                        };
+                        if inert_unit_value {
+                            quote::quote!(Ok((context, ())))
+                        } else {
+                            quote::quote!(#value; Ok((context, ())))
+                        }
+                    } else {
+                        quote::quote!(
+                            let __compact_branch_value = #value;
+                            Ok((context, __compact_branch_value))
+                        )
+                    }
+                };
+                let then_tail = branch_tail(then_value);
+                let else_tail = branch_tail(else_value);
+                // A nested query conditional can itself be a block. Bind it
+                // before the outer `if` so generated consumers also satisfy
+                // Clippy's blocks_in_conditions lint without reevaluation.
+                let (condition_binding, branch_condition): (Option<syn::Stmt>, syn::Expr) =
+                    if matches!(&condition, syn::Expr::Block(_)) {
+                        (
+                            Some(syn::parse_quote!(let __compact_branch_condition = #condition;)),
+                            syn::parse_quote!(__compact_branch_condition),
+                        )
+                    } else {
+                        (None, condition)
+                    };
+                return Ok((
+                    syn::parse_quote!({
+                        #[inline(never)]
+                        fn __compact_query_branch<C, T>(
+                            context: C,
+                            body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+                        ) -> Result<(C, T), runtime::CompactError> {
+                            body(context)
+                        }
+                        #condition_binding
+                        let (__compact_next_context, __compact_branch_value) = if #branch_condition {
+                            __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
+                                #(#then_statements)*
+                                #then_tail
+                            })?
+                        } else {
+                            __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
+                                #(#else_statements)*
+                                #else_tail
+                            })?
+                        };
+                        context = __compact_next_context;
+                        __compact_branch_value
+                    }),
+                    then_ty,
+                    condition_effect || then_effect || else_effect,
+                ));
+            }
             let otherwise = (!else_statements.is_empty() || else_value.is_some())
                 .then(|| quote::quote!(else { #(#else_statements)* #else_value }));
-            Ok((
+            let rendered = if matches!(&condition, syn::Expr::Block(_)) {
+                // A pure arm can be the condition of a later query branch.
+                // Keep its own complex condition outside that inner `if`.
+                syn::parse_quote!({
+                    let __compact_pure_branch_condition = #condition;
+                    if __compact_pure_branch_condition {
+                        #(#then_statements)*
+                        #then_value
+                    } #otherwise
+                })
+            } else {
                 syn::parse_quote!(if #condition {
                     #(#then_statements)*
                     #then_value
-                } #otherwise),
+                } #otherwise)
+            };
+            Ok((
+                rendered,
                 then_ty,
                 condition_effect || then_effect || else_effect,
             ))

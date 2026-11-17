@@ -45,6 +45,18 @@ FROZEN_LEDGER9_RUNTIME = {
         (FROZEN_LEDGER9_SOURCE / 'compact-types.ts',
          '07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4'),
 }
+# The 0.18.0 capture was made before the grouped query-arm lowering refreshed
+# these generated consumers. Keep their exact reviewed bytes for historical
+# capture tests; validate_current_capture still checks live source and refuses
+# to reuse the old capture for a changed compiler/runtime artifact.
+FROZEN_RUNTIME018_GENERATED = {
+    'tests-rust-backend/did-point-guard-reducer/lib.rs': (
+        ROOT / 'tools/compact-rust-backend/reviewed-ledger9-runtime018-generated/did-point-guard-reducer-lib.rs',
+        '218bfefe8d815ed7e561cdd1ab9b19b7e52bb93fe113be23b00957b91a1be937'),
+    'tests-rust-backend/did-point-map-reducer/lib.rs': (
+        ROOT / 'tools/compact-rust-backend/reviewed-ledger9-runtime018-generated/did-point-map-reducer-lib.rs',
+        '1b5c1c0fecb896e42396a3b6448242adc96b12e509c8d7fc3760b1d3ca61b1c6'),
+}
 GEOMETRY = {
     "point-digest": {"point_write_only": (7, 77), "pure_projection_only": (7, 95),
                      "scalar_control": (6, 49), "update": (7, 97)},

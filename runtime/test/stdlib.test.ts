@@ -13,10 +13,98 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { keccak_256 } from '@noble/hashes/sha3.js';
 import * as compactRuntime from '../src/index.js';
 import * as ocrt from '@midnightntwrk/onchain-runtime-v4';
+
+describe('createCircuitContext host options', () => {
+  const address = ocrt.sampleContractAddress();
+  const options = () => ({
+    circuitId: 'constructor',
+    contractAddress: address,
+    coinPublicKeyOrZswapState: '0'.repeat(64),
+    contractState: new ocrt.ContractState(),
+    privateState: { value: 7 },
+  });
+
+  test('accepts the pinned root host object form and retains positional contexts', () => {
+    const inputs = options();
+    const fromOptions = compactRuntime.createCircuitContext(inputs);
+    const positional = compactRuntime.createCircuitContext(
+      inputs.contractAddress,
+      inputs.coinPublicKeyOrZswapState,
+      inputs.contractState,
+      inputs.privateState,
+    );
+    expect(fromOptions.currentPrivateState).toEqual(positional.currentPrivateState);
+    expect(fromOptions.currentZswapLocalState).toEqual(positional.currentZswapLocalState);
+    expect(fromOptions.currentQueryContext.block.ownAddress).toEqual(address);
+    expect(fromOptions.callContext.currentQueryContext).toBe(fromOptions.currentQueryContext);
+    expect(positional.callContext.currentQueryContext).toBe(positional.currentQueryContext);
+  });
+
+  test('threads ledger queries through shallow copies without changing the input snapshot', () => {
+    const initial = compactRuntime.createCircuitContext(options());
+    const initialQueryContext = initial.currentQueryContext;
+    const current = { ...initial, gasCost: compactRuntime.emptyRunningCost() };
+    const nextQueryContext = new ocrt.QueryContext(new ocrt.ContractState().data, address);
+    const gasCost = { readTime: 1n, computeTime: 2n, bytesWritten: 3n, bytesDeleted: 4n };
+    const query = vi.spyOn(initialQueryContext, 'query').mockReturnValue({
+      context: nextQueryContext,
+      gasCost,
+      events: [],
+    } as ReturnType<typeof initialQueryContext.query>);
+    const proofData = {
+      input: { value: [], alignment: [] },
+      publicTranscript: [],
+      privateTranscriptOutputs: [],
+    };
+
+    expect(compactRuntime.queryLedgerState(current, proofData, [])).toEqual([]);
+    expect(query).toHaveBeenCalledOnce();
+    expect(current.currentQueryContext).toBe(nextQueryContext);
+    expect(current.callContext.currentQueryContext).toBe(nextQueryContext);
+    expect(initial.currentQueryContext).toBe(initialQueryContext);
+    expect(initial.callContext.currentQueryContext).toBe(initialQueryContext);
+    expect(current.gasCost).toEqual(gasCost);
+    expect(proofData.publicTranscript).toEqual([]);
+    expect(current.events).toEqual([]);
+  });
+
+  test('accepts generated ledger-reader contexts without the host call view', () => {
+    const initial = compactRuntime.createCircuitContext(options());
+    const synthetic = {
+      currentQueryContext: initial.currentQueryContext,
+      costModel: initial.costModel,
+    };
+    const nextQueryContext = new ocrt.QueryContext(new ocrt.ContractState().data, address);
+    vi.spyOn(synthetic.currentQueryContext, 'query').mockReturnValue({
+      context: nextQueryContext,
+      gasCost: compactRuntime.emptyRunningCost(),
+      events: [],
+    } as ReturnType<typeof synthetic.currentQueryContext.query>);
+    const proofData = {
+      input: { value: [], alignment: [] },
+      publicTranscript: [],
+      privateTranscriptOutputs: [],
+    };
+
+    expect(compactRuntime.queryLedgerState(synthetic as unknown as compactRuntime.CircuitContext, proofData, [])).toEqual([]);
+    expect(synthetic.currentQueryContext).toBe(nextQueryContext);
+    expect('callContext' in synthetic).toBe(false);
+  });
+
+  test('refuses incomplete and cross-contract option shapes', () => {
+    const inputs = options();
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, contractState: undefined as never }))
+      .toThrow(/missing coin key or contract state/);
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, crossContract: {} }))
+      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, parentBlockHash: '0'.repeat(64) }))
+      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+  });
+});
 
 describe('createCoinCommitment', () => {
   test('Check for success', () => {

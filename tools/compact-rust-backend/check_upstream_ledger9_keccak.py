@@ -19,7 +19,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tomllib
@@ -40,22 +39,22 @@ def compile_fixture(compiler, fixture, output, probe):
     family = fixture.parent.name
     work = output / family
     work.mkdir()
-    source = fixture
     command = (compiler, "--target", "rust", "--target", "ts", "--feature-zkir-v3",
                "--skip-zk", "--rust-runtime-root", ROOT)
     if probe:
         original = fixture.read_bytes()
         if original.count(PRAGMA) != 1:
             raise RuntimeError(f"{fixture} must contain the pinned language pragma exactly once")
-        intact = subprocess.run((*command, fixture, work / "intact"), cwd=ROOT, capture_output=True)
-        (work / "intact.stderr").write_bytes(intact.stderr)
-        if intact.returncode == 0 or b"language version 0.23.105 mismatch" not in intact.stderr:
-            raise RuntimeError(f"{fixture} did not refuse its intact language pragma")
-        if (work / "intact").exists():
-            raise RuntimeError(f"{fixture} published output on version refusal")
-        source = work / fixture.name
-        source.write_bytes(original.replace(PRAGMA, b"", 1))
-    result = subprocess.run((*command, source, work / ".build"), cwd=ROOT, capture_output=True)
+        # Use the default TS profile: --target rust selects v3 implicitly.
+        legacy_command = (compiler, "--skip-zk")
+        legacy = subprocess.run((*legacy_command, fixture, work / "legacy-v2"),
+                                cwd=ROOT, capture_output=True)
+        (work / "legacy-v2.stderr").write_bytes(legacy.stderr)
+        if legacy.returncode == 0 or b"language version 0.23.105 mismatch" not in legacy.stderr:
+            raise RuntimeError(f"{fixture} did not refuse its intact pragma under legacy v2")
+        if (work / "legacy-v2").exists():
+            raise RuntimeError(f"{fixture} published output on legacy version refusal")
+    result = subprocess.run((*command, fixture, work / ".build"), cwd=ROOT, capture_output=True)
     (work / "compile.stdout").write_bytes(result.stdout)
     (work / "compile.stderr").write_bytes(result.stderr)
     (work / "compile.exit").write_text(f"{result.returncode}\n")
@@ -110,7 +109,7 @@ def main():
     parser.add_argument("--curves-utils", type=Path, required=True, help="Installed @noble/curves utils.js")
     parser.add_argument("--output", type=Path, required=True, help="Absent directory for generated outputs")
     parser.add_argument("--allow-pragma-probe", action="store_true",
-                        help="On language 0.23.105, also compile a derivative without the 0.25.0 pragma")
+                        help="Also require legacy v2 to refuse each intact 0.25.0 pragma")
     args = parser.parse_args()
     compiler = args.compiler.resolve(strict=True)
     runtime = args.ts_runtime.resolve(strict=True)
@@ -124,17 +123,24 @@ def main():
         parser.error("output must be absent")
 
     # A cold Scheme frontend can print its library compilation before the version.
-    version_output = run(compiler, "--language-version", text=True, stdout=subprocess.PIPE).stdout
+    version_output = run(compiler, "--feature-zkir-v3", "--language-version",
+                         text=True, stdout=subprocess.PIPE).stdout
     language = version_output.strip().rpartition("\n")[2]
-    if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", language) is None:
-        parser.error(f"compiler did not report a language version: {version_output!r}")
-    probe = args.allow_pragma_probe and language == "0.23.105"
+    if language != "0.28.0":
+        parser.error(f"expected released Compact 0.36.0 v3 language 0.28.0: {version_output!r}")
+    probe = args.allow_pragma_probe
+    if probe:
+        legacy_output = run(compiler, "--language-version", text=True,
+                            stdout=subprocess.PIPE).stdout
+        legacy = legacy_output.strip().rpartition("\n")[2]
+        if legacy != "0.23.105":
+            parser.error(f"expected preserved legacy v2 language 0.23.105: {legacy_output!r}")
     runtime_link = output / "node_modules/@midnight-ntwrk/compact-runtime"
     runtime_link.parent.mkdir(parents=True)
     runtime_link.symlink_to(runtime, target_is_directory=True)
     (output / "package.json").write_text('{"type":"module"}\n')
     (output / "language.stdout").write_text(version_output)
-    (output / "language.json").write_text(json.dumps({"compiler": language, "pragma_probe": probe}) + "\n")
+    (output / "language.json").write_text(json.dumps({"compiler": language, "legacy_refusal_probe": probe}) + "\n")
 
     contracts = {}
     for fixture in sorted(FAMILY.glob("*/keccak256_*.compact")):

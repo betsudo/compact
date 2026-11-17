@@ -19,6 +19,7 @@
 ;; Internal occurrence controls; generated consumer/proof gates remain separate.
 (import (except (chezscheme) errorf) (utils) (nanopass) (langs)
         (parser) (frontend-passes) (analysis-passes) (pass-helpers)
+        (circuit-passes) (rust-ir-passes) (config-params)
         (rust-vector-indices))
 
 (define collected '())
@@ -388,6 +389,154 @@
                    (and (not (rust-vector-unique-source? item))
                         (not (rust-vector-index-observations item))
                         (not (rust-vector-domain-certified? item '(1 2))))) copied*)))))
+
+;; The slow Bytes reconstruction has three distinct base_data[i] occurrences:
+;; one in the condition and one in each conditional arm. The circuit evaluator
+;; visits both arms for every literal iteration, so every exact occurrence must
+;; independently attest the entire ten-item domain. No one occurrence can lend
+;; its observations to another, and extra visits cannot certify the domain.
+;; A heterogeneous literal binding also exercises the analyzed tuple-to-Vector
+;; safe-cast that surrounds each operand in the untouched upstream original.
+(let* ([runtime-ir (analyze (write-source "ten-step-vector-domain-observations"
+         "export pure circuit choose(i: Uint<9>): Uint<8> { const base_data = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; return (base_data[i] > 50 ? (base_data[i] - 50) : base_data[i]) as Uint<8>; }"))]
+       [original* (nodes runtime-ir)]
+       [domain '(0 1 2 3 4 5 6 7 8 9)])
+  (check 'ten-step-three-original-occurrences (= (length original*) 3))
+  (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts runtime-ir)])
+    (for-each
+      (lambda (node)
+        (check 'ten-step-source-unique (rust-vector-unique-source? node))
+        (check 'ten-step-pure-tuple-vector-wrapper
+          (nanopass-case (Lnodisclose Expression) node
+            [(vector-ref ,src ,type ,expr ,index)
+             (nanopass-case (Lnodisclose Expression) expr
+               [(safe-cast ,src^ ,type^ ,type^^ ,expr^)
+                (and (nanopass-case (Lnodisclose Type) type^^
+                       [(ttuple ,src^^ ,type* ...) (= (length type*) 10)]
+                       [else #f])
+                     (nanopass-case (Lnodisclose Expression) expr^
+                       [(var-ref ,src^^ ,var-name) #t]
+                       [else #f]))]
+               [else #f])]))
+        (check 'ten-step-unobserved-refused
+          (not (rust-vector-domain-certified? node domain)))
+        (for-each (lambda (index) (observe-rust-vector-index! (source node) index)) domain)
+        (check 'ten-step-exact-ordered-domain
+          (rust-vector-domain-certified? node domain))
+        (check 'ten-step-reordered-domain-refused
+          (not (rust-vector-domain-certified? node (reverse domain))))
+        (check 'ten-step-short-domain-refused
+          (not (rust-vector-domain-certified? node (cdr domain))))
+        (check 'ten-step-direct-dynamic-refused (not (rust-vector-index node))))
+      original*)
+    (observe-rust-vector-index! (source (car original*)) 9)
+    (check 'ten-step-extra-visit-refused
+      (not (rust-vector-domain-certified? (car original*) domain)))
+    (check 'ten-step-other-occurrences-unchanged
+      (for-all (lambda (node) (rust-vector-domain-certified? node domain))
+               (cdr original*))))
+  (let* ([copied (duplicate runtime-ir)] [copied* (nodes copied)])
+    (parameterize ([current-rust-vector-index-facts (make-rust-vector-index-facts copied)])
+      (check 'ten-step-copied-occurrences-present (= (length copied*) 6))
+      (for-each (lambda (index) (observe-rust-vector-index! (source (car copied*)) index))
+                domain)
+      (check 'ten-step-copied-source-refused
+        (for-all (lambda (node) (not (rust-vector-domain-certified? node domain)))
+                 copied*)))))
+
+;; Exercise the actual emitter admission, not only its occurrence bridge. The
+;; positive source binds a heterogeneous tuple, so indexing inserts the same
+;; safe-cast wrapper as the slow upstream original. A call remains effectful;
+;; forged nested/mismatched wrappers and missing/extra facts must fail closed.
+(define (run-index-passes passes ir)
+  (fold-left (lambda (ir pass) ((passrec-pass pass) ir)) ir passes))
+(define (expected-vector-index-refusal? condition)
+  (let* ([expected "Rust backend has no unique constant-valued Vector index for this occurrence"]
+         [message (and (message-condition? condition)
+                       (irritants-condition? condition)
+                       (apply format (condition-message condition)
+                              (condition-irritants condition)))])
+    (and (source-error-condition? condition)
+         message
+         (>= (string-length message) (string-length expected))
+         (string=? (substring message
+                             (- (string-length message) (string-length expected))
+                             (string-length message))
+                   expected))))
+(define (project-index-ir ir facts)
+  (guard (condition
+           [(expected-vector-index-refusal? condition) 'refused]
+           [else (raise condition)])
+    (parameterize ([current-rust-vector-index-facts facts]
+                   [feature-zkir-v3 #t]
+                   [target-ports (list (cons 'rust.ir.json (open-output-string))
+                                       (cons 'rust.origins.json (open-output-string)))])
+      (run-index-passes rust-ir-passes ir)
+      #t)))
+(define (observed-index-facts ir)
+  (let ([facts (make-rust-vector-index-facts ir)])
+    (parameterize ([current-rust-vector-index-facts facts])
+      (run-index-passes circuit-passes ir))
+    facts))
+(define (forged-ten-facts ir)
+  (let ([facts (make-rust-vector-index-facts ir)])
+    (parameterize ([current-rust-vector-index-facts facts])
+      (for-each (lambda (node)
+                  (for-each (lambda (index) (observe-rust-vector-index! (source node) index))
+                            '(0 1 2 3 4 5 6 7 8 9)))
+                (nodes ir)))
+    facts))
+(define-pass nested-vector-operand : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type ,expr ,index)
+     `(vector-ref ,src ,type (safe-cast ,src ,type ,type ,expr) ,index)]))
+(define-pass mismatched-width-vector-operand : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type (safe-cast ,src^ ,type^ ,type^^ ,expr) ,index)
+     `(vector-ref ,src ,type
+        (safe-cast ,src^ (tvector ,src^ 11 (tunsigned ,src^ 100)) ,type^^ ,expr)
+        ,index)]))
+(define-pass narrowed-vector-operand : Lnodisclose (ir) -> Lnodisclose ()
+  (Expression : Expression (ir) -> Expression ()
+    [(vector-ref ,src ,type (safe-cast ,src^ ,type^ ,type^^ ,expr) ,index)
+     `(vector-ref ,src ,type
+        (safe-cast ,src^ (tvector ,src^ 10 (tunsigned ,src^ 50)) ,type^^ ,expr)
+        ,index)]))
+(let* ([prefix
+         "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; total = 0; for (const i of 0..10) { total = (total + (base_data[i] as Uint<16>)) as Uint<16>; } return total; }"]
+       [positive (analyze (write-source "ten-step-wrapper-positive" prefix))]
+       [effectful (analyze (write-source "ten-step-wrapper-effectful"
+         (string-append
+           "circuit identity(v: Vector<10, Uint<100>>): Vector<10, Uint<100>> { return v; } "
+           "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; total = 0; for (const i of 0..10) { total = (total + (identity(base_data)[i] as Uint<16>)) as Uint<16>; } return total; }")))]
+       [indirect (analyze (write-source "ten-step-wrapper-indirect-producer"
+         (string-append
+           "circuit produce(): [Uint<1>, Uint<4>, Uint<9>, Uint<16>, Uint<25>, Uint<36>, Uint<49>, Uint<64>, Uint<81>, Uint<100>] { return [1, 4, 9, 16, 25, 36, 49, 64, 81, 100]; } "
+           "export ledger total: Uint<16>; export circuit choose(): Uint<16> { const base_data = produce(); total = 0; for (const i of 0..10) { total = (total + (base_data[i] as Uint<16>)) as Uint<16>; } return total; }")))])
+  (check 'ten-step-wrapper-positive-projection
+    (project-index-ir positive (observed-index-facts positive)))
+  (check 'ten-step-wrapper-effectful-refused
+    (eq? (project-index-ir effectful (observed-index-facts effectful)) 'refused))
+  ;; A producer call evaluated into a local binding before the Fold is safe:
+  ;; the indexed operand remains a single bare reference and dispatch never
+  ;; re-evaluates its initializer. Only a call inside the operand is refused.
+  (check 'ten-step-wrapper-indirect-producer-once
+    (project-index-ir indirect (observed-index-facts indirect)))
+  (for-each
+    (lambda (label pass)
+      (let ([forged (pass positive)])
+        (check label (eq? (project-index-ir forged (forged-ten-facts forged)) 'refused))))
+    '(ten-step-wrapper-nested-refused ten-step-wrapper-width-refused
+      ten-step-wrapper-bound-refused)
+    (list nested-vector-operand mismatched-width-vector-operand
+          narrowed-vector-operand))
+  (check 'ten-step-wrapper-unobserved-refused
+    (eq? (project-index-ir positive (make-rust-vector-index-facts positive)) 'refused))
+  (let ([facts (forged-ten-facts positive)])
+    (parameterize ([current-rust-vector-index-facts facts])
+      (observe-rust-vector-index! (source (car (nodes positive))) 9))
+    (check 'ten-step-wrapper-extra-observation-refused
+      (eq? (project-index-ir positive facts) 'refused))))
 
 ;; The immutable Bytes Fold bridge uses the same ordered occurrence facts.
 ;; Confirm that neither a missing or reordered circuit visit nor a copied

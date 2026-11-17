@@ -297,7 +297,8 @@ def main() -> None:
                 for name, digest in material_hashes.items()) and
             all(sha256(proof / name) == digest for name, digest in input_hashes.items()),
             'proof source, generated artifact or proving material drifted')
-    report = {**source, 'format':'compact-ledger9-for-generic-bound-proof-gate/v1',
+    report = {**source, 'source_clean':True,
+              'format':'compact-ledger9-for-generic-bound-proof-gate/v1',
               'status':'passed', 'platform':os.uname().sysname + ' ' + os.uname().machine,
               'grouped_head':source['head'], 'grouped_gate_sha256':sha256(gate_path),
               'generated_input_sha256':gate['generated_files_sha256'],

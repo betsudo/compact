@@ -249,10 +249,13 @@ export function createZswapOutput(
   coinInfo: EncodedShieldedCoinInfo,
   recipient: EncodedRecipient,
 ): [] {
-  circuitContext.currentQueryContext = circuitContext.currentQueryContext.insertCommitment(
+  const nextQueryContext = circuitContext.currentQueryContext.insertCommitment(
     Buffer.from(Bytes32Descriptor.fromValue(createCoinCommitment(coinInfo, recipient).value)).toString('hex'),
     circuitContext.currentZswapLocalState.currentIndex,
   );
+  circuitContext.currentQueryContext = nextQueryContext;
+  // Keep the host view fresh without changing a shallow-copied input context.
+  circuitContext.callContext = { ...circuitContext.callContext, currentQueryContext: nextQueryContext };
   circuitContext.currentZswapLocalState = {
     ...circuitContext.currentZswapLocalState,
     currentIndex: circuitContext.currentZswapLocalState.currentIndex + 1n,

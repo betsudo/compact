@@ -266,6 +266,43 @@ fn main() {
     println!("cargo::rustc-check-cfg=cfg(compact_for_generic_bound_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_import_ledger_field_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_bytes_indexed_access_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_bytes_large_reconstruction_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_BYTES_LARGE_RECONSTRUCTION_GENERATED");
+    println!("cargo::rerun-if-env-changed=COMPACT_BYTES_LARGE_RECONSTRUCTION_GATE");
+    if std::env::var_os("CARGO_FEATURE_BYTES_LARGE_RECONSTRUCTION_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_BYTES_LARGE_RECONSTRUCTION_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute slow Bytes generated root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/bytes_manual_update_large_reconstruction.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete slow Bytes generated member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_bytes_large_reconstruction_generated");
+    }
+    if std::env::var_os("CARGO_FEATURE_BYTES_LARGE_RECONSTRUCTION_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_BYTES_LARGE_RECONSTRUCTION_GATE")
+    {
+        let root = std::path::PathBuf::from(root);
+        let transcript = root.join("typescript-transcript.json");
+        assert!(
+            root.is_absolute() && transcript.is_file(),
+            "exact semantic transcript required"
+        );
+        println!("cargo::rerun-if-changed={}", transcript.display());
+    }
     println!("cargo::rerun-if-env-changed=COMPACT_BYTES_INDEXED_ACCESS_GENERATED");
     if std::env::var_os("CARGO_FEATURE_BYTES_INDEXED_ACCESS_PROOF").is_some()
         && let Some(root) = std::env::var_os("COMPACT_BYTES_INDEXED_ACCESS_GENERATED")

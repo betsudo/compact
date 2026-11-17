@@ -103,14 +103,40 @@ pub mod ledger_contract {
         let __compact_query_1 = crate::ledger_slots::controller.read(context)?;
         context = __compact_query_1.context;
         total_cost += __compact_query_1.gas_cost;
-        if !(if __compact_value_0 != runtime::jubjub_point_x(__compact_query_1.result) {
-            true
-        } else {
-            let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
-            let __compact_query_3 = crate::ledger_slots::controller.read(context)?;
-            context = __compact_query_3.context;
-            total_cost += __compact_query_3.gas_cost;
-            __compact_value_2 != runtime::jubjub_point_y(__compact_query_3.result)
+        if !({
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_value_0
+                != runtime::jubjub_point_x(__compact_query_1.result)
+            {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = true;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
+                        let __compact_query_3 = crate::ledger_slots::controller.read(context)?;
+                        context = __compact_query_3.context;
+                        total_cost += __compact_query_3.gas_cost;
+                        let __compact_branch_value =
+                            __compact_value_2 != runtime::jubjub_point_y(__compact_query_3.result);
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         }) {
             return Err(runtime::CompactError::AssertionFailed(
                 "same controller".to_owned(),
@@ -135,14 +161,39 @@ pub mod ledger_contract {
         let __compact_query_1 = crate::ledger_slots::recovery.read(context)?;
         context = __compact_query_1.context;
         total_cost += __compact_query_1.gas_cost;
-        if !(if __compact_value_0 != runtime::jubjub_point_x(__compact_query_1.result) {
-            true
-        } else {
-            let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
-            let __compact_query_3 = crate::ledger_slots::recovery.read(context)?;
-            context = __compact_query_3.context;
-            total_cost += __compact_query_3.gas_cost;
-            __compact_value_2 != runtime::jubjub_point_y(__compact_query_3.result)
+        if !({
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) =
+                if __compact_value_0 != runtime::jubjub_point_x(__compact_query_1.result) {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_branch_value = true;
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
+                } else {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
+                            let __compact_query_3 = crate::ledger_slots::recovery.read(context)?;
+                            context = __compact_query_3.context;
+                            total_cost += __compact_query_3.gas_cost;
+                            let __compact_branch_value = __compact_value_2
+                                != runtime::jubjub_point_y(__compact_query_3.result);
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
+                };
+            context = __compact_next_context;
+            __compact_branch_value
         }) {
             return Err(runtime::CompactError::AssertionFailed(
                 "same recovery".to_owned(),

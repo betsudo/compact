@@ -34,7 +34,9 @@ STATIC_ROSTER = {'effectful_operand': (True, False),
                  'shadowed_formal': (True, False),
                  'out_of_range': (False, False),
                  'cap_eight': (True, True),
-                 'cap_nine': (True, False),
+                 'cap_nine': (True, True),
+                 'cap_ten': (True, True),
+                 'cap_eleven': (True, False),
                  'guarded_item': (True, False),
                  'mixed_literal': (True, False),
                  'nested_scope': (True, False),
@@ -139,6 +141,14 @@ def gate_log(path, expected):
     lines = path.read_text().splitlines()
     require(lines and json.loads(lines[-1]) == expected,
             f'gate log identity or status differs: {path}')
+
+
+def occurrence_log(path):
+    require(path.is_file() and not path.is_symlink(),
+            'missing or symlinked source occurrence log')
+    require(path.read_text().splitlines()[-1:] ==
+            ['108 Rust collection index occurrence controls passed'],
+            'merged source occurrence controls did not pass')
 
 
 def originals(receipt):
@@ -404,9 +414,7 @@ def main():
                     (folder / mode).exists() is success and
                     sha(folder / f'{mode}.log') == result['log_sha256'],
                     f'static-domain probe outcome differs: {name}/{mode}')
-    require(Path(args.occurrence_log).read_text().splitlines()[-1] ==
-            '64 Rust collection index occurrence controls passed',
-            'merged source occurrence controls did not pass')
+    occurrence_log(Path(args.occurrence_log))
     proof_sha = None
     if args.proof:
         proof_root = Path(args.proof).resolve(strict=True)

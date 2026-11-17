@@ -36,9 +36,9 @@ fn hash_rows(rows: &Value, reviewed_ledger9_sources: bool) {
         let path = row["path"].as_str().unwrap();
         assert!(!Path::new(path).is_absolute());
         assert!(!path.split('/').any(|p| p == ".."));
-        // The reviewed Runtime 0.17.0 capture also pins this test's original
-        // source. Keep that historical byte identity when the live test adds
-        // checks for later Ledger 9 runtime changes.
+        // The reviewed Runtime 0.17.0 capture pins the original test and
+        // generated library. Keep those historical bytes when the live test
+        // and current generated fixture change for later Ledger 9 work.
         let frozen = if reviewed_ledger9_sources {
             match path {
                 "runtime/src/built-ins.ts" => Some((
@@ -52,6 +52,10 @@ fn hash_rows(rows: &Value, reviewed_ledger9_sources: bool) {
                 "tests-rust-backend/did-adoption/tests/provenance.rs" => Some((
                     "tests-rust-backend/did-adoption/oracle/ledger9/reviewed-provenance-05912594.rs",
                     "b864ec12133eff1391a010296ab7d7c122b9a66e9f0be2fc746b8f7ed6000884",
+                )),
+                "tests-rust-backend/did-adoption/lib.rs" => Some((
+                    "tests-rust-backend/did-adoption/oracle/ledger9/reviewed-lib-05912594.rs",
+                    "3e9d1d963651abc37028a34c2d72a35ddc2832913dcd7634c8447d210bf5bedd",
                 )),
                 _ => None,
             }

@@ -93,7 +93,7 @@ The following flags, if present, affect the compiler's behavior as follows:
   (command-line-case (cons "compactc" (cdr (command-line)))
     [((flags [(--help) $ (begin (print-help) (exit))]
              [(--version) $ (begin (print-compiler-version) (exit))]
-             [(--language-version) $ (begin (print-language-version) (exit))]
+             [(--language-version) $ (begin (print-language-version ?--feature-zkir-v3) (exit))]
              [(--ledger-version) $ (begin (print-ledger-version ?--feature-zkir-v3) (exit))]
              [(--runtime-version) $ (begin (print-runtime-version) (exit))]
              [(--vscode)]
@@ -125,7 +125,7 @@ The following flags, if present, affect the compiler's behavior as follows:
          (generate-everything source-pathname target-directory-pathname)))]
     [((flags [(--help) $ (begin (print-help) (exit))]
              [(--version) $ (begin (print-compiler-version) (exit))]
-             [(--language-version) $ (begin (print-language-version) (exit))]
+             [(--language-version) $ (begin (print-language-version ?--feature-zkir-v3) (exit))]
              [(--ledger-version) $ (begin (print-ledger-version ?--feature-zkir-v3) (exit))]
              [(--runtime-version) $ (begin (print-runtime-version) (exit))]
              [(--feature-zkir-v3)])

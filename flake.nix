@@ -192,6 +192,118 @@
             checkPhase = "";
           });
 
+          # The pinned root test host invokes these fixtures without compilerArgs.
+          # Keep the compiler's legacy default and its explicit v3 refusals;
+          # select v3 only for these byte-exact upstream compile-pass cases.
+          packages.compactc-test-contracts = pkgs.writeShellScriptBin "compactc" ''
+            compiler=${packages.compactc}/bin/compactc
+            for arg in "$@"; do
+              case "$arg" in
+                --target|--target=*) exec "$compiler" "$@" ;;
+              esac
+            done
+            for arg in "$@"; do
+              expected=
+              case "$arg" in
+                */test-contracts/stdlib/curve25519/base/roundtrip/curve25519_base_roundtrip.compact)
+                  expected=4cb617334d5ab3fd810968345cd7e564be9d9ad6c0e7616e1b2fe13fe8ab38c8
+                  ;;
+                */test-contracts/stdlib/curve25519/scalar/roundtrip/curve25519_scalar_roundtrip.compact)
+                  expected=7e3b76271c55a71e492941398837427309d54cb32d0b33ef4660c2c6e3999c4a
+                  ;;
+                */test-contracts/stdlib/curve25519/default/maybe_either/curve25519_default_maybe_either.compact)
+                  expected=d753887f22666a4e58ed472e282ea9d0051376230ae439ea2772824de86d279a
+                  ;;
+                */test-contracts/stdlib/curve25519/verify/curve25519_verify.compact)
+                  expected=0208874ed5764915789f0d19d5892cd346b836d9d304f2d6e899b0c674a040c1
+                  ;;
+                */test-contracts/stdlib/foreign_field/self_subtract/foreign_field_self_subtract.compact)
+                  expected=5a3322fc1c889390fd3a620dd905e01c96bb81808af0e7ef587ab4f5f598c26a
+                  ;;
+                */test-contracts/stdlib/curve25519/slow/verify_sequential/curve25519_verify_sequential.compact)
+                  expected=7ad2e291ec23e496ab4f9157f1f46e17772edbe4d7516f5f2e12856a0122767f
+                  ;;
+                */test-contracts/stdlib/keccak256/cross_width/keccak256_cross_width.compact)
+                  expected=0f57999236e7d47004e9768626f52d2efe860fef5a04439b1f7c976c3e9c9e56
+                  ;;
+                */test-contracts/stdlib/keccak256/adt_rejected/keccak256_adt_rejected.compact)
+                  expected=92b9866f4edfa107320b97b1595102afd185b698ae4b71c02c96a7e6fb5d3378
+                  ;;
+                */test-contracts/stdlib/keccak256/field_types/keccak256_field_types.compact)
+                  expected=319b37a50f65125de0f6b14e9c8e91cb0ecb26f27df4b20d7b6ccc6afe3ac30e
+                  ;;
+                */test-contracts/stdlib/keccak256/flatten_equivalence/keccak256_flatten_equivalence.compact)
+                  expected=a9d34f4911f4e8faa866418d02bb0a6cbafbb9772e434331551c91da26dbca59
+                  ;;
+                */test-contracts/stdlib/keccak256/impure/keccak256_impure.compact)
+                  expected=61f4204b918f9635828d07b6117d404ab11041bd61fd47c556b8f3cca0ab9d59
+                  ;;
+                */test-contracts/stdlib/keccak256/known_vectors/keccak256_known_vectors.compact)
+                  expected=d95c93c2abddfbee69dae5b9de6b368ae9af6baff214367d3e18c16bf91767b3
+                  ;;
+                */test-contracts/stdlib/keccak256/multi_length/keccak256_multi_length.compact)
+                  expected=3d6cd76f04078b7cc4259580b1e7c093a9816752b56651672bc773c557bafeb2
+                  ;;
+                */test-contracts/stdlib/keccak256/ordinary_types/keccak256_ordinary_types.compact)
+                  expected=66856b94eb03bfe4eaade139cc3dd966bc6aaad9f9d4a4359c1fc7c551667988
+                  ;;
+                */test-contracts/stdlib/keccak256/trailing_zero/keccak256_trailing_zero.compact)
+                  expected=d8e791a46417c717ef51ffb155657c07660ef19ceeeb755b1481515e804428f1
+                  ;;
+                */test-contracts/stdlib/secp256k1/bitcoin_kat/secp256k1_bitcoin_kat.compact)
+                  expected=3f600e9c25498b8cd6c8b82270286aa58d864f1fe9a7e10ee1a01315c8c9b086
+                  ;;
+                */test-contracts/stdlib/secp256k1/base/roundtrip/secp256k1_base_roundtrip.compact)
+                  expected=c05e619523818a4bc6e870c367516edfc9fc8c42b4e0236c3f4687661e3a1548
+                  ;;
+                */test-contracts/stdlib/secp256k1/ecdsa_verify/secp256k1_ecdsa_verify.compact)
+                  expected=83aaf4309bbaa741537371d6d23ea55b46282abd892c255075c0b60fb3b16462
+                  ;;
+                */test-contracts/stdlib/secp256k1/ethereum_address/secp256k1_ethereum_address.compact)
+                  expected=819c1d11c841f15fa00ca01cabfbb8e659c8bbb41cd7ba12e20c88c5303007c2
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/prove_ethereum_address/secp256k1_prove_ethereum_address.compact)
+                  expected=14c198a3d1df93579a176de06b31af10c6062d03b2eae5bc2c7a19f6d58bc459
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/verify_sequential/secp256k1_verify_sequential.compact)
+                  expected=e1ba0175af4e5ff91af065e87dc631e89f033195177436cfc2c386331a68f3fe
+                  ;;
+                */test-contracts/stdlib/secp256r1/ecdsa_verify/secp256r1_ecdsa_verify.compact)
+                  expected=ce45565985916e21c16ec14ed351a05eaa44da144d08ff30fde682dcc646db30
+                  ;;
+                */test-contracts/stdlib/secp256r1/base/roundtrip/secp256r1_base_roundtrip.compact)
+                  expected=9f2a45968d342ef39ead91389665df952925f6e31bb725fdce2bf1f862bef9f9
+                  ;;
+                */test-contracts/stdlib/secp256r1/sha256_kat/secp256r1_sha256_kat.compact)
+                  expected=d174d86cf6e3af7be6d5a05485c8c3a39fb1b202f8e467e06fc1b8785e46540e
+                  ;;
+                */test-contracts/stdlib/secp256r1/slow/verify_sequential/secp256r1_verify_sequential.compact)
+                  expected=f1c20ef9040f20fc347007dda991b173e21e8d817d24a01e3bd41a9f7202c665
+                  ;;
+                */test-contracts/stdlib/sha256/multi_length/sha256_multi_length.compact)
+                  expected=1adb85bdf1d1be98dbf2635564011437b3a9366d96be467f2e82864314efccc0
+                  ;;
+                */test-contracts/stdlib/sha256/trailing_zero/sha256_trailing_zero.compact)
+                  expected=96a514e793a1870ef03b0d25e1efbb84d681d793af9b5ae8435c30bb8ad88636
+                  ;;
+              esac
+              if [ -n "$expected" ]; then
+                if ! { [ "$#" -eq 2 ] && [ "$1" = "$arg" ]; } &&
+                   ! { [ "$#" -eq 3 ] && [ "$1" = --skip-zk ] && [ "$2" = "$arg" ]; }; then
+                  echo "compactc-test-contracts: unexpected arguments for pinned fixture" >&2
+                  exit 1
+                fi
+                digest=$(${pkgs.coreutils}/bin/sha256sum "$arg" | ${pkgs.coreutils}/bin/cut -d ' ' -f 1)
+                if [ "$digest" != "$expected" ]; then
+                  echo "compactc-test-contracts: pinned fixture hash changed" >&2
+                  exit 1
+                fi
+                exec "$compiler" --feature-zkir-v3 "$@"
+              fi
+            done
+            exec "$compiler" "$@"
+          '';
+
           packages.compact-rust-cli = rust-cli-platform.buildRustPackage ({
             pname = "compact-rust-cli";
             version = "0.2.0";
@@ -651,6 +763,17 @@
               pkgs.chez
             ];
             shellHook = runtime-shell-hook;
+          };
+
+          # The pinned root wrapper needs both the guarded compiler and a
+          # built runtime package with declarations for generated imports.
+          devShells.test-contracts = pkgs.mkShell {
+            packages = [
+              packages.compactc-test-contracts
+              packages.runtime.package
+              pkgs.nodejs
+            ];
+            COMPACT_RUNTIME_PKG = "${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime";
           };
 
           devShells.dapp = packages.runtime.mkShell {
