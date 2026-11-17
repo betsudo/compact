@@ -137,7 +137,7 @@ pub mod ledger_contract {
         total_cost += step.gas_cost;
         let mut context = context;
         let __compact_value_3 = __compact_return_local_0;
-        let (context, __compact_effectful_result): (_, runtime::Field) = if {
+        let __compact_state_branch_condition = {
             #[inline(never)]
             fn __compact_query_branch<C, T>(
                 context: C,
@@ -170,38 +170,42 @@ pub mod ledger_contract {
                 };
             context = __compact_next_context;
             __compact_branch_value
-        } {
-            let mut context = context;
-            let __compact_return_local_4: runtime::Field = __compact_return_local_2;
-            let step = crate::ledger_slots::state.write(context, __compact_param_0)?;
-            let context = step.context;
-            total_cost += step.gas_cost;
-            let __compact_effectful_result: runtime::Field = __compact_return_local_4;
-            (context, __compact_effectful_result)
-        } else {
-            let mut context = context;
-            let __compact_return_local_5: runtime::BoundedUint<100> =
-                runtime::BoundedUint::<100>::new(100u128)
-                    .expect("Compact Uint literal fits its maximum");
-            let mut context = context;
-            let __compact_witness_meter_6 = runtime::context::WitnessReadMeter::new(&context);
-            let (__compact_next_private_6, __compact_witness_6) =
-                witnesses.mark(context.witness_context_with(LedgerView {
-                    state: context.query.state.get_ref(),
-                    meter: &__compact_witness_meter_6,
-                }))?;
-            total_cost += __compact_witness_meter_6.gas_cost();
-            context.private_state = __compact_next_private_6;
-            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_6));
-            let __compact_action_local_6: runtime::Field = __compact_witness_6;
-            let step = crate::ledger_slots::unused.write(context, __compact_action_local_6)?;
-            let context = step.context;
-            total_cost += step.gas_cost;
-            let __compact_value_7 = __compact_return_local_2;
-            let __compact_value_8 = runtime::Field::from((__compact_return_local_5).value());
-            let __compact_effectful_result: runtime::Field = __compact_value_7 + __compact_value_8;
-            (context, __compact_effectful_result)
         };
+        let (context, __compact_effectful_result): (_, runtime::Field) =
+            if __compact_state_branch_condition {
+                let mut context = context;
+                let __compact_return_local_4: runtime::Field = __compact_return_local_2;
+                let step = crate::ledger_slots::state.write(context, __compact_param_0)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                let __compact_effectful_result: runtime::Field = __compact_return_local_4;
+                (context, __compact_effectful_result)
+            } else {
+                let mut context = context;
+                let __compact_return_local_5: runtime::BoundedUint<100> =
+                    runtime::BoundedUint::<100>::new(100u128)
+                        .expect("Compact Uint literal fits its maximum");
+                let mut context = context;
+                let __compact_witness_meter_6 = runtime::context::WitnessReadMeter::new(&context);
+                let (__compact_next_private_6, __compact_witness_6) =
+                    witnesses.mark(context.witness_context_with(LedgerView {
+                        state: context.query.state.get_ref(),
+                        meter: &__compact_witness_meter_6,
+                    }))?;
+                total_cost += __compact_witness_meter_6.gas_cost();
+                context.private_state = __compact_next_private_6;
+                private_transcript_outputs
+                    .push(runtime::fab::AlignedValue::from(__compact_witness_6));
+                let __compact_action_local_6: runtime::Field = __compact_witness_6;
+                let step = crate::ledger_slots::unused.write(context, __compact_action_local_6)?;
+                let context = step.context;
+                total_cost += step.gas_cost;
+                let __compact_value_7 = __compact_return_local_2;
+                let __compact_value_8 = runtime::Field::from((__compact_return_local_5).value());
+                let __compact_effectful_result: runtime::Field =
+                    __compact_value_7 + __compact_value_8;
+                (context, __compact_effectful_result)
+            };
         let result = __compact_effectful_result;
         Ok(runtime::context::CircuitResult {
             context,

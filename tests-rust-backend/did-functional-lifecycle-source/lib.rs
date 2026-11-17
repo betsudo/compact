@@ -2384,7 +2384,7 @@ pub mod ledger_contract {
             .member(context, (__compact_param_0.clone()).clone())?;
         context = __compact_query_2.context;
         total_cost += __compact_query_2.gas_cost;
-        context = if {
+        let __compact_state_branch_condition = {
             #[inline(never)]
             fn __compact_query_branch<C, T>(
                 context: C,
@@ -2484,7 +2484,8 @@ pub mod ledger_contract {
             };
             context = __compact_next_context;
             __compact_branch_value
-        } {
+        };
+        context = if __compact_state_branch_condition {
             #[allow(unused_mut)]
             let mut context = context;
             let __compact_value_6 = __compact_param_1;
