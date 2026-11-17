@@ -19,8 +19,10 @@
 
 import argparse
 import hashlib
+import os
 from pathlib import Path
 import json
+import shutil
 import subprocess
 import tarfile
 import tempfile
@@ -102,6 +104,37 @@ def archive_source_patches(compatibility: dict) -> str:
         fields = ", ".join(f"{key} = {json.dumps(value)}" for key, value in source.items())
         lines.append(f"{json.dumps(package)} = {{ {fields} }}")
     return "\n".join(lines) + "\n"
+
+
+def package_runtime(compatibility: dict, target: Path) -> None:
+    # The extra archive pins can change workspace resolution, including the
+    # unrelated Passport cohort. Run Cargo in a private copy of the Git checkout
+    # so it retains VCS provenance without rewriting the source lockfile.
+    with tempfile.TemporaryDirectory(prefix="compact-runtime-rehearsal-") as directory:
+        scratch = Path(directory)
+        checkout = scratch / "source"
+        subprocess.run(["git", "clone", "--quiet", "--shared", "--no-checkout", str(ROOT), str(checkout)],
+                       check=True)
+        head = output("git", "rev-parse", "HEAD")
+        subprocess.run(["git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True)
+        changes = subprocess.check_output(["git", "diff", "--binary", "HEAD"], cwd=ROOT)
+        if changes:
+            subprocess.run(["git", "apply", "--binary", "-"], input=changes, cwd=checkout, check=True)
+        untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z",
+                                            "--", "runtime-rs/", "runtime-rs-macros/"], cwd=ROOT)
+        for entry in untracked.split(b"\0"):
+            if entry:
+                relative = Path(os.fsdecode(entry))
+                destination = checkout / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / relative, destination, follow_symlinks=False)
+        config = scratch / "patches.toml"
+        macros = checkout / "runtime-rs-macros"
+        config.write_text(archive_source_patches(compatibility)
+                          + f'{PACKAGES[0]} = {{ path = {json.dumps(str(macros))} }}\n')
+        subprocess.run(["cargo", "package", "-p", PACKAGES[1], "--allow-dirty",
+                        "--target-dir", str(target), "--config", str(config)],
+                       cwd=checkout, check=True)
 
 
 def package_directory() -> Path:
@@ -225,17 +258,9 @@ def main() -> None:
 
     compare_locks(ROOT / "Cargo.lock", ROOT / "tools/compact-rust-backend/Cargo.lock")
     compatibility = compatibility_record()
-    run("package", "-p", PACKAGES[0], "--allow-dirty")
+    run("package", "-p", PACKAGES[0], "--locked", "--allow-dirty")
     packages = [inspect_package(PACKAGES[0])]
-
-    # Cargo normalizes the archive to registry dependencies and verifies it
-    # outside the workspace. Pass the runtime source pins and the local macro
-    # source through Cargo config, without changing either packaged manifest.
-    with tempfile.TemporaryDirectory(prefix="compact-runtime-rehearsal-") as directory:
-        config = Path(directory) / "patches.toml"
-        config.write_text(archive_source_patches(compatibility)
-                          + f'{PACKAGES[0]} = {{ path = {json.dumps(str(MACROS))} }}\n')
-        run("package", "-p", PACKAGES[1], "--allow-dirty", "--config", str(config))
+    package_runtime(compatibility, package_directory().parent)
     packages.append(inspect_package(PACKAGES[1]))
     actual = manifest(packages, args.candidate_tag)
     if expected is not None:

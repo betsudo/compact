@@ -230,12 +230,23 @@ def check_ledger_cohort(contract, consumer_manifest):
     runtime = contract / "runtime-rs"
     compatibility = json.loads((runtime / "compatibility.json").read_text())
     patches = compatibility["ledger_git_sources"]
-    ledger = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"]["midnight-ledger-v9"]
+    dependencies = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"]
     if (compatibility["ledger_version"] != "ledger-9.1.0.2"
-            or ledger != {**patches["midnight-ledger-v9"], "version": "=1.0.2", "optional": True}):
+            or dependencies["midnight-ledger-v9"]
+            != {**patches["midnight-ledger-v9"], "version": "=1.0.2", "optional": True}):
         raise ValueError("SDK ledger cohort differs")
-    for manifest in (ROOT / "Cargo.toml", contract / "Cargo.toml", consumer_manifest):
-        if tomllib.loads(manifest.read_text()).get("patch", {}).get("crates-io") != patches:
+
+    # The compiler emits all compatibility selectors. The source workspace
+    # and its handwritten SDK consumer can omit these four direct Git edges.
+    direct_zk = {"midnight-circuits", "midnight-curves", "midnight-proofs", "midnight-zk-stdlib"}
+    source_patches = {name: pin for name, pin in patches.items() if name not in direct_zk}
+    for name in direct_zk:
+        expected = {**patches[name], "version": compatibility["ledger_dependencies"][name]}
+        if dependencies.get(name) != expected:
+            raise ValueError(f"SDK runtime Git dependency differs: {name}")
+    for manifest, expected in ((ROOT / "Cargo.toml", source_patches), (contract / "Cargo.toml", patches),
+                               (consumer_manifest, source_patches)):
+        if tomllib.loads(manifest.read_text()).get("patch", {}).get("crates-io") != expected:
             raise ValueError(f"SDK Cargo source patches differ: {manifest}")
 
 

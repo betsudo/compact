@@ -27,9 +27,41 @@ import unittest
 from unittest.mock import patch
 
 import check_functional_source_sdk as gate
+from check_release_packages import archive_source_patches
 
 
 class IsolatedSdkControls(unittest.TestCase):
+    def test_sdk_source_consumers_and_generated_roots_require_distinct_exact_pins(self):
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "contract"
+            runtime = contract / "runtime-rs"
+            runtime.mkdir(parents=True)
+            for name in ("Cargo.toml", "compatibility.json"):
+                shutil.copyfile(gate.ROOT / "runtime-rs" / name, runtime / name)
+            compatibility = json.loads((runtime / "compatibility.json").read_text())
+            (contract / "Cargo.toml").write_text(archive_source_patches(compatibility))
+            consumer = Path(directory) / "Cargo.toml"
+            shutil.copyfile(gate.EXAMPLE / "consumer/Cargo.toml", consumer)
+            gate.check_ledger_cohort(contract, consumer)
+
+            original = (runtime / "Cargo.toml").read_text()
+            registry_curves = '\n'.join(
+                'midnight-curves = "=0.3.1"' if line.startswith('midnight-curves =') else line
+                for line in original.splitlines())
+            (runtime / "Cargo.toml").write_text(registry_curves)
+            with self.assertRaisesRegex(ValueError, "SDK runtime Git dependency differs: midnight-curves"):
+                gate.check_ledger_cohort(contract, consumer)
+            (runtime / "Cargo.toml").write_text(original)
+
+            kept = consumer.read_text()
+            consumer.write_text(archive_source_patches(compatibility))
+            with self.assertRaisesRegex(ValueError, "SDK Cargo source patches differ"):
+                gate.check_ledger_cohort(contract, consumer)
+            consumer.write_text(kept)
+            (contract / "Cargo.toml").write_text(kept)
+            with self.assertRaisesRegex(ValueError, "SDK Cargo source patches differ"):
+                gate.check_ledger_cohort(contract, consumer)
+
     def test_clippy_library_requires_exact_nonfresh_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "lib.rs"
