@@ -102,7 +102,11 @@ class EvidenceTests(unittest.TestCase):
                                  gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
                 for provenance in capture['provenance']:
                     relative = gate.reviewed.relative(provenance['path'])
-                    self.assertEqual(provenance['sha256'], gate.common.sha256(gate.ROOT / relative),
+                    frozen = gate.FROZEN_RUNTIME018_GENERATED.get(str(relative))
+                    source = frozen[0] if frozen else gate.ROOT / relative
+                    if frozen:
+                        self.assertEqual(provenance['sha256'], frozen[1])
+                    self.assertEqual(provenance['sha256'], gate.common.sha256(source),
                                      f"{row['kind']}: {relative}")
                 changed = binding.copy()
                 changed['generated_javascript_sha256'] = 'changed'
@@ -125,6 +129,9 @@ class EvidenceTests(unittest.TestCase):
         self.assertNotEqual(binding['runtime_source_sha256'], live['runtime_source_sha256'])
         with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
             gate.validate_current_capture_record(binding, live, capture, historical)
+        for name, (source, expected_sha) in gate.FROZEN_RUNTIME018_GENERATED.items():
+            self.assertEqual(gate.common.sha256(source), expected_sha)
+            self.assertNotEqual(gate.common.sha256(gate.ROOT / name), expected_sha)
 
     def test_runtime_closure_hash_covers_dist_lock_and_nested_dependencies_without_store_prefix(self):
         def make_runtime(root):
