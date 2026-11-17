@@ -46,6 +46,18 @@ use crate::{RenderError, discard_expression, rust_type};
 use proc_macro2::Span;
 use std::collections::{HashMap, HashSet};
 
+// Stateful action and return branches can receive a query-valued block from
+// expression lowering. Evaluate it at the original point, before the branch
+// moves context, without putting a block directly in an `if` condition.
+fn bind_block_branch_condition(statements: &mut Vec<syn::Stmt>, condition: syn::Expr) -> syn::Expr {
+    if matches!(&condition, syn::Expr::Block(_)) {
+        statements.push(syn::parse_quote!(let __compact_state_branch_condition = #condition;));
+        syn::parse_quote!(__compact_state_branch_condition)
+    } else {
+        condition
+    }
+}
+
 #[cfg(test)]
 pub(crate) fn render_stateful_circuit(
     circuit: &StatefulCircuit,
@@ -318,7 +330,7 @@ pub(crate) fn render_stateful_circuit_observed(
                 let else_statements = std::mem::take(&mut statements);
                 local_parameters = frame.parameters;
                 statements = frame.parent_statements;
-                let condition = frame.condition;
+                let condition = bind_block_branch_condition(&mut statements, frame.condition);
                 let then_statements = frame.then_statements;
                 statements.push(syn::parse_quote! {
                     context = if #condition {
@@ -348,7 +360,7 @@ pub(crate) fn render_stateful_circuit_observed(
                 let else_statements = std::mem::take(&mut statements);
                 local_parameters = frame.parameters;
                 statements = frame.parent_statements;
-                let condition = frame.condition;
+                let condition = bind_block_branch_condition(&mut statements, frame.condition);
                 let then_statements = frame.then_statements;
                 statements.push(syn::parse_quote! {
                     let (context, __compact_effectful_result): (_, #result_ty) = if #condition {

@@ -327,13 +327,36 @@ pub mod ledger_contract {
         total_cost += __compact_query_1.gas_cost;
         let __compact_action_local_1: bool = __compact_query_1.result;
         let mut context = context;
-        let __compact_action_local_2: crate::types::OwnedKey = if __compact_param_1 {
-            let __compact_query_2 = crate::ledger_slots::storedKey.read(context)?;
-            context = __compact_query_2.context;
-            total_cost += __compact_query_2.gas_cost;
-            __compact_query_2.result
-        } else {
-            crate::pure_circuits::defaultKey()?
+        let __compact_action_local_2: crate::types::OwnedKey = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_1 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_2 = crate::ledger_slots::storedKey.read(context)?;
+                        context = __compact_query_2.context;
+                        total_cost += __compact_query_2.gas_cost;
+                        let __compact_branch_value = __compact_query_2.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = crate::pure_circuits::defaultKey()?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         let mut context = context;
         let __compact_query_3 = crate::ledger_slots::keys

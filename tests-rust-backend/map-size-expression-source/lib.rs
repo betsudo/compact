@@ -252,15 +252,42 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_query_0 = crate::ledger_slots::table.size(context)?;
-            context = __compact_query_0.context;
-            total_cost += __compact_query_0.gas_cost;
-            runtime::BoundedUint::<18446744073709551615>::new(__compact_query_0.result as u128)
-                .expect("ledger Map size fits Uint<64>")
-        } else {
-            runtime::BoundedUint::<18446744073709551615>::new(7u128)
-                .expect("Compact Uint literal fits its maximum")
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_0 = crate::ledger_slots::table.size(context)?;
+                        context = __compact_query_0.context;
+                        total_cost += __compact_query_0.gas_cost;
+                        let __compact_branch_value =
+                            runtime::BoundedUint::<18446744073709551615>::new(
+                                __compact_query_0.result as u128,
+                            )
+                            .expect("ledger Map size fits Uint<64>");
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value =
+                            runtime::BoundedUint::<18446744073709551615>::new(7u128)
+                                .expect("Compact Uint literal fits its maximum");
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

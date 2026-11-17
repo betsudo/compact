@@ -205,15 +205,41 @@ pub mod ledger_contract {
                 .member(context, (__compact_action_local_0.clone()).clone())?;
             context = __compact_query_3.context;
             total_cost += __compact_query_3.gas_cost;
-            if !(if !(__compact_query_3.result) {
-                true
-            } else {
-                let __compact_query_4 = crate::ledger_slots::methods
-                    .lookup(context, (__compact_action_local_0.clone()).clone())?;
-                context = __compact_query_4.context;
-                total_cost += __compact_query_4.gas_cost;
-                let __compact_value_5 = (((__compact_query_4.result).publicKeyJwk).clone()).curve;
-                __compact_value_5 != crate::types::Curve::X25519
+            if !({
+                #[inline(never)]
+                fn __compact_query_branch<C, T>(
+                    context: C,
+                    body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+                ) -> Result<(C, T), runtime::CompactError> {
+                    body(context)
+                }
+                let (__compact_next_context, __compact_branch_value) =
+                    if !(__compact_query_3.result) {
+                        __compact_query_branch(
+                            context,
+                            |mut context| -> Result<_, runtime::CompactError> {
+                                let __compact_branch_value = true;
+                                Ok((context, __compact_branch_value))
+                            },
+                        )?
+                    } else {
+                        __compact_query_branch(
+                            context,
+                            |mut context| -> Result<_, runtime::CompactError> {
+                                let __compact_query_4 = crate::ledger_slots::methods
+                                    .lookup(context, (__compact_action_local_0.clone()).clone())?;
+                                context = __compact_query_4.context;
+                                total_cost += __compact_query_4.gas_cost;
+                                let __compact_value_5 =
+                                    (((__compact_query_4.result).publicKeyJwk).clone()).curve;
+                                let __compact_branch_value =
+                                    __compact_value_5 != crate::types::Curve::X25519;
+                                Ok((context, __compact_branch_value))
+                            },
+                        )?
+                    };
+                context = __compact_next_context;
+                __compact_branch_value
             }) {
                 return Err(runtime::CompactError::AssertionFailed(
                     "wrong signing curve".to_owned(),

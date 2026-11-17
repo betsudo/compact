@@ -89,9 +89,10 @@ pub fn verify(manifest: &str, active_capture: &Value) {
             path.components()
                 .all(|part| matches!(part, std::path::Component::Normal(_)))
         );
-        // Ledger 9 was captured against the reviewed Runtime 0.17.0 sources.
-        // Keep those bytes pinned while the live runtime advances for later
-        // Ledger 9 behavior; the retained Ledger 8 binding stays untouched.
+        // Ledger 9 was captured against the reviewed Runtime 0.17.0 sources
+        // and generated reducer libraries. Keep those bytes pinned while the
+        // live runtime and current generated fixtures advance; the retained
+        // Ledger 8 binding stays untouched.
         let reviewed = match relative {
             "runtime/src/built-ins.ts" => Some((
                 "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/built-ins.ts",
@@ -100,6 +101,14 @@ pub fn verify(manifest: &str, active_capture: &Value) {
             "runtime/src/compact-types.ts" => Some((
                 "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/compact-types.ts",
                 "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4",
+            )),
+            "tests-rust-backend/did-point-guard-reducer/lib.rs" => Some((
+                "tools/compact-rust-backend/reviewed-ledger9-runtime018-generated/did-point-guard-reducer-lib.rs",
+                "218bfefe8d815ed7e561cdd1ab9b19b7e52bb93fe113be23b00957b91a1be937",
+            )),
+            "tests-rust-backend/did-point-map-reducer/lib.rs" => Some((
+                "tools/compact-rust-backend/reviewed-ledger9-runtime018-generated/did-point-map-reducer-lib.rs",
+                "1b5c1c0fecb896e42396a3b6448242adc96b12e509c8d7fc3760b1d3ca61b1c6",
             )),
             _ => None,
         };

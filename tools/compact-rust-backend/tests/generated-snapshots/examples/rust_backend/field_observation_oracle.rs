@@ -279,19 +279,42 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_call_0 = snapshot_helper(context)?;
-            context = __compact_call_0.context;
-            total_cost += __compact_call_0.gas_cost;
-            __compact_call_0.result
-        } else {
-            let __compact_query_1 = crate::ledger_slots::second_cell.read(context)?;
-            context = __compact_query_1.context;
-            total_cost += __compact_query_1.gas_cost;
-            let __compact_struct_member_2: runtime::Field = __compact_query_1.result;
-            crate::types::Snapshot {
-                value: __compact_struct_member_2,
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_call_0 = snapshot_helper(context)?;
+                        context = __compact_call_0.context;
+                        total_cost += __compact_call_0.gas_cost;
+                        let __compact_branch_value = __compact_call_0.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_1 = crate::ledger_slots::second_cell.read(context)?;
+                        context = __compact_query_1.context;
+                        total_cost += __compact_query_1.gas_cost;
+                        let __compact_struct_member_2: runtime::Field = __compact_query_1.result;
+                        let __compact_branch_value = crate::types::Snapshot {
+                            value: __compact_struct_member_2,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,
@@ -310,19 +333,42 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_query_0 = crate::ledger_slots::first_cell.read(context)?;
-            context = __compact_query_0.context;
-            total_cost += __compact_query_0.gas_cost;
-            let __compact_struct_member_1: runtime::Field = __compact_query_0.result;
-            crate::types::Snapshot {
-                value: __compact_struct_member_1,
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
-        } else {
-            let __compact_struct_member_2: runtime::Field = runtime::Field::from(0u128);
-            crate::types::Snapshot {
-                value: __compact_struct_member_2,
-            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_0 = crate::ledger_slots::first_cell.read(context)?;
+                        context = __compact_query_0.context;
+                        total_cost += __compact_query_0.gas_cost;
+                        let __compact_struct_member_1: runtime::Field = __compact_query_0.result;
+                        let __compact_branch_value = crate::types::Snapshot {
+                            value: __compact_struct_member_1,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_struct_member_2: runtime::Field = runtime::Field::from(0u128);
+                        let __compact_branch_value = crate::types::Snapshot {
+                            value: __compact_struct_member_2,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

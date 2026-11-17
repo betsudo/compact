@@ -21,8 +21,9 @@ python3 tools/compact-rust-backend/check_upstream_ledger9_keccak.py \
   --output "$KECCAK_OUTPUT"
 ```
 
-On the current language 0.23.105 compiler, `--allow-pragma-probe` checks that
-all intact fixtures refuse the language 0.25.0 pragma and then removes only
-that pragma in separate copies. Keep that flag off when qualifying intact
-sources. This suite skips key generation. The stateful k=14 proof requires a
-separate slow lane.
+The v3 profile reports language 0.28.0 and checks all nine intact upstream
+sources with their `>= 0.25.0` pragmas: eight compile and the ADT case refuses.
+`--allow-pragma-probe` also checks that the legacy v2 profile at language
+0.23.105 refuses each original pragma without
+publishing output. It does not alter a fixture. This suite skips key generation.
+The stateful k=14 proof requires a separate slow lane.

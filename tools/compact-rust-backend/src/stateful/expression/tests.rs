@@ -635,6 +635,84 @@ fn conditional_domains_and_equal_arm_failures_preserve_diagnostics() {
 }
 
 #[test]
+fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
+    use quote::ToTokens;
+    let read = || Expr::CellRead {
+        field: "slot".into(),
+        index: 0,
+    };
+    let query_shape = conditional(
+        *parameter("boolean"),
+        conditional(
+            *parameter("boolean"),
+            read(),
+            Expr::FieldLiteral { value: "1".into() },
+        ),
+        read(),
+    );
+    let observed = ledger(LedgerFieldKind::Cell { ty: Type::Field }).lower(query_shape);
+    let (rendered, ty, witness) = observed.result.expect("nested Cell reads lower");
+    assert_eq!(ty, Type::Field);
+    assert!(!witness && observed.query_effect);
+    let generated = rendered.to_token_stream().to_string();
+    assert!(
+        generated.matches("__compact_query_branch").count() >= 6,
+        "nested query arms must call their out-of-line helper: {generated}"
+    );
+    assert!(generated.contains("let __compact_branch_value ="));
+    assert!(
+        !generated.contains("if {"),
+        "nested query condition must not put a block in an if condition: {generated}"
+    );
+    assert!(
+        !generated.contains("Ok ((context , {"),
+        "a nested query value must be evaluated before its context is moved"
+    );
+
+    let boolean_read = || Expr::CellRead {
+        field: "slot".into(),
+        index: 0,
+    };
+    let nested_condition = conditional(
+        *parameter("boolean"),
+        boolean_read(),
+        Expr::Boolean { value: true },
+    );
+    let observed = ledger(LedgerFieldKind::Cell { ty: Type::Boolean }).lower(conditional(
+        nested_condition,
+        boolean_read(),
+        Expr::Boolean { value: false },
+    ));
+    let (rendered, ty, witness) = observed.result.expect("nested query condition lowers");
+    assert_eq!(ty, Type::Boolean);
+    assert!(!witness && observed.query_effect);
+    let generated = rendered.to_token_stream().to_string();
+    assert!(
+        generated.contains("let __compact_branch_condition ="),
+        "block-valued query condition must be evaluated once before the outer if: {generated}"
+    );
+    assert!(
+        !generated.contains("if {"),
+        "block-valued query condition must not appear directly in if: {generated}"
+    );
+
+    let pure = Declarations::default().lower(conditional(
+        *parameter("boolean"),
+        *parameter("field"),
+        Expr::FieldLiteral { value: "1".into() },
+    ));
+    let (rendered, ty, witness) = pure.result.expect("pure conditional lowers");
+    assert_eq!(ty, Type::Field);
+    assert!(!witness && !pure.query_effect);
+    assert!(
+        !rendered
+            .to_token_stream()
+            .to_string()
+            .contains("__compact_query_branch")
+    );
+}
+
+#[test]
 fn equal_branch_condition_keeps_one_witness_call_and_its_type_error() {
     use syn::visit_mut::{self, VisitMut};
     struct WitnessCalls(usize);

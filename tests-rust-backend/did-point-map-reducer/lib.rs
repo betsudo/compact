@@ -162,14 +162,37 @@ pub mod ledger_contract {
             .member(context, (__compact_param_0.clone()).clone())?;
         context = __compact_query_0.context;
         total_cost += __compact_query_0.gas_cost;
-        let result = if __compact_query_0.result {
-            true
-        } else {
-            let __compact_query_1 = crate::ledger_slots::pointMethods
-                .member(context, (__compact_param_0.clone()).clone())?;
-            context = __compact_query_1.context;
-            total_cost += __compact_query_1.gas_cost;
-            __compact_query_1.result
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_query_0.result {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = true;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_1 = crate::ledger_slots::pointMethods
+                            .member(context, (__compact_param_0.clone()).clone())?;
+                        context = __compact_query_1.context;
+                        total_cost += __compact_query_1.gas_cost;
+                        let __compact_branch_value = __compact_query_1.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

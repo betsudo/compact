@@ -83,6 +83,24 @@ class HeaderRegressionTests(unittest.TestCase):
         self.assertFalse(manager._scan_for_header('#', short))
         self.assertTrue(manager._scan_for_header('#', manager._format_license_header('#', '2026')))
 
+    def test_only_exact_pinned_upstream_host_script_keeps_its_original_header(self):
+        name = 'scripts/read-version.sh'
+        pinned_commit, pinned_sha = gate.RETAINED_PINNED_ORIGINALS[name]
+        source = gate.ROOT / name
+        original = source.read_bytes()
+        self.assertEqual(hashlib.sha256(original).hexdigest(), pinned_sha)
+        copy = self.root / name
+        copy.parent.mkdir(parents=True)
+        copy.write_bytes(original)
+        result = gate.classify(self.root, self.base, [copy])
+        self.assertTrue(result['passed'])
+        self.assertEqual(result['retained_source_copies'][0]['authority'], f'{pinned_commit}:{name}')
+        copy.write_bytes(original + b'\n')
+        self.assertFalse(gate.classify(self.root, self.base, [copy])['passed'])
+        copy.unlink()
+        copy.symlink_to(source)
+        self.assertFalse(gate.classify(self.root, self.base, [copy])['passed'])
+
 
 class PinnedHistoricalCopyTests(unittest.TestCase):
     def setUp(self):

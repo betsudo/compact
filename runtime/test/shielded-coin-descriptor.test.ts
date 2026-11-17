@@ -82,13 +82,17 @@ describe('ShieldedCoinInfo u128 descriptor', () => {
         null,
       );
       context.currentZswapLocalState.currentIndex = 13n;
+      const previous = { ...context };
       expect(r.createZswapOutput(context, coin(value), recipient(is_left))).toEqual([]);
       expect(context.currentQueryContext.comIndices.get(hash)).toBe(13n);
+      expect(context.callContext.currentQueryContext).toBe(context.currentQueryContext);
+      expect(previous.callContext.currentQueryContext.comIndices.has(hash)).toBe(false);
       expect(context.currentZswapLocalState.currentIndex).toBe(14n);
       expect(context.currentZswapLocalState.outputs).toEqual([{ coinInfo: coin(value), recipient: recipient(is_left) }]);
       expect(context.currentZswapLocalState.inputs).toEqual([]);
       r.createZswapOutput(context, coin(1n), recipient(is_left));
       expect(context.currentQueryContext.comIndices.get(commitment(1n, is_left))).toBe(14n);
+      expect(context.callContext.currentQueryContext).toBe(context.currentQueryContext);
       expect(context.currentZswapLocalState.currentIndex).toBe(15n);
       expect(context.currentZswapLocalState.outputs.map((output) => output.coinInfo.value)).toEqual([value, 1n]);
     });
@@ -101,10 +105,12 @@ describe('ShieldedCoinInfo u128 descriptor', () => {
       );
       context.currentZswapLocalState.currentIndex = 13n;
       const query = context.currentQueryContext;
+      const callContext = context.callContext;
       const plan = context.currentZswapLocalState;
       expect(() => commitment(value, is_left)).toThrow();
       expect(() => r.createZswapOutput(context, coin(value), recipient(is_left))).toThrow();
       expect(context.currentQueryContext).toBe(query);
+      expect(context.callContext).toBe(callContext);
       expect(context.currentZswapLocalState).toBe(plan);
       expect(context.currentZswapLocalState.currentIndex).toBe(13n);
       expect(context.currentZswapLocalState.outputs).toEqual([]);

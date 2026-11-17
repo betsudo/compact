@@ -7,6 +7,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -22,6 +23,8 @@ assert spec and spec.loader
 verifier = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(verifier)
 sys.path.insert(0, str(ROOT / 'tools/compact-rust-backend'))
+from check_upstream_ledger9_const_keywords import valid_source_signature
+
 proof_spec = importlib.util.spec_from_file_location('check_for_generic_bound_proof', PROOF_GATE)
 assert proof_spec and proof_spec.loader
 proof_gate = importlib.util.module_from_spec(proof_spec)
@@ -33,6 +36,14 @@ static_spec.loader.exec_module(static_gate)
 
 
 class KeywordForLinuxWorkflowControls(unittest.TestCase):
+    def test_head_signature_matches_semantic_gate(self):
+        identity = subprocess.check_output(
+            ['git', 'log', '-1', '--format=%G?%n%an <%ae>%n%B'],
+            cwd=ROOT, text=True,
+        )
+        signature, author, body = identity.split('\n', 2)
+        self.assertTrue(valid_source_signature(signature, author, body))
+
     def test_static_producer_and_verifier_rosters_match(self):
         original = static_gate.ORIGINAL.read_text()
         variants = static_gate.variants(original)
@@ -43,6 +54,9 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
 
     def test_selected_sha_and_fail_closed_graph(self):
         text = WORKFLOW.read_text()
+        for ref in re.findall(r'^\s+uses:\s+([^\s#]+)', text, re.MULTILINE):
+            if not ref.startswith('./'):
+                self.assertRegex(ref, r'^[^@]+@[0-9a-f]{40}$')
         self.assertIn("'codex/ledger9-keyword-for-linux/*'", text)
         self.assertIn('refs/heads/codex/ledger9-keyword-for-linux/$SOURCE_SHA', text)
         self.assertIn('test "$EXPECTED_SHA" = "$SOURCE_SHA"', text)
@@ -116,6 +130,20 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
             log.write_text(json.dumps(dict(expected, status='failed')) + '\n')
             with self.assertRaisesRegex(ValueError, 'gate log identity'):
                 verifier.gate_log(log, expected)
+
+    def test_occurrence_log_requires_current_108_controls(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            log = base / 'occurrence.log'
+            log.write_text('108 Rust collection index occurrence controls passed\n')
+            verifier.occurrence_log(log)
+            log.write_text('64 Rust collection index occurrence controls passed\n')
+            with self.assertRaisesRegex(ValueError, 'source occurrence controls'):
+                verifier.occurrence_log(log)
+            log.unlink()
+            log.symlink_to(base / 'other.log')
+            with self.assertRaisesRegex(ValueError, 'symlinked source occurrence log'):
+                verifier.occurrence_log(log)
 
     def test_artifact_inventory_refuses_mutation_and_symlink(self):
         with tempfile.TemporaryDirectory() as temporary:

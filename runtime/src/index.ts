@@ -27,6 +27,10 @@ export * from './witness.js';
 export * from './contract-dependencies.js';
 export * from './interface-descriptor.js';
 export * from './conformance.js';
+export * from './module.js';
+export * from './module-resolution.js';
+export * from './providers.js';
+export * from './verifier-key-hash.js';
 export * from './utils.js';
 
 export {
