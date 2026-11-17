@@ -65,6 +65,38 @@ RUNNER = (
     "import {Contract} from './product/contract/index.js';\n"
     "await definition.run(Contract); console.log('original runtime passed');\n"
 )
+LEDGER_METRICS_RUNNER = '''import assert from 'node:assert/strict';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const entry = process.argv[2];
+const generated = await import(pathToFileURL(entry).href);
+const runtime = await import(pathToFileURL(
+  createRequire(entry).resolve('@midnight-ntwrk/compact-runtime')).href);
+const contract = new generated.Contract({});
+const initial = contract.initialState(
+  runtime.createConstructorContext(undefined, '0'.repeat(64)));
+const context = runtime.createCircuitContext(runtime.dummyContractAddress(),
+  initial.currentZswapLocalState.coinPublicKey,
+  initial.currentContractState, initial.currentPrivateState);
+const execution = contract.circuits.import_ledger_field(context);
+const summary = {
+  result: execution.result.map((item) => typeof item === 'bigint' ? item.toString() : item),
+  ledger: JSON.parse(JSON.stringify(
+    generated.ledger(execution.context.currentQueryContext.state),
+    (_, value) => typeof value === 'bigint' ? value.toString() : value)),
+  transcript: execution.proofData.publicTranscript.map((op) => Object.keys(op)[0]),
+  gas: JSON.parse(JSON.stringify(execution.context.gasCost,
+    (_, value) => typeof value === 'bigint' ? value.toString() : value)),
+};
+assert.deepStrictEqual(summary.result, [true, '1']);
+assert.deepStrictEqual(summary.ledger, {f: true, c: '1'});
+assert.deepStrictEqual(summary.transcript,
+  ['push', 'push', 'ins', 'idx', 'addi', 'ins', 'dup', 'idx', 'popeq',
+   'dup', 'idx', 'popeq']);
+assert.deepStrictEqual(summary.gas, {readTime: '595000000',
+  computeTime: '5057254554', bytesWritten: '160', bytesDeleted: '160'});
+console.log(JSON.stringify(summary));
+'''
 RUST_REPRESENTATIVES = {
     'import/module_from_file': (
         'expect(result).toEqual(2n);',
@@ -113,6 +145,133 @@ RUST_REPRESENTATIVES = {
         'assert_eq!(native.gas_cost, recorded.execution.gas_cost);',
     ),
 }
+
+# Every accepted original callback also has an executable generated Rust
+# consumer. Keep the expected values next to the call so a successful Cargo
+# check alone cannot count as behavioral parity.
+RUST_REPRESENTATIVES.update({
+    'import/ledger_field': (
+        'expect(result).toEqual([true, 1n]);',
+        '''use generated::{ledger_contract as contract, ledger_slots as slots};
+let context = || contract::initial_state(
+    generated::runtime::context::ConstructorContext::new(())
+).unwrap().into_circuit_context(Default::default());
+let ordinary = contract::import_ledger_field(context()).unwrap();
+let recorded = contract::recorded::import_ledger_field(context()).unwrap();
+assert_eq!(ordinary.result.0, true);
+assert_eq!(ordinary.result.1.value(), 1);
+assert_eq!(recorded.execution.result.0, true);
+assert_eq!(recorded.execution.result.1.value(), 1);
+assert_eq!(slots::flag.inspect(ordinary.context.query.state.get_ref()).unwrap(), true);
+assert_eq!(slots::count.inspect(ordinary.context.query.state.get_ref()).unwrap(), 1);
+assert_eq!(slots::flag.inspect(recorded.execution.context.query.state.get_ref()).unwrap(), true);
+assert_eq!(slots::count.inspect(recorded.execution.context.query.state.get_ref()).unwrap(), 1);
+assert_eq!(ordinary.context.query.state, recorded.execution.context.query.state);
+assert_eq!(ordinary.gas_cost, recorded.execution.gas_cost);
+assert_eq!(ordinary.gas_cost.read_time.into_picoseconds(), 595000000);
+assert_eq!(ordinary.gas_cost.compute_time.into_picoseconds(), 5057254554);
+assert_eq!(ordinary.gas_cost.bytes_written, 160);
+assert_eq!(ordinary.gas_cost.bytes_deleted, 160);
+assert_eq!(recorded.public.verify_ops().len(), 12);
+assert!(ordinary.private_transcript_outputs.is_empty());
+assert!(recorded.execution.private_transcript_outputs.is_empty());''',
+    ),
+    'import/overloads': (
+        'expect(result).toEqual([1n, 2n]);',
+        'let result = generated::pure_circuits::import_overloads().unwrap();'
+        'assert_eq!((result.0.value(), result.1.value()), (1, 2));',
+    ),
+    'import/renamed': (
+        ('expect(result).toEqual([2n, 2n]);',
+         'expect((await contract.circuits.g(ctx, 1n)).result).toEqual(2n);'),
+        'use generated::runtime::Field;'
+        'assert_eq!(generated::pure_circuits::import_renamed().unwrap(),'
+        '(Field::from(2u128), Field::from(2u128)));'
+        'assert_eq!(generated::pure_circuits::g(Field::from(1u128)).unwrap(),'
+        'Field::from(2u128));',
+    ),
+    'import/same_binding_twice': (
+        'expect(result).toEqual(2n);',
+        'assert_eq!(generated::pure_circuits::import_same_binding_twice()'
+        '.unwrap(), generated::runtime::Field::from(2u128));',
+    ),
+    'import/same_name_from_two_modules': (
+        'expect(result).toEqual([15n, 50n]);',
+        'use generated::runtime::Field;'
+        'assert_eq!(generated::pure_circuits::import_same_name_from_two_modules()'
+        '.unwrap(), (Field::from(15u128), Field::from(50u128)));',
+    ),
+    'import/stdlib_selective': (
+        'expect(result).toEqual(true);',
+        'assert!(generated::pure_circuits::import_stdlib_selective().unwrap());',
+    ),
+    'import/struct_and_enum': (
+        'expect(result).toEqual([{ x: 5n, y: 10n }, 1]);',
+        'use generated::{runtime::Field, types::Direction};'
+        'let (point, direction) = generated::pure_circuits::'
+        'import_struct_and_enum().unwrap();'
+        'assert_eq!(point.x, Field::from(5u128));'
+        'assert_eq!(point.y, Field::from(10u128));'
+        'assert_eq!(direction, Direction::South);',
+    ),
+    'import/under_several_names': (
+        'expect(result).toEqual([2n, 2n]);',
+        'use generated::runtime::Field;'
+        'assert_eq!(generated::pure_circuits::import_under_several_names()'
+        '.unwrap(), (Field::from(2u128), Field::from(2u128)));',
+    ),
+    'type/alias_interchangeable': (
+        'expect(result).toEqual(Uint8Array.from([1, 2, 3, 4]));',
+        'use generated::runtime::FixedBytes;'
+        'assert_eq!(generated::pure_circuits::type_alias_interchangeable('
+        'FixedBytes::<4>::new([1, 2, 3, 4])).unwrap(),'
+        'FixedBytes::<4>::new([1, 2, 3, 4]));',
+    ),
+    'type/aliases_and_new_types': (
+        'expect(result).toEqual(6n);',
+        'use generated::runtime::Field;'
+        'assert_eq!(generated::pure_circuits::type_aliases_and_new_types('
+        'Field::from(2u128), Field::from(3u128)).unwrap(), Field::from(6u128));',
+    ),
+    'type/chained': (
+        'expect(result).toEqual([1n, 2n]);',
+        'use generated::runtime::Field;'
+        'assert_eq!(generated::pure_circuits::type_chained('
+        'Field::from(1u128), Field::from(2u128)).unwrap(),'
+        '(Field::from(1u128), Field::from(2u128)));',
+    ),
+    'type/from_module': (
+        'expect(result).toEqual([false, 1n]);',
+        'assert_eq!(generated::pure_circuits::type_from_module().unwrap(),'
+        '(false, generated::runtime::Field::from(1u128)));',
+    ),
+    'type/generic': (
+        'expect(result).toEqual([',
+        'use generated::runtime::{Field, FixedBytes, FixedVector};'
+        'assert_eq!(generated::pure_circuits::type_generic().unwrap(),'
+        '((FixedVector::new([Field::from(0u128), Field::from(0u128)]),'
+        'FixedBytes::<1>::new([0])), FixedVector::new([false, false])));',
+    ),
+    'type/in_struct': (
+        'expect(result).toEqual([{ count: 3n, tag }, 3n]);',
+        'use generated::{runtime::{BoundedUint, Field, FixedBytes}, types::Reading};'
+        'let tag = FixedBytes::<4>::new([1, 2, 3, 4]);'
+        'let a = Reading { count: BoundedUint::<4294967295>::new(1u64.into())'
+        '.unwrap(), tag };'
+        'let b = Reading { count: BoundedUint::<4294967295>::new(2u64.into())'
+        '.unwrap(), tag: FixedBytes::<4>::new([0; 4]) };'
+        'let (reading, total) = generated::pure_circuits::type_in_struct(a, b)'
+        '.unwrap(); assert_eq!(reading.count.value(), 3);'
+        'assert_eq!(reading.tag, tag); assert_eq!(total, Field::from(3u128));',
+    ),
+    'type/new_type_cast': (
+        'expect(result).toEqual(5n);',
+        'use generated::runtime::BoundedUint;'
+        'let v = BoundedUint::<4294967295>::new(5u64.into()).unwrap();'
+        'assert_eq!(generated::pure_circuits::type_new_type_cast(v)'
+        '.unwrap().value(), 5);',
+    ),
+})
 
 
 def require(ok: bool, message: str) -> None:
@@ -225,8 +384,9 @@ def locked_rust_check(contract: Path, output: Path, env: dict[str, str],
 def representative_rust_execution(case: str, contract: Path, test: Path,
                                   output: Path, env: dict[str, str]) -> dict[str, str]:
     expected, body = RUST_REPRESENTATIVES[case]
-    require(expected in test.read_text(),
-            f'Rust representative lost original assertion: {case}')
+    assertions = expected if isinstance(expected, tuple) else (expected,)
+    require(all(snippet in test.read_text() for snippet in assertions),
+            f'Rust consumer lost original assertion: {case}')
     package = tomllib.loads((contract / 'Cargo.toml').read_text())['package']['name']
     crate = package.replace('-', '_')
     consumer = contract / 'tests/original_keywords.rs'
@@ -242,7 +402,7 @@ def representative_rust_execution(case: str, contract: Path, test: Path,
             f'Rust representative test count changed: {case}')
     return {'rust_execution_test_sha256': sha256(consumer),
             'rust_execution_log_sha256': sha256(log),
-            'original_assertion': expected}
+            'original_assertions': list(assertions)}
 
 
 def main() -> None:
@@ -278,6 +438,11 @@ def main() -> None:
     checker_hash = sha256(Path(__file__))
     cases = sorted({'/'.join(Path(name).relative_to(FAMILY).parts[:2])
                     for name in originals})
+    accepted_cases = {case for case in cases if
+                      (ROOT / FAMILY / case / 'compile.pass.test.ts').is_file()}
+    require(accepted_cases == set(RUST_REPRESENTATIVES) and
+            len(accepted_cases) == 20,
+            'accepted import/type Rust result consumer roster differs')
     expected_registry = {(row['name'], row['version'], row['source'],
                           row.get('checksum'))
                          for row in tomllib.loads((ROOT / 'Cargo.lock').read_text())['package']
@@ -352,6 +517,15 @@ def main() -> None:
                 row.update(original_runtime_test=str(runtime_test.relative_to(ROOT)),
                            runtime_log_sha256=sha256(output / case / mode / 'runtime.log'),
                            runtime_assertions='passed')
+                if case == 'import/ledger_field':
+                    metrics_runner = destination.parent / 'ledger-metrics.mjs'
+                    metrics_runner.write_text(LEDGER_METRICS_RUNNER)
+                    metrics_log = output / case / mode / 'ledger-metrics.log'
+                    metrics = json.loads(run(['node', str(metrics_runner),
+                                              str(entry)], metrics_log, env))
+                    row.update(ledger_metrics=metrics,
+                               ledger_metrics_runner_sha256=sha256(metrics_runner),
+                               ledger_metrics_log_sha256=sha256(metrics_log))
                 if mode == 'paired':
                     rust = destination / 'contract/lib.rs'
                     ir = destination / 'contract/compact-rust-ir.json'
@@ -382,6 +556,9 @@ def main() -> None:
                     ts['zkir'] == paired['zkir'] and
                     ts['contract_info_sha256'] == paired['contract_info_sha256'],
                     f'paired target changed generated TS or ZKIR: {case}')
+            if case == 'import/ledger_field':
+                require(ts['ledger_metrics'] == paired['ledger_metrics'],
+                        'paired target changed original ledger state/transcript/gas')
         else:
             require(ts['diagnostic_sha256'] == paired['diagnostic_sha256'],
                     f'paired target changed original diagnostic: {case}')
@@ -418,6 +595,14 @@ def main() -> None:
                             sha256(base / 'cargo-test.log') ==
                             row['rust_execution_log_sha256'],
                             f'Rust representative evidence changed: {case}')
+            if case == 'import/ledger_field':
+                require(sha256(base / 'ledger-metrics.mjs') ==
+                        row['ledger_metrics_runner_sha256'] and
+                        sha256(base / 'ledger-metrics.log') ==
+                        row['ledger_metrics_log_sha256'] and
+                        json.loads((base / 'ledger-metrics.log').read_text()) ==
+                        row['ledger_metrics'],
+                        'ledger result/state/transcript/gas evidence changed')
     require(source_state() == source and original_inventory() ==
             (originals, blocked) and sha256(MANIFEST) == manifest_hash and
             sha256(Path(__file__)) == checker_hash and
@@ -426,6 +611,9 @@ def main() -> None:
             compiler_recipe_identity(args.compiler_recipe, source,
                                      compiler, scheme) == recipe,
             'source, original, runtime or compiler changed during gate')
+    require(all('rust_execution_log_sha256' in results[case]['paired']
+                for case in accepted_cases),
+            'accepted original lacks generated Rust result execution')
     receipt = {**source, 'status': 'passed', 'source_clean': True,
                'platform': os.uname().sysname + ' ' + os.uname().machine,
                'upstream_commit': PINNED, 'manifest_sha256': manifest_hash,
@@ -435,10 +623,12 @@ def main() -> None:
                'scheme_sha256': sha256(scheme), 'runtime_recipe': runtime_recipe,
                'runtime': runtime_before, 'case_count': len(cases),
                'positive_count': sum('runtime.pass.test.ts' in x for x in originals),
+               'rust_executed_count': len(accepted_cases),
                'refusal_count': sum('compile.fail.test.ts' in x for x in originals),
+               'proof_execution': False, 'funded_application': False,
                'results': results,
                'limitations': ['Original Vitest harness is adapted to runtime 0.18.0; '
-                               'native Linux, wider Rust behavioral execution and proofs remain.']}
+                               'native Linux and proof/funded qualification for proof-required exports remain.']}
     (output / 'receipt.json').write_text(json.dumps(receipt, indent=2,
                                                     sort_keys=True) + '\n')
     print(json.dumps({'status': 'passed', 'head': source['head'],

@@ -272,6 +272,9 @@
              [(vector-ref ,src ,type ,expr^ ,index)
               (and (source-object? src)
                    (eq? (eq-hashtable-ref (vector-ref facts 0) src #f) expr))]
+             [(bytes-ref ,src ,type ,expr^ ,index)
+              (and (source-object? src)
+                   (eq? (eq-hashtable-ref (vector-ref facts 0) src #f) expr))]
              [else #f]))))
 
   (define (rust-vector-index-observations expr)

@@ -80,6 +80,32 @@ pub(super) fn try_run(
             crate::for_generic_bound_proof::run(std::path::Path::new(&root))
         })()),
         #[cfg(all(
+            feature = "import-ledger-field-proof",
+            compact_import_ledger_field_generated
+        ))]
+        ("--import-ledger-field-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("import/ledger_field proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected import/ledger_field proof argument".into());
+            }
+            crate::import_ledger_field_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "bytes-indexed-access-proof",
+            compact_bytes_indexed_access_generated
+        ))]
+        ("--bytes-indexed-access-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("Bytes indexed access proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected Bytes indexed access proof argument".into());
+            }
+            crate::bytes_indexed_access_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
             any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
             compact_bytes_remaining_proof_generated
         ))]
