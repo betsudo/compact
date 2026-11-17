@@ -90,3 +90,51 @@ pub(crate) fn shielded_recipient_type() -> Type {
         ],
     }
 }
+
+pub(crate) fn token_type() -> Type {
+    let bytes = Type::Bytes { length: 32 };
+    Type::Struct {
+        name: "Either".into(),
+        fields: vec![
+            StructField {
+                name: "is_left".into(),
+                ty: Type::Boolean,
+            },
+            StructField {
+                name: "left".into(),
+                ty: bytes.clone(),
+            },
+            StructField {
+                name: "right".into(),
+                ty: bytes,
+            },
+        ],
+    }
+}
+
+pub(crate) fn unshielded_recipient_type() -> Type {
+    let address = |name: &str| Type::Struct {
+        name: name.into(),
+        fields: vec![StructField {
+            name: "bytes".into(),
+            ty: Type::Bytes { length: 32 },
+        }],
+    };
+    Type::Struct {
+        name: "Either".into(),
+        fields: vec![
+            StructField {
+                name: "is_left".into(),
+                ty: Type::Boolean,
+            },
+            StructField {
+                name: "left".into(),
+                ty: address("ContractAddress"),
+            },
+            StructField {
+                name: "right".into(),
+                ty: address("UserAddress"),
+            },
+        ],
+    }
+}

@@ -459,6 +459,8 @@ pub(crate) fn expression_contains<'source>(
         Expr::CounterLessThan { threshold, .. } => visit(threshold),
         Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
+        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } =>
+            visit(key) || recipient.as_deref().is_some_and(|value| visit(value)) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
         Expr::Unit

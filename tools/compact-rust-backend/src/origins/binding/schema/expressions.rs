@@ -379,14 +379,22 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         Expr::KernelMintShielded { domain, amount } => {
             binary!("kernel_mint_shielded", "domain", domain, "amount", amount)
         }
-        Expr::KernelUnshieldedEffect { effect, key, recipient, amount } => {
+        Expr::KernelUnshieldedEffect {
+            effect,
+            key,
+            recipient,
+            amount,
+        } => {
             s.tag("kernel_unshielded_effect");
-            s.text("effect", match effect {
-                KernelUnshieldedEffectKind::Mint => "mint",
-                KernelUnshieldedEffectKind::Inputs => "inputs",
-                KernelUnshieldedEffectKind::Outputs => "outputs",
-                KernelUnshieldedEffectKind::Claim => "claim",
-            });
+            s.text(
+                "effect",
+                match effect {
+                    KernelUnshieldedEffectKind::Mint => "mint",
+                    KernelUnshieldedEffectKind::Inputs => "inputs",
+                    KernelUnshieldedEffectKind::Outputs => "outputs",
+                    KernelUnshieldedEffectKind::Claim => "claim",
+                },
+            );
             s.node("key", Owner::Expr(key));
             if let Some(recipient) = recipient {
                 s.node("recipient", Owner::Expr(recipient));

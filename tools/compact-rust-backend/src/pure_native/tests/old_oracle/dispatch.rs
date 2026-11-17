@@ -73,6 +73,7 @@ fn expression_with_calls(
         | Expr::EmitPaused { .. }
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
+        | Expr::KernelUnshieldedEffect { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

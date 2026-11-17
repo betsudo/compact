@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Domain admission at the native effect dispatcher boundary.
 use super::*;
-use crate::ir::KernelClaimKind;
+use crate::ir::{KernelClaimKind, KernelUnshieldedEffectKind};
 use syn::visit_mut::{self, VisitMut};
 
 #[derive(Default)]
@@ -144,6 +144,60 @@ fn mint_requires_digest_domain_and_exact_uint64_amount() {
             }),
             amount.clone(),
             actual,
+        );
+    }
+}
+
+#[test]
+fn unshielded_kernel_effects_route_typed_operands_in_source_order() {
+    let declarations = Declarations::default();
+    let token = token_type();
+    let recipient = unshielded_recipient_type();
+    for (kind, method) in [
+        (KernelUnshieldedEffectKind::Mint, "kernel_mint_unshielded"),
+        (
+            KernelUnshieldedEffectKind::Inputs,
+            "kernel_inc_unshielded_inputs",
+        ),
+        (
+            KernelUnshieldedEffectKind::Outputs,
+            "kernel_inc_unshielded_outputs",
+        ),
+        (
+            KernelUnshieldedEffectKind::Claim,
+            "kernel_claim_unshielded_coin_spend",
+        ),
+    ] {
+        let mint = kind == KernelUnshieldedEffectKind::Mint;
+        let key = if mint {
+            Type::Bytes { length: 32 }
+        } else {
+            token.clone()
+        };
+        let maximum = if mint {
+            u64::MAX.to_string()
+        } else {
+            u128::MAX.to_string()
+        };
+        let amount = uint(&maximum);
+        let effect = || Expr::KernelUnshieldedEffect {
+            effect: kind,
+            key: default_value(key.clone()),
+            recipient: (kind == KernelUnshieldedEffectKind::Claim)
+                .then(|| default_value(recipient.clone())),
+            amount: default_value(amount.clone()),
+        };
+        admitted(declarations.lower(effect()), Type::Unit, method);
+        refused(
+            declarations.lower(Expr::KernelUnshieldedEffect {
+                effect: kind,
+                key: default_value(key.clone()),
+                recipient: (kind == KernelUnshieldedEffectKind::Claim)
+                    .then(|| default_value(recipient.clone())),
+                amount: default_value(Type::Field),
+            }),
+            amount,
+            Type::Field,
         );
     }
 }

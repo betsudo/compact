@@ -956,7 +956,12 @@ fn collect_expression_types<'ir>(
             collect_expression_types(domain, structs, enums, origins, observer)?;
             collect_expression_types(amount, structs, enums, origins, observer)?;
         }
-        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } => {
+        Expr::KernelUnshieldedEffect {
+            key,
+            recipient,
+            amount,
+            ..
+        } => {
             collect_expression_types(key, structs, enums, origins, observer)?;
             if let Some(recipient) = recipient {
                 collect_expression_types(recipient, structs, enums, origins, observer)?;

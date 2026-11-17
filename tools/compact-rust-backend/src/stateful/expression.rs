@@ -21,10 +21,13 @@
 use crate::circuit_analysis::{
     circuit_emits_native_private_output_observed, circuit_uses_witness_observed,
 };
-use crate::coin_shapes::{qualified_coin_type, shielded_coin_type, shielded_recipient_type};
+use crate::coin_shapes::{
+    qualified_coin_type, shielded_coin_type, shielded_recipient_type, token_type,
+    unshielded_recipient_type,
+};
 use crate::ir::{
-    ComparisonOperator, Expr, LedgerField, LedgerFieldKind, NativeWitnessBuiltin, PureCircuit,
-    StatefulCircuit, StructField, Type, WitnessDeclaration,
+    ComparisonOperator, Expr, KernelUnshieldedEffectKind, LedgerField, LedgerFieldKind,
+    NativeWitnessBuiltin, PureCircuit, StatefulCircuit, StructField, Type, WitnessDeclaration,
 };
 use crate::native_representation;
 use crate::pure_semantics::arithmetic::{
@@ -642,6 +645,7 @@ fn render_operation_expression(
         | Expr::EmitPaused { .. }
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
+        | Expr::KernelUnshieldedEffect { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. } => render_effect_operation(
@@ -1478,6 +1482,91 @@ fn render_effect_operation(
                 ty.clone(),
                 false,
             ))
+        }
+        Expr::KernelUnshieldedEffect {
+            effect,
+            key,
+            recipient,
+            amount,
+        } => {
+            let expected_key = if *effect == KernelUnshieldedEffectKind::Mint {
+                Type::Bytes { length: 32 }
+            } else {
+                token_type()
+            };
+            let expected_amount = Type::Unsigned {
+                max: if *effect == KernelUnshieldedEffectKind::Mint {
+                    u64::MAX.to_string()
+                } else {
+                    u128::MAX.to_string()
+                },
+            };
+            if recipient.is_some() != (*effect == KernelUnshieldedEffectKind::Claim) {
+                return Err(RenderError::UnsupportedStatefulCall(
+                    "unshielded claim requires exactly one recipient".into(),
+                ));
+            }
+            let mut operands: Vec<(&Expr, Type)> = vec![(key, expected_key)];
+            if let Some(recipient) = recipient {
+                operands.push((recipient, unshielded_recipient_type()));
+            }
+            operands.push((amount, expected_amount));
+            let mut names = Vec::with_capacity(operands.len());
+            let mut witness_effect = false;
+            for (operand, expected) in operands {
+                let (rendered, actual, effect) = render_state_expression_observed(
+                    operand,
+                    parameters,
+                    statements,
+                    next_temp,
+                    query_effect,
+                    environment,
+                )?;
+                if actual != expected {
+                    return Err(RenderError::TypeMismatch { expected, actual });
+                }
+                witness_effect |= effect;
+                let name = syn::Ident::new(
+                    &format!("__compact_kernel_arg_{}", *next_temp),
+                    Span::call_site(),
+                );
+                *next_temp += 1;
+                statements.push(syn::parse_quote!(let #name = #rendered;));
+                names.push(name);
+            }
+            let key = &names[0];
+            let amount = names.last().expect("validated kernel argument arity");
+            let token: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                #key.is_left, #key.left, #key.right
+            ));
+            let call: syn::Expr = match effect {
+                KernelUnshieldedEffectKind::Mint => syn::parse_quote!(
+                    context.kernel_mint_unshielded(
+                        runtime::ledger::HashOutput(#key.into_array()), (#amount).value() as u64
+                    )?
+                ),
+                KernelUnshieldedEffectKind::Inputs => syn::parse_quote!(
+                    context.kernel_inc_unshielded_inputs(#token, (#amount).value() as u128)?
+                ),
+                KernelUnshieldedEffectKind::Outputs => syn::parse_quote!(
+                    context.kernel_inc_unshielded_outputs(#token, (#amount).value() as u128)?
+                ),
+                KernelUnshieldedEffectKind::Claim => {
+                    let address = &names[1];
+                    syn::parse_quote!(context.kernel_claim_unshielded_coin_spend(
+                        #token,
+                        runtime::ledger::unshielded_recipient_from_compact(
+                            #address.is_left, #address.left.bytes, #address.right.bytes
+                        ),
+                        (#amount).value() as u128
+                    )?)
+                }
+            };
+            statements.push(syn::parse_quote!(let step = #call;));
+            statements.push(syn::parse_quote!(context = step.context;));
+            statements.push(syn::parse_quote!(total_cost += step.gas_cost;));
+            *query_effect = true;
+            Ok((syn::parse_quote!(()), Type::Unit, witness_effect))
         }
         Expr::EmitShieldedSpend { value: argument }
         | Expr::EmitShieldedBurn { value: argument }

@@ -195,6 +195,13 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
             collect_expression_types(domain, structs, enums, origins)?;
             collect_expression_types(amount, structs, enums, origins)?;
         }
+        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } => {
+            collect_expression_types(key, structs, enums, origins)?;
+            if let Some(recipient) = recipient {
+                collect_expression_types(recipient, structs, enums, origins)?;
+            }
+            collect_expression_types(amount, structs, enums, origins)?;
+        }
         Expr::CreateZswapInput { coin } => collect_expression_types(coin, structs, enums, origins)?,
         Expr::CreateZswapOutput { coin, recipient } => {
             collect_expression_types(coin, structs, enums, origins)?;
