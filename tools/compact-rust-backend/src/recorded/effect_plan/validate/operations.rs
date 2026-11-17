@@ -125,15 +125,13 @@ pub(super) fn validate(
             use_value(amount)?;
             let mint = *kind == crate::ir::KernelUnshieldedEffectKind::Mint;
             let claim = *kind == crate::ir::KernelUnshieldedEffectKind::Claim;
-            key.ty
-                == (if mint {
-                    Type::Bytes { length: 32 }
-                } else {
-                    super::super::kernel_shapes::token_type()
-                })
-                && recipient.is_some() == claim
+            (if mint {
+                key.ty == (Type::Bytes { length: 32 })
+            } else {
+                super::super::kernel_shapes::is_token_type(&key.ty)
+            }) && recipient.is_some() == claim
                 && recipient.as_ref().is_none_or(|recipient| {
-                    recipient.ty == super::super::kernel_shapes::recipient_type()
+                    super::super::kernel_shapes::is_recipient_type(&recipient.ty)
                 })
                 && amount.ty
                     == (if mint {

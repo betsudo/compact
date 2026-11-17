@@ -467,11 +467,18 @@ fn unshielded_kernel_effects_keep_exact_types_and_source_operand_order() {
             },
         ];
         if claim {
+            // The compiler gives distinct generic instantiations distinct Rust
+            // names when both occur in one contract.
+            let mut recipient_type = super::super::kernel_shapes::recipient_type();
+            let Type::Struct { name, .. } = &mut recipient_type else {
+                unreachable!()
+            };
+            *name = "EitherCompact1".into();
             witnesses.push(WitnessDeclaration {
                 source: None,
                 name: "recipient".into(),
                 parameters: vec![],
-                result: super::super::kernel_shapes::recipient_type(),
+                result: recipient_type,
             });
         }
         let maps = witnesses.iter().map(|w| (w.name.as_str(), w)).collect();

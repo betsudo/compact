@@ -54,3 +54,42 @@ pub(super) fn recipient_type() -> Type {
         ],
     }
 }
+
+fn generated_name(actual: &str, base: &str) -> bool {
+    actual == base
+        || actual
+            .strip_prefix(&format!("{base}Compact"))
+            .is_some_and(|suffix| suffix.parse::<u32>().is_ok_and(|n| n > 0))
+}
+
+fn bytes_address(ty: &Type, base: &str) -> bool {
+    matches!(ty, Type::Struct { name, fields }
+        if generated_name(name, base)
+            && fields.len() == 1
+            && fields[0].name == "bytes"
+            && fields[0].ty == bytes32())
+}
+
+pub(super) fn is_token_type(ty: &Type) -> bool {
+    matches!(ty, Type::Struct { name, fields }
+        if generated_name(name, "Either")
+            && fields.len() == 3
+            && fields[0].name == "is_left"
+            && fields[0].ty == Type::Boolean
+            && fields[1].name == "left"
+            && fields[1].ty == bytes32()
+            && fields[2].name == "right"
+            && fields[2].ty == bytes32())
+}
+
+pub(super) fn is_recipient_type(ty: &Type) -> bool {
+    matches!(ty, Type::Struct { name, fields }
+        if generated_name(name, "Either")
+            && fields.len() == 3
+            && fields[0].name == "is_left"
+            && fields[0].ty == Type::Boolean
+            && fields[1].name == "left"
+            && bytes_address(&fields[1].ty, "ContractAddress")
+            && fields[2].name == "right"
+            && bytes_address(&fields[2].ty, "UserAddress"))
+}

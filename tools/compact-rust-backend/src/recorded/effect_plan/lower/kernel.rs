@@ -59,7 +59,12 @@ impl Lowerer<'_> {
         let mut operand = |expression, name, expected| {
             let path = format!("{path}.{name}");
             let value = self.expression(expression, scope, bindings, &path)?;
-            if value.ty != expected {
+            let compatible = value.ty == expected
+                || (expected == super::super::kernel_shapes::token_type()
+                    && super::super::kernel_shapes::is_token_type(&value.ty))
+                || (expected == super::super::kernel_shapes::recipient_type()
+                    && super::super::kernel_shapes::is_recipient_type(&value.ty));
+            if !compatible {
                 return Err(invalid(
                     &path,
                     format!("expected {expected:?} kernel operand"),
