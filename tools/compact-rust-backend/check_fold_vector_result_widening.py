@@ -301,9 +301,9 @@ def main():
         shutil.copyfile(ROOT / "Cargo.lock", inline_consumer / "Cargo.lock")
         inline_package = tomllib.loads((inline_both / "contract/Cargo.toml").read_text())["package"]["name"]
         inline_cargo = inline_consumer / "Cargo.toml"
-        inline_cargo.write_text('[workspace]\n[package]\nname="inline-fold-acceptance-consumer"\n'
+        inline_cargo.write_text(with_pinned_patches('[workspace]\n[package]\nname="inline-fold-acceptance-consumer"\n'
             'version="0.1.0"\nedition="2024"\n[dependencies]\ninline_fold={package='
-            + json.dumps(inline_package) + ',path=' + json.dumps(str(inline_both / "contract")) + '}\n')
+            + json.dumps(inline_package) + ',path=' + json.dumps(str(inline_both / "contract")) + '}\n', ROOT))
         run("inline-fold-rust-resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
             "--manifest-path", inline_cargo])
         inline_rust = run("inline-fold-rust", ["cargo", "test", "--locked", "--offline",
