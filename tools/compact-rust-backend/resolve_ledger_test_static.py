@@ -32,7 +32,7 @@ import tomllib
 
 PACKAGE = "midnight-ledger-v9"
 VERSION = "1.0.2"
-REVISION = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2"
+REVISION = "8e77431e66df174831f94b138c765628047b2291"
 REPOSITORY = "https://github.com/betsudo/midnight-ledger"
 SOURCE = f"git+{REPOSITORY}?rev={REVISION}#{REVISION}"
 FIXTURE_HASHES = {

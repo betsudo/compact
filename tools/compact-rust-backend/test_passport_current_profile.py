@@ -173,9 +173,9 @@ class PassportControlTests(unittest.TestCase):
             compatibility["ledger_git_sources"] = {}
             (runtime / "compatibility.json").write_text(json.dumps(compatibility))
             retained = declared.replace(
-                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2", optional = true }',
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291", optional = true }',
                 'midnight-ledger-v9 = { version = "=1.0.1", optional = true }').replace(
-                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }',
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }',
                 'midnight-ledger-v9 = "=1.0.1"')
             for name in gate.RUST_ONCHAIN_PACKAGES:
                 retained = re.sub(

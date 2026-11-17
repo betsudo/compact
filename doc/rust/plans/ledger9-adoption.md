@@ -16,21 +16,24 @@ schema 20, or capability schema 3. The trial source closure is:
 
 - Compact Rust AST compiler base
   `c3abc35afe9ed2e435782fa47e5add4f98944309`;
-- Ledger `f273996eaba509aaf5f6d935f2f9df5c8ec98bf2` from the
+- Ledger `8e77431e66df174831f94b138c765628047b2291` from the
   `integration/ledger9/ledger-9.1.0.2` review stack;
-- ZK `0f9d5c3879f92a8beae8bdb9e7305f39e03a3227`, whose manifests retain
-  local paths while giving external Git consumers exact version constraints;
+- ZK `bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a`, whose SHA3 and Blake2b
+  helpers resolve curves and proofs within the same Git source without a
+  consumer-owned proof patch table;
 - ZKIR v2 `2.2.0` from the same Ledger revision for the retained producer
   boundary, and ZKIR v3 `3.2.1` from
-  `0196bcd68fce3bfcb69914520b9ddaed051d4757` for the active proof/tool
+  `b4bdaeda1788a8304447498b59710aef54c466f7` for the active proof/tool
   boundary.
 
 The runtime manifest selects Ledger 9.1.0.2, storage 3.1.0 and
 transient-crypto 3.1.0 from the single Ledger revision. It selects circuits
 7.3.0, curves 0.3.1, proofs 0.8.2 and zk-stdlib 2.4.0 from the single ZK
-revision. The workspace and every generated Rust root manifest repeat those
-sources as `[patch.crates-io]` entries. This is required because Cargo patches
-in a dependency repository are not inherited by a downstream root. The
+revision. The workspace and every generated Rust root retain the Ledger and
+ZKIR source selectors as `[patch.crates-io]` entries because Cargo patches in
+a dependency repository are not inherited by a downstream root. The four ZK
+packages are no longer repeated there: the active direct dependencies and the
+patch-free upstream manifests close that source graph themselves. The
 compatibility preflight still checks every direct Midnight dependency's exact
 version, Git URL and revision before generation.
 
@@ -45,10 +48,11 @@ client transaction partitioning and decoding, not the Compact language or the
 checked-effect model. Runtime observations and compatibility metadata require
 `9.1.0.2`. Historical Ledger 8 and Ledger 9.1.0.1 fixtures remain unchanged.
 
-Rollback is one atomic source-pair operation: select the preceding compiler
+Rollback is one atomic source-graph operation: select the preceding compiler
 and runtime revision together, regenerate the consumer, and restore its prior
-lockfile. Do not remove only the generated patch table or downgrade only one
-Ledger crate; either action can create two incompatible Midnight type graphs.
+lockfile. Do not remove only the generated Ledger/ZKIR patch table or downgrade
+only one Ledger or proof crate; either action can create two incompatible
+Midnight type graphs.
 This source closure is an interoperability candidate, not a registry release
 or proof of live network deployment.
 

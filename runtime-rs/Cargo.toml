@@ -36,22 +36,22 @@ k256 = { version = "=0.14.0", default-features = false, features = ["ecdsa"] }
 ff = { version = "=0.13.1", default-features = false }
 group = "=0.13.0"
 midnight-compact-runtime-macros = { version = "=0.2.0", path = "../runtime-rs-macros" }
-midnight-base-crypto = { version = "=1.1.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-coin-structure = { version = "=3.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-onchain-runtime = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-onchain-state = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-onchain-vm = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-serialize = { version = "=1.2.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-storage = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-storage-core = { version = "=1.2.3", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-transient-crypto = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
+midnight-base-crypto = { version = "=1.1.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-coin-structure = { version = "=3.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-onchain-runtime = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-onchain-state = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-onchain-vm = { version = "=4.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-serialize = { version = "=1.2.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-storage = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-storage-core = { version = "=1.2.3", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-transient-crypto = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
 
-midnight-circuits = { version = "=7.3.0", git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
-midnight-curves = { version = "=0.3.1", git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
-midnight-proofs = { version = "=0.8.2", git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
-midnight-zk-stdlib = { version = "=2.4.0", git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
-midnight-zswap = { version = "=9.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
-midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2", optional = true }
+midnight-circuits = { version = "=7.3.0", git = "https://github.com/betsudo/midnight-zk", rev = "bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a" }
+midnight-curves = { version = "=0.3.1", git = "https://github.com/betsudo/midnight-zk", rev = "bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a" }
+midnight-proofs = { version = "=0.8.2", git = "https://github.com/betsudo/midnight-zk", rev = "bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a" }
+midnight-zk-stdlib = { version = "=2.4.0", git = "https://github.com/betsudo/midnight-zk", rev = "bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a" }
+midnight-zswap = { version = "=9.0.1", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
+midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291", optional = true }
 p256 = { version = "=0.13.2", default-features = false, features = ["ecdsa"] }
 rand = { version = "=0.8.6", optional = true }
 sha2 = "=0.10.9"
@@ -59,6 +59,6 @@ sha3 = "=0.10.8"
 
 [dev-dependencies]
 hex = "0.4"
-midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }
+midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }
 serde = "1"
 serde_json = "1"

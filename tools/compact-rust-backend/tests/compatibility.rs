@@ -79,21 +79,27 @@ impl Drop for Root {
 fn current_source_pair_matches_compiler_and_is_identified() {
     let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let result = validate_root(&repo).unwrap();
-    assert_eq!(result.compatibility, required());
+    let compatibility = required();
+    assert_eq!(result.compatibility, compatibility);
     assert_eq!(result.root(), fs::canonicalize(&repo).unwrap());
     let workspace: toml_edit::DocumentMut = fs::read_to_string(repo.join("Cargo.toml"))
         .unwrap()
         .parse()
         .unwrap();
     let patches = workspace["patch"]["crates-io"].as_table_like().unwrap();
+    let root_sources: Vec<_> = compatibility
+        .ledger_git_sources
+        .iter()
+        .filter(|(_, source)| source.git != "https://github.com/betsudo/midnight-zk")
+        .collect();
     assert_eq!(
         patches
             .iter()
             .filter(|(name, _)| name.starts_with("midnight-"))
             .count(),
-        required().ledger_git_sources.len()
+        root_sources.len()
     );
-    for (name, source) in &required().ledger_git_sources {
+    for (name, source) in root_sources {
         let patch = patches.get(name).unwrap();
         assert_eq!(
             patch.get("git").and_then(toml_edit::Item::as_str),
@@ -102,6 +108,17 @@ fn current_source_pair_matches_compiler_and_is_identified() {
         assert_eq!(
             patch.get("rev").and_then(toml_edit::Item::as_str),
             Some(source.rev.as_str())
+        );
+    }
+    for name in [
+        "midnight-circuits",
+        "midnight-curves",
+        "midnight-proofs",
+        "midnight-zk-stdlib",
+    ] {
+        assert!(
+            patches.get(name).is_none(),
+            "patch-free ZK source must not require a consumer root patch for {name}"
         );
     }
     let testkit: toml_edit::DocumentMut = fs::read_to_string(repo.join("testkit-rs/Cargo.toml"))
@@ -629,7 +646,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
                 context,
                 target,
                 "midnight-ledger-v9",
-                r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }"#,
+                r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }"#,
             );
         }
     }
@@ -641,7 +658,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
         "dev-dependencies",
         Some("cfg(unix)"),
         "midnight-ledger-v9",
-        r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2", features = ["test-utilities"] }"#,
+        r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291", features = ["test-utilities"] }"#,
     );
     validate_root(&root.0).unwrap();
     let path = root.0.join("runtime-rs/Cargo.toml");

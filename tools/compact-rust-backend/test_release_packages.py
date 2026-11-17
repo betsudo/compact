@@ -120,12 +120,12 @@ class ReleaseInspectionTests(unittest.TestCase):
         declaration = (
             'midnight-onchain-vm = { version = "=4.0.1", '
             'git = "https://github.com/betsudo/midnight-ledger", '
-            'rev = "f273996eaba509aaf5f6d935f2f9df5c8ec98bf2" }'
+            'rev = "8e77431e66df174831f94b138c765628047b2291" }'
         )
         self.assertIn(declaration, original)
         for changed in (
             declaration.replace("betsudo/midnight-ledger", "invalid/example"),
-            declaration.replace("f273996eaba509aaf5f6d935f2f9df5c8ec98bf2", "0" * 40),
+            declaration.replace("8e77431e66df174831f94b138c765628047b2291", "0" * 40),
             declaration[:-2] + ', branch = "ledger-9" }',
             declaration[:-2] + ', registry = "unselected" }',
         ):

@@ -321,17 +321,17 @@
               # checkouts. Nix still requires the shared checkout hash for
               # each package identity referenced by Cargo.lock.
               outputHashes = {
-                "midnight-base-crypto-1.1.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-base-crypto-derive-1.1.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-serialize-1.2.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-serialize-macros-1.0.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-storage-core-1.2.3" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-storage-macros-1.0.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-transient-crypto-3.1.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
-                "midnight-circuits-7.3.0" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
-                "midnight-curves-0.3.1" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
-                "midnight-proofs-0.8.2" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
-                "midnight-zk-stdlib-2.4.0" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
+                "midnight-base-crypto-1.1.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-base-crypto-derive-1.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-1.2.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-macros-1.0.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-core-1.2.3" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-macros-1.0.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-transient-crypto-3.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-circuits-7.3.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-curves-0.3.1" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-proofs-0.8.2" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-zk-stdlib-2.4.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
               };
             };
             cargoBuildFlags = [ "--bin" "compactc" ];
