@@ -29,7 +29,7 @@
   "ledger_git_sources": {
     "midnight-base-crypto": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-circuits": {
       "git": "https://github.com/betsudo/midnight-zk",
@@ -37,7 +37,7 @@
     },
     "midnight-coin-structure": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-curves": {
       "git": "https://github.com/betsudo/midnight-zk",
@@ -45,19 +45,19 @@
     },
     "midnight-ledger-v9": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-onchain-runtime": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-onchain-state": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-onchain-vm": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-proofs": {
       "git": "https://github.com/betsudo/midnight-zk",
@@ -65,30 +65,30 @@
     },
     "midnight-serialize": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-storage": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-storage-core": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     },
     "midnight-transient-crypto": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291",
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6",
       "version": "=3.1.0"
     },
     "midnight-zkir-v2": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291",
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6",
       "package": "midnight-zkir",
       "version": "=2.2.0"
     },
     "midnight-zkir-v3": {
       "git": "https://github.com/betsudo/midnight-zkir",
-      "rev": "b4bdaeda1788a8304447498b59710aef54c466f7",
+      "rev": "3377ad9e48741f60e0aa17010b6f23e34223d906",
       "package": "midnight-zkir",
       "version": "=3.2.1"
     },
@@ -98,7 +98,7 @@
     },
     "midnight-zswap": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "8e77431e66df174831f94b138c765628047b2291"
+      "rev": "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
     }
   }
 }

@@ -16,14 +16,14 @@ schema 20, or capability schema 3. The trial source closure is:
 
 - Compact Rust AST compiler base
   `c3abc35afe9ed2e435782fa47e5add4f98944309`;
-- Ledger `8e77431e66df174831f94b138c765628047b2291` from the
+- Ledger `6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6` from the
   `integration/ledger9/ledger-9.1.0.2` review stack;
 - ZK `bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a`, whose SHA3 and Blake2b
   helpers resolve curves and proofs within the same Git source without a
   consumer-owned proof patch table;
 - ZKIR v2 `2.2.0` from the same Ledger revision for the retained producer
   boundary, and ZKIR v3 library `3.2.1` from
-  `b4bdaeda1788a8304447498b59710aef54c466f7` for the Rust proof runner.
+  `3377ad9e48741f60e0aa17010b6f23e34223d906` for the Rust proof runner.
 
 The runtime manifest selects Ledger 9.1.0.2, storage 3.1.0 and
 transient-crypto 3.1.0 from the single Ledger revision. It selects circuits

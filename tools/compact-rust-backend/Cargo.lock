@@ -1453,7 +1453,7 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 [[package]]
 name = "midnight-base-crypto"
 version = "1.1.1"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "anyhow",
  "atomic-write-file",
@@ -1485,7 +1485,7 @@ dependencies = [
 [[package]]
 name = "midnight-base-crypto-derive"
 version = "1.1.0"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1568,7 +1568,7 @@ dependencies = [
 [[package]]
 name = "midnight-serialize"
 version = "1.2.1"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "crypto",
  "konst",
@@ -1581,7 +1581,7 @@ dependencies = [
 [[package]]
 name = "midnight-serialize-macros"
 version = "1.0.0"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1591,7 +1591,7 @@ dependencies = [
 [[package]]
 name = "midnight-storage-core"
 version = "1.2.3"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "archery",
  "crypto",
@@ -1614,7 +1614,7 @@ dependencies = [
 [[package]]
 name = "midnight-storage-macros"
 version = "1.0.1"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "midnight-serialize-macros",
  "proc-macro2",
@@ -1625,7 +1625,7 @@ dependencies = [
 [[package]]
 name = "midnight-transient-crypto"
 version = "3.1.0"
-source = "git+https://github.com/betsudo/midnight-ledger?rev=8e77431e66df174831f94b138c765628047b2291#8e77431e66df174831f94b138c765628047b2291"
+source = "git+https://github.com/betsudo/midnight-ledger?rev=6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6#6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
 dependencies = [
  "anyhow",
  "blake2b_simd",

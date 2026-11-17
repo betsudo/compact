@@ -646,7 +646,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
                 context,
                 target,
                 "midnight-ledger-v9",
-                r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291" }"#,
+                r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6" }"#,
             );
         }
     }
@@ -658,7 +658,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
         "dev-dependencies",
         Some("cfg(unix)"),
         "midnight-ledger-v9",
-        r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "8e77431e66df174831f94b138c765628047b2291", features = ["test-utilities"] }"#,
+        r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6", features = ["test-utilities"] }"#,
     );
     validate_root(&root.0).unwrap();
     let path = root.0.join("runtime-rs/Cargo.toml");
