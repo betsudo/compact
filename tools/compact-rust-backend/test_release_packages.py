@@ -135,6 +135,15 @@ class ReleaseInspectionTests(unittest.TestCase):
                     release.compatibility_record()
         path.write_text(original)
 
+    def test_runtime_source_patch_version_must_match_declared_dependency(self):
+        for relative in ("runtime-rs/compatibility.json", "tools/compact-rust-backend/src/compatibility.json"):
+            path = self.root / relative
+            record = json.loads(path.read_text())
+            record["ledger_git_sources"]["midnight-transient-crypto"]["version"] = "=3.0.1"
+            path.write_text(json.dumps(record))
+        with self.assertRaisesRegex(RuntimeError, "dependency mismatch: midnight-transient-crypto"):
+            release.compatibility_record()
+
     def test_missing_packaged_record_refused(self):
         self.archive(record=False)
         with self.assertRaises((KeyError, RuntimeError)):

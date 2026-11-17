@@ -78,7 +78,12 @@ def compatibility_record() -> dict[str, object]:
         actual = dependency.get("version") if isinstance(dependency, dict) else dependency
         source = record.get("ledger_git_sources", {}).get(name)
         selected_source = {key: dependency.get(key) for key in ("git", "rev")} if isinstance(dependency, dict) else {}
-        source_matches = selected_source == source if source else not any(selected_source.values())
+        if source:
+            source_matches = (selected_source == {key: source.get(key) for key in ("git", "rev")}
+                              and source.get("version", version) == version
+                              and not source.keys() - {"git", "rev", "version"})
+        else:
+            source_matches = not any(selected_source.values())
         if isinstance(dependency, dict):
             forbidden = {"branch", "tag", "registry", "registry-index", "workspace", "package"}
             source_matches = source_matches and not forbidden.intersection(dependency)
