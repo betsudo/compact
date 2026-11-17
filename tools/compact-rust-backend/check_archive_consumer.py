@@ -98,6 +98,31 @@ def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
     return directory
 
 
+def stage_ledger_vendor_static(vendor: Path, packages: list[dict]) -> None:
+    # The pinned Ledger 2.2.0 transient crypto crate uses a sibling workspace
+    # path for its embedded verifier parameters. Cargo vendors Git crates
+    # individually, so restore that path with the file from the same Git source.
+    old = vendor / "midnight-transient-crypto-2.2.0"
+    if not old.exists():
+        return
+    sources = {
+        (package["version"], package["source"])
+        for package in packages if package["name"] == "midnight-transient-crypto"
+    }
+    revisions = {source for version, source in sources
+                 if version == "2.2.0" and (source or "").startswith("git+")}
+    if len(revisions) != 1 or ("3.1.0", next(iter(revisions))) not in sources:
+        raise RuntimeError("Ledger transient crypto versions did not resolve from the same Git source")
+    current = vendor / "midnight-transient-crypto-3.1.0"
+    relative = "static/bls_midnight_2p14"
+    checksums = json.loads((current / ".cargo-checksum.json").read_text())["files"]
+    if sha256(current / relative) != checksums[relative]:
+        raise RuntimeError("vendored Ledger verifier parameters failed checksum verification")
+    sibling = vendor / "transient-crypto" / relative
+    sibling.parent.mkdir(parents=True)
+    shutil.copyfile(current / relative, sibling)
+
+
 def archived_source_hashes(archives: dict[str, Path]) -> dict[str, str]:
     """Identify the exact archive files covered by the compiler's source fingerprint."""
     hashes = {}
@@ -253,10 +278,11 @@ def main() -> None:
             + ',features=["ledger-transaction"]}\n', ROOT))
         (seed / "lib.rs").write_text("// Manifest only: resolve the runtime archive dependency closure.\n")
         shutil.copyfile(ROOT / "Cargo.lock", seed / "Cargo.lock")
-        run(["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", str(seed_manifest)],
-            cwd=seed)
+        seed_metadata = json.loads(run(
+            ["cargo", "metadata", "--offline", "--format-version", "1"], cwd=seed))
         vendor_config = run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
                              "--manifest-path", str(seed_manifest), str(vendor)], cwd=seed)
+        stage_ledger_vendor_static(vendor, seed_metadata["packages"])
         archives = {
             entry["name"]: install_archive(vendor, entry, compatibility["macros_version"])
             for entry in entries
