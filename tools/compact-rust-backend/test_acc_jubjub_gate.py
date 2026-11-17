@@ -100,7 +100,7 @@ class JubjubGateTests(unittest.TestCase):
         receipt["commands"].append({"argv": argv, "label": label, "log": str(log), "exit_code": 0})
         output = directory / gate.ROW["kind"]
         if label == "zkir-version":
-            put(stdout_path, "midnight-zkir 2.2.0" if self.corrupt == "zkir-version" else "midnight-zkir 3.2.0")
+            put(stdout_path, "midnight-zkir 2.2.0" if self.corrupt == "zkir-version" else "midnight-zkir 3.2.1")
         elif label == "select-rustfmt":
             self.assertEqual(argv[1:], ["which", "--toolchain", "1.99.0", "rustfmt"])
             put(stdout_path, str(self.root / "tools/rustfmt"))

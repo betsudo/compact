@@ -16,6 +16,7 @@
 
 """Adversarial identity, isolated-consumer and false-success gate controls."""
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -149,7 +150,7 @@ class PassportControlTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "checksum differs"):
                 gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
 
-    def test_ledger9_admission_requires_the_published_runtime_and_lock(self):
+    def test_passport_admission_stays_on_the_published_runtime_and_refuses_the_active_trial(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             runtime = root / "runtime-rs"
@@ -159,7 +160,34 @@ class PassportControlTests(unittest.TestCase):
             manifest.write_text(declared)
             shutil.copyfile(gate.ROOT / "runtime-rs/compatibility.json", runtime / "compatibility.json")
             lock = root / "Cargo.lock"
-            locked = (gate.ROOT / "Cargo.lock").read_text()
+            lock.write_text((gate.ROOT / "Cargo.lock").read_text())
+            with patch.object(gate, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime cohort"):
+                    gate.ledger9_identity()
+            # Passport remains qualified only on its retained published cohort.
+            # Reconstruct that cohort locally so the positive and refusal controls
+            # stay live without silently migrating Passport with the DID runtime.
+            compatibility = json.loads((runtime / "compatibility.json").read_text())
+            compatibility["ledger_version"] = "ledger-9.1.0.1"
+            compatibility["ledger_dependencies"]["midnight-ledger-v9"] = "=1.0.1"
+            compatibility["ledger_git_sources"] = {}
+            (runtime / "compatibility.json").write_text(json.dumps(compatibility))
+            retained = declared.replace(
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653", optional = true }',
+                'midnight-ledger-v9 = { version = "=1.0.1", optional = true }').replace(
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653" }',
+                'midnight-ledger-v9 = "=1.0.1"')
+            for name in gate.RUST_ONCHAIN_PACKAGES:
+                retained = re.sub(
+                    rf'^{name} = \{{ version = "=4\.0\.1", git = "[^"]+", rev = "[0-9a-f]{{40}}" \}}$',
+                    f'{name} = {{ version = "=4.0.1" }}', retained, flags=re.M)
+            manifest.write_text(retained)
+            locked = 'version = 4\n'
+            for name, version in (("midnight-ledger-v9", "1.0.1"),
+                                  *((name, "4.0.1") for name in gate.RUST_ONCHAIN_PACKAGES)):
+                locked += (f'\n[[package]]\nname = "{name}"\nversion = "{version}"\n'
+                           'source = "registry+https://github.com/rust-lang/crates.io-index"\n'
+                           f'checksum = "{hashlib.sha256(name.encode()).hexdigest()}"\n')
             lock.write_text(locked)
             with patch.object(gate, "ROOT", root):
                 identities = gate.ledger9_identity()
@@ -173,10 +201,10 @@ class PassportControlTests(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, "registry lock identity"):
                         gate.ledger9_identity()
                 lock.write_text(locked)
-                manifest.write_text(declared.replace("midnight-ledger-v9 =", "midnight-ledger ="))
+                manifest.write_text(retained.replace("midnight-ledger-v9 =", "midnight-ledger ="))
                 with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime"):
                     gate.ledger9_identity()
-                manifest.write_text(declared.replace("=4.0.1", "=4.0.0"))
+                manifest.write_text(retained.replace("=4.0.1", "=4.0.0"))
                 with self.assertRaisesRegex(ValueError, "native onchain pins"):
                     gate.ledger9_identity()
 

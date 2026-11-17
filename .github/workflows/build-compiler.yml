@@ -982,8 +982,12 @@ jobs:
       - name: Check standalone original Passport pure consumers
         id: passport_current
         run: |
-          TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
-          env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_passport_current_profile.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-passport-current" --ts-runtime "$TS_RUNTIME"
+          if jq -e '.ledger_version == "ledger-9.1.0.1" and (.ledger_git_sources | length == 0)' runtime-rs/compatibility.json >/dev/null; then
+            TS_RUNTIME="$(nix build --no-link --print-out-paths .#runtime.package)/lib/node_modules/@midnight-ntwrk/compact-runtime"
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command python3 -X faulthandler -u tools/compact-rust-backend/check_passport_current_profile.py --compiler "$GITHUB_WORKSPACE/result/bin/compactc" --output "$RUNNER_TEMP/compact-passport-current" --ts-runtime "$TS_RUNTIME"
+          else
+            echo "Passport qualification remains on the published Ledger 9.1.0.1 cohort; excluded from this DID/runtime 9.1.0.2 trial."
+          fi
 
       - name: Retain failed Passport qualification diagnostics
         if: failure() && steps.passport_current.outcome == 'failure'

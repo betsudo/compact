@@ -117,15 +117,20 @@ class ReleaseInspectionTests(unittest.TestCase):
     def test_alternate_source_cannot_hide_behind_equal_versions(self):
         path = self.root / "runtime-rs/Cargo.toml"
         original = path.read_text()
-        declaration = 'midnight-onchain-vm = { version = "=4.0.1" }'
+        declaration = (
+            'midnight-onchain-vm = { version = "=4.0.1", '
+            'git = "https://github.com/betsudo/midnight-ledger", '
+            'rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653" }'
+        )
         self.assertIn(declaration, original)
-        for source in (
-            'git = "https://invalid.example/ledger", rev = "' + '0' * 40 + '"',
-            'git = "https://invalid.example/ledger", branch = "ledger-9"',
-            'registry = "unselected"',
+        for changed in (
+            declaration.replace("betsudo/midnight-ledger", "invalid/example"),
+            declaration.replace("d1ff7457554fe326dbdc6b19dd9d306d847ce653", "0" * 40),
+            declaration[:-2] + ', branch = "ledger-9" }',
+            declaration[:-2] + ', registry = "unselected" }',
         ):
-            with self.subTest(source=source):
-                path.write_text(original.replace(declaration, declaration[:-2] + ", " + source + " }"))
+            with self.subTest(declaration=changed):
+                path.write_text(original.replace(declaration, changed))
                 with self.assertRaisesRegex(RuntimeError, "dependency mismatch: midnight-onchain-vm"):
                     release.compatibility_record()
         path.write_text(original)

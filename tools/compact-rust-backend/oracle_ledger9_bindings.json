@@ -1,6 +1,6 @@
 {
   "format": "compact-oracle-ledger9-bindings/v1",
-  "ledger_version": "ledger-9.1.0.1",
+  "ledger_version": "ledger-9.1.0.2",
   "ledger8_head": "09c75e2891283fed65f2db385925a5a4b9409af6",
   "scope": "Reviewed Rust test identity migration for the optional v3 operation argument and existing fresh Ledger 9 capture links. Historical behavior review and capture manifests retain their original scope.",
   "tests": {
