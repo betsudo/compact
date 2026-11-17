@@ -21,7 +21,8 @@
 pub use midnight_base_crypto::hash::HashOutput;
 pub use midnight_coin_structure::coin::{
     Commitment as CoinCommitment, Info as CoinInfo, Nonce as CoinNonce, Nullifier as CoinNullifier,
-    PublicKey as CoinPublicKey, QualifiedInfo as QualifiedCoinInfo, ShieldedTokenType,
+    PublicAddress, PublicKey as CoinPublicKey, QualifiedInfo as QualifiedCoinInfo,
+    ShieldedTokenType, TokenType, UnshieldedTokenType, UserAddress,
 };
 pub use midnight_coin_structure::contract::ContractAddress;
 pub use midnight_coin_structure::transfer::Recipient as CoinRecipient;
@@ -209,6 +210,39 @@ pub fn coin_recipient_from_compact(
         CoinRecipient::User(CoinPublicKey(HashOutput(user_key.0)))
     } else {
         CoinRecipient::Contract(ContractAddress(HashOutput(contract_address.0)))
+    }
+}
+
+/// Convert the Compact `left<Bytes<32>, Bytes<32>>(color)` token type.
+pub fn unshielded_token_type_from_compact(color: FixedBytes<32>) -> TokenType {
+    TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.0)))
+}
+
+/// Convert Compact's `Either<Bytes<32>, Bytes<32>>` TokenType. The selected
+/// branch is carried by the SDK type so its aligned tag and padding are exact.
+pub fn token_type_from_compact(
+    is_left: bool,
+    unshielded_color: FixedBytes<32>,
+    shielded_color: FixedBytes<32>,
+) -> TokenType {
+    if is_left {
+        unshielded_token_type_from_compact(unshielded_color)
+    } else {
+        TokenType::Shielded(ShieldedTokenType(HashOutput(shielded_color.0)))
+    }
+}
+
+/// The unshielded recipient is contract-left and user-right, unlike the
+/// shielded coin recipient. Only the selected branch contributes to the key.
+pub fn unshielded_recipient_from_compact(
+    is_left: bool,
+    contract_address: FixedBytes<32>,
+    user_address: FixedBytes<32>,
+) -> PublicAddress {
+    if is_left {
+        PublicAddress::Contract(ContractAddress(HashOutput(contract_address.0)))
+    } else {
+        PublicAddress::User(UserAddress(HashOutput(user_address.0)))
     }
 }
 
@@ -496,9 +530,16 @@ pub fn empty_query_context() -> QueryContext<DefaultDB> {
 }
 
 mod kernel;
-pub use kernel::{KernelClaim, query_kernel_claim, query_kernel_mint_shielded};
+pub use kernel::{
+    KernelClaim, query_kernel_claim, query_kernel_claim_unshielded_coin_spend,
+    query_kernel_inc_unshielded_inputs, query_kernel_inc_unshielded_outputs,
+    query_kernel_mint_shielded, query_kernel_mint_unshielded,
+};
 pub(crate) use kernel::{
-    kernel_claim_contract_call_program, kernel_claim_program, kernel_mint_shielded_program,
+    kernel_claim_contract_call_program, kernel_claim_program,
+    kernel_claim_unshielded_coin_spend_program, kernel_inc_unshielded_inputs_program,
+    kernel_inc_unshielded_outputs_program, kernel_mint_shielded_program,
+    kernel_mint_unshielded_program,
 };
 
 #[cfg(test)]

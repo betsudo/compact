@@ -50,6 +50,41 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         let program = ledger::kernel_mint_shielded_program::<ResultModeVerify, D>(domain, amount);
         self.apply_verify_program(program)
     }
+
+    pub fn kernel_mint_unshielded(
+        self,
+        domain: ledger::HashOutput,
+        amount: u64,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_mint_unshielded_program(domain, amount))
+    }
+
+    pub fn kernel_inc_unshielded_inputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_inc_unshielded_inputs_program(token, amount))
+    }
+
+    pub fn kernel_inc_unshielded_outputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_inc_unshielded_outputs_program(token, amount))
+    }
+
+    pub fn kernel_claim_unshielded_coin_spend(
+        self,
+        token: ledger::TokenType,
+        recipient: ledger::PublicAddress,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_claim_unshielded_coin_spend_program(
+            token, recipient, amount,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -66,6 +101,68 @@ mod tests {
             )),
         )
         .into_circuit_context(ContractAddress::default())
+    }
+
+    #[test]
+    fn unshielded_effects_replay_matches_native_order_and_cost() {
+        let domain = ledger::HashOutput([1; 32]);
+        let token = ledger::token_type_from_compact(
+            true,
+            crate::FixedBytes([2; 32]),
+            crate::FixedBytes([0; 32]),
+        );
+        let recipient = ledger::unshielded_recipient_from_compact(
+            false,
+            crate::FixedBytes([0; 32]),
+            crate::FixedBytes([3; 32]),
+        );
+        let mut native = context();
+        let mut native_cost = RunningCost::ZERO;
+        let step = native.kernel_mint_unshielded(domain, 7).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native.kernel_inc_unshielded_inputs(token, 7).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native.kernel_inc_unshielded_outputs(token, 2).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native
+            .kernel_claim_unshielded_coin_spend(token, recipient, 2)
+            .unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+
+        let recorded = RecordingFrame::new(context())
+            .kernel_mint_unshielded(domain, 7)
+            .unwrap()
+            .kernel_inc_unshielded_inputs(token, 7)
+            .unwrap()
+            .kernel_inc_unshielded_outputs(token, 2)
+            .unwrap()
+            .kernel_claim_unshielded_coin_spend(token, recipient, 2)
+            .unwrap()
+            .finish(());
+        assert_eq!(recorded.public.verify_ops().len(), 4 * 16);
+        assert_eq!(
+            recorded.execution.context.query.effects,
+            native.query.effects
+        );
+        assert_eq!(recorded.execution.gas_cost, native_cost);
+        let replay = recorded
+            .public
+            .initial()
+            .query(
+                recorded.public.verify_ops(),
+                None,
+                &recorded.execution.context.cost_model,
+            )
+            .unwrap();
+        assert_eq!(replay.context.effects, native.query.effects);
+        // Replaying one concatenated program incurs a different VM query
+        // overhead from four separately charged source queries.
+        assert_ne!(replay.gas_cost, RunningCost::ZERO);
+        assert_eq!(replay.context.state, recorded.public.initial().state);
     }
 
     #[test]

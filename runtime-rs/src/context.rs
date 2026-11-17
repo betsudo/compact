@@ -194,6 +194,81 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         })
     }
 
+    fn accept_kernel_unshielded_effect(
+        mut self,
+        result: ledger::QueryResults<midnight_onchain_vm::result_mode::ResultModeVerify, D>,
+    ) -> CircuitResult<Private, (), D> {
+        self.query = result.context;
+        CircuitResult {
+            context: self,
+            result: (),
+            gas_cost: result.gas_cost,
+            private_transcript_outputs: vec![],
+        }
+    }
+
+    pub fn kernel_mint_unshielded(
+        self,
+        domain: ledger::HashOutput,
+        amount: u64,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        let result = ledger::query_kernel_mint_unshielded(
+            &self.query,
+            domain,
+            amount,
+            self.gas_limit,
+            &self.cost_model,
+        )?;
+        Ok(self.accept_kernel_unshielded_effect(result))
+    }
+
+    pub fn kernel_inc_unshielded_inputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        let result = ledger::query_kernel_inc_unshielded_inputs(
+            &self.query,
+            token,
+            amount,
+            self.gas_limit,
+            &self.cost_model,
+        )?;
+        Ok(self.accept_kernel_unshielded_effect(result))
+    }
+
+    pub fn kernel_inc_unshielded_outputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        let result = ledger::query_kernel_inc_unshielded_outputs(
+            &self.query,
+            token,
+            amount,
+            self.gas_limit,
+            &self.cost_model,
+        )?;
+        Ok(self.accept_kernel_unshielded_effect(result))
+    }
+
+    pub fn kernel_claim_unshielded_coin_spend(
+        self,
+        token: ledger::TokenType,
+        recipient: ledger::PublicAddress,
+        amount: u128,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        let result = ledger::query_kernel_claim_unshielded_coin_spend(
+            &self.query,
+            token,
+            recipient,
+            amount,
+            self.gas_limit,
+            &self.cost_model,
+        )?;
+        Ok(self.accept_kernel_unshielded_effect(result))
+    }
+
     /// The native circuit intent log, separate from the wallet's Zswap state.
     pub fn circuit_zswap(&self) -> &crate::CircuitZswapPlan {
         &self.circuit_zswap
