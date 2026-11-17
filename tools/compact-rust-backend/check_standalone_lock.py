@@ -41,9 +41,21 @@ def packages(path):
 
 def resolve(reference, graph):
     parts = reference.split(" ", 2)
+    requested_source = parts[2].removeprefix("(").removesuffix(")") if len(parts) >= 3 else None
+
+    def source_matches(source):
+        if requested_source is None:
+            return True
+        # Cargo dependency edges identify a Git source by its requested URL and
+        # revision but omit the resolved `#<commit>` suffix carried by package
+        # identities. Registry source identities remain exact.
+        return source == requested_source or (
+            requested_source.startswith("git+") and source.startswith(requested_source + "#")
+        )
+
     candidates = [key for key in graph if key[0] == parts[0]
                   and (len(parts) < 2 or key[1] == parts[1])
-                  and (len(parts) < 3 or key[2] == parts[2].removeprefix("(").removesuffix(")"))]
+                  and source_matches(key[2])]
     if len(candidates) != 1:
         raise RuntimeError(f"missing or ambiguous locked edge: {reference}")
     return candidates[0]

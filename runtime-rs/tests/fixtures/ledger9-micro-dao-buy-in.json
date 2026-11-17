@@ -2,11 +2,11 @@
   "provenance": {
     "source": "test-center/test-contracts/micro-dao.compact",
     "sourceSha256": "9a2d974c5cbe4e768f494f7cd09299b5ee4b9330e3ffd129b6b80171cb5ae744",
-    "generatedIndexSha256": "f70bbbb6c65899d0377d1f840035fd8084c07ea072a3ef25c458f2f2477abeb5",
-    "runtimeVersion": "0.17.0",
-    "runtimeBuiltinsSha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
-    "runtimeTypesSha256": "1a58a9085563fe1352e7692c0d38ef4e8e2ab6efbc65fae432048f41e88cb3b4",
-    "ledgerModuleSha256": "97cf7a01940f6e3d01b1fd263a734decbbc89dfba201ecc5c63d70174e657c02",
+    "generatedIndexSha256": "95a6574f918593aec7bdf1bc8b628a24965e2e8a797e55e436e8e9a7ef2b28c6",
+    "runtimeVersion": "0.18.0",
+    "runtimeBuiltinsSha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+    "runtimeTypesSha256": "a85eaf262d85d456791e7e7f9fbc058e7e11babb85aeefd17ad4f84cc9adcc7a",
+    "ledgerModuleSha256": "b504acb16a4bae340479b09000ab8ce36d1e9049dd56ec01e3e194df10243de9",
     "descriptor": [
       {
         "tag": "atom",
@@ -2826,10 +2826,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "510000000",
+        "computeTime": "11537537912",
+        "bytesWritten": "1292",
+        "bytesDeleted": "1226"
       },
       "queryCostSum": {
         "readTime": "510000000",
@@ -3749,8 +3749,8 @@
           },
           "gas": {
             "readTime": "612000000",
-            "computeTime": "2161759759",
-            "bytesWritten": "660",
+            "computeTime": "2161761900",
+            "bytesWritten": "669",
             "bytesDeleted": "551"
           }
         },
@@ -8184,10 +8184,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "595000000",
+        "computeTime": "17043291074",
+        "bytesWritten": "642",
+        "bytesDeleted": "646"
       },
       "queryCostSum": {
         "readTime": "595000000",
@@ -9620,12 +9620,12 @@
               "7936473ab206996932abfab6420391245abe38fd8bdc688655af90637b163b46"
             ],
             "claimedShieldedReceives": [
-              "db27b388af2de33ab79ac65335c3ce4829d94b9f9bfd3b3d78e0f40a9cd00dea",
-              "20652d3166bbab74d20e740b77289ce702ddb115247e8a0d46a686f48c631cb3"
+              "20652d3166bbab74d20e740b77289ce702ddb115247e8a0d46a686f48c631cb3",
+              "db27b388af2de33ab79ac65335c3ce4829d94b9f9bfd3b3d78e0f40a9cd00dea"
             ],
             "claimedShieldedSpends": [
-              "db27b388af2de33ab79ac65335c3ce4829d94b9f9bfd3b3d78e0f40a9cd00dea",
-              "77e5b779af591897ddee7c6d745c609ae56e2e8ac88e93cd5d57dd20d1f88cf2"
+              "77e5b779af591897ddee7c6d745c609ae56e2e8ac88e93cd5d57dd20d1f88cf2",
+              "db27b388af2de33ab79ac65335c3ce4829d94b9f9bfd3b3d78e0f40a9cd00dea"
             ],
             "claimedContractCalls": [],
             "shieldedMints": {
@@ -9638,8 +9638,8 @@
           },
           "gas": {
             "readTime": "714000000",
-            "computeTime": "2400578299",
-            "bytesWritten": "642",
+            "computeTime": "2400580440",
+            "bytesWritten": "651",
             "bytesDeleted": "613"
           }
         },
@@ -12455,10 +12455,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "510000000",
+        "computeTime": "11537537912",
+        "bytesWritten": "1292",
+        "bytesDeleted": "1226"
       },
       "queryCostSum": {
         "readTime": "510000000",
@@ -13378,8 +13378,8 @@
           },
           "gas": {
             "readTime": "612000000",
-            "computeTime": "2161759759",
-            "bytesWritten": "660",
+            "computeTime": "2161761900",
+            "bytesWritten": "669",
             "bytesDeleted": "551"
           }
         },
@@ -17814,10 +17814,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "595000000",
+        "computeTime": "17043291074",
+        "bytesWritten": "642",
+        "bytesDeleted": "646"
       },
       "queryCostSum": {
         "readTime": "595000000",
@@ -19246,16 +19246,16 @@
           ],
           "effects": {
             "claimedNullifiers": [
-              "7936473ab206996932abfab6420391245abe38fd8bdc688655af90637b163b46",
-              "6c45fefa0cc81629627107ece8253bc6f5d33e05dd066ff0fd135d83f11644e6"
+              "6c45fefa0cc81629627107ece8253bc6f5d33e05dd066ff0fd135d83f11644e6",
+              "7936473ab206996932abfab6420391245abe38fd8bdc688655af90637b163b46"
             ],
             "claimedShieldedReceives": [
-              "e212f6eaa633da4ab2e3e90260492a21600e898993dc67e72f9da154aedbdd4c",
-              "1737ccc02e10311a2214412401089fb4b858a5bc7fa47bd0140d8a68e1409ebf"
+              "1737ccc02e10311a2214412401089fb4b858a5bc7fa47bd0140d8a68e1409ebf",
+              "e212f6eaa633da4ab2e3e90260492a21600e898993dc67e72f9da154aedbdd4c"
             ],
             "claimedShieldedSpends": [
-              "c2029e99b5269ac2fc53a6c82cf03bea856e67d54d302253108354962426d433",
-              "e212f6eaa633da4ab2e3e90260492a21600e898993dc67e72f9da154aedbdd4c"
+              "e212f6eaa633da4ab2e3e90260492a21600e898993dc67e72f9da154aedbdd4c",
+              "c2029e99b5269ac2fc53a6c82cf03bea856e67d54d302253108354962426d433"
             ],
             "claimedContractCalls": [],
             "shieldedMints": {
@@ -19268,8 +19268,8 @@
           },
           "gas": {
             "readTime": "714000000",
-            "computeTime": "2400578299",
-            "bytesWritten": "642",
+            "computeTime": "2400580440",
+            "bytesWritten": "651",
             "bytesDeleted": "613"
           }
         },
@@ -22122,10 +22122,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "510000000",
+        "computeTime": "11537541926",
+        "bytesWritten": "1328",
+        "bytesDeleted": "1244"
       },
       "queryCostSum": {
         "readTime": "510000000",
@@ -23060,8 +23060,8 @@
           },
           "gas": {
             "readTime": "612000000",
-            "computeTime": "2161764576",
-            "bytesWritten": "681",
+            "computeTime": "2161766716",
+            "bytesWritten": "691",
             "bytesDeleted": "551"
           }
         },
@@ -25932,10 +25932,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "510000000",
+        "computeTime": "11537545168",
+        "bytesWritten": "1388",
+        "bytesDeleted": "1290"
       },
       "queryCostSum": {
         "readTime": "510000000",
@@ -26884,8 +26884,8 @@
           },
           "gas": {
             "readTime": "612000000",
-            "computeTime": "2161768466",
-            "bytesWritten": "714",
+            "computeTime": "2161770607",
+            "bytesWritten": "726",
             "bytesDeleted": "566"
           }
         },
@@ -31380,10 +31380,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "595000000",
+        "computeTime": "17043298330",
+        "bytesWritten": "690",
+        "bytesDeleted": "662"
       },
       "queryCostSum": {
         "readTime": "595000000",
@@ -32841,12 +32841,12 @@
           ],
           "effects": {
             "claimedNullifiers": [
-              "77b0132c30b5fb304137579df099d1a2322002ef7a418af3eefe604c0af36fd1",
-              "619ff8b3b0e25b0e64dcfebf2eb2d5565458932f9646206d8fd60198c6573f0c"
+              "619ff8b3b0e25b0e64dcfebf2eb2d5565458932f9646206d8fd60198c6573f0c",
+              "77b0132c30b5fb304137579df099d1a2322002ef7a418af3eefe604c0af36fd1"
             ],
             "claimedShieldedReceives": [
-              "31d02eecdaa3d95c6e515889516fa2e954b6023dc968b6744893389befea0480",
-              "a017c74fe583688d0aa54eede22f56a7bca925db96446660fb7e5dbc33a6875a"
+              "a017c74fe583688d0aa54eede22f56a7bca925db96446660fb7e5dbc33a6875a",
+              "31d02eecdaa3d95c6e515889516fa2e954b6023dc968b6744893389befea0480"
             ],
             "claimedShieldedSpends": [
               "31d02eecdaa3d95c6e515889516fa2e954b6023dc968b6744893389befea0480",
@@ -32863,8 +32863,8 @@
           },
           "gas": {
             "readTime": "714000000",
-            "computeTime": "2400587006",
-            "bytesWritten": "696",
+            "computeTime": "2400589147",
+            "bytesWritten": "706",
             "bytesDeleted": "628"
           }
         },
@@ -35803,10 +35803,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "510000000",
+        "computeTime": "11537537912",
+        "bytesWritten": "1292",
+        "bytesDeleted": "1226"
       },
       "queryCostSum": {
         "readTime": "510000000",
@@ -36722,8 +36722,8 @@
           },
           "gas": {
             "readTime": "612000000",
-            "computeTime": "2161759759",
-            "bytesWritten": "660",
+            "computeTime": "2161761900",
+            "bytesWritten": "669",
             "bytesDeleted": "551"
           }
         },
