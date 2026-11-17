@@ -72,7 +72,7 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
         complete = text.split('  complete:\n', 1)[1]
         self.assertIn('test_keyword_for_linux_workflow.py', preflight)
         self.assertIn('test_compiler_closure.py', preflight)
-        self.assertIn('ledger-9.1.0.1', preflight)
+        self.assertIn('ledger-9.1.0.2', preflight)
         self.assertIn('needs: source-preflight', producer)
         self.assertIn('uses: ./.github/workflows/compiler-producer.yml', producer)
         self.assertIn('system: x86_64-linux', producer)

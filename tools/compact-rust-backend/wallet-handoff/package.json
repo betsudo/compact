@@ -3,6 +3,6 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@midnight-ntwrk/ledger-v9": "1.0.1"
+    "@midnight-ntwrk/ledger-v9": "1.0.2"
   }
 }

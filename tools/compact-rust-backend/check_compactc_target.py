@@ -22,6 +22,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -155,6 +156,16 @@ def check_manifest(output: Path, *, require_zkir: bool = True) -> None:
         check_tree(output / directory, manifest[directory])
 
 
+def write_consumer_manifest(consumer: Path, manifest: str) -> None:
+    # Cargo reads patches only from the root manifest. The generated contract
+    # is a dependency of this consumer, so its patch table is ignored here.
+    root_manifest = (ROOT / "Cargo.toml").read_text()
+    patches = re.search(r"(?ms)^\[patch\.crates-io\]\n.*?(?=^\[|\Z)", root_manifest)
+    if patches is None:
+        raise ValueError("workspace manifest is missing the pinned Ledger source patches")
+    (consumer / "Cargo.toml").write_text(manifest.rstrip() + "\n\n" + patches.group().rstrip() + "\n")
+
+
 def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     runtime = package["dependencies"]["midnight-compact-runtime"]
@@ -164,7 +175,8 @@ def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     assert (contract / "runtime-rs-macros/Cargo.toml").is_file()
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -219,7 +231,8 @@ def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     pure_consumer = consumer.parent / "pure-consumer"
     pure_consumer.mkdir()
     (pure_consumer / "tests").mkdir()
-    (pure_consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        pure_consumer,
         "[package]\nname = \"compactc-pure-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{pure_package["package"]["name"]} = {{ path = {json.dumps(str(pure_contract))} }}\n'
@@ -239,7 +252,8 @@ def check_observed_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -262,7 +276,8 @@ def check_observed_map_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-map-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-map-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -312,7 +327,8 @@ def check_observed_witness_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-witness-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-witness-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -332,7 +348,8 @@ def check_observed_composite_key_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-composite-key-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-composite-key-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -366,7 +383,8 @@ def check_chunked_set_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-set-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-set-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -400,7 +418,8 @@ def check_chunked_list_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-list-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-list-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -434,7 +453,8 @@ def check_chunked_map_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-map-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-map-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -481,7 +501,8 @@ def check_chunked_cell_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-cell-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-cell-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -594,7 +615,8 @@ def check_witness_consumer(compiler: str, base: Path) -> None:
     consumer = base / "witness-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-witness-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -660,7 +682,8 @@ def check_merkle_witness_consumer(compiler: str, base: Path) -> None:
     consumer = base / "merkle-witness-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-merkle-witness-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))} }}\n'
@@ -772,7 +795,8 @@ def check_list_shapes_consumer(compiler: str, base: Path) -> None:
     consumer = base / "list-shapes-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-list-shapes-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))} }}\n'
@@ -822,7 +846,7 @@ def check_witness_composition(compiler: str, base: Path) -> None:
         package = tomllib.loads((output / "contract/Cargo.toml").read_text())["package"]["name"]
         original = ROOT / "tests-rust-backend" / fixture
         original_package = tomllib.loads((original / "Cargo.toml").read_text())["package"]["name"]
-        (consumer / "Cargo.toml").write_text(f'''[package]
+        write_consumer_manifest(consumer, f'''[package]
 name = "witness-composition-{label}"
 version = "0.1.0"
 edition = "2024"
