@@ -131,6 +131,20 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, 'gate log identity'):
                 verifier.gate_log(log, expected)
 
+    def test_occurrence_log_requires_current_108_controls(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            base = Path(temporary)
+            log = base / 'occurrence.log'
+            log.write_text('108 Rust collection index occurrence controls passed\n')
+            verifier.occurrence_log(log)
+            log.write_text('64 Rust collection index occurrence controls passed\n')
+            with self.assertRaisesRegex(ValueError, 'source occurrence controls'):
+                verifier.occurrence_log(log)
+            log.unlink()
+            log.symlink_to(base / 'other.log')
+            with self.assertRaisesRegex(ValueError, 'symlinked source occurrence log'):
+                verifier.occurrence_log(log)
+
     def test_artifact_inventory_refuses_mutation_and_symlink(self):
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)

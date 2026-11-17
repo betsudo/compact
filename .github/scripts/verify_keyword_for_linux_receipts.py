@@ -143,6 +143,14 @@ def gate_log(path, expected):
             f'gate log identity or status differs: {path}')
 
 
+def occurrence_log(path):
+    require(path.is_file() and not path.is_symlink(),
+            'missing or symlinked source occurrence log')
+    require(path.read_text().splitlines()[-1:] ==
+            ['108 Rust collection index occurrence controls passed'],
+            'merged source occurrence controls did not pass')
+
+
 def originals(receipt):
     manifest = load(ROOT / FAMILY / 'original-source-sha256.json')
     names = manifest.get('files')
@@ -406,9 +414,7 @@ def main():
                     (folder / mode).exists() is success and
                     sha(folder / f'{mode}.log') == result['log_sha256'],
                     f'static-domain probe outcome differs: {name}/{mode}')
-    require(Path(args.occurrence_log).read_text().splitlines()[-1] ==
-            '64 Rust collection index occurrence controls passed',
-            'merged source occurrence controls did not pass')
+    occurrence_log(Path(args.occurrence_log))
     proof_sha = None
     if args.proof:
         proof_root = Path(args.proof).resolve(strict=True)
