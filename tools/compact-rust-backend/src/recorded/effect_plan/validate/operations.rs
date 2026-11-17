@@ -112,6 +112,37 @@ pub(super) fn validate(
                 && amount.ty == uint("18446744073709551615")
                 && *ty == Type::Unit
         }
+        Operation::KernelUnshieldedEffect {
+            kind,
+            key,
+            recipient,
+            amount,
+        } => {
+            use_value(key)?;
+            if let Some(recipient) = recipient {
+                use_value(recipient)?;
+            }
+            use_value(amount)?;
+            let mint = *kind == crate::ir::KernelUnshieldedEffectKind::Mint;
+            let claim = *kind == crate::ir::KernelUnshieldedEffectKind::Claim;
+            key.ty
+                == (if mint {
+                    Type::Bytes { length: 32 }
+                } else {
+                    super::super::kernel_shapes::token_type()
+                })
+                && recipient.is_some() == claim
+                && recipient.as_ref().is_none_or(|recipient| {
+                    recipient.ty == super::super::kernel_shapes::recipient_type()
+                })
+                && amount.ty
+                    == (if mint {
+                        uint(&u64::MAX.to_string())
+                    } else {
+                        uint(&u128::MAX.to_string())
+                    })
+                && *ty == Type::Unit
+        }
         Operation::PersistentCommit { value, opening } => {
             use_value(value)?;
             use_value(opening)?;

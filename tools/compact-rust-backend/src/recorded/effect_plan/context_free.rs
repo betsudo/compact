@@ -90,6 +90,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::EmitUnpaused(_)
                 | Operation::KernelClaim { .. }
                 | Operation::KernelMintShielded { .. }
+                | Operation::KernelUnshieldedEffect { .. }
                 | Operation::List { .. }
                 | Operation::Merkle { .. }
                 | Operation::CellRead(_)

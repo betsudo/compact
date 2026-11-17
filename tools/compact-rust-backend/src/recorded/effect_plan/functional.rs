@@ -32,6 +32,7 @@ pub(crate) enum Capability {
     EventEmission,
     KernelClaims,
     ShieldedMint,
+    UnshieldedEffect,
     ZswapInput,
     ZswapOutput,
     QualifiedCellWrite,
@@ -393,6 +394,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EmitUnpaused(_) => Capability::EventEmission,
                 Operation::KernelClaim { .. } => Capability::KernelClaims,
                 Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
+                Operation::KernelUnshieldedEffect { .. } => Capability::UnshieldedEffect,
                 Operation::CreateZswapInput { .. } => Capability::ZswapInput,
                 Operation::CreateZswapOutput { .. } => Capability::ZswapOutput,
                 Operation::CellWriteCoin { .. } | Operation::SetInsertCoin { .. } => {

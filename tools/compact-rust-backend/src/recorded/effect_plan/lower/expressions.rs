@@ -87,7 +87,9 @@ impl Lowerer<'_> {
             | Expr::EmitMisc { .. }
             | Expr::EmitPaused { .. }
             | Expr::EmitUnpaused { .. } => Self::emit_event,
-            Expr::KernelClaim { .. } | Expr::KernelMintShielded { .. } => Self::kernel,
+            Expr::KernelClaim { .. }
+            | Expr::KernelMintShielded { .. }
+            | Expr::KernelUnshieldedEffect { .. } => Self::kernel,
             Expr::NativeWitnessCall {
                 builtin: NativeWitnessBuiltin::OwnPublicKey,
             } => Self::query_operation,

@@ -415,3 +415,193 @@ fn mint_witness_operands_evaluate_once_in_domain_then_amount_order() {
     };
     assert_eq!(gap.path, "return_value.value.domain");
 }
+
+#[test]
+fn unshielded_kernel_effects_keep_exact_types_and_source_operand_order() {
+    use crate::ir::KernelUnshieldedEffectKind as Kind;
+    for (kind, key_ty, amount_ty, method) in [
+        (
+            Kind::Mint,
+            bytes_type(),
+            amount_type(),
+            "kernel_mint_unshielded",
+        ),
+        (
+            Kind::Inputs,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_inc_unshielded_inputs",
+        ),
+        (
+            Kind::Outputs,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_inc_unshielded_outputs",
+        ),
+        (
+            Kind::Claim,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_claim_unshielded_coin_spend",
+        ),
+    ] {
+        let claim = kind == Kind::Claim;
+        let mut witnesses = vec![
+            WitnessDeclaration {
+                source: None,
+                name: "key".into(),
+                parameters: vec![],
+                result: key_ty.clone(),
+            },
+            WitnessDeclaration {
+                source: None,
+                name: "amount".into(),
+                parameters: vec![],
+                result: amount_ty.clone(),
+            },
+        ];
+        if claim {
+            witnesses.push(WitnessDeclaration {
+                source: None,
+                name: "recipient".into(),
+                parameters: vec![],
+                result: super::super::kernel_shapes::recipient_type(),
+            });
+        }
+        let maps = witnesses.iter().map(|w| (w.name.as_str(), w)).collect();
+        let witness = |name: &str| {
+            Box::new(Expr::WitnessCall {
+                name: name.into(),
+                arguments: vec![],
+            })
+        };
+        let checked = check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: kind,
+                key: witness("key"),
+                recipient: claim.then(|| witness("recipient")),
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps,
+        )
+        .unwrap();
+        let bindings = &checked.plan().body.bindings;
+        let expected = if claim {
+            vec!["key", "recipient", "amount"]
+        } else {
+            vec!["key", "amount"]
+        };
+        assert_eq!(bindings.len(), expected.len() + 1, "{kind:?}");
+        for (binding, name) in bindings.iter().zip(&expected) {
+            assert!(matches!(binding.operation, Operation::Witness { .. }));
+            assert_eq!(binding.path, format!("return_value.value.{name}"));
+        }
+        let Operation::KernelUnshieldedEffect {
+            kind: observed,
+            key,
+            recipient,
+            amount,
+        } = &bindings.last().unwrap().operation
+        else {
+            panic!("missing unshielded effect")
+        };
+        assert_eq!(*observed, kind);
+        assert_eq!(key, &bindings[0].value);
+        assert_eq!(amount, &bindings[expected.len() - 1].value);
+        assert_eq!(recipient.as_ref(), claim.then_some(&bindings[1].value));
+        let rendered = render(&checked).unwrap();
+        let steps = rendered.steps;
+        let source = quote::quote!(#(#steps)*).to_string();
+        assert_eq!(
+            source.matches("try_witness_metered").count(),
+            expected.len()
+        );
+        assert_eq!(source.matches(method).count(), 1, "{kind:?}");
+        assert_eq!(
+            source.matches("token_type_from_compact").count(),
+            usize::from(!matches!(kind, Kind::Mint))
+        );
+    }
+}
+
+#[test]
+fn unshielded_claim_cardinality_and_operand_types_refuse_before_render() {
+    use crate::ir::KernelUnshieldedEffectKind as Kind;
+    let witnesses = [
+        WitnessDeclaration {
+            source: None,
+            name: "key".into(),
+            parameters: vec![],
+            result: super::super::kernel_shapes::token_type(),
+        },
+        WitnessDeclaration {
+            source: None,
+            name: "amount".into(),
+            parameters: vec![],
+            result: Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+        },
+        WitnessDeclaration {
+            source: None,
+            name: "wrong_recipient".into(),
+            parameters: vec![],
+            result: bytes_type(),
+        },
+    ];
+    let maps = witnesses.iter().map(|w| (w.name.as_str(), w)).collect();
+    let witness = |name: &str| {
+        Box::new(Expr::WitnessCall {
+            name: name.into(),
+            arguments: vec![],
+        })
+    };
+    for recipient in [None, Some(witness("wrong_recipient"))] {
+        assert!(
+            check(
+                &root(Expr::KernelUnshieldedEffect {
+                    effect: Kind::Claim,
+                    key: witness("key"),
+                    recipient,
+                    amount: witness("amount"),
+                }),
+                &HashMap::new(),
+                &maps
+            )
+            .is_err()
+        );
+    }
+    assert!(
+        check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: Kind::Mint,
+                key: witness("key"),
+                recipient: None,
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps
+        )
+        .is_err()
+    );
+    assert!(
+        check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: Kind::Inputs,
+                key: witness("key"),
+                recipient: Some(witness("wrong_recipient")),
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps
+        )
+        .is_err()
+    );
+}

@@ -143,6 +143,55 @@ pub(super) fn render(
                 )?;));
             syn::parse_quote!(())
         }
+        Operation::KernelUnshieldedEffect {
+            kind,
+            key,
+            recipient,
+            amount,
+        } => {
+            let amount = value(amount);
+            if *kind == crate::ir::KernelUnshieldedEffectKind::Mint {
+                let domain = value(key);
+                steps.push(syn::parse_quote!(let frame = frame.kernel_mint_unshielded(
+                    runtime::ledger::HashOutput((#domain).into_array()), (#amount).value() as u64,
+                )?;));
+            } else {
+                let key = name(key);
+                let token: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                    #key.is_left, #key.left, #key.right,
+                ));
+                match kind {
+                    crate::ir::KernelUnshieldedEffectKind::Inputs => {
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_inc_unshielded_inputs(
+                            #token, (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Outputs => {
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_inc_unshielded_outputs(
+                            #token, (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Claim => {
+                        let recipient = name(recipient.as_ref().expect("checked claim recipient"));
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_claim_unshielded_coin_spend(
+                            #token,
+                            runtime::ledger::unshielded_recipient_from_compact(
+                                #recipient.is_left, #recipient.left.bytes, #recipient.right.bytes,
+                            ),
+                            (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Mint => unreachable!("handled above"),
+                }
+            }
+            syn::parse_quote!(())
+        }
         Operation::OwnPublicKey => {
             let observed = syn::Ident::new(
                 &format!("__compact_effect_own_key_{}", binding.value.id),

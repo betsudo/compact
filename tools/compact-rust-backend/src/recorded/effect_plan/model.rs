@@ -188,6 +188,12 @@ pub(super) enum Operation {
         domain: Value,
         amount: Value,
     },
+    KernelUnshieldedEffect {
+        kind: crate::ir::KernelUnshieldedEffectKind,
+        key: Value,
+        recipient: Option<Value>,
+        amount: Value,
+    },
     /// The ledger8 commitment signature qualified by this rollout is a Bytes32 pair.
     PersistentCommit {
         value: Value,

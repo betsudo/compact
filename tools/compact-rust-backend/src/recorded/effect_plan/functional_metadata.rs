@@ -94,6 +94,7 @@ fn capability(value: Capability) -> &'static str {
         Capability::KernelClaims => "kernel_claims",
         Capability::EventEmission => "event_emission",
         Capability::ShieldedMint => "shielded_mint",
+        Capability::UnshieldedEffect => "unshielded_effect",
         Capability::ZswapInput => "zswap_input",
         Capability::ZswapOutput => "zswap_output",
         Capability::QualifiedCellWrite => "qualified_cell_write",
