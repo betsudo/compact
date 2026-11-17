@@ -110,7 +110,7 @@ impl Fixture {
                 observation: self.observation(),
                 address: self.address,
                 network_id: "local-test".into(),
-                ledger_version: "9.1.0.1".into(),
+                ledger_version: "9.1.0.2".into(),
                 zswap_root: self.ledger.zswap.coin_coms.rehash().root().unwrap(),
                 first_free: self.ledger.zswap.first_free,
                 final_zswap_event_id: 19,
@@ -122,7 +122,7 @@ impl Fixture {
                 block_hash: [2; 32],
                 block_height: 3,
                 network_id: "local-test".into(),
-                ledger_version: "9.1.0.1".into(),
+                ledger_version: "9.1.0.2".into(),
                 applied_event_id: 19,
                 wallet_state_sha256: midnight_base_crypto::hash::persistent_hash(&bytes(
                     &self.wallet,

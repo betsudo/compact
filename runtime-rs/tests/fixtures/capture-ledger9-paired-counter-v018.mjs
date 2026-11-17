@@ -81,7 +81,7 @@ const version = spawnSync(compiler, ["--version"], {
 });
 if (version.error) throw version.error;
 assert.equal(version.status, 0, version.stderr);
-assert.equal(version.stdout.trim(), "0.31.214");
+assert.equal(version.stdout.trim(), "0.31.215");
 
 // A fresh child is required so a failed compile cannot be mistaken for an
 // earlier accepted capture. Only write capture.json after every check passes.
@@ -103,7 +103,7 @@ const entryPath = join(generated, "contract/index.js");
 const info = JSON.parse(readFileSync(infoPath, "utf8"));
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 for (const metadata of [info, manifest]) {
-  assert.equal(metadata["compiler-version"], "0.31.214");
+  assert.equal(metadata["compiler-version"], "0.31.215");
   assert.equal(metadata["language-version"], "0.23.105");
   assert.equal(metadata["runtime-version"], "0.18.0");
 }
@@ -230,7 +230,7 @@ assert.equal(
 const capture = {
   format: "compact-ledger9-paired-counter-capture/v2",
   versions: {
-    compiler: "0.31.214",
+    compiler: "0.31.215",
     language: "0.23.105",
     runtime: "0.18.0",
     onchain: "4.0.1",

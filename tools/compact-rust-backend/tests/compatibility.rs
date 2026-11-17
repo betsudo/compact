@@ -48,7 +48,7 @@ impl Root {
         .unwrap();
         fs::write(
             root.0.join("runtime-rs/src/lib.rs"),
-            "pub const RUST_RUNTIME_ABI:u32=54; pub const LEDGER_VERSION:&str=\"ledger-9.1.0.1\";",
+            "pub const RUST_RUNTIME_ABI:u32=54; pub const LEDGER_VERSION:&str=\"ledger-9.1.0.2\";",
         )
         .unwrap();
         fs::write(
@@ -81,6 +81,29 @@ fn current_source_pair_matches_compiler_and_is_identified() {
     let result = validate_root(&repo).unwrap();
     assert_eq!(result.compatibility, required());
     assert_eq!(result.root(), fs::canonicalize(&repo).unwrap());
+    let workspace: toml_edit::DocumentMut = fs::read_to_string(repo.join("Cargo.toml"))
+        .unwrap()
+        .parse()
+        .unwrap();
+    let patches = workspace["patch"]["crates-io"].as_table_like().unwrap();
+    assert_eq!(
+        patches
+            .iter()
+            .filter(|(name, _)| name.starts_with("midnight-"))
+            .count(),
+        required().ledger_git_sources.len()
+    );
+    for (name, source) in &required().ledger_git_sources {
+        let patch = patches.get(name).unwrap();
+        assert_eq!(
+            patch.get("git").and_then(toml_edit::Item::as_str),
+            Some(source.git.as_str())
+        );
+        assert_eq!(
+            patch.get("rev").and_then(toml_edit::Item::as_str),
+            Some(source.rev.as_str())
+        );
+    }
     let testkit: toml_edit::DocumentMut = fs::read_to_string(repo.join("testkit-rs/Cargo.toml"))
         .unwrap()
         .parse()
@@ -185,8 +208,8 @@ fn manifest_and_source_disagreement_cannot_hide_behind_valid_record() {
         ),
         (
             "runtime-rs/Cargo.toml",
-            "version = \"=1.0.1\", optional",
-            "version = \"=9.0.0\", optional",
+            "version = \"=1.0.2\", git",
+            "version = \"=9.0.0\", git",
             "midnight-ledger-v9.version",
         ),
         (
@@ -197,7 +220,7 @@ fn manifest_and_source_disagreement_cannot_hide_behind_valid_record() {
         ),
         (
             "runtime-rs/src/lib.rs",
-            "ledger-9.1.0.1",
+            "ledger-9.1.0.2",
             "ledger-9.0.0",
             "LEDGER_VERSION",
         ),
@@ -470,8 +493,8 @@ fn literal_only_source_labels_refuse_expression_or_wrong_literal_forms() {
         ("ABI:u32=54", "ABI:u32=54 + 0", "RUST_RUNTIME_ABI"),
         ("ABI:u32=54", "ABI:u32=true", "RUST_RUNTIME_ABI"),
         (
-            "\"ledger-9.1.0.1\"",
-            "concat!(\"ledger-\", \"9.1.0.1\")",
+            "\"ledger-9.1.0.2\"",
+            "concat!(\"ledger-\", \"9.1.0.2\")",
             "LEDGER_VERSION",
         ),
     ] {
@@ -606,7 +629,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
                 context,
                 target,
                 "midnight-ledger-v9",
-                r#"{ version = "=1.0.1" }"#,
+                r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653" }"#,
             );
         }
     }
@@ -618,7 +641,7 @@ fn matching_ledger_declarations_remain_valid_in_all_runtime_contexts() {
         "dev-dependencies",
         Some("cfg(unix)"),
         "midnight-ledger-v9",
-        r#"{ version = "=1.0.1", features = ["test-utilities"] }"#,
+        r#"{ version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653", features = ["test-utilities"] }"#,
     );
     validate_root(&root.0).unwrap();
     let path = root.0.join("runtime-rs/Cargo.toml");
@@ -682,7 +705,7 @@ fn malformed_dependency_paths_do_not_disappear_as_absent() {
         "dependencies",
         Some("cfg(unix)"),
         "midnight-ledger-v9",
-        r#"{ version = "=1.0.1", path = false }"#,
+        r#"{ version = "=1.0.2", path = false }"#,
     );
     public_refusal(
         &root,
