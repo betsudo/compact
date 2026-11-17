@@ -151,8 +151,14 @@ fn mint_requires_digest_domain_and_exact_uint64_amount() {
 #[test]
 fn unshielded_kernel_effects_route_typed_operands_in_source_order() {
     let declarations = Declarations::default();
-    let token = token_type();
-    let recipient = unshielded_recipient_type();
+    let mut token = token_type();
+    let mut recipient = unshielded_recipient_type();
+    if let Type::Struct { name, .. } = &mut token {
+        *name = "EitherCompact1".into();
+    }
+    if let Type::Struct { name, .. } = &mut recipient {
+        *name = "EitherCompact2".into();
+    }
     for (kind, method) in [
         (KernelUnshieldedEffectKind::Mint, "kernel_mint_unshielded"),
         (

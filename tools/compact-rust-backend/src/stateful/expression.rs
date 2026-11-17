@@ -22,8 +22,8 @@ use crate::circuit_analysis::{
     circuit_emits_native_private_output_observed, circuit_uses_witness_observed,
 };
 use crate::coin_shapes::{
-    qualified_coin_type, shielded_coin_type, shielded_recipient_type, token_type,
-    unshielded_recipient_type,
+    qualified_coin_type, same_either_instantiation, shielded_coin_type, shielded_recipient_type,
+    token_type, unshielded_recipient_type,
 };
 use crate::ir::{
     ComparisonOperator, Expr, KernelUnshieldedEffectKind, LedgerField, LedgerFieldKind,
@@ -1513,8 +1513,8 @@ fn render_effect_operation(
             operands.push((amount, expected_amount));
             let mut names = Vec::with_capacity(operands.len());
             let mut witness_effect = false;
-            for (operand, expected) in operands {
-                let (rendered, actual, effect) = render_state_expression_observed(
+            for (index, (operand, expected)) in operands.into_iter().enumerate() {
+                let (rendered, actual, observed_effect) = render_state_expression_observed(
                     operand,
                     parameters,
                     statements,
@@ -1522,10 +1522,14 @@ fn render_effect_operation(
                     query_effect,
                     environment,
                 )?;
-                if actual != expected {
+                let either = (index == 0 && *effect != KernelUnshieldedEffectKind::Mint)
+                    || (index == 1 && *effect == KernelUnshieldedEffectKind::Claim);
+                if !(actual == expected
+                    || (either && same_either_instantiation(&actual, &expected)))
+                {
                     return Err(RenderError::TypeMismatch { expected, actual });
                 }
-                witness_effect |= effect;
+                witness_effect |= observed_effect;
                 let name = syn::Ident::new(
                     &format!("__compact_kernel_arg_{}", *next_temp),
                     Span::call_site(),
