@@ -559,6 +559,9 @@ fn expression_contains_with_actions<'source>(
             amount,
             ..
         } => visit(key) || recipient.as_deref().is_some_and(|value| visit(value)) || visit(amount),
+        Expr::KernelBalance { token } => visit(token),
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
         Expr::Unit

@@ -161,8 +161,10 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins)?
         }
-        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }
-            | Expr::EnumCast { value, ty } => {
+        Expr::Coerce { value, ty }
+        | Expr::JubjubCast { value, ty }
+        | Expr::Secp256k1BytesCast { value, ty }
+        | Expr::EnumCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins)?;
             collect_named_types_with_origins(ty, structs, enums, Some(origins))?;
         }
@@ -188,7 +190,18 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value }
+        | Expr::EmitShieldedBurn { value }
+        | Expr::EmitShieldedMint { value }
+        | Expr::EmitShieldedReceive { value }
+        | Expr::EmitUnshieldedSpend { value }
+        | Expr::EmitUnshieldedReceive { value }
+        | Expr::EmitUnshieldedMint { value }
+        | Expr::EmitUnshieldedBurn { value }
+        | Expr::EmitMisc { value }
+        | Expr::EmitPaused { value }
+        | Expr::EmitUnpaused { value }
+        | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins)?
         }
         Expr::KernelMintShielded { domain, amount } => {
@@ -200,6 +213,12 @@ pub(in crate::named_collection_tests) fn collect_expression_types<'ir>(
             if let Some(recipient) = recipient {
                 collect_expression_types(recipient, structs, enums, origins)?;
             }
+            collect_expression_types(amount, structs, enums, origins)?;
+        }
+        Expr::KernelBalance { token } => collect_expression_types(token, structs, enums, origins)?,
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => {
+            collect_expression_types(token, structs, enums, origins)?;
             collect_expression_types(amount, structs, enums, origins)?;
         }
         Expr::CreateZswapInput { coin } => collect_expression_types(coin, structs, enums, origins)?,

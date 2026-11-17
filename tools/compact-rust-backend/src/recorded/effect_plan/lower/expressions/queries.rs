@@ -32,6 +32,47 @@ impl Lowerer<'_> {
                 }
                 (Operation::KernelSelf, ty.clone())
             }
+            Expr::KernelBalance { token }
+            | Expr::KernelBalanceLessThan { token, .. }
+            | Expr::KernelBalanceGreaterThan { token, .. } => {
+                let token_path = format!("{path}.token");
+                let token = self.expression(token, scope, bindings, &token_path)?;
+                if token.ty != crate::coin_shapes::token_type() {
+                    return Err(invalid(
+                        &token_path,
+                        "Kernel balance requires canonical TokenType",
+                    ));
+                }
+                match expression {
+                    Expr::KernelBalance { .. } => (
+                        Operation::KernelBalance { token },
+                        uint(&u128::MAX.to_string()),
+                    ),
+                    Expr::KernelBalanceLessThan { amount, .. }
+                    | Expr::KernelBalanceGreaterThan { amount, .. } => {
+                        let amount_path = format!("{path}.amount");
+                        let amount = self.expression(amount, scope, bindings, &amount_path)?;
+                        if amount.ty != uint(&u128::MAX.to_string()) {
+                            return Err(invalid(
+                                &amount_path,
+                                "Kernel balance bound must be Uint<128>",
+                            ));
+                        }
+                        if matches!(expression, Expr::KernelBalanceLessThan { .. }) {
+                            (
+                                Operation::KernelBalanceLessThan { token, amount },
+                                Type::Boolean,
+                            )
+                        } else {
+                            (
+                                Operation::KernelBalanceGreaterThan { token, amount },
+                                Type::Boolean,
+                            )
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+            }
             Expr::MerkleCheckRoot { field, index, root }
             | Expr::HistoricMerkleCheckRoot { field, index, root } => self.merkle_query(
                 field,

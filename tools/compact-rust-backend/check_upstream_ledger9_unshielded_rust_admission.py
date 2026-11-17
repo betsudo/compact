@@ -2,7 +2,7 @@
 """Record the exact original unshielded-token Rust admission boundary.
 
 The full pinned contract is intentionally compiled unchanged. The current
-backend refuses its balanceGreaterThan Kernel operation before publication;
+backend refuses its incUnshieldedInputs Kernel operation before publication;
 this gate prevents a partial artifact from being mistaken for parity.
 """
 
@@ -20,7 +20,7 @@ ORIGINAL = (ROOT / "tools/compact-rust-backend/fixtures/"
 SOURCE_SHA = "581c2485dad88e71550f612921735a9bbf0b9b00b04b5f6bb680e2651c73e556"
 ORIGINAL_SHA = "6fc3737182878c3a31bcba5eae1dec70377097901791fc681adca294f576c913"
 DIAGNOSTIC = ("Exception: <standard library>:\n"
-              "  Rust backend does not yet support Kernel operation balanceGreaterThan\n")
+              "  Rust backend does not yet support Kernel operation incUnshieldedInputs\n")
 
 
 def sha(path: Path) -> str:

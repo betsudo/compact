@@ -401,6 +401,19 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
             }
             s.node("amount", Owner::Expr(amount));
         }
+        Expr::KernelBalance { token } => unary!("kernel_balance", "token", token),
+        Expr::KernelBalanceLessThan { token, amount } => {
+            binary!("kernel_balance_less_than", "token", token, "amount", amount)
+        }
+        Expr::KernelBalanceGreaterThan { token, amount } => {
+            binary!(
+                "kernel_balance_greater_than",
+                "token",
+                token,
+                "amount",
+                amount
+            )
+        }
         Expr::CreateZswapInput { coin } => unary!("create_zswap_input", "coin", coin),
         Expr::CreateZswapOutput { coin, recipient } => {
             binary!("create_zswap_output", "coin", coin, "recipient", recipient)

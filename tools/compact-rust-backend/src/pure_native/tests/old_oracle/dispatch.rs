@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 fn expression_with_calls(
     expr: &Expr,
     parameters: &HashMap<&str, (&Type, syn::Ident)>,
@@ -74,6 +73,9 @@ fn expression_with_calls(
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::KernelUnshieldedEffect { .. }
+        | Expr::KernelBalance { .. }
+        | Expr::KernelBalanceLessThan { .. }
+        | Expr::KernelBalanceGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

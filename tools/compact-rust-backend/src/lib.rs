@@ -968,6 +968,14 @@ fn collect_expression_types<'ir>(
             }
             collect_expression_types(amount, structs, enums, origins, observer)?;
         }
+        Expr::KernelBalance { token } => {
+            collect_expression_types(token, structs, enums, origins, observer)?;
+        }
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => {
+            collect_expression_types(token, structs, enums, origins, observer)?;
+            collect_expression_types(amount, structs, enums, origins, observer)?;
+        }
         Expr::CreateZswapInput { coin } => {
             collect_expression_types(coin, structs, enums, origins, observer)?
         }

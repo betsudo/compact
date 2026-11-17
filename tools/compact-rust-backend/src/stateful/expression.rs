@@ -646,6 +646,9 @@ fn render_operation_expression(
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::KernelUnshieldedEffect { .. }
+        | Expr::KernelBalance { .. }
+        | Expr::KernelBalanceLessThan { .. }
+        | Expr::KernelBalanceGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. } => render_effect_operation(
@@ -1457,6 +1460,84 @@ fn render_effect_operation(
     environment: &StateExpressionContext<'_, '_>,
 ) -> Result<(syn::Expr, Type, bool), RenderError> {
     match value {
+        Expr::KernelBalance { token }
+        | Expr::KernelBalanceLessThan { token, .. }
+        | Expr::KernelBalanceGreaterThan { token, .. } => {
+            let (rendered, actual, mut witness_effect) = render_state_expression_observed(
+                token,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let expected = token_type();
+            if actual != expected {
+                return Err(RenderError::TypeMismatch { expected, actual });
+            }
+            let token_name = syn::Ident::new(
+                &format!("__compact_balance_token_{}", *next_temp),
+                Span::call_site(),
+            );
+            *next_temp += 1;
+            statements.push(syn::parse_quote!(let #token_name = #rendered;));
+            let key: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                #token_name.is_left, #token_name.left, #token_name.right
+            ));
+            let step = syn::Ident::new(
+                &format!("__compact_balance_step_{}", *next_temp),
+                Span::call_site(),
+            );
+            *next_temp += 1;
+            let call: syn::Expr = match value {
+                Expr::KernelBalance { .. } => syn::parse_quote!(context.kernel_balance(#key)?),
+                Expr::KernelBalanceLessThan { amount, .. }
+                | Expr::KernelBalanceGreaterThan { amount, .. } => {
+                    let (amount_expr, actual, effect) = render_state_expression_observed(
+                        amount,
+                        parameters,
+                        statements,
+                        next_temp,
+                        query_effect,
+                        environment,
+                    )?;
+                    let expected = Type::Unsigned {
+                        max: u128::MAX.to_string(),
+                    };
+                    if actual != expected {
+                        return Err(RenderError::TypeMismatch { expected, actual });
+                    }
+                    witness_effect |= effect;
+                    if matches!(value, Expr::KernelBalanceLessThan { .. }) {
+                        syn::parse_quote!(context.kernel_balance_less_than(#key, (#amount_expr).value())?)
+                    } else {
+                        syn::parse_quote!(context.kernel_balance_greater_than(#key, (#amount_expr).value())?)
+                    }
+                }
+                _ => unreachable!(),
+            };
+            statements.push(syn::parse_quote!(let #step = #call;));
+            statements.push(syn::parse_quote!(context = #step.context;));
+            statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
+            *query_effect = true;
+            if matches!(value, Expr::KernelBalance { .. }) {
+                let max = syn::LitInt::new(&u128::MAX.to_string(), Span::call_site());
+                Ok((
+                    syn::parse_quote!(runtime::BoundedUint::<#max>::new(#step.result)
+                    .expect("Kernel balance fits Uint<128>")),
+                    Type::Unsigned {
+                        max: u128::MAX.to_string(),
+                    },
+                    witness_effect,
+                ))
+            } else {
+                Ok((
+                    syn::parse_quote!(#step.result),
+                    Type::Boolean,
+                    witness_effect,
+                ))
+            }
+        }
         Expr::KernelSelf { ty } => {
             let expected = crate::ir::contract_address_type();
             if *ty != expected {

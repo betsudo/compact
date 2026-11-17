@@ -457,10 +457,24 @@ pub(crate) fn expression_contains<'source>(
         | Expr::UnsignedSubtract { left, right, .. }
         | Expr::UnsignedMultiply { left, right, .. } => visit(left) || visit(right),
         Expr::CounterLessThan { threshold, .. } => visit(threshold),
-        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => visit(value),
+        Expr::EmitShieldedSpend { value }
+        | Expr::EmitShieldedBurn { value }
+        | Expr::EmitShieldedMint { value }
+        | Expr::EmitShieldedReceive { value }
+        | Expr::EmitUnshieldedSpend { value }
+        | Expr::EmitUnshieldedReceive { value }
+        | Expr::EmitUnshieldedMint { value }
+        | Expr::EmitUnshieldedBurn { value }
+        | Expr::EmitMisc { value }
+        | Expr::EmitPaused { value }
+        | Expr::EmitUnpaused { value }
+        | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
         Expr::KernelUnshieldedEffect { key, recipient, amount, .. } =>
             visit(key) || recipient.as_deref().is_some_and(|value| visit(value)) || visit(amount),
+        Expr::KernelBalance { token } => visit(token),
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
         Expr::Unit

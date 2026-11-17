@@ -19,6 +19,7 @@
 //! This module also owns a separate ordered circuit intent plan, ties execution
 //! to private state, and carries ownership across constructor and circuit calls.
 
+mod balance;
 mod cell;
 mod counter;
 mod event;

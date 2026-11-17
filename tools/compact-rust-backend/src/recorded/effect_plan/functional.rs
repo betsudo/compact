@@ -29,6 +29,7 @@ pub(crate) enum Capability {
     Pure,
     ExecutionIdentity,
     KernelAddress,
+    KernelBalance,
     EventEmission,
     KernelClaims,
     ShieldedMint,
@@ -381,6 +382,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::Convert { .. } => Capability::Pure,
                 Operation::OwnPublicKey => Capability::ExecutionIdentity,
                 Operation::KernelSelf => Capability::KernelAddress,
+                Operation::KernelBalance { .. }
+                | Operation::KernelBalanceLessThan { .. }
+                | Operation::KernelBalanceGreaterThan { .. } => Capability::KernelBalance,
                 Operation::EmitShieldedSpend(_)
                 | Operation::EmitShieldedBurn(_)
                 | Operation::EmitShieldedMint(_)

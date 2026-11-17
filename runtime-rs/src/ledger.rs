@@ -426,7 +426,9 @@ fn field_at_path<'a, D: DB>(
     Ok(current)
 }
 
+mod balance;
 mod cell;
+pub(crate) use balance::{BalanceMode, BalanceValue, balance_program, query_balance};
 mod collections;
 mod counter;
 mod event;

@@ -1279,6 +1279,14 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 }
                 scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
             }
+            Expr::KernelBalance { token } => {
+                scan.push(Node::Expr(token), visit_depth + 1, owner)?;
+            }
+            Expr::KernelBalanceLessThan { token, amount }
+            | Expr::KernelBalanceGreaterThan { token, amount } => {
+                scan.push(Node::Expr(token), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
+            }
             Expr::CreateZswapInput { coin } => {
                 scan.push(Node::Expr(coin), visit_depth + 1, owner)?;
             }

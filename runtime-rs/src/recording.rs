@@ -19,6 +19,7 @@
 //! not claim a transaction-ready trace until every operation they use records
 //! its corresponding verifying VM instruction.
 
+mod balance;
 mod kernel;
 mod merkle;
 mod zswap;

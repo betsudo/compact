@@ -209,6 +209,50 @@ fn unshielded_kernel_effects_route_typed_operands_in_source_order() {
 }
 
 #[test]
+fn balance_reads_require_canonical_token_and_uint128_bound() {
+    let declarations = Declarations::default();
+    let token = token_type();
+    let amount = uint(&u128::MAX.to_string());
+    admitted(
+        declarations.lower(Expr::KernelBalance {
+            token: default_value(token.clone()),
+        }),
+        amount.clone(),
+        "kernel_balance",
+    );
+    admitted(
+        declarations.lower(Expr::KernelBalanceLessThan {
+            token: default_value(token.clone()),
+            amount: default_value(amount.clone()),
+        }),
+        Type::Boolean,
+        "kernel_balance_less_than",
+    );
+    admitted(
+        declarations.lower(Expr::KernelBalanceGreaterThan {
+            token: default_value(token.clone()),
+            amount: default_value(amount.clone()),
+        }),
+        Type::Boolean,
+        "kernel_balance_greater_than",
+    );
+    declarations
+        .lower(Expr::KernelBalanceGreaterThan {
+            token: parameter("bytes"),
+            amount: parameter("absent"),
+        })
+        .refused_before_effects(mismatch(token, Type::Bytes { length: 32 }));
+    refused(
+        declarations.lower(Expr::KernelBalanceLessThan {
+            token: default_value(token_type()),
+            amount: parameter("uint"),
+        }),
+        amount,
+        uint("255"),
+    );
+}
+
+#[test]
 fn coin_effects_distinguish_qualified_input_output_and_recipient_domains() {
     let declarations = Declarations::default();
     let input = qualified_coin_type();

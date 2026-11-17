@@ -208,6 +208,39 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.kernel_self()?;));
             effect_values::address(&ty, syn::parse_quote!(#observed))
         }
+        Operation::KernelBalance { token }
+        | Operation::KernelBalanceLessThan { token, .. }
+        | Operation::KernelBalanceGreaterThan { token, .. } => {
+            let token = value(token);
+            let key: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                #token.is_left, #token.left, #token.right
+            ));
+            let observed = syn::Ident::new(
+                &format!("__compact_effect_balance_{}", binding.value.id),
+                Span::call_site(),
+            );
+            match &binding.operation {
+                Operation::KernelBalance { .. } => steps
+                    .push(syn::parse_quote!(let (frame, #observed) = frame.kernel_balance(#key)?;)),
+                Operation::KernelBalanceLessThan { amount, .. } => {
+                    let amount = value(amount);
+                    steps.push(syn::parse_quote!(let (frame, #observed) =
+                        frame.kernel_balance_less_than(#key, (#amount).value())?;));
+                }
+                Operation::KernelBalanceGreaterThan { amount, .. } => {
+                    let amount = value(amount);
+                    steps.push(syn::parse_quote!(let (frame, #observed) =
+                        frame.kernel_balance_greater_than(#key, (#amount).value())?;));
+                }
+                _ => unreachable!(),
+            }
+            if matches!(binding.operation, Operation::KernelBalance { .. }) {
+                syn::parse_quote!(runtime::BoundedUint::<{u128::MAX}>::new(#observed)
+                    .expect("Kernel balance fits Uint<128>"))
+            } else {
+                syn::parse_quote!(#observed)
+            }
+        }
         Operation::PersistentCommit { .. }
         | Operation::FieldToBytes32(_)
         | Operation::PersistentHash(_)

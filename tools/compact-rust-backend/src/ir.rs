@@ -1060,6 +1060,17 @@ pub enum Expr {
         recipient: Option<Box<Expr>>,
         amount: Box<Expr>,
     },
+    KernelBalance {
+        token: Box<Expr>,
+    },
+    KernelBalanceLessThan {
+        token: Box<Expr>,
+        amount: Box<Expr>,
+    },
+    KernelBalanceGreaterThan {
+        token: Box<Expr>,
+        amount: Box<Expr>,
+    },
     CreateZswapInput {
         coin: Box<Expr>,
     },

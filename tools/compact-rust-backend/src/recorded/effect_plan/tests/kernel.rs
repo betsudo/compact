@@ -23,6 +23,97 @@ fn amount_type() -> Type {
         max: u64::MAX.to_string(),
     }
 }
+
+#[test]
+fn balance_queries_record_typed_token_and_refuse_wrong_domain() {
+    let token = value(0, crate::coin_shapes::token_type());
+    let amount = value(
+        1,
+        Type::Unsigned {
+            max: u128::MAX.to_string(),
+        },
+    );
+    let source = StatefulCircuit {
+        source: None,
+        name: "balance".into(),
+        internal: false,
+        parameters: vec![
+            Parameter {
+                name: "token".into(),
+                ty: token.ty.clone(),
+            },
+            Parameter {
+                name: "amount".into(),
+                ty: amount.ty.clone(),
+            },
+        ],
+        actions: vec![],
+        result: amount.ty.clone(),
+        return_value: StateReturn::Expression {
+            value: Expr::KernelBalance {
+                token: Box::new(Expr::Parameter {
+                    name: "token".into(),
+                }),
+            },
+        },
+    };
+    let validate_balance = |plan| {
+        let types = type_environment::TypeEnvironment::from_sources(
+            &source,
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+        )
+        .unwrap();
+        validate::check(
+            plan,
+            declarations::Declarations::default().with_type_environment(types),
+        )
+    };
+    for (operation, ty, method) in [
+        (
+            Operation::KernelBalance {
+                token: token.clone(),
+            },
+            amount.ty.clone(),
+            "kernel_balance",
+        ),
+        (
+            Operation::KernelBalanceLessThan {
+                token: token.clone(),
+                amount: amount.clone(),
+            },
+            Type::Boolean,
+            "kernel_balance_less_than",
+        ),
+        (
+            Operation::KernelBalanceGreaterThan {
+                token: token.clone(),
+                amount: amount.clone(),
+            },
+            Type::Boolean,
+            "kernel_balance_greater_than",
+        ),
+    ] {
+        let original = Plan {
+            parameters: vec![token.clone(), amount.clone()],
+            result_type: ty.clone(),
+            body: Block {
+                bindings: vec![binding(2, ty.clone(), operation)],
+                result: value(2, ty),
+            },
+        };
+        let checked = validate_balance(original.clone()).unwrap();
+        let rendered = render(&checked).unwrap();
+        let steps = rendered.steps;
+        let source = quote::quote!(#(#steps)*).to_string();
+        assert!(source.contains(method), "{method}");
+        let mut bad = original;
+        bad.parameters[0].ty = bytes_type();
+        assert!(validate_balance(bad).is_err(), "{method} token mismatch");
+    }
+}
 fn value(id: usize, ty: Type) -> Value {
     Value { id, ty }
 }

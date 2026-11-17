@@ -94,6 +94,9 @@ impl Lowerer<'_> {
                 builtin: NativeWitnessBuiltin::OwnPublicKey,
             } => Self::query_operation,
             Expr::KernelSelf { .. } => Self::query_operation,
+            Expr::KernelBalance { .. }
+            | Expr::KernelBalanceLessThan { .. }
+            | Expr::KernelBalanceGreaterThan { .. } => Self::query_operation,
             Expr::DegradeToTransient { .. }
             | Expr::UpgradeFromTransient { .. }
             | Expr::TransientHash { .. }

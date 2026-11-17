@@ -128,6 +128,9 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::KernelUnshieldedEffect { .. }
+        | Expr::KernelBalance { .. }
+        | Expr::KernelBalanceLessThan { .. }
+        | Expr::KernelBalanceGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

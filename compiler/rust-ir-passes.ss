@@ -739,6 +739,17 @@
                    (cons "key" (lower (car expr*) (car type*)))
                    (cons "recipient" (lower (cadr expr*) (cadr type*)))
                    (cons "amount" (lower (caddr expr*) (caddr type*))))]
+          [(balance)
+           (arity! 1)
+           (object (cons "kind" "kernel_balance")
+                   (cons "token" (lower (car expr*) (car type*))))]
+          [(balanceLessThan balanceGreaterThan)
+           (arity! 2)
+           (object (cons "kind" (if (eq? ledger-op 'balanceLessThan)
+                                    "kernel_balance_less_than"
+                                    "kernel_balance_greater_than"))
+                   (cons "token" (lower (car expr*) (car type*)))
+                   (cons "amount" (lower (cadr expr*) (cadr type*))))]
           [else (source-errorf src "Rust backend does not yet support Kernel operation ~a" ledger-op)]))
 
       (define (expression-ir expr owner-src)

@@ -169,6 +169,17 @@ pub(super) enum Operation {
     OwnPublicKey,
     /// Ordered official VM observation of the current contract address.
     KernelSelf,
+    KernelBalance {
+        token: Value,
+    },
+    KernelBalanceLessThan {
+        token: Value,
+        amount: Value,
+    },
+    KernelBalanceGreaterThan {
+        token: Value,
+        amount: Value,
+    },
     EmitShieldedSpend(Value),
     EmitShieldedBurn(Value),
     EmitShieldedMint(Value),
