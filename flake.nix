@@ -321,13 +321,13 @@
               # checkouts. Nix still requires the shared checkout hash for
               # each package identity referenced by Cargo.lock.
               outputHashes = {
-                "midnight-base-crypto-1.1.1" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-base-crypto-derive-1.1.0" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-serialize-1.2.1" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-serialize-macros-1.0.0" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-storage-core-1.2.3" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-storage-macros-1.0.1" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
-                "midnight-transient-crypto-3.1.0" = "sha256-iRLWCmM2/pNqxtauHA/cFkkaEAK6v2G2MwOsSJ0yobE=";
+                "midnight-base-crypto-1.1.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-base-crypto-derive-1.1.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-serialize-1.2.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-serialize-macros-1.0.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-storage-core-1.2.3" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-storage-macros-1.0.1" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
+                "midnight-transient-crypto-3.1.0" = "sha256-mk1qdBHFgNm7KcNGD2UPtaCO1+llcp2u+ene75FuAEU=";
                 "midnight-circuits-7.3.0" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
                 "midnight-curves-0.3.1" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
                 "midnight-proofs-0.8.2" = "sha256-gsbcV5UyyiH1NzUxMaEtOw5zvsM5q+hBM0C/SMxcLf4=";
