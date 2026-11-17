@@ -240,6 +240,18 @@ fn render_control_expression(
                 // use without reordering gas or public transcript effects.
                 let then_value = then_value.unwrap_or_else(|| syn::parse_quote!(()));
                 let else_value = else_value.unwrap_or_else(|| syn::parse_quote!(()));
+                // A nested query conditional can itself be a block. Bind it
+                // before the outer `if` so generated consumers also satisfy
+                // Clippy's blocks_in_conditions lint without reevaluation.
+                let (condition_binding, branch_condition): (Option<syn::Stmt>, syn::Expr) =
+                    if matches!(&condition, syn::Expr::Block(_)) {
+                        (
+                            Some(syn::parse_quote!(let __compact_branch_condition = #condition;)),
+                            syn::parse_quote!(__compact_branch_condition),
+                        )
+                    } else {
+                        (None, condition)
+                    };
                 return Ok((
                     syn::parse_quote!({
                         #[inline(never)]
@@ -249,7 +261,8 @@ fn render_control_expression(
                         ) -> Result<(C, T), runtime::CompactError> {
                             body(context)
                         }
-                        let (__compact_next_context, __compact_branch_value) = if #condition {
+                        #condition_binding
+                        let (__compact_next_context, __compact_branch_value) = if #branch_condition {
                             __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
                                 #(#then_statements)*
                                 let __compact_branch_value = #then_value;

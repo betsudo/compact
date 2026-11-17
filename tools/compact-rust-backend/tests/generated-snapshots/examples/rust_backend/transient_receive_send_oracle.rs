@@ -396,110 +396,168 @@ pub mod ledger_contract {
         ))?;
         context = step.context;
         total_cost += step.gas_cost;
-        if if !((__compact_param_1.clone()).is_left) {
-            let __compact_value_24 = (((__compact_param_1.clone()).right).clone()).bytes;
-            __compact_value_24 == (__compact_expression_local_1.clone()).bytes
-        } else {
-            false
-        } {
-            let __compact_call_argument_25 = __compact_expression_local_17.clone();
-            let __compact_call_argument_26 = __compact_param_1.clone();
-            let __compact_expression_local_27: runtime::FixedBytes<32> =
-                crate::pure_circuits::coinCommitment(
-                    __compact_call_argument_25,
-                    __compact_call_argument_26,
-                )?;
-            let __compact_kernel_arg_28 = __compact_expression_local_27;
-            let step = context.kernel_claim_zswap_coin_receive(runtime::ledger::CoinCommitment(
-                runtime::ledger::HashOutput(__compact_kernel_arg_28.into_array()),
-            ))?;
-            context = step.context;
-            total_cost += step.gas_cost;
-        }
-        let __compact_value_29 = __compact_expression_local_11;
-        let result = if __compact_value_29
-            == runtime::BoundedUint::<340282366920938463463374607431768211455>::new(0u128)
-                .expect("Compact Uint literal fits its maximum")
         {
-            let __compact_struct_member_30: crate::types::Maybe = crate::pure_circuits::none()?;
-            let __compact_struct_member_31: crate::types::ShieldedCoinInfo =
-                __compact_expression_local_17.clone();
-            crate::types::ShieldedSendResult {
-                change: __compact_struct_member_30,
-                sent: __compact_struct_member_31,
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
-        } else {
-            let __compact_element_32 = runtime::Field::from_le_bytes(&[
-                109u8, 105u8, 100u8, 110u8, 105u8, 103u8, 104u8, 116u8, 58u8, 107u8, 101u8, 114u8,
-                110u8, 101u8, 108u8, 58u8, 110u8, 111u8, 110u8, 99u8, 101u8, 95u8, 101u8, 118u8,
-                111u8, 108u8, 118u8, 101u8, 47u8, 50u8, 0u8, 0u8,
-            ])
-            .expect("validated Compact Field literal");
-            let __compact_element_33 =
-                runtime::degrade_to_transient((__compact_param_0.clone()).nonce);
-            let __compact_struct_member_34: runtime::FixedBytes<32> =
-                runtime::upgrade_from_transient(runtime::transient_hash((
-                    __compact_element_32,
-                    __compact_element_33,
-                )));
-            let __compact_struct_member_35: runtime::FixedBytes<32> =
-                (__compact_param_0.clone()).color;
-            let __compact_struct_member_36: runtime::BoundedUint<
-                340282366920938463463374607431768211455,
-            > = __compact_expression_local_11;
-            let __compact_expression_local_37: crate::types::ShieldedCoinInfo =
-                crate::types::ShieldedCoinInfo {
-                    nonce: __compact_struct_member_34,
-                    color: __compact_struct_member_35,
-                    value: __compact_struct_member_36,
+            let (__compact_next_context, __compact_branch_value) =
+                if if !((__compact_param_1.clone()).is_left) {
+                    let __compact_value_24 = (((__compact_param_1.clone()).right).clone()).bytes;
+                    __compact_value_24 == (__compact_expression_local_1.clone()).bytes
+                } else {
+                    false
+                } {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_call_argument_25 = __compact_expression_local_17.clone();
+                            let __compact_call_argument_26 = __compact_param_1.clone();
+                            let __compact_expression_local_27: runtime::FixedBytes<32> =
+                                crate::pure_circuits::coinCommitment(
+                                    __compact_call_argument_25,
+                                    __compact_call_argument_26,
+                                )?;
+                            let __compact_kernel_arg_28 = __compact_expression_local_27;
+                            let step = context.kernel_claim_zswap_coin_receive(
+                                runtime::ledger::CoinCommitment(runtime::ledger::HashOutput(
+                                    __compact_kernel_arg_28.into_array(),
+                                )),
+                            )?;
+                            context = step.context;
+                            total_cost += step.gas_cost;
+                            let __compact_branch_value = ();
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
+                } else {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_branch_value = ();
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
                 };
-            let __compact_zswap_coin_38 = __compact_expression_local_37.clone();
-            let __compact_call_argument_39 = __compact_expression_local_1.clone();
-            let __compact_zswap_recipient_40 =
-                crate::pure_circuits::right(__compact_call_argument_39)?;
-            context.create_zswap_output(
-                runtime::ledger::coin_info_from_compact(
-                    __compact_zswap_coin_38.nonce,
-                    __compact_zswap_coin_38.color,
-                    __compact_zswap_coin_38.value.value(),
-                ),
-                runtime::ledger::coin_recipient_from_compact(
-                    __compact_zswap_recipient_40.is_left,
-                    __compact_zswap_recipient_40.left.bytes,
-                    __compact_zswap_recipient_40.right.bytes,
-                ),
-            )?;
-            private_transcript_outputs.push(runtime::fab::AlignedValue::from(()));
-            let __compact_call_argument_41 = __compact_expression_local_37.clone();
-            let __compact_call_argument_42 = __compact_expression_local_1.clone();
-            let __compact_call_argument_43 =
-                crate::pure_circuits::right(__compact_call_argument_42)?;
-            let __compact_expression_local_44: runtime::FixedBytes<32> =
-                crate::pure_circuits::coinCommitment(
-                    __compact_call_argument_41,
-                    __compact_call_argument_43,
-                )?;
-            let __compact_kernel_arg_45 = __compact_expression_local_44;
-            let step = context.kernel_claim_zswap_coin_spend(runtime::ledger::CoinCommitment(
-                runtime::ledger::HashOutput(__compact_kernel_arg_45.into_array()),
-            ))?;
-            context = step.context;
-            total_cost += step.gas_cost;
-            let __compact_kernel_arg_46 = __compact_expression_local_44;
-            let step = context.kernel_claim_zswap_coin_receive(runtime::ledger::CoinCommitment(
-                runtime::ledger::HashOutput(__compact_kernel_arg_46.into_array()),
-            ))?;
-            context = step.context;
-            total_cost += step.gas_cost;
-            let __compact_call_argument_47 = __compact_expression_local_37.clone();
-            let __compact_struct_member_48: crate::types::Maybe =
-                crate::pure_circuits::some(__compact_call_argument_47)?;
-            let __compact_struct_member_49: crate::types::ShieldedCoinInfo =
-                __compact_expression_local_17.clone();
-            crate::types::ShieldedSendResult {
-                change: __compact_struct_member_48,
-                sent: __compact_struct_member_49,
+            context = __compact_next_context;
+            __compact_branch_value
+        };
+        let __compact_value_29 = __compact_expression_local_11;
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
+            let (__compact_next_context, __compact_branch_value) = if __compact_value_29
+                == runtime::BoundedUint::<340282366920938463463374607431768211455>::new(0u128)
+                    .expect("Compact Uint literal fits its maximum")
+            {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_struct_member_30: crate::types::Maybe =
+                            crate::pure_circuits::none()?;
+                        let __compact_struct_member_31: crate::types::ShieldedCoinInfo =
+                            __compact_expression_local_17.clone();
+                        let __compact_branch_value = crate::types::ShieldedSendResult {
+                            change: __compact_struct_member_30,
+                            sent: __compact_struct_member_31,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_element_32 = runtime::Field::from_le_bytes(&[
+                            109u8, 105u8, 100u8, 110u8, 105u8, 103u8, 104u8, 116u8, 58u8, 107u8,
+                            101u8, 114u8, 110u8, 101u8, 108u8, 58u8, 110u8, 111u8, 110u8, 99u8,
+                            101u8, 95u8, 101u8, 118u8, 111u8, 108u8, 118u8, 101u8, 47u8, 50u8, 0u8,
+                            0u8,
+                        ])
+                        .expect("validated Compact Field literal");
+                        let __compact_element_33 =
+                            runtime::degrade_to_transient((__compact_param_0.clone()).nonce);
+                        let __compact_struct_member_34: runtime::FixedBytes<32> =
+                            runtime::upgrade_from_transient(runtime::transient_hash((
+                                __compact_element_32,
+                                __compact_element_33,
+                            )));
+                        let __compact_struct_member_35: runtime::FixedBytes<32> =
+                            (__compact_param_0.clone()).color;
+                        let __compact_struct_member_36: runtime::BoundedUint<
+                            340282366920938463463374607431768211455,
+                        > = __compact_expression_local_11;
+                        let __compact_expression_local_37: crate::types::ShieldedCoinInfo =
+                            crate::types::ShieldedCoinInfo {
+                                nonce: __compact_struct_member_34,
+                                color: __compact_struct_member_35,
+                                value: __compact_struct_member_36,
+                            };
+                        let __compact_zswap_coin_38 = __compact_expression_local_37.clone();
+                        let __compact_call_argument_39 = __compact_expression_local_1.clone();
+                        let __compact_zswap_recipient_40 =
+                            crate::pure_circuits::right(__compact_call_argument_39)?;
+                        context.create_zswap_output(
+                            runtime::ledger::coin_info_from_compact(
+                                __compact_zswap_coin_38.nonce,
+                                __compact_zswap_coin_38.color,
+                                __compact_zswap_coin_38.value.value(),
+                            ),
+                            runtime::ledger::coin_recipient_from_compact(
+                                __compact_zswap_recipient_40.is_left,
+                                __compact_zswap_recipient_40.left.bytes,
+                                __compact_zswap_recipient_40.right.bytes,
+                            ),
+                        )?;
+                        private_transcript_outputs.push(runtime::fab::AlignedValue::from(()));
+                        let __compact_call_argument_41 = __compact_expression_local_37.clone();
+                        let __compact_call_argument_42 = __compact_expression_local_1.clone();
+                        let __compact_call_argument_43 =
+                            crate::pure_circuits::right(__compact_call_argument_42)?;
+                        let __compact_expression_local_44: runtime::FixedBytes<32> =
+                            crate::pure_circuits::coinCommitment(
+                                __compact_call_argument_41,
+                                __compact_call_argument_43,
+                            )?;
+                        let __compact_kernel_arg_45 = __compact_expression_local_44;
+                        let step = context.kernel_claim_zswap_coin_spend(
+                            runtime::ledger::CoinCommitment(runtime::ledger::HashOutput(
+                                __compact_kernel_arg_45.into_array(),
+                            )),
+                        )?;
+                        context = step.context;
+                        total_cost += step.gas_cost;
+                        let __compact_kernel_arg_46 = __compact_expression_local_44;
+                        let step = context.kernel_claim_zswap_coin_receive(
+                            runtime::ledger::CoinCommitment(runtime::ledger::HashOutput(
+                                __compact_kernel_arg_46.into_array(),
+                            )),
+                        )?;
+                        context = step.context;
+                        total_cost += step.gas_cost;
+                        let __compact_call_argument_47 = __compact_expression_local_37.clone();
+                        let __compact_struct_member_48: crate::types::Maybe =
+                            crate::pure_circuits::some(__compact_call_argument_47)?;
+                        let __compact_struct_member_49: crate::types::ShieldedCoinInfo =
+                            __compact_expression_local_17.clone();
+                        let __compact_branch_value = crate::types::ShieldedSendResult {
+                            change: __compact_struct_member_48,
+                            sent: __compact_struct_member_49,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

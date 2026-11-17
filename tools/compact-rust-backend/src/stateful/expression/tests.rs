@@ -660,6 +660,14 @@ fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
     );
     assert!(generated.contains("let __compact_branch_value ="));
     assert!(
+        generated.contains("let __compact_branch_condition ="),
+        "nested query condition must be evaluated once before the outer if: {generated}"
+    );
+    assert!(
+        !generated.contains("if {"),
+        "nested query condition must not put a block in an if condition: {generated}"
+    );
+    assert!(
         !generated.contains("Ok ((context , {"),
         "a nested query value must be evaluated before its context is moved"
     );

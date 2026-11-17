@@ -271,14 +271,38 @@ pub mod ledger_contract {
         let __compact_call_1 = in_state(context, __compact_call_argument_0)?;
         context = __compact_call_1.context;
         total_cost += __compact_call_1.gas_cost;
-        let result = if __compact_call_1.result {
-            let __compact_query_2 = crate::ledger_slots::value.read(context)?;
-            context = __compact_query_2.context;
-            total_cost += __compact_query_2.gas_cost;
-            let __compact_call_argument_3 = __compact_query_2.result;
-            crate::pure_circuits::some(__compact_call_argument_3)?
-        } else {
-            crate::pure_circuits::none()?
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_call_1.result {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_2 = crate::ledger_slots::value.read(context)?;
+                        context = __compact_query_2.context;
+                        total_cost += __compact_query_2.gas_cost;
+                        let __compact_call_argument_3 = __compact_query_2.result;
+                        let __compact_branch_value =
+                            crate::pure_circuits::some(__compact_call_argument_3)?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = crate::pure_circuits::none()?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

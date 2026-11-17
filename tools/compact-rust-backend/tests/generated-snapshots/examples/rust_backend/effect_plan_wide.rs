@@ -137,16 +137,39 @@ pub mod ledger_contract {
         total_cost += step.gas_cost;
         let mut context = context;
         let __compact_value_3 = __compact_return_local_0;
-        let (context, __compact_effectful_result): (_, runtime::Field) = if if __compact_value_3
-            == __compact_return_local_1
-        {
-            let __compact_query_4 = crate::ledger_slots::state.read(context)?;
-            context = __compact_query_4.context;
-            total_cost += __compact_query_4.gas_cost;
-            let __compact_value_5 = __compact_query_4.result;
-            __compact_value_5 == runtime::Field::from(1u128)
-        } else {
-            false
+        let (context, __compact_effectful_result): (_, runtime::Field) = if {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) =
+                if __compact_value_3 == __compact_return_local_1 {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_query_4 = crate::ledger_slots::state.read(context)?;
+                            context = __compact_query_4.context;
+                            total_cost += __compact_query_4.gas_cost;
+                            let __compact_value_5 = __compact_query_4.result;
+                            let __compact_branch_value =
+                                __compact_value_5 == runtime::Field::from(1u128);
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
+                } else {
+                    __compact_query_branch(
+                        context,
+                        |mut context| -> Result<_, runtime::CompactError> {
+                            let __compact_branch_value = false;
+                            Ok((context, __compact_branch_value))
+                        },
+                    )?
+                };
+            context = __compact_next_context;
+            __compact_branch_value
         } {
             let mut context = context;
             let __compact_return_local_4: runtime::Field = __compact_return_local_2;

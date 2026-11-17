@@ -153,20 +153,46 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let private_transcript_outputs = Vec::new();
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_query_0 = crate::ledger_slots::high.read(context)?;
-            context = __compact_query_0.context;
-            total_cost += __compact_query_0.gas_cost;
-            let __compact_expression_local_1: runtime::BoundedUint<18446744073709551615> =
-                runtime::BoundedUint::<18446744073709551615>::new(__compact_query_0.result as u128)
-                    .expect("ledger Counter fits Uint<64>");
-            let __compact_query_2 = crate::ledger_slots::low
-                .less_than(context, (__compact_expression_local_1).value() as u64)?;
-            context = __compact_query_2.context;
-            total_cost += __compact_query_2.gas_cost;
-            __compact_query_2.result
-        } else {
-            false
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_0 = crate::ledger_slots::high.read(context)?;
+                        context = __compact_query_0.context;
+                        total_cost += __compact_query_0.gas_cost;
+                        let __compact_expression_local_1: runtime::BoundedUint<
+                            18446744073709551615,
+                        > = runtime::BoundedUint::<18446744073709551615>::new(
+                            __compact_query_0.result as u128,
+                        )
+                        .expect("ledger Counter fits Uint<64>");
+                        let __compact_query_2 = crate::ledger_slots::low
+                            .less_than(context, (__compact_expression_local_1).value() as u64)?;
+                        context = __compact_query_2.context;
+                        total_cost += __compact_query_2.gas_cost;
+                        let __compact_branch_value = __compact_query_2.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = false;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,
