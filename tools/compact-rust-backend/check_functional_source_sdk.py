@@ -226,18 +226,34 @@ def clippy_library_command(cargo, manifest, package):
             "--package", package, "--lib", "--message-format", "json", "--", "-D", "warnings"]
 
 
+def check_ledger_cohort(contract, consumer_manifest):
+    runtime = contract / "runtime-rs"
+    compatibility = json.loads((runtime / "compatibility.json").read_text())
+    patches = compatibility["ledger_git_sources"]
+    ledger = tomllib.loads((runtime / "Cargo.toml").read_text())["dependencies"]["midnight-ledger-v9"]
+    if (compatibility["ledger_version"] != "ledger-9.1.0.2"
+            or ledger != {**patches["midnight-ledger-v9"], "version": "=1.0.2", "optional": True}):
+        raise ValueError("SDK ledger cohort differs")
+    for manifest in (ROOT / "Cargo.toml", contract / "Cargo.toml", consumer_manifest):
+        if tomllib.loads(manifest.read_text()).get("patch", {}).get("crates-io") != patches:
+            raise ValueError(f"SDK Cargo source patches differ: {manifest}")
+
+
 def library_lint_root(consumer_manifest, destination):
     # Cargo cannot select features for a nonmember with --package. A separate
     # lint-only root enables the existing consumer's proof feature as a normal
     # dependency, without editing any qualified manifest or source.
     destination.mkdir()
-    name = tomllib.loads(consumer_manifest.read_text())["package"]["name"]
+    consumer_source = consumer_manifest.read_text()
+    name = tomllib.loads(consumer_source)["package"]["name"]
+    patches = re.search(r"(?ms)^\[patch\.crates-io\]\n.*?(?=^\[|\Z)", consumer_source)
     relative = os.path.relpath(consumer_manifest.parent, destination)
     manifest = destination / "Cargo.toml"
     manifest.write_text('[workspace]\n[package]\nname="isolated-sdk-library-lints"\n'
                         'version="0.0.0"\nedition="2024"\n[lib]\npath="lib.rs"\n'
                         '[dependencies]\nconsumer={package='+json.dumps(name)+',path='+json.dumps(relative)
-                        +',features=["proof"]}\n')
+                        +',features=["proof"]}\n'
+                        + ("\n" + patches.group().rstrip() + "\n" if patches else ""))
     (destination / "lib.rs").write_text("// Private lint root; never a generated contract or execution input.\n")
     shutil.copyfile(consumer_manifest.with_name("Cargo.lock"), destination / "Cargo.lock")
     return manifest
@@ -493,9 +509,7 @@ def main(argv=None):
         receipt["staged_testkit_hashes"] = inventory(output / "testkit-rs")
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         cohort = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]}
-        ledger = tomllib.loads((contract / "runtime-rs/Cargo.toml").read_text())["dependencies"]["midnight-ledger-v9"]
-        if ledger != {"version": "=1.0.1", "optional": True}:
-            raise ValueError("SDK ledger cohort differs")
+        check_ledger_cohort(contract, manifest)
         metadata = json.loads(run("metadata", ["cargo", "metadata", "--offline", "--format-version", "1", "--features", "proof", "--manifest-path", manifest]).stdout)
         receipt["dependency_graph"] = dependency_graph(metadata, consumer / "Cargo.lock", output, cohort)
         receipt["staged_consumer_hashes"] = inventory(consumer)

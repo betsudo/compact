@@ -77,7 +77,8 @@
     },
     "midnight-transient-crypto": {
       "git": "https://github.com/betsudo/midnight-ledger",
-      "rev": "f82ac287442fc15c4eb79f02dcb6510373979eab"
+      "rev": "f82ac287442fc15c4eb79f02dcb6510373979eab",
+      "version": "=3.1.0"
     },
     "midnight-zkir-v2": {
       "git": "https://github.com/betsudo/midnight-ledger",

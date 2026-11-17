@@ -31,8 +31,12 @@ compactc --target rust --target ts --rust-functional-ledger9 \
 Stage the matching reviewed testkit library sources/manifest as `testkit-rs/`,
 including the repository Apache license as `testkit-rs/LICENSE`,
 apply the copied-manifest path adjustment above, and seed `consumer/Cargo.lock`
-from the qualified Compact source lock. Resolve with `cargo metadata --offline`,
-check all local manifests and registry package identities and checksums, then execute:
+from the qualified Compact source lock. The example's root
+`[patch.crates-io]` must match the generated contract's table. Cargo applies
+patches only from the application or workspace root, so when using a generated
+contract as a dependency, copy its full patch table to that root, including the
+versioned ZKIR aliases. Resolve with `cargo metadata --offline` and check all
+local manifests and registry/Git package identities and checksums, then execute:
 
 ```sh
 cargo +1.99.0 test --locked --offline --manifest-path consumer/Cargo.toml
