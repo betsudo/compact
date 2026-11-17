@@ -40,7 +40,17 @@ serde_json = "1"
 sha2 = "0.10"
 syn = { version = "2", features = ["full", "parsing", "printing", "visit-mut"] }
 toml_edit = "0.22"
-midnight-transient-crypto = "=3.1.0"
+midnight-transient-crypto = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653" }
 
 # Use the exact identifier tables already present in the locked syntax stack.
 unicode-ident = "=1.0.24"
+
+# `midnight-transient-crypto` 3.1.0 consumes proof APIs carried by the
+# qualified Ledger 9.1.0.2 ZK source graph. Repeat the root patches here
+# because this manifest is also built as a standalone Nix package and Cargo
+# does not propagate patches from dependencies.
+[patch.crates-io]
+midnight-circuits = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
+midnight-curves = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
+midnight-proofs = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
+midnight-zk-stdlib = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
