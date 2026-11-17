@@ -660,16 +660,39 @@ fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
     );
     assert!(generated.contains("let __compact_branch_value ="));
     assert!(
-        generated.contains("let __compact_branch_condition ="),
-        "nested query condition must be evaluated once before the outer if: {generated}"
-    );
-    assert!(
         !generated.contains("if {"),
         "nested query condition must not put a block in an if condition: {generated}"
     );
     assert!(
         !generated.contains("Ok ((context , {"),
         "a nested query value must be evaluated before its context is moved"
+    );
+
+    let boolean_read = || Expr::CellRead {
+        field: "slot".into(),
+        index: 0,
+    };
+    let nested_condition = conditional(
+        *parameter("boolean"),
+        boolean_read(),
+        Expr::Boolean { value: true },
+    );
+    let observed = ledger(LedgerFieldKind::Cell { ty: Type::Boolean }).lower(conditional(
+        nested_condition,
+        boolean_read(),
+        Expr::Boolean { value: false },
+    ));
+    let (rendered, ty, witness) = observed.result.expect("nested query condition lowers");
+    assert_eq!(ty, Type::Boolean);
+    assert!(!witness && observed.query_effect);
+    let generated = rendered.to_token_stream().to_string();
+    assert!(
+        generated.contains("let __compact_branch_condition ="),
+        "block-valued query condition must be evaluated once before the outer if: {generated}"
+    );
+    assert!(
+        !generated.contains("if {"),
+        "block-valued query condition must not appear directly in if: {generated}"
     );
 
     let pure = Declarations::default().lower(conditional(
@@ -680,12 +703,10 @@ fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
     let (rendered, ty, witness) = pure.result.expect("pure conditional lowers");
     assert_eq!(ty, Type::Field);
     assert!(!witness && !pure.query_effect);
-    assert!(
-        !rendered
-            .to_token_stream()
-            .to_string()
-            .contains("__compact_query_branch")
-    );
+    assert!(!rendered
+        .to_token_stream()
+        .to_string()
+        .contains("__compact_query_branch"));
 }
 
 #[test]
