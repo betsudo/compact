@@ -65,12 +65,20 @@ class UpstreamVersionScripts(unittest.TestCase):
             if upstream.returncode == 0:  # A shallow CI checkout may omit this object.
                 self.assertEqual(source.read_bytes(), upstream.stdout)
 
-    def test_read_committed_compiler_and_language_versions(self):
-        for feature, expected in (("compiler", "0.31.213"), ("language", "0.23.105")):
-            result = subprocess.run([str(READ), feature], cwd=ROOT,
-                                    capture_output=True, text=True, check=False)
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertEqual(result.stdout, expected + "\n")
+    def test_read_compiler_and_language_versions_from_default_paths(self):
+        versions = self.base / "compiler"
+        versions.mkdir()
+        for feature, components, expected in (
+            ("compiler", "0 31 213", "0.31.213"),
+            ("language", "0 23 105", "0.23.105"),
+        ):
+            (versions / f"{feature}-version.ss").write_text(
+                f"(make-version '{feature} {components})\n"
+            )
+            with self.subTest(feature=feature):
+                result = self.run_script(READ, feature)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected + "\n")
 
     def test_read_custom_source_and_refuse_missing_feature(self):
         result = self.run_script(READ, "compiler", self.source)
