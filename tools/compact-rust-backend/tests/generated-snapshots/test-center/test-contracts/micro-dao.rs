@@ -1815,47 +1815,50 @@ pub mod ledger_contract {
         ));
         let __compact_action_local_4: crate::types::MaybeCompact2 = __compact_witness_13;
         let mut context = context;
-        if !(if {
-            #[inline(never)]
-            fn __compact_query_branch<C, T>(
-                context: C,
-                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
-            ) -> Result<(C, T), runtime::CompactError> {
-                body(context)
+        if !({
+            let __compact_pure_branch_condition = {
+                #[inline(never)]
+                fn __compact_query_branch<C, T>(
+                    context: C,
+                    body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+                ) -> Result<(C, T), runtime::CompactError> {
+                    body(context)
+                }
+                let (__compact_next_context, __compact_branch_value) =
+                    if (__compact_action_local_4.clone()).is_some {
+                        __compact_query_branch(
+                            context,
+                            |mut context| -> Result<_, runtime::CompactError> {
+                                let __compact_call_argument_14 =
+                                    ((__compact_action_local_4.clone()).value).clone();
+                                let __compact_expression_local_15: crate::types::MerkleTreeDigest =
+                                    crate::pure_circuits::path_root(__compact_call_argument_14)?;
+                                let __compact_query_16 = crate::ledger_slots::committed_votes
+                                    .check_root(context, __compact_expression_local_15.clone())?;
+                                context = __compact_query_16.context;
+                                total_cost += __compact_query_16.gas_cost;
+                                let __compact_branch_value = __compact_query_16.result;
+                                Ok((context, __compact_branch_value))
+                            },
+                        )?
+                    } else {
+                        __compact_query_branch(
+                            context,
+                            |mut context| -> Result<_, runtime::CompactError> {
+                                let __compact_branch_value = false;
+                                Ok((context, __compact_branch_value))
+                            },
+                        )?
+                    };
+                context = __compact_next_context;
+                __compact_branch_value
+            };
+            if __compact_pure_branch_condition {
+                let __compact_value_17 = __compact_action_local_3;
+                __compact_value_17 == (((__compact_action_local_4.clone()).value).clone()).leaf
+            } else {
+                false
             }
-            let (__compact_next_context, __compact_branch_value) =
-                if (__compact_action_local_4.clone()).is_some {
-                    __compact_query_branch(
-                        context,
-                        |mut context| -> Result<_, runtime::CompactError> {
-                            let __compact_call_argument_14 =
-                                ((__compact_action_local_4.clone()).value).clone();
-                            let __compact_expression_local_15: crate::types::MerkleTreeDigest =
-                                crate::pure_circuits::path_root(__compact_call_argument_14)?;
-                            let __compact_query_16 = crate::ledger_slots::committed_votes
-                                .check_root(context, __compact_expression_local_15.clone())?;
-                            context = __compact_query_16.context;
-                            total_cost += __compact_query_16.gas_cost;
-                            let __compact_branch_value = __compact_query_16.result;
-                            Ok((context, __compact_branch_value))
-                        },
-                    )?
-                } else {
-                    __compact_query_branch(
-                        context,
-                        |mut context| -> Result<_, runtime::CompactError> {
-                            let __compact_branch_value = false;
-                            Ok((context, __compact_branch_value))
-                        },
-                    )?
-                };
-            context = __compact_next_context;
-            __compact_branch_value
-        } {
-            let __compact_value_17 = __compact_action_local_3;
-            __compact_value_17 == (((__compact_action_local_4.clone()).value).clone()).leaf
-        } else {
-            false
         }) {
             return Err(runtime::CompactError::AssertionFailed(
                 "Attempted to reveal incorrectly".to_owned(),

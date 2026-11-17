@@ -284,11 +284,24 @@ fn render_control_expression(
             }
             let otherwise = (!else_statements.is_empty() || else_value.is_some())
                 .then(|| quote::quote!(else { #(#else_statements)* #else_value }));
-            Ok((
+            let rendered = if matches!(&condition, syn::Expr::Block(_)) {
+                // A pure arm can be the condition of a later query branch.
+                // Keep its own complex condition outside that inner `if`.
+                syn::parse_quote!({
+                    let __compact_pure_branch_condition = #condition;
+                    if __compact_pure_branch_condition {
+                        #(#then_statements)*
+                        #then_value
+                    } #otherwise
+                })
+            } else {
                 syn::parse_quote!(if #condition {
                     #(#then_statements)*
                     #then_value
-                } #otherwise),
+                } #otherwise)
+            };
+            Ok((
+                rendered,
                 then_ty,
                 condition_effect || then_effect || else_effect,
             ))

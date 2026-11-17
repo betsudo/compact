@@ -159,15 +159,8 @@ pub mod ledger_contract {
         context.private_state = __compact_next_private_1;
         private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_1));
         let __compact_expression_local_2: bool = __compact_witness_1;
-        if !(if {
-            #[inline(never)]
-            fn __compact_query_branch<C, T>(
-                context: C,
-                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
-            ) -> Result<(C, T), runtime::CompactError> {
-                body(context)
-            }
-            let (__compact_next_context, __compact_branch_value) = if if {
+        if !({
+            let __compact_pure_branch_condition = {
                 #[inline(never)]
                 fn __compact_query_branch<C, T>(
                     context: C,
@@ -175,18 +168,86 @@ pub mod ledger_contract {
                 ) -> Result<(C, T), runtime::CompactError> {
                     body(context)
                 }
-                let (__compact_next_context, __compact_branch_value) = if if __compact_param_0 {
-                    __compact_expression_local_2
-                } else {
-                    false
-                } {
+                let __compact_branch_condition = {
+                    let __compact_pure_branch_condition = {
+                        #[inline(never)]
+                        fn __compact_query_branch<C, T>(
+                            context: C,
+                            body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+                        ) -> Result<(C, T), runtime::CompactError> {
+                            body(context)
+                        }
+                        let (__compact_next_context, __compact_branch_value) =
+                            if if __compact_param_0 {
+                                __compact_expression_local_2
+                            } else {
+                                false
+                            } {
+                                __compact_query_branch(
+                                    context,
+                                    |mut context| -> Result<_, runtime::CompactError> {
+                                        let __compact_query_3 =
+                                            crate::ledger_slots::open.read(context)?;
+                                        context = __compact_query_3.context;
+                                        total_cost += __compact_query_3.gas_cost;
+                                        let __compact_branch_value = __compact_query_3.result;
+                                        Ok((context, __compact_branch_value))
+                                    },
+                                )?
+                            } else {
+                                __compact_query_branch(
+                                    context,
+                                    |mut context| -> Result<_, runtime::CompactError> {
+                                        let __compact_branch_value = false;
+                                        Ok((context, __compact_branch_value))
+                                    },
+                                )?
+                            };
+                        context = __compact_next_context;
+                        __compact_branch_value
+                    };
+                    if __compact_pure_branch_condition {
+                        let __compact_argument_4 = runtime::BoundedUint::<255>::new(2u128)
+                            .expect("Compact Uint literal fits its maximum");
+                        let __compact_witness_meter_5 =
+                            runtime::context::WitnessReadMeter::new(&context);
+                        let (__compact_next_private_5, __compact_witness_5) = witnesses.next_gate(
+                            context.witness_context_with(LedgerView {
+                                state: context.query.state.get_ref(),
+                                meter: &__compact_witness_meter_5,
+                            }),
+                            __compact_argument_4,
+                        )?;
+                        total_cost += __compact_witness_meter_5.gas_cost();
+                        context.private_state = __compact_next_private_5;
+                        private_transcript_outputs
+                            .push(runtime::fab::AlignedValue::from(__compact_witness_5));
+                        __compact_witness_5
+                    } else {
+                        false
+                    }
+                };
+                let (__compact_next_context, __compact_branch_value) = if __compact_branch_condition
+                {
                     __compact_query_branch(
                         context,
                         |mut context| -> Result<_, runtime::CompactError> {
-                            let __compact_query_3 = crate::ledger_slots::open.read(context)?;
-                            context = __compact_query_3.context;
-                            total_cost += __compact_query_3.gas_cost;
-                            let __compact_branch_value = __compact_query_3.result;
+                            let __compact_query_6 = crate::ledger_slots::high.read(context)?;
+                            context = __compact_query_6.context;
+                            total_cost += __compact_query_6.gas_cost;
+                            let __compact_expression_local_7: runtime::BoundedUint<
+                                18446744073709551615,
+                            > = runtime::BoundedUint::<18446744073709551615>::new(
+                                __compact_query_6.result as u128,
+                            )
+                            .expect("ledger Counter fits Uint<64>");
+                            let __compact_query_8 = crate::ledger_slots::low.less_than(
+                                context,
+                                (__compact_expression_local_7).value() as u64,
+                            )?;
+                            context = __compact_query_8.context;
+                            total_cost += __compact_query_8.gas_cost;
+                            let __compact_branch_value = __compact_query_8.result;
                             Ok((context, __compact_branch_value))
                         },
                     )?
@@ -201,73 +262,26 @@ pub mod ledger_contract {
                 };
                 context = __compact_next_context;
                 __compact_branch_value
-            } {
-                let __compact_argument_4 = runtime::BoundedUint::<255>::new(2u128)
+            };
+            if __compact_pure_branch_condition {
+                let __compact_argument_9 = runtime::BoundedUint::<255>::new(3u128)
                     .expect("Compact Uint literal fits its maximum");
-                let __compact_witness_meter_5 = runtime::context::WitnessReadMeter::new(&context);
-                let (__compact_next_private_5, __compact_witness_5) = witnesses.next_gate(
+                let __compact_witness_meter_10 = runtime::context::WitnessReadMeter::new(&context);
+                let (__compact_next_private_10, __compact_witness_10) = witnesses.next_gate(
                     context.witness_context_with(LedgerView {
                         state: context.query.state.get_ref(),
-                        meter: &__compact_witness_meter_5,
+                        meter: &__compact_witness_meter_10,
                     }),
-                    __compact_argument_4,
+                    __compact_argument_9,
                 )?;
-                total_cost += __compact_witness_meter_5.gas_cost();
-                context.private_state = __compact_next_private_5;
+                total_cost += __compact_witness_meter_10.gas_cost();
+                context.private_state = __compact_next_private_10;
                 private_transcript_outputs
-                    .push(runtime::fab::AlignedValue::from(__compact_witness_5));
-                __compact_witness_5
+                    .push(runtime::fab::AlignedValue::from(__compact_witness_10));
+                __compact_witness_10
             } else {
                 false
-            } {
-                __compact_query_branch(
-                    context,
-                    |mut context| -> Result<_, runtime::CompactError> {
-                        let __compact_query_6 = crate::ledger_slots::high.read(context)?;
-                        context = __compact_query_6.context;
-                        total_cost += __compact_query_6.gas_cost;
-                        let __compact_expression_local_7: runtime::BoundedUint<
-                            18446744073709551615,
-                        > = runtime::BoundedUint::<18446744073709551615>::new(
-                            __compact_query_6.result as u128,
-                        )
-                        .expect("ledger Counter fits Uint<64>");
-                        let __compact_query_8 = crate::ledger_slots::low
-                            .less_than(context, (__compact_expression_local_7).value() as u64)?;
-                        context = __compact_query_8.context;
-                        total_cost += __compact_query_8.gas_cost;
-                        let __compact_branch_value = __compact_query_8.result;
-                        Ok((context, __compact_branch_value))
-                    },
-                )?
-            } else {
-                __compact_query_branch(
-                    context,
-                    |mut context| -> Result<_, runtime::CompactError> {
-                        let __compact_branch_value = false;
-                        Ok((context, __compact_branch_value))
-                    },
-                )?
-            };
-            context = __compact_next_context;
-            __compact_branch_value
-        } {
-            let __compact_argument_9 = runtime::BoundedUint::<255>::new(3u128)
-                .expect("Compact Uint literal fits its maximum");
-            let __compact_witness_meter_10 = runtime::context::WitnessReadMeter::new(&context);
-            let (__compact_next_private_10, __compact_witness_10) = witnesses.next_gate(
-                context.witness_context_with(LedgerView {
-                    state: context.query.state.get_ref(),
-                    meter: &__compact_witness_meter_10,
-                }),
-                __compact_argument_9,
-            )?;
-            total_cost += __compact_witness_meter_10.gas_cost();
-            context.private_state = __compact_next_private_10;
-            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_10));
-            __compact_witness_10
-        } else {
-            false
+            }
         }) {
             return Err(runtime::CompactError::AssertionFailed(
                 "nested stateful guard".to_owned(),
