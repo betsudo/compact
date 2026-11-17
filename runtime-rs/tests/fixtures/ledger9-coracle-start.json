@@ -2,11 +2,11 @@
   "provenance": {
     "source": "test-center/test-contracts/coracle.compact",
     "sourceSha256": "10ced7203dddacb0f8f72fb7b8cd77601ce48e27d44e1629404971c9500a919f",
-    "generatedIndexSha256": "e290cdbf85f08a14671ec4424da029f05df484ed12383f68dbfb00853f8644b0",
-    "runtimeVersion": "0.17.0",
-    "runtimeBuiltinsSha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
-    "runtimeTypesSha256": "1a58a9085563fe1352e7692c0d38ef4e8e2ab6efbc65fae432048f41e88cb3b4",
-    "ledgerModuleSha256": "97cf7a01940f6e3d01b1fd263a734decbbc89dfba201ecc5c63d70174e657c02",
+    "generatedIndexSha256": "0f133f8249089f9e2152c0cf0d3ab5310893aa55910e5cba0faf3686cb98cf1e",
+    "runtimeVersion": "0.18.0",
+    "runtimeBuiltinsSha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+    "runtimeTypesSha256": "a85eaf262d85d456791e7e7f9fbc058e7e11babb85aeefd17ad4f84cc9adcc7a",
+    "ledgerModuleSha256": "b504acb16a4bae340479b09000ab8ce36d1e9049dd56ec01e3e194df10243de9",
     "descriptor": [
       {
         "tag": "atom",
@@ -3593,10 +3593,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "935000000",
+        "computeTime": "16472590917",
+        "bytesWritten": "3318",
+        "bytesDeleted": "2980"
       },
       "queryCostSum": {
         "readTime": "935000000",
@@ -3618,8 +3618,8 @@
           "effects": {
             "claimedNullifiers": [],
             "claimedShieldedReceives": [
-              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
-              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee"
+              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee",
+              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423"
             ],
             "claimedShieldedSpends": [],
             "claimedContractCalls": [],
@@ -3631,8 +3631,8 @@
           },
           "gas": {
             "readTime": "1122000000",
-            "computeTime": "2689785945",
-            "bytesWritten": "812",
+            "computeTime": "2689790227",
+            "bytesWritten": "831",
             "bytesDeleted": "385"
           }
         },
@@ -9475,10 +9475,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "742",
-        "bytesDeleted": "742"
+        "readTime": "1615000000",
+        "computeTime": "26963149144",
+        "bytesWritten": "3308",
+        "bytesDeleted": "3106"
       },
       "queryCostSum": {
         "readTime": "1615000000",
@@ -9503,9 +9503,9 @@
               "92a19089171960af0bc6a72f5c0a0494a52df00c1fb723fee089d806aa3b1080"
             ],
             "claimedShieldedReceives": [
-              "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8",
               "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
-              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee"
+              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee",
+              "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8"
             ],
             "claimedShieldedSpends": [
               "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8"
@@ -9519,8 +9519,8 @@
           },
           "gas": {
             "readTime": "1938000000",
-            "computeTime": "3674001952",
-            "bytesWritten": "783",
+            "computeTime": "3674006234",
+            "bytesWritten": "802",
             "bytesDeleted": "513"
           }
         },
@@ -13103,10 +13103,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "935000000",
+        "computeTime": "16472590917",
+        "bytesWritten": "3318",
+        "bytesDeleted": "2980"
       },
       "queryCostSum": {
         "readTime": "935000000",
@@ -13128,8 +13128,8 @@
           "effects": {
             "claimedNullifiers": [],
             "claimedShieldedReceives": [
-              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
-              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee"
+              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee",
+              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423"
             ],
             "claimedShieldedSpends": [],
             "claimedContractCalls": [],
@@ -13141,8 +13141,8 @@
           },
           "gas": {
             "readTime": "1122000000",
-            "computeTime": "2689785945",
-            "bytesWritten": "812",
+            "computeTime": "2689790227",
+            "bytesWritten": "831",
             "bytesDeleted": "385"
           }
         },
@@ -18986,10 +18986,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "742",
-        "bytesDeleted": "742"
+        "readTime": "1615000000",
+        "computeTime": "26963149144",
+        "bytesWritten": "3308",
+        "bytesDeleted": "3106"
       },
       "queryCostSum": {
         "readTime": "1615000000",
@@ -19010,13 +19010,13 @@
           "programLength": 97,
           "effects": {
             "claimedNullifiers": [
-              "92a19089171960af0bc6a72f5c0a0494a52df00c1fb723fee089d806aa3b1080",
-              "cf9df95bc44d478599435829509fee007d4569be46333564e80f80075f1aa026"
+              "cf9df95bc44d478599435829509fee007d4569be46333564e80f80075f1aa026",
+              "92a19089171960af0bc6a72f5c0a0494a52df00c1fb723fee089d806aa3b1080"
             ],
             "claimedShieldedReceives": [
               "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
-              "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8",
-              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee"
+              "d197b80776149ea72b9336c483c1d3d606fc13593708753edf9be3499fcd10ee",
+              "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8"
             ],
             "claimedShieldedSpends": [
               "1bd957131e5c2a044570cd542922f54839ebe75daf844e9e0d57137d378548d8"
@@ -19030,8 +19030,8 @@
           },
           "gas": {
             "readTime": "1938000000",
-            "computeTime": "3674001952",
-            "bytesWritten": "783",
+            "computeTime": "3674006234",
+            "bytesWritten": "802",
             "bytesDeleted": "513"
           }
         },
@@ -22578,10 +22578,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "935000000",
+        "computeTime": "16472590917",
+        "bytesWritten": "3318",
+        "bytesDeleted": "2980"
       },
       "queryCostSum": {
         "readTime": "935000000",
@@ -22616,8 +22616,8 @@
           },
           "gas": {
             "readTime": "1122000000",
-            "computeTime": "2689785945",
-            "bytesWritten": "812",
+            "computeTime": "2689790227",
+            "bytesWritten": "831",
             "bytesDeleted": "385"
           }
         },
@@ -28425,10 +28425,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "742",
-        "bytesDeleted": "742"
+        "readTime": "1615000000",
+        "computeTime": "26963149144",
+        "bytesWritten": "3308",
+        "bytesDeleted": "3106"
       },
       "queryCostSum": {
         "readTime": "1615000000",
@@ -28469,8 +28469,8 @@
           },
           "gas": {
             "readTime": "1938000000",
-            "computeTime": "3674001952",
-            "bytesWritten": "783",
+            "computeTime": "3674006234",
+            "bytesWritten": "802",
             "bytesDeleted": "513"
           }
         },
@@ -33452,10 +33452,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "935000000",
+        "computeTime": "16472590917",
+        "bytesWritten": "3318",
+        "bytesDeleted": "2980"
       },
       "queryCostSum": {
         "readTime": "935000000",
@@ -33477,8 +33477,8 @@
           "effects": {
             "claimedNullifiers": [],
             "claimedShieldedReceives": [
-              "6a2a42ba026844a21e94a9e7017ebb186ecbac864041accfa3c62b8721f06401",
-              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423"
+              "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
+              "6a2a42ba026844a21e94a9e7017ebb186ecbac864041accfa3c62b8721f06401"
             ],
             "claimedShieldedSpends": [],
             "claimedContractCalls": [],
@@ -33490,8 +33490,8 @@
           },
           "gas": {
             "readTime": "1122000000",
-            "computeTime": "2689785945",
-            "bytesWritten": "812",
+            "computeTime": "2689790227",
+            "bytesWritten": "831",
             "bytesDeleted": "385"
           }
         },
@@ -39326,10 +39326,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "740",
-        "bytesDeleted": "740"
+        "readTime": "1615000000",
+        "computeTime": "26963148698",
+        "bytesWritten": "3298",
+        "bytesDeleted": "3098"
       },
       "queryCostSum": {
         "readTime": "1615000000",
@@ -39355,8 +39355,8 @@
             ],
             "claimedShieldedReceives": [
               "c79609ca8b82e6b6dedf4bf4dd4c439b2feef06158d6af657fc42f7112528423",
-              "1108174a4561dd0a39fb78db2884e70da73d662ec0a6481ed83f1e8c737e7756",
-              "6a2a42ba026844a21e94a9e7017ebb186ecbac864041accfa3c62b8721f06401"
+              "6a2a42ba026844a21e94a9e7017ebb186ecbac864041accfa3c62b8721f06401",
+              "1108174a4561dd0a39fb78db2884e70da73d662ec0a6481ed83f1e8c737e7756"
             ],
             "claimedShieldedSpends": [
               "1108174a4561dd0a39fb78db2884e70da73d662ec0a6481ed83f1e8c737e7756"
@@ -39370,8 +39370,8 @@
           },
           "gas": {
             "readTime": "1938000000",
-            "computeTime": "3674001417",
-            "bytesWritten": "780",
+            "computeTime": "3674005699",
+            "bytesWritten": "800",
             "bytesDeleted": "513"
           }
         },

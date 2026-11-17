@@ -300,6 +300,12 @@ fn crate_manifest(source: &Path, runtime: RuntimeDependency<'_>) -> Result<Strin
             let mut patch = InlineTable::new();
             patch.insert("git", TomlValue::from(source.git));
             patch.insert("rev", TomlValue::from(source.rev));
+            if let Some(package) = source.package {
+                patch.insert("package", TomlValue::from(package));
+            }
+            if let Some(version) = source.version {
+                patch.insert("version", TomlValue::from(version));
+            }
             crates_io[&package] = Item::Value(TomlValue::InlineTable(patch));
         }
         let mut patches = Table::new();
@@ -1157,6 +1163,14 @@ mod tests {
             assert_eq!(
                 patch.get("rev").and_then(toml_edit::Item::as_str),
                 Some(source.rev.as_str())
+            );
+            assert_eq!(
+                patch.get("package").and_then(toml_edit::Item::as_str),
+                source.package.as_deref()
+            );
+            assert_eq!(
+                patch.get("version").and_then(toml_edit::Item::as_str),
+                source.version.as_deref()
             );
         }
     }

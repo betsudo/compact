@@ -40,7 +40,7 @@ serde_json = "1"
 sha2 = "0.10"
 syn = { version = "2", features = ["full", "parsing", "printing", "visit-mut"] }
 toml_edit = "0.22"
-midnight-transient-crypto = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "d1ff7457554fe326dbdc6b19dd9d306d847ce653" }
+midnight-transient-crypto = { version = "=3.1.0", git = "https://github.com/betsudo/midnight-ledger", rev = "f82ac287442fc15c4eb79f02dcb6510373979eab" }
 
 # Use the exact identifier tables already present in the locked syntax stack.
 unicode-ident = "=1.0.24"
@@ -50,7 +50,7 @@ unicode-ident = "=1.0.24"
 # because this manifest is also built as a standalone Nix package and Cargo
 # does not propagate patches from dependencies.
 [patch.crates-io]
-midnight-circuits = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
-midnight-curves = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
-midnight-proofs = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
-midnight-zk-stdlib = { git = "https://github.com/betsudo/midnight-zk", rev = "505156ec0987c98ead6908d5418b9fb827595e2b" }
+midnight-circuits = { git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
+midnight-curves = { git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
+midnight-proofs = { git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
+midnight-zk-stdlib = { git = "https://github.com/betsudo/midnight-zk", rev = "0f9d5c3879f92a8beae8bdb9e7305f39e03a3227" }
