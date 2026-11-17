@@ -33,9 +33,12 @@ from check_upstream_keyword_vitest_host import original_host_counts_match  # noq
 PINNED = '672bd0f226f47a7d036c5c074ce71fbe1af1925e'
 FAMILIES = {'include': (7, 3, 26), 'prefix': (3, 2, 12),
             'assert': (6, 5, 17), 'module': (8, 4, 20),
-            'export': (5, 1, 11), 'import_type': (39, 20, 99)}
+            'export': (5, 1, 11), 'import_type': (39, 20, 99),
+            'circuit': (14, 8, 36), 'pure': (4, 1, 9)}
 HOST_FAMILIES = ('reserved', 'const', 'import', 'type', 'for', 'return',
-                 'if', 'include', 'prefix', 'assert', 'module', 'export')
+                 'if', 'include', 'prefix', 'assert', 'module', 'export',
+                 'circuit', 'pure', 'constructor', 'ledger', 'pragma', 'sealed',
+                 'struct', 'disclose')
 
 
 def require(ok, reason):
@@ -201,12 +204,38 @@ def family(name, root, head, tree, compiler, recipe, runtime):
                                 sha(base / 'cargo-test.log') ==
                                 row['rust_test_log_sha256'],
                                 f'{name}/{case} Rust consumer differs')
+                        if name in {'circuit', 'pure'}:
+                            consumer = ('original_circuit.rs' if name == 'circuit'
+                                        else 'original_pure.rs')
+                            require(sha(product / 'contract/tests' / consumer) ==
+                                    row.get('rust_test_sha256') and
+                                    sha(base / 'cargo-check.log') ==
+                                    row.get('cargo_check_sha256'),
+                                    f'{name}/{case} Rust result differs')
             else:
                 require(row.get('exit_code') != 0 and
                         row.get('output_absent') is True and not product.exists() and
                         sha(base / 'diagnostic.log') == row.get('diagnostic_sha256'),
                         f'{name}/{case}/{mode} refusal differs')
+                if name in {'circuit', 'pure'}:
+                    require('/' + row.get('original_regex', '') + '/' in
+                            (ROOT / original).read_text(),
+                            f'{name}/{case} original refusal regex differs')
         require(len(outcomes) == 1, f'{name}/{case} paired outcome differs')
+        if name in {'circuit', 'pure'}:
+            if positive:
+                ts = modes['typescript']['generated_files']
+                paired = modes['paired']['generated_files']
+                require(ts.get('contract/index.js') ==
+                        paired.get('contract/index.js') and
+                        all(ts[key] == paired.get(key) for key in ts
+                            if key.startswith('zkir/') or
+                            key == 'compiler/contract-info.json'),
+                        f'{name}/{case} generated TS/ZKIR parity differs')
+            else:
+                require(modes['typescript']['diagnostic_sha256'] ==
+                        modes['paired']['diagnostic_sha256'],
+                        f'{name}/{case} paired refusal differs')
         accepted_seen += True in outcomes
     require(accepted_seen == accepted, f'{name} accepted case count differs')
     require(seen_compile == {path for path in originals
@@ -216,6 +245,34 @@ def family(name, root, head, tree, compiler, recipe, runtime):
         require(receipt.get('rust_executed_count') == 20 and
                 receipt.get('proof_execution') is False,
                 'import/type Rust result roster or proof scope differs')
+    if name == 'pure':
+        require(receipt.get('runtime_assertion_count') == 2,
+                'pure original assertion count differs')
+    if name == 'circuit':
+        controls = receipt.get('controls')
+        require(isinstance(controls, dict) and set(controls) ==
+                {'vector_width_refusal', 'vector_narrowing_refusal',
+                 'vector_overflow_refusal', 'unrelated_return_refusal'},
+                'circuit control roster differs')
+        require(receipt.get('control_sources_sha256') == {
+            control: sha(ROOT / 'tools/compact-rust-backend/tests' /
+                        f'ledger9_circuit_{control}.compact')
+            for control in controls}, 'circuit control source differs')
+        for control, modes in controls.items():
+            require(set(modes) == {'typescript', 'paired'},
+                    f'circuit control modes differ: {control}')
+            for mode, row in modes.items():
+                base = root / 'controls' / control / mode
+                if row.get('accepted'):
+                    require(control == 'unrelated_return_refusal' and
+                            mode == 'typescript', 'unexpected circuit control acceptance')
+                    files(base / 'product', row.get('generated_files'))
+                else:
+                    require(row.get('accepted') is False and
+                            row.get('output_absent') is True and
+                            not (base / 'product').exists() and
+                            sha(base / 'diagnostic.log') == row.get('diagnostic_sha256'),
+                            f'circuit control refusal differs: {control}/{mode}')
     return sha(root / 'receipt.json')
 
 
@@ -271,23 +328,193 @@ def host(root, head, tree, compiler, recipe):
             staging.get('head') == head and staging.get('tree') == tree and
             tuple(staging.get('families', ())) == HOST_FAMILIES and
             tuple(report.get('families', ())) == HOST_FAMILIES and
-            staging.get('original_count') == 418 and
-            staging.get('case_count') == report['counts']['cases'] == 167 and
-            staging.get('host_test_count') == report['counts']['host_tests'] == 221 and
+            staging.get('original_count') == 489 and
+            staging.get('case_count') == report['counts']['cases'] == 196 and
+            staging.get('host_test_count') == report['counts']['host_tests'] == 263 and
             report.get('staging_receipt_sha256') == sha(staged / 'staging-receipt.json') and
             report.get('compiler_sha256') == sha(compiler) and
             report.get('compiler_recipe_sha256') == sha(recipe) and
             report.get('original_files_sha256') == staging.get('original_files') and
             report.get('adapter_sha256') == staging.get('adapter_sha256') ==
             sha(staged / 'runtime/index.js'),
-            'twelve-family host roster, source or compiler differs')
-    original_map(staging['original_files'], 418, local=False)
+            'twenty-family host roster, source or compiler differs')
+    original_map(staging['original_files'], 489, local=False)
     for name, digest in staging['original_files'].items():
         require(sha(staged / name) == digest, f'host staged original differs: {name}')
     require(sha(root / 'host/yarn-install.log') == report['yarn_install_log_sha256'],
             'original host execution differs')
     host_vitest_log(root / 'host/original-vitest.log', report['vitest_log_sha256'])
     return sha(root / 'host/receipt.json')
+
+
+def disclose(root, head, tree, compiler, recipe, runtime):
+    receipt = load(root / 'receipt.json')
+    source = receipt.get('source', {})
+    require(receipt.get('status') == 'passed' and
+            receipt.get('upstream_commit') == PINNED and
+            source == {'head': head, 'tree': tree},
+            'disclose exact source or status differs')
+    manifest = ROOT / 'test-contracts/keywords/disclose/original-source-sha256.json'
+    originals = load(manifest).get('files')
+    expected = {'branch_conditions', 'branch_conditions_in_constructor',
+                'param_to_ledger_undisclosed',
+                'unexported_circuit_parameters', 'vector_element_condition'}
+    accepted = expected - {'param_to_ledger_undisclosed',
+                           'vector_element_condition'}
+    require(receipt.get('format') == 'ledger9-pinned-disclose-keywords/v1' and
+            source == {'head': head, 'tree': tree} and
+            receipt.get('manifest_sha256') == sha(manifest) and
+            receipt.get('originals') == originals and
+            receipt.get('gate_sha256') == sha(ROOT /
+                'tools/compact-rust-backend/check_upstream_ledger9_disclose_keywords.py') and
+            receipt.get('compiler_recipe', {}).get('sha256') == sha(recipe) and
+            receipt['compiler_recipe'].get('head') == head and
+            receipt['compiler_recipe'].get('tree') == tree and
+            receipt.get('runtime') == runtime_identity(runtime) and
+            receipt.get('qualification', '').endswith(
+                'fresh proofs and funded application remain separate'),
+            'disclose source, compiler, runtime or proof scope differs')
+    original_map(originals, 13)
+    results = receipt.get('cases')
+    require(isinstance(results, dict) and set(results) == expected,
+            'disclose case roster differs')
+    for case, modes in results.items():
+        require(set(modes) == {'typescript', 'paired'},
+                f'disclose mode roster differs: {case}')
+        compile_test = (f'test-contracts/keywords/disclose/{case}/compile.' +
+                        ('pass' if case in accepted else 'fail') + '.test.ts')
+        require(compile_test in originals, f'disclose original test absent: {case}')
+        for mode, row in modes.items():
+            base = root / case / mode
+            product = base / 'product'
+            command = row.get('command', [])
+            require(command and command[0] == str(compiler.resolve()) and
+                    str(ROOT / f'test-contracts/keywords/disclose/{case}') in
+                    command[-2] and
+                    (('--target' in command and 'rust' in command) ==
+                     (mode == 'paired')) and
+                    sha(base / 'compile.log') == row.get('compile_log_sha256'),
+                    f'disclose source command or compile log differs: {case}/{mode}')
+            if case in accepted:
+                require(product.is_dir() and not product.is_symlink() and
+                        row.get('output_absent') is None,
+                        f'disclose generated product absent: {case}/{mode}')
+                files(product, row.get('generated_files'))
+                callback = (f'test-contracts/keywords/disclose/{case}/'
+                            'runtime.pass.test.ts')
+                require(callback in originals and
+                        sha(base / 'runtime.pass.test.ts') == originals[callback] and
+                        sha(base / 'runtime.log') == row.get('runtime_log_sha256') and
+                        'original disclose runtime passed' in
+                        (base / 'runtime.log').read_text() and
+                        all(sha(base / name) == digest
+                            for name, digest in row.get('adapter_files', {}).items()),
+                        f'disclose original callback differs: {case}/{mode}')
+                info = load(product / 'compiler/contract-info.json')
+                circuits = info.get('circuits', [])
+                require(len(circuits) == 1 and
+                        circuits[0].get('name') == 'disclose_' + case and
+                        circuits[0].get('proof') ==
+                        (case in {'branch_conditions',
+                                  'branch_conditions_in_constructor'}),
+                        f'disclose generated capability differs: {case}/{mode}')
+                if mode == 'paired':
+                    require(sha(product / 'contract/tests/original_disclose.rs') ==
+                            row.get('rust_test_sha256') and
+                            sha(base / 'cargo-test.log') ==
+                            row.get('rust_test_log_sha256') and
+                            sha(base / 'cargo-check.log') ==
+                            row.get('cargo_check_sha256'),
+                            f'disclose generated Rust result differs: {case}')
+            else:
+                require(row.get('output_absent') is True and not product.exists() and
+                        not list(base.glob('.product.compactc-stage-*')) and
+                        '/' + row.get('original_regex', '') + '/' in
+                        (ROOT / compile_test).read_text() and
+                        re.search(row.get('original_regex', '(?!)'),
+                                  (base / 'compile.log').read_text()) is not None,
+                        f'disclose original refusal differs: {case}/{mode}')
+        if case in accepted:
+            ts = modes['typescript']['generated_files']
+            paired = modes['paired']['generated_files']
+            require(ts.get('contract/index.js') == paired.get('contract/index.js') and
+                    all(ts[name] == paired.get(name) for name in ts
+                        if name.startswith('zkir/') or
+                        name == 'compiler/contract-info.json'),
+                    f'disclose paired TS/ZKIR differs: {case}')
+        else:
+            require(modes['typescript']['original_regex'] ==
+                    modes['paired']['original_regex'],
+                    f'disclose refusal regex differs: {case}')
+    return sha(root / 'receipt.json')
+
+
+def small_keywords(root, head, tree, compiler, recipe, runtime):
+    gate = load(root / 'receipt.json')
+    identity(gate, head, tree)
+    expected = {'constructor/parameters', 'ledger/duplicate_binding',
+                'pragma/compiler_version_negation_needs_version_atom',
+                'pragma/negation_needs_version_atom',
+                'sealed/exported_circuit_cannot_mutate',
+                'struct/spread_not_first'}
+    require(gate.get('source_clean') is True and gate.get('case_count') == 6 and
+            gate.get('mode_count') == 2 and
+            gate.get('compiler_sha256') == sha(compiler) and
+            gate.get('compiler_recipe', {}).get('sha256') == sha(recipe) and
+            gate.get('runtime_identity') == runtime_identity(runtime) and
+            gate.get('checker_sha256') == sha(ROOT /
+                'tools/compact-rust-backend/check_upstream_ledger9_small_keywords.py') and
+            gate.get('helper_sha256') == sha(ROOT /
+                'tools/compact-rust-backend/check_upstream_ledger9_import_type_keywords.py'),
+            'small keyword source, compiler or runtime differs')
+    manifests = {f'test-contracts/keywords/{family}/original-source-sha256.json'
+                 for family in ('constructor', 'ledger', 'pragma', 'sealed', 'struct')}
+    require(set(gate.get('manifest_files', {})) == manifests and
+            all(sha(ROOT / name) == gate['manifest_files'][name] for name in manifests),
+            'small keyword manifest roster differs')
+    originals = gate.get('original_files')
+    original_map(originals, 13)
+    declared = {}
+    for name in manifests:
+        manifest = load(ROOT / name)
+        require(manifest.get('upstream_commit') == PINNED,
+                f'small keyword manifest pin differs: {name}')
+        declared.update(manifest['files'])
+    require(originals == declared, 'small keyword original manifest differs')
+    results = gate.get('results')
+    require(isinstance(results, dict) and set(results) == expected,
+            'small keyword case roster differs')
+    for case, modes in results.items():
+        require(set(modes) == {'typescript', 'paired'},
+                f'small keyword mode roster differs: {case}')
+        accepted = case == 'constructor/parameters'
+        for mode, row in modes.items():
+            base = root / case / mode
+            original = (f'test-contracts/keywords/{case}/compile.' +
+                        ('pass' if accepted else 'fail') + '.test.ts')
+            require(row.get('original_compile_test') == original and
+                    original in originals, f'small keyword test differs: {case}/{mode}')
+            product = base / 'product'
+            if accepted:
+                require(row.get('exit_code') == 0 and
+                        row.get('original_runtime_test') ==
+                        'test-contracts/keywords/constructor/parameters/runtime.pass.test.ts' and
+                        sha(base / 'runtime.pass.test.ts') ==
+                        originals[row['original_runtime_test']] and
+                        sha(base / 'runtime.log') == row.get('runtime_log_sha256'),
+                        f'small keyword runtime differs: {case}/{mode}')
+                files(product, row.get('generated_files'))
+                if mode == 'paired':
+                    require(sha(product / 'contract/tests/original_constructor.rs') ==
+                            row.get('rust_test_sha256') and
+                            sha(base / 'cargo-test.log') == row.get('rust_test_log_sha256'),
+                            'constructor generated Rust execution differs')
+            else:
+                require(row.get('exit_code') != 0 and
+                        row.get('output_absent') is True and not product.exists() and
+                        sha(base / 'diagnostic.log') == row.get('diagnostic_sha256'),
+                        f'small keyword refusal differs: {case}/{mode}')
+    return sha(root / 'receipt.json')
 
 
 def proof(root, head, tree, zkir):
@@ -534,6 +761,318 @@ def bytes_proof(root, head, tree, zkir):
     return sha(output / 'receipt.json')
 
 
+def constructor_proof(root, head, tree, zkir):
+    output = root / 'constructor_proof'
+    receipt = load(output / 'receipt.json')
+    identity(receipt, head, tree)
+    paired = root / 'small_keywords/constructor/parameters/paired/product'
+    generated = inventory(paired)
+    require(receipt.get('grouped_head') == head and
+            receipt.get('grouped_gate_sha256') ==
+            sha(root / 'small_keywords/receipt.json') and
+            receipt.get('generated_input_sha256') == generated and
+            receipt.get('zkir_sha256') == sha(zkir) and
+            receipt.get('proof_execution') is True and
+            receipt.get('funded_application') is True,
+            'constructor parameters proof input or scope differs')
+    wrong = 'test-contracts/keywords/for/generic_bound/for_generic_bound.compact'
+    require(sha(ROOT / wrong) == hashlib.sha256(subprocess.check_output(
+        ['git', 'show', f'{PINNED}:{wrong}'], cwd=ROOT)).hexdigest() and
+        receipt.get('proof_body_sha256') == sha(ROOT /
+            'tools/compact-rust-proof-smoke/src/keyword_constructor_parameters_proof.rs'),
+        'constructor proof or pinned wrong-verifier source differs')
+    files(output / 'wrong-generated', receipt['wrong_generated_sha256'])
+    require(sha(output / 'proof-runner') == receipt['runner_sha256'] and
+            sha(output / 'proof-runner.d') == receipt['runner_depfile_sha256'] and
+            sha(output / 'binding/source-hashes.json') == receipt['source_hashes_sha256'] and
+            sha(output / 'binding/inputs.json') == receipt['runner_inventory_sha256'],
+            'proof runner or bound input inventory differs')
+    source = load(output / 'binding/source-hashes.json')
+    tracked = {os.fsdecode(p) for p in subprocess.check_output(
+        ['git', 'ls-files', '-z'], cwd=ROOT).split(b'\0') if p}
+    require(set(source) == tracked and len(source) == receipt['source_count'],
+            'proof tracked source roster differs')
+    for name, digest in source.items():
+        require(sha(ROOT / name) == digest, f'proof source differs: {name}')
+    declared = load(output / 'binding/inputs.json')
+    expected_source = {str((ROOT / name).resolve(strict=True)): digest
+                       for name, digest in source.items()}
+    expected_generated = {str((paired / name).resolve(strict=True)): digest
+                          for name, digest in generated.items()}
+    require(declared.get('source_hashes') == expected_source and
+            declared.get('generated_input_hashes') == expected_generated,
+            'proof source or generated prebuild map differs')
+    fields = ('source_hashes', 'generated_input_hashes',
+              'dependency_source_hashes', 'generated_build_inputs_before_compile')
+    inventories = {key: declared.get(key) for key in fields}
+    require(all(isinstance(item, dict) and item for item in inventories.values()),
+            'proof physical input inventory incomplete')
+    for field, mapping in inventories.items():
+        for name, digest in mapping.items():
+            require(re.fullmatch('[0-9a-f]{64}', digest) and sha(name) == digest,
+                    f'proof physical input differs: {field}/{name}')
+    prereqs = runner_inputs.depfile_prerequisites(
+        (output / 'proof-runner.d').read_text(), ROOT)
+    physical, origins = runner_inputs.qualify_dependency_inputs(
+        prereqs, inventories, sha)
+    require(physical == declared.get('physical_inputs_before_build') and
+            origins == declared.get('physical_input_origins') and
+            len(physical) == receipt.get('runner_physical_input_count') and
+            origins == receipt.get('runner_physical_input_origins') and
+            receipt.get('dependency_refusals') == {
+                'unknown_dependency_rejected': True,
+                'tampered_dependency_hash_rejected': True},
+            'proof runner physical prerequisite closure differs')
+    for path in (paired / 'contract/lib.rs', paired / 'contract/compact-rust-ir.json',
+                 paired / 'zkir/constructor_parameters.zkir',
+                 ROOT / 'tools/compact-rust-proof-smoke/src/keyword_constructor_parameters_proof.rs'):
+        require(str(path.resolve(strict=True)) in physical,
+                f'proof selected source omitted: {path}')
+    files(output / 'proof', receipt['artifact_hashes'])
+    summary = load(output / 'proof/constructor_parameters-proof-result.json')
+    require(summary == receipt.get('proof_summary') and
+            summary.get('status') == 'passed' and
+            summary.get('selected_source_export_proved') == 'constructor_parameters' and
+            summary.get('result') == 45 and
+            summary.get('ledger_sum') == 45 and
+            summary.get('public_verify_ops', 0) > 0 and summary.get('k') == 6 and
+            summary.get('strict_application') == 'default' and
+            summary.get('replay_refusal') == 'IntentAlreadyExists' and
+            summary.get('positive_fee_dust_spends') == 1 and
+            all(summary.get(key) is True for key in (
+                'standalone_verified_separately', 'wrong_verifier_rejected_at_preparation',
+                'wrong_verifier_proof_rejected', 'corrupt_proof_rejected',
+                'changed_binding_rejected', 'replay_unchanged')) and
+            summary.get('constructor_execution_proved') is False,
+            'proof verification, strict application or replay differs')
+    proof_dir = output / 'proof'
+    require((proof_dir / 'keyword-constructor-parameters-ledger-after.bin').read_bytes() ==
+            (proof_dir / 'keyword-constructor-parameters-ledger-replay.bin').read_bytes() and
+            (proof_dir / 'keyword-constructor-parameters.proof').read_bytes() !=
+            (proof_dir / 'keyword-constructor-parameters-transaction.proof').read_bytes(),
+            'replay ledger or distinct proof artifacts differ')
+    require(sha(proof_dir / 'constructor_parameters/contract/compact-rust-ir.json') ==
+            sha(paired / 'contract/compact-rust-ir.json') and
+            sha(proof_dir / 'zkir/constructor_parameters.zkir') ==
+            sha(paired / 'zkir/constructor_parameters.zkir'),
+            'proof IR or ZKIR differs from generated gate')
+    key = receipt['keygen']['constructor_parameters']
+    require(key['k'] == 6 and key['rows'] == 34 and
+            sha(proof_dir / 'keys/constructor_parameters.prover') == key['prover_sha256'] and
+            sha(proof_dir / 'keys/constructor_parameters.verifier') == key['verifier_sha256'],
+            'fresh proof keygen differs')
+    require(set(receipt['keygen']) ==
+            {'constructor_parameters', 'for_generic_bound'},
+            'proof keygen roster differs')
+    for name, row in receipt['keygen'].items():
+        require(sha(proof_dir / f'keys/{name}.prover') == row['prover_sha256'] and
+                sha(proof_dir / f'keys/{name}.verifier') == row['verifier_sha256'] and
+                sha(proof_dir / f'zkir/{name}.bzkir') ==
+                row['binary_zkir_sha256'],
+                f'proof keygen artifact differs: {name}')
+    material = receipt['material']
+    require(material.get('mode') == 'verify-only' and
+            material.get('verification') ==
+            'all files checked against locked upstream SHA256 tables' and
+            {6, 7} <= {row['k'] for row in material['parameters']} and
+            set(receipt['material_hashes']) ==
+            {row['name'] for row in material['assets'] + material['parameters']},
+            'verified k6/k7 proof material absent')
+    for name, digest in receipt['material_hashes'].items():
+        require(not Path(name).is_absolute() and '..' not in Path(name).parts and
+                sha(Path(material['cache_directory']) / name) == digest,
+                f'proving material differs: {name}')
+    return sha(output / 'receipt.json')
+
+
+def disclose_proofs(root, head, tree, compiler, recipe, zkir):
+    output = root / 'disclose_proofs'
+    receipt = load(output / 'receipt.json')
+    identity(receipt, head, tree)
+    recipe_data = load(recipe)
+    require(recipe_data.get('head') == head and recipe_data.get('tree') == tree and
+            recipe_data.get('compactc', {}).get('sha256') == sha(compiler) and
+            recipe_data['compactc'].get('path') == str(compiler.resolve(strict=True)),
+            'disclose proof source-built compiler differs')
+    expected = {
+        'branch_conditions': ('disclose_branch_conditions',
+                              'if_empty_else_branch',
+                              'test-contracts/keywords/if/empty_else_branch/'
+                              'if_empty_else_branch.compact', 7, 106, 9, 4),
+        'branch_conditions_in_constructor': (
+            'disclose_branch_conditions_in_constructor',
+            'type_new_type_of_adt',
+            'test-contracts/keywords/type/new_type_of_adt/'
+            'type_new_type_of_adt.compact', 6, 34, 3, None),
+    }
+    require(receipt.get('format') == 'compact-ledger9-keyword-disclose-proofs/v1' and
+            receipt.get('disclose_gate_sha256') ==
+            sha(root / 'disclose/receipt.json') and
+            receipt.get('compiler_recipe_sha256') == sha(recipe) and
+            receipt.get('proof_body_sha256') == sha(ROOT /
+                'tools/compact-rust-proof-smoke/src/keyword_disclose_proof.rs') and
+            set(receipt.get('cases', {})) == set(expected),
+            'disclose proof exact source, gate or roster differs')
+    tracked = {os.fsdecode(path) for path in subprocess.check_output(
+        ['git', 'ls-files', '-z'], cwd=ROOT).split(b'\0') if path}
+    require(receipt.get('source_count') == len(tracked),
+            'disclose proof tracked source count differs')
+    targets = []
+    for case, config in expected.items():
+        circuit, wrong, wrong_source, k, rows, verify_ops, second = config
+        row = receipt['cases'][case]
+        target = Path(row.get('cargo_target', ''))
+        require(target.is_absolute() and target.is_dir() and
+                not target.is_symlink() and target.name == f'disclose-{case}',
+                f'disclose isolated Cargo target differs: {case}')
+        targets.append(target.resolve(strict=True))
+        base = output / case
+        paired = root / 'disclose' / case / 'paired/product'
+        generated = inventory(paired)
+        wrong_path = ROOT / wrong_source
+        require(row.get('case') == case and
+                row.get('selected_source_export') == circuit and
+                row.get('generated_input_sha256') == generated and
+                row.get('zkir_sha256') == sha(zkir) and
+                row.get('proof_execution') is True and
+                row.get('funded_application') is True and
+                sha(wrong_path) == hashlib.sha256(subprocess.check_output(
+                    ['git', 'show', f'{PINNED}:{wrong_source}'], cwd=ROOT)).hexdigest(),
+                f'disclose proof generated source or wrong verifier differs: {case}')
+        files(base / 'wrong-generated', row['wrong_generated_sha256'])
+        require(sha(base / 'proof-runner') == row.get('runner_sha256') and
+                sha(base / 'proof-runner.d') == row.get('runner_depfile_sha256') and
+                sha(base / 'binding/inputs.json') ==
+                row.get('runner_inventory_sha256'),
+                f'disclose proof runner or binding differs: {case}')
+        source = load(base / 'binding/source-hashes.json')
+        require(set(source) == tracked,
+                f'disclose proof source roster differs: {case}')
+        for name, digest in source.items():
+            require(sha(ROOT / name) == digest,
+                    f'disclose proof source differs: {case}/{name}')
+        declared = load(base / 'binding/inputs.json')
+        require(declared.get('source_hashes') == {
+            str((ROOT / name).resolve(strict=True)): digest
+            for name, digest in source.items()} and
+            declared.get('generated_input_hashes') == {
+                str((paired / name).resolve(strict=True)): digest
+                for name, digest in generated.items()},
+                f'disclose proof prebuild source map differs: {case}')
+        fields = ('source_hashes', 'generated_input_hashes',
+                  'dependency_source_hashes',
+                  'generated_build_inputs_before_compile')
+        inventories = {field: declared.get(field) for field in fields}
+        require(all(isinstance(item, dict) and item
+                    for item in inventories.values()) and
+                all(Path(name).is_relative_to(target) for name in
+                    inventories['generated_build_inputs_before_compile']),
+                f'disclose proof physical inventory incomplete: {case}')
+        for field, mapping in inventories.items():
+            for name, digest in mapping.items():
+                require(re.fullmatch('[0-9a-f]{64}', digest) and sha(name) == digest,
+                        f'disclose proof physical input differs: {case}/{field}/{name}')
+        prereqs = runner_inputs.depfile_prerequisites(
+            (base / 'proof-runner.d').read_text(), ROOT)
+        physical, origins = runner_inputs.qualify_dependency_inputs(
+            prereqs, inventories, sha)
+        require(physical == declared.get('physical_inputs_before_build') and
+                origins == declared.get('physical_input_origins') and
+                len(physical) == row.get('runner_physical_input_count') and
+                origins == row.get('runner_physical_input_origins') and
+                row.get('dependency_refusals') == {
+                    'unknown_dependency_rejected': True,
+                    'tampered_dependency_hash_rejected': True},
+                f'disclose proof physical prerequisite closure differs: {case}')
+        for path in (paired / 'contract/lib.rs',
+                     paired / 'contract/compact-rust-ir.json',
+                     paired / f'zkir/{circuit}.zkir',
+                     ROOT / 'tools/compact-rust-proof-smoke/src/'
+                     'keyword_disclose_proof.rs'):
+            require(str(path.resolve(strict=True)) in physical,
+                    f'disclose proof physical source omitted: {case}/{path}')
+        proof_dir = base / 'proof'
+        files(proof_dir, row['artifact_hashes'])
+        for changed, relative, marker in (
+            ('changed-zkir', f'zkir/{circuit}.zkir', 'raw ZKIR bytes differ'),
+            ('changed-ir', f'{circuit}/contract/compact-rust-ir.json',
+             'complete Rust IR bytes differ')):
+            bad = base / changed
+            require((bad / relative).read_bytes() ==
+                    (proof_dir / relative).read_bytes() + b' ' and
+                    marker in (base / f'{changed}.log').read_text() and
+                    not list(bad.rglob('*.proof')),
+                    f'disclose pre-key changed-input refusal differs: {case}/{changed}')
+        summary = load(proof_dir / f'{circuit}-proof-result.json')
+        require(summary == row.get('proof_summary') and
+                summary.get('format') == 'compact-ledger9-keyword-disclose-proof/v1' and
+                summary.get('case') == case and
+                summary.get('selected_source_export_proved') == circuit and
+                summary.get('status') == 'passed' and
+                summary.get('result') == summary.get('ledger_x') == 3 and
+                summary.get('original_second_result') == second and
+                summary.get('public_verify_ops') == verify_ops and
+                summary.get('private_transcript_outputs') == 0 and
+                summary.get('strict_application') == 'default' and
+                summary.get('positive_fee_dust_spends') == 1 and
+                summary.get('replay_refusal') == 'IntentAlreadyExists' and
+                summary.get('transaction_proof_version') == 3 and
+                all(summary.get(field) is True for field in (
+                    'standalone_verified_separately',
+                    'wrong_verifier_rejected_at_preparation',
+                    'wrong_verifier_proof_rejected', 'corrupt_proof_rejected',
+                    'changed_binding_rejected', 'replay_unchanged')),
+                f'disclose proof verification, funding or replay differs: {case}')
+        prefix = f'keyword-disclose-{case}'
+        require((proof_dir / f'{prefix}-ledger-after.bin').read_bytes() ==
+                (proof_dir / f'{prefix}-ledger-replay.bin').read_bytes() and
+                (proof_dir / f'{prefix}.proof').read_bytes() !=
+                (proof_dir / f'{prefix}-transaction.proof').read_bytes() and
+                len((proof_dir / f'{prefix}.proof').read_bytes()) ==
+                summary.get('standalone_proof_bytes') and
+                len((proof_dir / f'{prefix}-transaction.proof').read_bytes()) ==
+                summary.get('transaction_proof_bytes'),
+                f'disclose proof artifacts or replay state differ: {case}')
+        require(sha(proof_dir / f'{circuit}/contract/compact-rust-ir.json') ==
+                sha(paired / 'contract/compact-rust-ir.json') and
+                sha(proof_dir / f'zkir/{circuit}.zkir') ==
+                sha(paired / f'zkir/{circuit}.zkir') and
+                sha(proof_dir / f'zkir/{wrong}.zkir') ==
+                sha(base / f'wrong-generated/zkir/{wrong}.zkir'),
+                f'disclose exact generated proof input differs: {case}')
+        keys = row.get('keygen', {})
+        require(set(keys) == {circuit, wrong} and
+                keys[circuit]['k'] == keys[wrong]['k'] == k and
+                keys[circuit]['rows'] == rows and
+                keys[circuit]['verifier_sha256'] !=
+                keys[wrong]['verifier_sha256'],
+                f'disclose key model or wrong verifier differs: {case}')
+        for name, key in keys.items():
+            require(sha(proof_dir / f'keys/{name}.prover') ==
+                    key.get('prover_sha256') and
+                    sha(proof_dir / f'keys/{name}.verifier') ==
+                    key.get('verifier_sha256') and
+                    sha(proof_dir / f'zkir/{name}.bzkir') ==
+                    key.get('binary_zkir_sha256'),
+                    f'disclose key artifact differs: {case}/{name}')
+        material = row.get('material', {})
+        require(material.get('mode') == 'verify-only' and
+                material.get('verification') ==
+                'all files checked against locked upstream SHA256 tables' and
+                {6, 7} <= {item['k'] for item in material['parameters']} and
+                set(row.get('material_hashes', {})) ==
+                {item['name'] for item in
+                 material['assets'] + material['parameters']},
+                f'disclose verified proving material differs: {case}')
+        for name, digest in row['material_hashes'].items():
+            require(not Path(name).is_absolute() and '..' not in Path(name).parts and
+                    sha(Path(material['cache_directory']) / name) == digest,
+                    f'disclose proving material differs: {case}/{name}')
+    require(len(set(targets)) == 2 and targets[0].parent == targets[1].parent,
+            'disclose proof Cargo targets overlap')
+    return sha(output / 'receipt.json')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--all', type=Path, required=True)
@@ -554,24 +1093,43 @@ def main():
     hashes = {name: family(name, root / name, head, tree,
                            args.compiler, args.compiler_recipe, args.runtime)
               for name in FAMILIES}
+    hashes['disclose'] = disclose(root / 'disclose', head, tree,
+                                 args.compiler, args.compiler_recipe,
+                                 args.runtime)
+    hashes['small_keywords'] = small_keywords(root / 'small_keywords', head, tree,
+                                             args.compiler, args.compiler_recipe,
+                                             args.runtime)
     hashes['bytes_controls'] = bytes_controls(root, head, tree,
                                               args.compiler, args.compiler_recipe,
                                               args.runtime)
     hashes['host'] = host(root, head, tree, args.compiler, args.compiler_recipe)
     hashes['import_proof'] = proof(root, head, tree, args.zkir)
     hashes['bytes_proof'] = bytes_proof(root, head, tree, args.zkir)
+    hashes['constructor_proof'] = constructor_proof(root, head, tree, args.zkir)
+    hashes['disclose_proofs'] = disclose_proofs(root, head, tree, args.compiler,
+                                               args.compiler_recipe, args.zkir)
     summary = {'status': 'passed', 'head': head, 'tree': tree,
                'platform': 'Linux x86_64', 'upstream_commit': PINNED,
-               'families': list(FAMILIES), 'host_families': HOST_FAMILIES,
-               'host_tests': 221, 'receipt_hashes': hashes,
+               'families': [*FAMILIES, 'disclose'],
+               'host_families': HOST_FAMILIES,
+               'host_tests': 263, 'receipt_hashes': hashes,
                'proof_execution': True, 'funded_application': True,
-               'proved_exports': ['import/ledger_field', 'bytes/loops/indexed_access'],
+               'proved_exports': ['import/ledger_field', 'bytes/loops/indexed_access',
+                                  'constructor/parameters',
+                                  'disclose/branch_conditions',
+                                  'disclose/branch_conditions_in_constructor'],
                'limits': ['other stateful keyword and Bytes paths have no proof claim',
                           'constructor execution unproved',
+                          'proof features qualified in separate Cargo invocations',
+                          'other disclose exports have no proof or funded claim',
                           'cross-contract transaction outside this gate']}
     args.summary.write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-    print(json.dumps({'status': 'passed', 'head': head, 'host_tests': 221,
-                      'proved_exports': ['import/ledger_field', 'bytes/loops/indexed_access']}))
+    print(json.dumps({'status': 'passed', 'head': head, 'host_tests': 263,
+                      'proved_exports': ['import/ledger_field',
+                                         'bytes/loops/indexed_access',
+                                         'constructor/parameters',
+                                         'disclose/branch_conditions',
+                                         'disclose/branch_conditions_in_constructor']}))
 
 
 if __name__ == '__main__':

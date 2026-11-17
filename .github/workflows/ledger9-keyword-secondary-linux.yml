@@ -220,6 +220,31 @@ jobs:
               "$checker" "${arguments[@]}" \
               | tee "$RUNNER_TEMP/keyword-secondary-semantic-evidence/$gate.stdout.log"
           done
+      - name: Run pinned small keyword families and constructor Rust result
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_small_keywords.py \
+              --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+              --ts-runtime "$SECONDARY_RUNTIME" \
+              --cargo-target "$SECONDARY_CARGO_TARGET" \
+              --output "$root/small_keywords" | tee "$root/small_keywords.stdout.log"
+      - name: Run circuit, pure and disclose original keyword gates serially
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          for gate in circuit pure disclose; do
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+              python3 -X faulthandler -u \
+              "tools/compact-rust-backend/check_upstream_ledger9_${gate}_keywords.py" \
+              --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+              --ts-runtime "$SECONDARY_RUNTIME" \
+              --cargo-target "$SECONDARY_CARGO_TARGET" \
+              --output "$root/$gate" | tee "$root/$gate.stdout.log"
+          done
       - name: Run Bytes indexed and static controls serially
         run: |
           set -euo pipefail
@@ -238,7 +263,7 @@ jobs:
           env -u LD_LIBRARY_PATH nix develop .#compiler --command \
             scheme --program compiler/test-rust-vector-indices.ss "$root/bytes-occurrences" \
               | tee "$root/bytes-occurrences.stdout.log"
-      - name: Run all 221 original twelve-family host tests
+      - name: Run all 263 original twenty-family host tests
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
@@ -261,12 +286,14 @@ jobs:
             --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
             --prepare-proof-material --parameter-k 6 --parameter-k 7 --parameter-k 8 \
             > "$root/proof-material.json"
+          mkdir -p "$SECONDARY_CARGO_TARGET/import" "$SECONDARY_CARGO_TARGET/bytes" \
+            "$SECONDARY_CARGO_TARGET/constructor" "$SECONDARY_CARGO_TARGET/disclose"
           env -u LD_LIBRARY_PATH nix develop .#compiler --command \
             python3 -X faulthandler -u \
             tools/compact-rust-backend/check_upstream_ledger9_import_ledger_field_proof.py \
             --import-type-gate "$root/import_type" --zkir "$SECONDARY_ZKIR" \
             --output "$root/import_proof" --expected-source-sha "$GITHUB_SHA" \
-            --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --cargo-target "$SECONDARY_CARGO_TARGET/import" \
             | tee "$root/import_proof.stdout.log"
       - name: Prove and strictly apply indexed Bytes transaction
         run: |
@@ -278,8 +305,34 @@ jobs:
             tools/compact-rust-backend/check_upstream_ledger9_bytes_indexed_access_proof.py \
             --bytes-gate "$root/bytes_indexed" --zkir "$SECONDARY_ZKIR" \
             --output "$root/bytes_proof" --expected-source-sha "$GITHUB_SHA" \
-            --cargo-target "$SECONDARY_CARGO_TARGET" \
+            --cargo-target "$SECONDARY_CARGO_TARGET/bytes" \
             | tee "$root/bytes_proof.stdout.log"
+      - name: Prove and strictly apply constructor parameters transaction
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-secondary-proof-parameters"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+            tools/compact-rust-backend/check_upstream_ledger9_keyword_constructor_parameters_proof.py \
+            --grouped-gate "$root/small_keywords" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+            --zkir "$SECONDARY_ZKIR" --output "$root/constructor_proof" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET/constructor" \
+            | tee "$root/constructor_proof.stdout.log"
+      - name: Prove and strictly apply two disclose transactions serially
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/keyword-secondary-semantic-evidence"
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-secondary-proof-parameters"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u \
+            tools/compact-rust-backend/check_upstream_ledger9_disclose_proofs.py \
+            --disclose-gate "$root/disclose" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-secondary-compiler-recipe/receipt.json" \
+            --zkir "$SECONDARY_ZKIR" --output "$root/disclose_proofs" \
+            --expected-source-sha "$GITHUB_SHA" --cargo-target "$SECONDARY_CARGO_TARGET/disclose" \
+            | tee "$root/disclose_proofs.stdout.log"
       - name: Verify retained source, generated artifacts and proof receipts
         env:
           SOURCE_SHA: ${{ github.sha }}

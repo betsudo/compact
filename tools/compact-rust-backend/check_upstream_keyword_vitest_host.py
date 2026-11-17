@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Run all twelve pinned keyword families through the original Vitest host."""
+"""Run twenty pinned keyword families through the original Vitest host."""
 
 import argparse
 import json
@@ -39,7 +39,7 @@ def original_host_counts_match(stdout: str) -> bool:
     # Vitest colors its summary on Linux even when stdout is captured. Strip
     # only SGR styling; keep the original per-case markers and exact counts.
     summary = ANSI_SGR.sub('', stdout)
-    return (re.search(r'Tests\s+221 passed \(221\)', summary) is not None
+    return (re.search(rf'Tests\s+{HOST_TEST_COUNT} passed \({HOST_TEST_COUNT}\)', summary) is not None
             and stdout.count('✓') == HOST_TEST_COUNT
             and re.search(r'Test Files\s+1 passed \(1\)', summary) is not None)
 

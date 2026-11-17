@@ -1806,7 +1806,7 @@
                                         (unless (= (length expr*) (length formal-types))
                                           (source-errorf src "Rust call argument count differs from its declaration"))
                                         (map (lambda (arg formal-type)
-                                               (typed-expression-ir arg formal-type src))
+                                               (typed-call-argument-ir arg formal-type src))
                                              expr* formal-types))
                                       (map (lambda (arg) (expression-ir arg src)) expr*))))))]))]
           [(+ ,src ,mbits ,expr1 ,expr2)
@@ -1891,6 +1891,30 @@
                      (expression-ir expr owner-src)
                      (typed-expression-ir expr expected-type owner-src source-type)))]
               [else (typed-expression-ir expr expected-type owner-src source-type)])]))
+
+      ;; Overload resolution can select a unique wider Vector parameter for
+      ;; an explicitly typed default value. Preserve the frontend's exact
+      ;; safe-cast around that default and let checked Coerce validate the
+      ;; conversion at the resolved call formal. Other casts and contexts keep
+      ;; their existing lowering.
+      (define (typed-call-argument-ir arg formal-type owner-src)
+        (nanopass-case (Lnodisclose Expression) arg
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (nanopass-case (Lnodisclose Expression) expr
+             [(default ,src^ ,type^^)
+              (if (and (equal? (type-ir formal-type src)
+                               (type-ir type src))
+                       (equal? (type-ir type^ src)
+                               (type-ir type^^ src^))
+                       (not (equal? (type-ir type src)
+                                    (type-ir type^ src)))
+                       (vector-value-widening? type type^))
+                  (object (cons "kind" "coerce")
+                          (cons "value" (typed-expression-ir expr type^ src^))
+                          (cons "ty" (type-ir type src)))
+                  (typed-expression-ir arg formal-type owner-src))]
+             [else (typed-expression-ir arg formal-type owner-src)])]
+          [else (typed-expression-ir arg formal-type owner-src)]))
 
       (define typed-expression-ir
         (case-lambda
@@ -4322,6 +4346,19 @@
                                    (if (empty-constructor-expression? expr)
                                        '()
                                        (list (constructor-step-ir expr parameters bindings src witness-ids)))))))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (object (cons "kind" "if")
+                   (cons "condition"
+                         (parameterize ([current-constructor-condition? #t])
+                           (expression-ir expr0 src)))
+                   (cons "then_steps"
+                         (if (empty-constructor-expression? expr1)
+                             (vector)
+                             (vector (constructor-step-ir expr1 parameters bindings src witness-ids))))
+                   (cons "otherwise_steps"
+                         (if (empty-constructor-expression? expr2)
+                             (vector)
+                             (vector (constructor-step-ir expr2 parameters bindings src witness-ids)))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))

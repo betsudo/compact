@@ -44,6 +44,14 @@ FAMILY_COUNTS = {
     'assert': (17, 5, 1, 3, 2),
     'module': (20, 4, 4, 4, 0),
     'export': (11, 1, 4, 1, 0),
+    'circuit': (36, 8, 6, 8, 0),
+    'pure': (9, 1, 3, 1, 0),
+    'constructor': (3, 1, 0, 1, 0),
+    'ledger': (2, 0, 1, 0, 0),
+    'pragma': (4, 0, 2, 0, 0),
+    'sealed': (2, 0, 1, 0, 0),
+    'struct': (2, 0, 1, 0, 0),
+    'disclose': (13, 3, 2, 3, 0),
 }
 FAMILIES = tuple(FAMILY_COUNTS)
 HOST = ('.gitignore', '.prettierignore', '.prettierrc.json', '.yarnrc.yml',
@@ -87,9 +95,9 @@ def main() -> None:
         require(observed == FAMILY_COUNTS[family],
                 f'pinned {family} host case/file roster changed: {observed}')
         filenames.update(names)
-    require(len(filenames) == ORIGINAL_COUNT and CASE_COUNT == 167 and
-            HOST_TEST_COUNT == 221,
-            'pinned twelve-family host roster changed')
+    require(len(filenames) == ORIGINAL_COUNT == 489 and CASE_COUNT == 196 and
+            HOST_TEST_COUNT == 263,
+            'pinned twenty-family host roster changed')
     tests = output / 'test-contracts'
     originals = {}
     for name in sorted(filenames):

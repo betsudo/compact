@@ -15,6 +15,7 @@
 # limitations under the License.
 """Narrow static workflow and receipt tampering tests for secondary Linux."""
 
+import ast
 import importlib.util
 from pathlib import Path
 import sys
@@ -33,14 +34,14 @@ from check_upstream_keyword_vitest_host import original_host_counts_match
 
 class WorkflowTest(unittest.TestCase):
     def test_host_accepts_plain_and_sgr_colored_exact_counts(self):
-        cases = '      ✓ original case\n' * 221
-        plain = cases + ' Test Files  1 passed (1)\n      Tests  221 passed (221)\n'
+        cases = '      ✓ original case\n' * 263
+        plain = cases + ' Test Files  1 passed (1)\n      Tests  263 passed (263)\n'
         colored = (cases + '\x1b[2m Test Files \x1b[22m '
                    '\x1b[1m\x1b[32m1 passed\x1b[39m\x1b[22m'
                    '\x1b[90m (1)\x1b[39m\n'
                    '\x1b[2m      Tests \x1b[22m '
-                   '\x1b[1m\x1b[32m221 passed\x1b[39m\x1b[22m'
-                   '\x1b[90m (221)\x1b[39m\n')
+                   '\x1b[1m\x1b[32m263 passed\x1b[39m\x1b[22m'
+                   '\x1b[90m (263)\x1b[39m\n')
         self.assertTrue(original_host_counts_match(plain))
         self.assertTrue(original_host_counts_match(colored))
         with tempfile.TemporaryDirectory() as temporary:
@@ -49,18 +50,18 @@ class WorkflowTest(unittest.TestCase):
             receipts.host_vitest_log(log, receipts.sha(log))
 
     def test_host_refuses_wrong_counts_markers_and_non_sgr_control(self):
-        cases = '      ✓ original case\n' * 221
-        exact = cases + ' Test Files  1 passed (1)\n      Tests  221 passed (221)\n'
+        cases = '      ✓ original case\n' * 263
+        exact = cases + ' Test Files  1 passed (1)\n      Tests  263 passed (263)\n'
         self.assertFalse(original_host_counts_match(
-            exact.replace('Tests  221 passed', 'Tests  220 passed')))
+            exact.replace('Tests  263 passed', 'Tests  262 passed')))
         self.assertFalse(original_host_counts_match(
             exact.replace('Test Files  1 passed', 'Test Files  2 passed')))
         self.assertFalse(original_host_counts_match(exact.replace('✓', '', 1)))
-        self.assertFalse(original_host_counts_match(exact.replace('221 passed',
-                                                                  '\x1b[K221 passed')))
+        self.assertFalse(original_host_counts_match(exact.replace('263 passed',
+                                                                  '\x1b[K263 passed')))
         with tempfile.TemporaryDirectory() as temporary:
             log = Path(temporary) / 'original-vitest.log'
-            for bad in (exact.replace('Tests  221 passed', 'Tests  220 passed'),
+            for bad in (exact.replace('Tests  263 passed', 'Tests  262 passed'),
                         exact.replace('✓', '', 1)):
                 log.write_text(bad)
                 with self.assertRaisesRegex(ValueError, 'original host execution differs'):
@@ -79,13 +80,18 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn('export-shell: true', workflow)
         self.assertIn('for gate in include prefix assert module export import_type',
                       workflow)
-        sequence = ('check_upstream_ledger9_bytes_indexed_access.py',
+        self.assertIn('for gate in circuit pure disclose', workflow)
+        sequence = ('check_upstream_ledger9_small_keywords.py',
+                    'Run circuit, pure and disclose original keyword gates serially',
+                    'check_upstream_ledger9_bytes_indexed_access.py',
                     'check_static_bytes_fold_index_domain.py',
                     'test-rust-vector-indices.ss',
                     'stage_upstream_keyword_vitest_host.py',
                     'check_upstream_keyword_vitest_host.py',
                     'check_upstream_ledger9_import_ledger_field_proof.py',
                     'check_upstream_ledger9_bytes_indexed_access_proof.py',
+                    'check_upstream_ledger9_keyword_constructor_parameters_proof.py',
+                    'check_upstream_ledger9_disclose_proofs.py',
                     'verify_keyword_secondary_linux_receipts.py')
         positions = [workflow.index(name) for name in sequence]
         self.assertEqual(positions, sorted(positions))
@@ -93,6 +99,14 @@ class WorkflowTest(unittest.TestCase):
         self.assertIn('needs: [source-preflight, compiler-linux, secondary-semantics]',
                       workflow)
         self.assertNotIn('pull_request:', workflow)
+        self.assertIn('--disclose-gate "$root/disclose"', workflow)
+        self.assertIn('--output "$root/disclose_proofs"', workflow)
+        self.assertIn('--expected-source-sha "$GITHUB_SHA"', workflow)
+        disclose_driver = (ROOT / 'tools/compact-rust-backend/'
+                           'check_upstream_ledger9_disclose_proofs.py').read_text()
+        self.assertIn("case_target = cargo_target / f'disclose-{case}'",
+                      disclose_driver)
+        self.assertIn('physical_sha256(Path(name)) == digest', disclose_driver)
 
     def test_upload_excludes_rebuildable_dependencies_and_targets(self):
         workflow = WORKFLOW.read_text()
@@ -106,10 +120,24 @@ class WorkflowTest(unittest.TestCase):
     def test_family_and_host_roster(self):
         self.assertEqual(list(receipts.FAMILIES),
                          ['include', 'prefix', 'assert', 'module',
-                          'export', 'import_type'])
-        self.assertEqual(sum(row[0] for row in receipts.FAMILIES.values()), 68)
-        self.assertEqual(sum(row[1] for row in receipts.FAMILIES.values()), 35)
-        self.assertEqual(len(receipts.HOST_FAMILIES), 12)
+                          'export', 'import_type', 'circuit', 'pure'])
+        self.assertEqual(sum(row[0] for row in receipts.FAMILIES.values()), 86)
+        self.assertEqual(sum(row[1] for row in receipts.FAMILIES.values()), 44)
+        self.assertTrue(callable(receipts.disclose))
+        self.assertTrue(callable(receipts.disclose_proofs))
+        self.assertEqual(len(receipts.HOST_FAMILIES), 20)
+        self.assertEqual(receipts.HOST_FAMILIES[-1], 'disclose')
+        stage = ast.parse((ROOT / 'tools/compact-rust-backend/'
+                           'stage_upstream_keyword_vitest_host.py').read_text())
+        roster = next(ast.literal_eval(node.value) for node in stage.body
+                      if isinstance(node, ast.Assign) and
+                      any(isinstance(target, ast.Name) and
+                          target.id == 'FAMILY_COUNTS' for target in node.targets))
+        self.assertEqual(len(roster), 20)
+        self.assertEqual(roster['disclose'], (13, 3, 2, 3, 0))
+        self.assertEqual(16 + sum(row[0] for row in roster.values()), 489)
+        self.assertEqual(sum(row[1] + row[2] for row in roster.values()), 196)
+        self.assertEqual(sum(sum(row[1:]) for row in roster.values()), 263)
 
     def test_missing_and_tampered_artifact_refused(self):
         with tempfile.TemporaryDirectory() as temporary:

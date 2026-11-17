@@ -1,0 +1,204 @@
+# Compact Test Contracts
+
+This package contains self-contained Compact semantic fixtures. Each fixture
+directory owns its Compact source and the tests that declare whether that source
+should pass or fail at compile time or runtime.
+
+## Fixture Layout
+
+```text
+test-contracts/
+  primitives/
+    bytes/
+      slice/
+        basic/
+          bytes_slice_basic.compact
+          compile.pass.test.ts
+          runtime.pass.test.ts
+```
+
+Test expectations are intentionally visible from file names:
+
+- Compile pass: `compile.pass.test.ts` expects the colocated `.compact` file to compile.
+- Compile fail: `compile.fail.test.ts` expects the colocated `.compact` file to fail compilation.
+- Runtime pass: `runtime.pass.test.ts` expects the generated contract to execute successfully.
+- Runtime fail: `runtime.fail.test.ts` expects runtime execution to throw.
+
+Each fixture directory must contain exactly one `.compact` file. Runtime tests
+require a matching `compile.pass.test.ts` file in the same fixture directory.
+
+## Execution Model
+
+Vitest only loads `compact-test-orchestrator.test.ts`. That orchestrator
+discovers fixture files, registers compile tests, and lets each runtime test
+await its own cached compile prerequisite before importing generated artifacts.
+
+This keeps compilation visible as part of the test suite while allowing runtime
+tests to type against generated `Contract` imports for hover and
+go-to-definition. Fixtures under a `slow/` path segment still run by default,
+but their compile work runs exclusively so expensive proving-key generation does
+not race other compiler jobs. Because a slow fixture can wait for other
+compiles before its own starts, its tests get 10 minutes for each compile it
+may wait behind instead of the usual `testTimeout`. That is at most
+`maxConcurrency` compiles, the number of tests Vitest runs at once.
+
+## Shared Harness
+
+Helpers that several fixtures share live under `support/`, outside the fixture
+tree, and are imported through a path alias. The crypto fixtures use
+`@test/crypto` (`support/crypto/`) for hex conversion, the known-answer test
+driver, the `Bytes<N>` width sweep, and the vendored Wycheproof and
+ethereum/tests vectors; see `support/crypto/README.md`. A new alias needs an
+entry in both `vitest.config.ts` and the `paths` block of `tsconfig.json`.
+
+## Compile Tests
+
+Compile tests export metadata through `defineCompileTest`:
+
+```ts
+import { defineCompileTest } from '@test/compact-test';
+
+export default defineCompileTest(import.meta.url);
+```
+
+A fixture whose contract needs non-default compiler flags declares the extra
+flags with `compilerArgs`. They are passed ahead of the contract and output
+paths for every compiler invocation of that fixture, including the `yarn lint`
+artifact preparation run:
+
+```ts
+export default defineCompileTest(import.meta.url, {
+    compilerArgs: ['--no-communications-commitment'],
+});
+```
+
+For compile-fail fixtures, include the diagnostic that proves the expected
+failure happened:
+
+```ts
+export default defineCompileTest(import.meta.url, {
+    expectedError: /expected tuple\/vector spread expression/,
+});
+```
+
+## Runtime Tests
+
+Runtime tests statically import the generated contract path for their fixture
+and export metadata through `defineRuntimeTest`:
+
+```ts
+import { expect } from 'vitest';
+
+import type { Contract } from './.build/contract/index.js';
+import { createTestContract, defineRuntimeTest } from '@test/compact-test';
+
+export default defineRuntimeTest<typeof Contract>(
+    import.meta.url,
+    async (Contract) => {
+        const { contract, ctx } = await createTestContract(Contract);
+        const result = (await contract.circuits.bytes_slice_basic(ctx)).result;
+
+        expect(Array.from(result)).toEqual([5]);
+    },
+);
+```
+
+A contract whose constructor takes parameters receives them as the fourth
+argument of `createTestContract`, after the witnesses and private state:
+
+```ts
+const { contract, ctx } = await createTestContract(Contract, {}, undefined, [
+    [1n, 2n, 3n],
+]);
+```
+
+The callback's second argument is the generated `pureCircuits` record. A
+contract whose circuits are all pure exposes nothing on the contract instance,
+so such a fixture reads them straight off `pureCircuits` and never calls
+`createTestContract`:
+
+```ts
+import type { Contract, PureCircuits } from './.build/contract/index.js';
+import { defineRuntimeTest } from '@test/compact-test';
+
+export default defineRuntimeTest<typeof Contract, PureCircuits>(
+    import.meta.url,
+    (_Contract, pure) => {
+        expect(pure.hashBytes32(input)).toEqual(digest);
+    },
+);
+```
+
+The generated type import is valid during local typechecking because
+`yarn lint` prepares runtime fixture artifacts before running
+`tsc --noEmit`. Runtime execution imports the generated `Contract` value from
+the fixture `.build/` directory after the matching compile test has completed,
+then passes it to the fixture callback.
+
+## Generated Artifacts
+
+The runner writes generated output under each fixture's local `.build/`
+directory. It removes stale output before compiling each selected fixture, then
+reuses that output for the matching runtime test.
+
+After the suite finishes, artifacts for selected fixtures whose tests passed are
+deleted. Artifacts for fixtures with unexpected failures are preserved for
+debugging, including failed runtime imports, failed runtime assertions, and
+unexpected compile results. Expected failures that pass, such as
+`compile.fail.test.ts`, are cleaned up like any other passing fixture.
+
+Set `COMPACT_TEST_KEEP_ARTIFACTS=1` to preserve passing fixture artifacts during
+local debugging:
+
+```sh
+COMPACT_TEST_KEEP_ARTIFACTS=1 yarn test primitives/bytes/slice/basic/runtime.pass.test.ts
+```
+
+## Commands
+
+Run this from the repository root — it is what CI runs, and the only command
+that needs no setup first:
+
+```sh
+./test-contracts/test.sh
+```
+
+The wrapper enters the `.#test-contracts` Nix shell, links the runtime that
+shell provides, installs this package with Corepack/Yarn, and runs the fixtures
+with the Nix-built `compactc`.
+
+Once it has run once, the per-fixture commands work from this package directory,
+because the symlink it created is still there:
+
+```sh
+yarn lint
+yarn test
+yarn test primitives/bytes/slice/basic/runtime.pass.test.ts
+```
+
+`yarn test` runs all fixtures. Non-option arguments are treated as
+fixture or test-file path filters. Selecting a runtime test also selects its
+compile prerequisite, so a runtime-only filtered run still compiles the fixture
+inside Vitest before importing the generated contract value.
+
+`yarn lint` prepares generated imports with `--skip-zk`; `yarn test` uses full
+compiler runs so compile tests still cover proving-key generation. Compile hang
+protection is owned by Vitest and CI through `testTimeout` in
+`vitest.config.ts`, and through `slowCompileTimeoutMs` in
+`compact-test-orchestrator.test.ts` for `slow/` fixtures.
+
+## The Linked Runtime
+
+The package links `@midnight-ntwrk/compact-runtime` through the
+`.compact-runtime` symlink, which the wrapper points at `$COMPACT_RUNTIME_PKG` —
+set by the `.#test-contracts` shell to a Nix-built runtime substituted from the
+cache. Set it yourself to test against a runtime you built; it falls back to
+`../runtime`.
+
+Generated contracts typecheck against that runtime's own declarations. Nothing
+local stands in for them, so a compiler change that makes generated code
+reference a new runtime type is caught here, and whichever runtime is linked
+must be built — the wrapper checks for `dist/index.d.ts` and stops with a
+message naming the path if it is missing. The Nix package always is; a working
+tree at `../runtime` is only built once `npm run build` has run there, which
+needs the `.#runtime` shell for Chez.

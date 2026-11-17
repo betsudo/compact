@@ -314,6 +314,7 @@ fn main() {
         }
         println!("cargo::rustc-cfg=compact_import_ledger_field_generated");
     }
+    println!("cargo::rustc-check-cfg=cfg(compact_keyword_constructor_parameters_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_empty_else_generated)");
     println!("cargo::rustc-check-cfg=cfg(compact_if_branches_set_insert_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_IF_BRANCHES_SET_INSERT_GENERATED");
@@ -387,6 +388,86 @@ fn main() {
             println!("cargo::rerun-if-changed={}", member.display());
         }
         println!("cargo::rustc-cfg=compact_for_generic_bound_generated");
+    }
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_KEYWORD_CONSTRUCTOR_PARAMETERS_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_KEYWORD_CONSTRUCTOR_PARAMETERS_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute constructor/parameters root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+            "zkir/constructor_parameters.zkir",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete constructor/parameters member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        println!("cargo::rustc-cfg=compact_keyword_constructor_parameters_generated");
+    }
+    println!("cargo::rustc-check-cfg=cfg(compact_keyword_disclose_generated)");
+    println!("cargo::rustc-check-cfg=cfg(compact_keyword_disclose_branch)");
+    println!("cargo::rustc-check-cfg=cfg(compact_keyword_disclose_constructor)");
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_GENERATED");
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_CASE");
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_CIRCUIT");
+    println!("cargo::rerun-if-env-changed=COMPACT_KEYWORD_DISCLOSE_WRONG");
+    if std::env::var_os("CARGO_FEATURE_KEYWORD_DISCLOSE_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_KEYWORD_DISCLOSE_GENERATED")
+    {
+        let root = std::path::PathBuf::from(root);
+        let case =
+            std::env::var("COMPACT_KEYWORD_DISCLOSE_CASE").expect("pinned disclose case required");
+        let cfg = match case.as_str() {
+            "branch_conditions" => "compact_keyword_disclose_branch",
+            "branch_conditions_in_constructor" => "compact_keyword_disclose_constructor",
+            _ => panic!("unsupported pinned disclose proof case"),
+        };
+        assert_eq!(
+            std::env::var("COMPACT_KEYWORD_DISCLOSE_CIRCUIT").as_deref(),
+            Ok(format!("disclose_{case}").as_str()),
+            "disclose circuit must match the selected case"
+        );
+        let wrong = match case.as_str() {
+            "branch_conditions" => "if_empty_else_branch",
+            "branch_conditions_in_constructor" => "type_new_type_of_adt",
+            _ => unreachable!(),
+        };
+        assert_eq!(
+            std::env::var("COMPACT_KEYWORD_DISCLOSE_WRONG").as_deref(),
+            Ok(wrong),
+            "disclose independent wrong-verifier circuit changed"
+        );
+        assert!(
+            root.is_absolute(),
+            "absolute disclose generated root required"
+        );
+        for relative in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "contract/rust-capabilities.json",
+        ] {
+            let member = root.join(relative);
+            assert!(
+                member.is_file(),
+                "complete disclose generated member required"
+            );
+            println!("cargo::rerun-if-changed={}", member.display());
+        }
+        let circuit = format!("zkir/disclose_{case}.zkir");
+        let member = root.join(circuit);
+        assert!(member.is_file(), "complete disclose raw ZKIR required");
+        println!("cargo::rerun-if-changed={}", member.display());
+        println!("cargo::rustc-cfg=compact_keyword_disclose_generated");
+        println!("cargo::rustc-cfg={cfg}");
     }
     println!("cargo::rustc-check-cfg=cfg(compact_stateful_product_vector_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_STATEFUL_PRODUCT_VECTOR_GENERATED");
