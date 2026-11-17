@@ -703,10 +703,12 @@ fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
     let (rendered, ty, witness) = pure.result.expect("pure conditional lowers");
     assert_eq!(ty, Type::Field);
     assert!(!witness && !pure.query_effect);
-    assert!(!rendered
-        .to_token_stream()
-        .to_string()
-        .contains("__compact_query_branch"));
+    assert!(
+        !rendered
+            .to_token_stream()
+            .to_string()
+            .contains("__compact_query_branch")
+    );
 }
 
 #[test]
