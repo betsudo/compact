@@ -240,6 +240,25 @@ fn render_control_expression(
                 // use without reordering gas or public transcript effects.
                 let then_value = then_value.unwrap_or_else(|| syn::parse_quote!(()));
                 let else_value = else_value.unwrap_or_else(|| syn::parse_quote!(()));
+                // A Unit-valued arm still has to evaluate its tail before
+                // moving context, but binding that result trips Clippy's
+                // let_unit_value lint in generated consumers.
+                let branch_tail = |value: syn::Expr| {
+                    if then_ty == Type::Unit {
+                        if matches!(&value, syn::Expr::Tuple(tuple) if tuple.elems.is_empty()) {
+                            quote::quote!(Ok((context, ())))
+                        } else {
+                            quote::quote!(#value; Ok((context, ())))
+                        }
+                    } else {
+                        quote::quote!(
+                            let __compact_branch_value = #value;
+                            Ok((context, __compact_branch_value))
+                        )
+                    }
+                };
+                let then_tail = branch_tail(then_value);
+                let else_tail = branch_tail(else_value);
                 // A nested query conditional can itself be a block. Bind it
                 // before the outer `if` so generated consumers also satisfy
                 // Clippy's blocks_in_conditions lint without reevaluation.
@@ -265,14 +284,12 @@ fn render_control_expression(
                         let (__compact_next_context, __compact_branch_value) = if #branch_condition {
                             __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
                                 #(#then_statements)*
-                                let __compact_branch_value = #then_value;
-                                Ok((context, __compact_branch_value))
+                                #then_tail
                             })?
                         } else {
                             __compact_query_branch(context, |mut context| -> Result<_, runtime::CompactError> {
                                 #(#else_statements)*
-                                let __compact_branch_value = #else_value;
-                                Ok((context, __compact_branch_value))
+                                #else_tail
                             })?
                         };
                         context = __compact_next_context;

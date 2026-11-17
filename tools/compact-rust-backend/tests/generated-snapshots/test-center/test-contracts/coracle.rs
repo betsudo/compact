@@ -887,17 +887,13 @@ pub mod ledger_contract {
                             )?;
                             context = step.context;
                             total_cost += step.gas_cost;
-                            let __compact_branch_value = ();
-                            Ok((context, __compact_branch_value))
+                            Ok((context, ()))
                         },
                     )?
                 } else {
                     __compact_query_branch(
                         context,
-                        |mut context| -> Result<_, runtime::CompactError> {
-                            let __compact_branch_value = ();
-                            Ok((context, __compact_branch_value))
-                        },
+                        |mut context| -> Result<_, runtime::CompactError> { Ok((context, ())) },
                     )?
                 };
             context = __compact_next_context;
@@ -1647,8 +1643,8 @@ pub mod ledger_contract {
                             .extend(__compact_call_11.private_transcript_outputs);
                         context = __compact_call_11.context;
                         total_cost += __compact_call_11.gas_cost;
-                        let __compact_branch_value = __compact_call_11.result;
-                        Ok((context, __compact_branch_value))
+                        __compact_call_11.result;
+                        Ok((context, ()))
                     },
                 )?
             } else {
@@ -1662,8 +1658,8 @@ pub mod ledger_contract {
                             .extend(__compact_call_13.private_transcript_outputs);
                         context = __compact_call_13.context;
                         total_cost += __compact_call_13.gas_cost;
-                        let __compact_branch_value = __compact_call_13.result;
-                        Ok((context, __compact_branch_value))
+                        __compact_call_13.result;
+                        Ok((context, ()))
                     },
                 )?
             };

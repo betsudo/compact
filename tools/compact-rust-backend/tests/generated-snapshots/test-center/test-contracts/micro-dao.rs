@@ -963,17 +963,13 @@ pub mod ledger_contract {
                         )?;
                         context = step.context;
                         total_cost += step.gas_cost;
-                        let __compact_branch_value = ();
-                        Ok((context, __compact_branch_value))
+                        Ok((context, ()))
                     },
                 )?
             } else {
                 __compact_query_branch(
                     context,
-                    |mut context| -> Result<_, runtime::CompactError> {
-                        let __compact_branch_value = ();
-                        Ok((context, __compact_branch_value))
-                    },
+                    |mut context| -> Result<_, runtime::CompactError> { Ok((context, ())) },
                 )?
             };
             context = __compact_next_context;
@@ -1177,17 +1173,13 @@ pub mod ledger_contract {
                             )?;
                             context = step.context;
                             total_cost += step.gas_cost;
-                            let __compact_branch_value = ();
-                            Ok((context, __compact_branch_value))
+                            Ok((context, ()))
                         },
                     )?
                 } else {
                     __compact_query_branch(
                         context,
-                        |mut context| -> Result<_, runtime::CompactError> {
-                            let __compact_branch_value = ();
-                            Ok((context, __compact_branch_value))
-                        },
+                        |mut context| -> Result<_, runtime::CompactError> { Ok((context, ())) },
                     )?
                 };
             context = __compact_next_context;
