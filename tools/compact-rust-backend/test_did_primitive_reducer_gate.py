@@ -77,7 +77,7 @@ class EvidenceTests(unittest.TestCase):
                 with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
                     gate.validate_historical_capture(fixture)
 
-    def test_current_capture_records_preserve_all_nine_historical_case_sets(self):
+    def test_retained_capture_records_preserve_all_nine_historical_case_sets(self):
         count = 0
         for row in gate.reviewed_rows():
             oracle = gate.ROOT / row['fixture'] / 'oracle'
@@ -87,7 +87,6 @@ class EvidenceTests(unittest.TestCase):
             with self.subTest(kind=row['kind']):
                 expected = dict(binding, source_sha256=gate.common.sha256(gate.ROOT / row['source']),
                     capture_script_sha256=gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT),
-                    runtime_source_sha256=gate.runtime_source_hash(),
                     historical_ledger9_binding_sha256=gate.common.sha256(oracle / 'ledger9-binding.json'),
                     capture_sha256=gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
                 gate.validate_current_capture_record(binding, expected, capture, historical)
@@ -97,7 +96,6 @@ class EvidenceTests(unittest.TestCase):
                                  gate.common.sha256(gate.ROOT / row['source']))
                 self.assertEqual(binding['capture_script_sha256'],
                                  gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT))
-                self.assertEqual(binding['runtime_source_sha256'], gate.runtime_source_hash())
                 self.assertEqual(binding['historical_ledger9_binding_sha256'],
                                  gate.common.sha256(oracle / 'ledger9-binding.json'))
                 self.assertEqual(binding['capture_sha256'],
@@ -116,6 +114,17 @@ class EvidenceTests(unittest.TestCase):
                     gate.validate_current_capture_record(binding, expected, changed, historical)
             count += len(capture['cases'])
         self.assertEqual(count, 55)
+
+    def test_changed_runtime_source_cannot_reuse_retained_capture(self):
+        row = gate.reviewed_rows()[0]
+        oracle = gate.ROOT / row['fixture'] / 'oracle'
+        binding = gate.read_json(oracle / 'ledger9-runtime0.18-binding.json')
+        capture = gate.read_json(oracle / 'ledger9-runtime0.18-cases.json')
+        historical = gate.read_json(oracle / 'ledger9-cases.json')
+        live = dict(binding, runtime_source_sha256=gate.runtime_source_hash())
+        self.assertNotEqual(binding['runtime_source_sha256'], live['runtime_source_sha256'])
+        with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
+            gate.validate_current_capture_record(binding, live, capture, historical)
 
     def test_runtime_closure_hash_covers_dist_lock_and_nested_dependencies_without_store_prefix(self):
         def make_runtime(root):
