@@ -168,9 +168,12 @@ def run(args):
         expected = json.loads((FIXTURE / "data/ledger9-unit-composition.json").read_text())
         require(expected["schema"] == "compact-did-functional-lifecycle-oracle/v2" and
                 expected["source_manifest"] == json.loads((SOURCE_ROOT / "source-manifest.json").read_text()) and
-                expected["runtime_version"] == version and len(did_rows) == 12 and
+                expected["runtime_version"] == "0.17.0" and
+                observations["qualification"]["runtime"]["version"] == version and len(did_rows) == 12 and
                 did_rows == expected["cases"], "complete live DID observations differ")
         receipt["typescript"] = {"capture_sha256": common.sha256(capture),
+                                  "runtime_version": version,
+                                  "oracle_runtime_version": expected["runtime_version"],
                                   "did_rows": 12, "all_rows": len(observations["cases"]),
                                   "rust_selected_ids": [row["id"] for row in did_rows],
                                   "success_route_executions": 8,
