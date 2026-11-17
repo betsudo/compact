@@ -30,6 +30,8 @@ import tomllib
 from unittest.mock import patch
 
 import check_compactc_target as cli
+import check_constructor_equality_proof_preflight as equality
+import check_constructor_vector_proof_preflight as vector
 import proof_commands
 from consumer_cargo import with_pinned_patches
 
@@ -45,6 +47,15 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(tomllib.loads(rendered)["package"], tomllib.loads(manifest)["package"])
         with self.assertRaisesRegex(ValueError, "already has Cargo patches"):
             with_pinned_patches(rendered, ROOT)
+
+    def test_constructor_proof_consumers_inherit_single_sdk_patch_table(self):
+        expected = tomllib.loads((ROOT / "Cargo.toml").read_text())["patch"]
+        for owner in (vector, equality):
+            with self.subTest(owner=owner.__name__):
+                manifest = tomllib.loads(owner.consumer_manifest("compact-contract-control"))
+                self.assertEqual(manifest["patch"], expected)
+                self.assertEqual(manifest["dependencies"]["contract"]["package"],
+                                 "compact-contract-control")
 
     def test_native_scenario_inventory_and_shard_partition(self):
         # Freeze the complete pre-shard default invocation list, including
