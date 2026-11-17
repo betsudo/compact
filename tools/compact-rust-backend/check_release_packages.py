@@ -23,7 +23,10 @@ from pathlib import Path
 import json
 import subprocess
 import tarfile
+import tempfile
 import tomllib
+
+from consumer_cargo import with_pinned_patches
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -218,11 +221,14 @@ def main() -> None:
     run("package", "-p", PACKAGES[0], "--allow-dirty")
     packages = [inspect_package(PACKAGES[0])]
 
-    # The runtime's exact macro version must be published before an ordinary
-    # cargo package can resolve it. The patch verifies the unpacked package
-    # against the local source without changing the packaged manifest.
-    patch = "patch.crates-io.midnight-compact-runtime-macros.path=" + json.dumps(str(MACROS))
-    run("package", "-p", PACKAGES[1], "--allow-dirty", "--config", patch)
+    # Cargo normalizes the archive to registry dependencies and verifies it
+    # outside the workspace. Pass the same Ledger pins and the local macro
+    # source through Cargo config, without changing either packaged manifest.
+    with tempfile.TemporaryDirectory(prefix="compact-runtime-rehearsal-") as directory:
+        config = Path(directory) / "patches.toml"
+        config.write_text(with_pinned_patches("", ROOT)
+                          + f'{PACKAGES[0]} = {{ path = {json.dumps(str(MACROS))} }}\n')
+        run("package", "-p", PACKAGES[1], "--allow-dirty", "--config", str(config))
     packages.append(inspect_package(PACKAGES[1]))
     actual = manifest(packages, args.candidate_tag)
     if expected is not None:
