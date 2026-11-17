@@ -66,7 +66,7 @@ EXPORTS = set(KEYS) | {"setVerificationMethodRelation"}
 LARGE_CIRCUITS = {"setService", "setSchnorrJubjubVerificationMethod",
                   "setVerificationMethod", "setVerificationMethodRelation"}
 EXPECTED_K = {name: 12 if name in LARGE_CIRCUITS else 11 for name in EXPORTS}
-ZKIR_VERSION = "midnight-zkir 3.2.1"
+ZKIR_VERSION = "midnight-zkir 3.2.0"
 
 
 def require(condition, message):
@@ -264,7 +264,7 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         zkir = components["zkir"]["snapshot"]
         version = directory / "zkir-version.txt"
         execute([zkir, "--version"], "zkir-version", version)
-        require(version.read_text().strip() == ZKIR_VERSION, "expected published ZKIR v3 3.2.1")
+        require(version.read_text().strip() == ZKIR_VERSION, "expected published ZKIR v3 3.2.0")
         execute([components["compactc"]["snapshot"], "--target", "rust", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / SOURCE, output], "compile-did")
         formatted = directory / "did-formatted.rs"

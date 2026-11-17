@@ -79,7 +79,7 @@ class ReducerGateTests(unittest.TestCase):
             put(output / "zkir/verify.zkir", "source IR")
             put(output / "contract/compact-rust-ir.json", "full IR")
         elif label == "zkir-version":
-            put(stdout_path, "midnight-zkir 3.2.1\n")
+            put(stdout_path, "midnight-zkir 3.2.0\n")
         elif label == "model-reducer":
             rows = 64 if self.corrupt == "geometry" else 112
             put(log, f'circuit "verify" (k=7, rows={rows})')

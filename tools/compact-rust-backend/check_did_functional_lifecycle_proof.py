@@ -210,7 +210,7 @@ def run(args):
         zkir = components["zkir"]["snapshot"]
         version = output / "zkir-version.txt"
         execute([zkir, "--version"], "zkir-version", version)
-        require(version.read_text().strip() == "midnight-zkir 3.2.1", "expected published ZKIR v3 3.2.1")
+        require(version.read_text().strip() == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
         source_ir = generated / "zkir/deactivate.zkir"
         execute([zkir, "mock-compile", source_ir], "model-deactivate")
         geometry = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())

@@ -21,9 +21,8 @@ schema 20, or capability schema 3. The trial source closure is:
 - ZK `0f9d5c3879f92a8beae8bdb9e7305f39e03a3227`, whose manifests retain
   local paths while giving external Git consumers exact version constraints;
 - ZKIR v2 `2.2.0` from the same Ledger revision for the retained producer
-  boundary, and ZKIR v3 `3.2.1` from
-  `35e386b7b3f3a76117423ca72883c852181104dc` for the active proof/tool
-  boundary.
+  boundary, and ZKIR v3 library `3.2.1` from
+  `35e386b7b3f3a76117423ca72883c852181104dc` for the active Rust proof runner.
 
 The runtime manifest selects Ledger 9.1.0.2, storage 3.1.0 and
 transient-crypto 3.1.0 from the single Ledger revision. It selects circuits
@@ -35,8 +34,8 @@ compatibility preflight still checks every direct Midnight dependency's exact
 version, Git URL and revision before generation.
 
 The active proof runner resolves the Ledger-required ZKIR 3.2.1 library from
-the exact Git source above and qualifies contracts with the published 3.2.1
-native CLI. The Passport dogfood
+the exact Git source above. Compiler and proof qualification continue to use
+the published 3.2.0 native CLI pinned by the Compact flake. The Passport dogfood
 fixture remains on transient-crypto 3.0.1 and is explicitly outside this
 DID/runtime slice; no Passport or VC compatibility claim is inferred.
 
