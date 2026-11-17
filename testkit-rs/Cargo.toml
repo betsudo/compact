@@ -36,7 +36,7 @@ proof = [
 [dependencies]
 midnight-compact-runtime = { path = "../runtime-rs", version = "=0.2.0" }
 midnight-base-crypto = { version = "=1.1.1", optional = true }
-midnight-transient-crypto = { version = "=3.0.1", optional = true }
+midnight-transient-crypto = { version = "=3.1.0", optional = true }
 midnight-zkir = { version = "=2.2.0", optional = true }
 rand = { version = "=0.8.6", optional = true }
 midnight-onchain-runtime = "=4.0.1"

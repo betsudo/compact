@@ -1,8 +1,12 @@
 {
   "provenance": {
     "source": "test-center/test-contracts/micro-dao.compact",
-    "runtime": "/nix/store/6hd3p06wnliswm5d31mriqw0kfw1895n--midnight-ntwrk-compact-runtime_0.17.0/lib/node_modules/@midnight-ntwrk/compact-runtime/dist/index.js",
-    "generatedSha256": "f70bbbb6c65899d0377d1f840035fd8084c07ea072a3ef25c458f2f2477abeb5",
+    "sourceSha256": "9a2d974c5cbe4e768f494f7cd09299b5ee4b9330e3ffd129b6b80171cb5ae744",
+    "generatedIndexSha256": "95a6574f918593aec7bdf1bc8b628a24965e2e8a797e55e436e8e9a7ef2b28c6",
+    "runtimeVersion": "0.18.0",
+    "runtimeBuiltinsSha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+    "runtimeTypesSha256": "a85eaf262d85d456791e7e7f9fbc058e7e11babb85aeefd17ad4f84cc9adcc7a",
+    "ledgerModuleSha256": "b504acb16a4bae340479b09000ab8ce36d1e9049dd56ec01e3e194df10243de9",
     "descriptor": [
       {
         "tag": "atom",
@@ -26,7 +30,7 @@
         }
       }
     ],
-    "scope": "independent original-source TypeScript execution/partition evidence; explicit prior states, no funded lifecycle or proof claim"
+    "scope": "unchanged original source; explicitly seeded empty/occupied pot states, no funded lifecycle or proof claim"
   },
   "rows": [
     {
@@ -2439,10 +2443,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "1105000000",
+        "computeTime": "14445931055",
+        "bytesWritten": "3458",
+        "bytesDeleted": "3294"
       },
       "queryCostSum": {
         "readTime": "1105000000",
@@ -3413,8 +3417,8 @@
           },
           "gas": {
             "readTime": "1326000000",
-            "computeTime": "2836561636",
-            "bytesWritten": "777",
+            "computeTime": "2836563777",
+            "bytesWritten": "787",
             "bytesDeleted": "551"
           }
         },
@@ -7462,10 +7466,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "740",
-        "bytesDeleted": "740"
+        "readTime": "1190000000",
+        "computeTime": "19951684217",
+        "bytesWritten": "2796",
+        "bytesDeleted": "2702"
       },
       "queryCostSum": {
         "readTime": "1190000000",
@@ -8949,8 +8953,8 @@
           ],
           "effects": {
             "claimedNullifiers": [
-              "41d769f9b6ec38e3b0fef0efde21367b70a59e48ff7244e7413f61d11c413bbe",
-              "7936473ab206996932abfab6420391245abe38fd8bdc688655af90637b163b46"
+              "7936473ab206996932abfab6420391245abe38fd8bdc688655af90637b163b46",
+              "41d769f9b6ec38e3b0fef0efde21367b70a59e48ff7244e7413f61d11c413bbe"
             ],
             "claimedShieldedReceives": [
               "e668b682963138e1888af3dcc4887e56a6784d5ba1b1e2b3f70d04262c200d34",
@@ -8968,8 +8972,8 @@
           },
           "gas": {
             "readTime": "1428000000",
-            "computeTime": "3075380176",
-            "bytesWritten": "759",
+            "computeTime": "3075382317",
+            "bytesWritten": "769",
             "bytesDeleted": "613"
           }
         },
@@ -19558,10 +19562,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "760",
-        "bytesDeleted": "760"
+        "readTime": "1105000000",
+        "computeTime": "14471354023",
+        "bytesWritten": "7650",
+        "bytesDeleted": "3326"
       },
       "queryCostSum": {
         "readTime": "1105000000",
@@ -24612,8 +24616,8 @@
           },
           "gas": {
             "readTime": "1326000000",
-            "computeTime": "2867069198",
-            "bytesWritten": "5769",
+            "computeTime": "2867071339",
+            "bytesWritten": "5779",
             "bytesDeleted": "551"
           }
         },
@@ -28628,10 +28632,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "708",
-        "bytesDeleted": "708"
+        "readTime": "1190000000",
+        "computeTime": "19951684217",
+        "bytesWritten": "2700",
+        "bytesDeleted": "2638"
       },
       "queryCostSum": {
         "readTime": "1190000000",
@@ -30102,8 +30106,8 @@
               "41d769f9b6ec38e3b0fef0efde21367b70a59e48ff7244e7413f61d11c413bbe"
             ],
             "claimedShieldedReceives": [
-              "8523b3bf364119f8d8e088f229d826fb24b84126ca7391b56bc686faa91d1568",
-              "e668b682963138e1888af3dcc4887e56a6784d5ba1b1e2b3f70d04262c200d34"
+              "e668b682963138e1888af3dcc4887e56a6784d5ba1b1e2b3f70d04262c200d34",
+              "8523b3bf364119f8d8e088f229d826fb24b84126ca7391b56bc686faa91d1568"
             ],
             "claimedShieldedSpends": [
               "8523b3bf364119f8d8e088f229d826fb24b84126ca7391b56bc686faa91d1568"
@@ -30117,8 +30121,8 @@
           },
           "gas": {
             "readTime": "1428000000",
-            "computeTime": "3075380176",
-            "bytesWritten": "721",
+            "computeTime": "3075382317",
+            "bytesWritten": "730",
             "bytesDeleted": "613"
           }
         },
@@ -36033,10 +36037,10 @@
         ]
       },
       "wrapperLastQueryGas": {
-        "readTime": "85000000",
-        "computeTime": "1233942932",
-        "bytesWritten": "744",
-        "bytesDeleted": "744"
+        "readTime": "1105000000",
+        "computeTime": "14445931055",
+        "bytesWritten": "3458",
+        "bytesDeleted": "3294"
       },
       "queryCostSum": {
         "readTime": "1105000000",
@@ -37003,8 +37007,8 @@
           },
           "gas": {
             "readTime": "1326000000",
-            "computeTime": "2836561636",
-            "bytesWritten": "777",
+            "computeTime": "2836563777",
+            "bytesWritten": "787",
             "bytesDeleted": "551"
           }
         },

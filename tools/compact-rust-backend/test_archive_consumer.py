@@ -25,6 +25,7 @@ import unittest
 
 from check_archive_consumer import (
     MACROS, ROOT, RUNTIME, check_graph, contract_record, file_record, project_contract,
+    sha256, stage_ledger_vendor_static,
 )
 
 
@@ -79,6 +80,36 @@ class ArchiveConsumerTests(unittest.TestCase):
             project_contract(self.artifact, self.destination, self.compatibility, different_archive)
         self.assertFalse(self.destination.exists())
 
+    def test_vendor_static_requires_both_same_source_and_matching_checksum(self):
+        vendor = self.root / "vendor"
+        (vendor / "midnight-transient-crypto-2.2.0").mkdir(parents=True)
+        current = vendor / "midnight-transient-crypto-3.1.0"
+        relative = "static/bls_midnight_2p14"
+        stored = current / relative
+        stored.parent.mkdir(parents=True)
+        stored.write_bytes(b"fixture parameter bytes")
+        (current / ".cargo-checksum.json").write_text(json.dumps({
+            "files": {relative: sha256(stored)},
+        }))
+        source = "git+https://example.invalid/ledger#commit"
+        packages = [{"name": "midnight-transient-crypto", "version": version, "source": source}
+                    for version in ("2.2.0", "3.1.0")]
+        staged = vendor / "transient-crypto" / relative
+        packages[1]["source"] = source + "-other"
+        with self.assertRaisesRegex(RuntimeError, "same Git source"):
+            stage_ledger_vendor_static(vendor, packages)
+        self.assertFalse(staged.exists())
+
+        packages[1]["source"] = source
+        stored.write_bytes(b"tampered")
+        with self.assertRaisesRegex(RuntimeError, "failed checksum verification"):
+            stage_ledger_vendor_static(vendor, packages)
+        self.assertFalse(staged.exists())
+
+        stored.write_bytes(b"fixture parameter bytes")
+        stage_ledger_vendor_static(vendor, packages)
+        self.assertEqual(staged.read_bytes(), stored.read_bytes())
+
     def test_resolved_packages_require_archive_checksums_and_runtime_macro_edge(self):
         source = "registry+https://github.com/rust-lang/crates.io-index"
         consumer = self.root / "consumer"
@@ -109,15 +140,30 @@ class ArchiveConsumerTests(unittest.TestCase):
             ]},
         }
         contracts = {"counter": self.destination}
-        check_graph(metadata, consumer, contracts, archives, entries)
+        check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
 
         lock.write_text(lock_text.replace("1" * 64, "3" * 64))
         with self.assertRaisesRegex(RuntimeError, "archive checksum and source in Cargo.lock"):
-            check_graph(metadata, consumer, contracts, archives, entries)
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
         lock.write_text(lock_text)
         macro_edges.clear()
         with self.assertRaisesRegex(RuntimeError, "archived runtime did not resolve the archived macros"):
-            check_graph(metadata, consumer, contracts, archives, entries)
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
+
+        macro_edges.append({"pkg": MACROS})
+        source = {"git": "https://example.invalid/zk", "rev": "a" * 40}
+        self.compatibility["ledger_git_sources"] = {"midnight-curves": source}
+        self.compatibility["ledger_dependencies"] = {"midnight-curves": "=0.3.1"}
+        archives[RUNTIME].mkdir(parents=True)
+        (archives[RUNTIME] / "Cargo.toml").write_text('[dependencies]\nmidnight-curves = "=0.3.1"\n')
+        curves = {"id": "curves", "name": "midnight-curves", "version": "0.3.1",
+                  "source": f'git+{source["git"]}?rev={source["rev"]}#{source["rev"]}'}
+        metadata["packages"].append(curves)
+        macro_edges.append({"pkg": "curves"})
+        check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
+        curves["source"] = "registry+https://github.com/rust-lang/crates.io-index"
+        with self.assertRaisesRegex(RuntimeError, "midnight-curves did not resolve"):
+            check_graph(metadata, consumer, contracts, archives, entries, self.compatibility)
 
 
 if __name__ == "__main__":

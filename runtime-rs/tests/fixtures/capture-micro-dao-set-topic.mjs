@@ -16,13 +16,15 @@ import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 import { readFileSync, realpathSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-const ledger = await import(pathToFileURL(process.argv[3] ?? new URL('../../../tools/compact-rust-backend/wallet-live/node_modules/@midnight-ntwrk/ledger-v8/midnight_ledger_wasm_fs.js', import.meta.url).pathname));
-const path = process.argv[2];
-if (!path) throw new Error('usage: node capture-micro-dao-set-topic.mjs <original-contract.js> [ledger-v8.js]');
+// Compile the unchanged microDAO source with --skip-zk; link the generated
+// package to an isolated corrected TS runtime, then pass all four paths.
+const [path, runtimeRoot, ledgerPath, sourcePath] = process.argv.slice(2);
+if (!path || !runtimeRoot || !ledgerPath || !sourcePath) throw new Error('expected generated index.js, corrected runtime root, pinned ledger-v9 module, source');
 const resolved = realpathSync(createRequire(path).resolve('@midnight-ntwrk/compact-runtime'));
-if (!resolved.startsWith('/private/tmp/compact-adr200-runtime/') && !resolved.startsWith('/tmp/compact-adr200-runtime/')) throw new Error('wrong runtime');
-const r = await import(pathToFileURL(resolved));
-const { Contract, ledger: readLedger } = await import(pathToFileURL(path));
+if (!resolved.startsWith(realpathSync(runtimeRoot) + '/')) throw new Error('wrong corrected runtime');
+const ledger = await import(pathToFileURL(ledgerPath).href);
+const r = await import(pathToFileURL(resolved).href);
+const { Contract, ledger: readLedger } = await import(pathToFileURL(path).href);
 const max = (1n << 128n) - 1n;
 const bytes = new r.CompactTypeBytes(32);
 const u64 = new r.CompactTypeUnsignedInteger((1n << 64n) - 1n, 8);
@@ -110,5 +112,6 @@ const rows = [
   run('zeroSeed',{cost:0n,value:0n}),
   run('witnessFailure',{mode:'failure'}), run('witnessMalformed',{mode:'malformed'}),
 ];
-const provenance={source:'test-center/test-contracts/micro-dao.compact',runtime:resolved,generatedSha256:createHash('sha256').update(readFileSync(path)).digest('hex'),descriptor:r.ShieldedCoinInfoDescriptor.alignment(),scope:'independent original-source TypeScript execution/partition evidence; explicit prior states, no funded lifecycle or proof claim'};
+const hash = p => createHash('sha256').update(readFileSync(p)).digest('hex');
+const provenance={source:'test-center/test-contracts/micro-dao.compact',sourceSha256:hash(sourcePath),generatedIndexSha256:hash(path),runtimeVersion:JSON.parse(readFileSync(`${runtimeRoot}/package.json`,'utf8')).version,runtimeBuiltinsSha256:hash(`${runtimeRoot}/dist/built-ins.js`),runtimeTypesSha256:hash(`${runtimeRoot}/dist/compact-types.js`),ledgerModuleSha256:hash(ledgerPath),descriptor:r.ShieldedCoinInfoDescriptor.alignment(),scope:'unchanged original source; explicitly seeded empty/occupied pot states, no funded lifecycle or proof claim'};
 process.stdout.write(JSON.stringify({provenance,rows},(_,value)=>value instanceof Uint8Array?Array.from(value):typeof value==='bigint'?String(value):value instanceof Map?Object.fromEntries(value):value,2)+'\n');

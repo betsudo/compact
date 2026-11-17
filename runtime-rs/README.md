@@ -11,7 +11,10 @@ queries. Generated code checks `RUST_RUNTIME_ABI` at compile time. A generated
 crate bundles matching runtime sources by default or points to one shared
 source root when compiled with `--rust-runtime-root`.
 
-The Ledger 9 runtime ABI is 54 and requires Rust 1.99. Pure generated vector maps use `FixedVector::try_map`,
+The Ledger 9 runtime ABI is 54, requires Rust 1.99, and currently selects the
+exact Ledger 9.1.0.2 source closure recorded in `compatibility.json`. Generated
+contract manifests repeat its Cargo patches because dependency-local patches
+do not propagate to consumer roots. Pure generated vector maps use `FixedVector::try_map`,
 which consumes elements in order, preserves the const length and returns the first
 callback error. It uses temporary heap storage; no allocation-free guarantee is
 implied. Older runtime roots are rejected by the compiler compatibility check.

@@ -77,7 +77,7 @@ jobs:
           from pathlib import Path
           sys.path.insert(0, 'tools/compact-rust-backend')
           from check_release_packages import compatibility_record
-          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.1'
+          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.2'
           assert json.loads(Path('runtime/package.json').read_text())['version'] == '0.18.0'
           PY
 

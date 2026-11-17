@@ -55,6 +55,10 @@ pub struct Compatibility {
 pub struct GitSource {
     pub git: String,
     pub rev: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 /// Compiler-owned requirements, included in both packaged and Nix backend builds.

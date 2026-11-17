@@ -31,5 +31,5 @@ serde_json = "1"
 [dev-dependencies]
 serde_json = "1"
 midnight-onchain-state = "=4.0.1"
-midnight-storage = "=3.0.0"
+midnight-storage = "=3.1.0"
 rand = "=0.8.6"

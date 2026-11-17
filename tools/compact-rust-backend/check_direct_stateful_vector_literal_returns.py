@@ -14,6 +14,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -249,7 +251,7 @@ def main():
             package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
             dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
         manifest = consumer / "Cargo.toml"
-        manifest.write_text('[workspace]\n[package]\nname="direct-stateful-vector-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
+        manifest.write_text(with_pinned_patches('[workspace]\n[package]\nname="direct-stateful-vector-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n', ROOT))
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
         require(f"test result: ok. {case_count} passed; 0 failed; 0 ignored;" in result.stdout, "all consumer cases must execute")

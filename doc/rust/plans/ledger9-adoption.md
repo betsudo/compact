@@ -8,6 +8,55 @@ The local `rust-ast-backend-ledger9` branch starts at `09c75e289`, the published
 
 This first slice pins the published [Ledger 9.1.0.1 package set](https://github.com/midnightntwrk/midnight-ledger/releases/tag/ledger-9.1.0.1) in the runtime and aligns the core consumers' direct Ledger package pins. The runtime uses the Ledger 9 transaction signature enum, accepts Ledger 9 observation metadata, and uses the ledger's global TTL in the existing Zswap test setup. Observed call preparation preserves the complete installed operation after checking the verifier. The direct fixture path still constructs a verifier-only operation. The proof consumer must check its resolver artifacts against the observed operation.
 
+## Ledger 9.1.0.2 source closure
+
+The next consumer migration moves the Rust runtime to the Ledger 9.1.0.2
+client patch without changing Compact language semantics, runtime ABI 54, IR
+schema 20, or capability schema 3. The trial source closure is:
+
+- Compact Rust AST compiler base
+  `c3abc35afe9ed2e435782fa47e5add4f98944309`;
+- Ledger `6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6` from the
+  `integration/ledger9/ledger-9.1.0.2` review stack;
+- ZK `bca8db4d9e2c1ecaa5d1db5ba7a201935b6c6c8a`, whose SHA3 and Blake2b
+  helpers resolve curves and proofs within the same Git source without a
+  consumer-owned proof patch table;
+- ZKIR v2 `2.2.0` from the same Ledger revision for the retained producer
+  boundary, and ZKIR v3 library `3.2.1` from
+  `3377ad9e48741f60e0aa17010b6f23e34223d906` for the Rust proof runner.
+
+The runtime manifest selects Ledger 9.1.0.2, storage 3.1.0 and
+transient-crypto 3.1.0 from the single Ledger revision. It selects circuits
+7.3.0, curves 0.3.1, proofs 0.8.2 and zk-stdlib 2.4.0 from the single ZK
+revision. The workspace and source-consumer test manifests retain Ledger and ZKIR
+selectors as `[patch.crates-io]` entries. Cargo resolves these selectors at
+the application root. The four ZK packages close through direct Git
+dependencies and the upstream manifests. The compiler's generated manifests
+emit all recorded selectors. Release rehearsal and offline archive consumption
+also restore the full selector table because Cargo's archive normalization
+rewrites Git dependencies as versioned registry dependencies. The compiler
+checks every direct Midnight dependency's exact version, Git URL and revision
+before generation.
+
+The active proof runner resolves the Ledger-required ZKIR 3.2.1 library from
+the exact Git source above. Compiler and proof qualification continue to use
+the published 3.2.0 native CLI pinned by the Compact flake. The Passport dogfood
+fixture remains on transient-crypto 3.0.1 and is explicitly outside this
+DID/runtime slice; no Passport or VC compatibility claim is inferred.
+
+The functional checked-program label stays `9.1.0.1`: Ledger 9.1.0.2 changes
+client transaction partitioning and decoding, not the Compact language or the
+checked-effect model. Runtime observations and compatibility metadata require
+`9.1.0.2`. Historical Ledger 8 and Ledger 9.1.0.1 fixtures remain unchanged.
+
+Rollback is one atomic source-graph operation: select the preceding compiler
+and runtime revision together, regenerate the consumer, and restore its prior
+lockfile. Do not remove only the generated Ledger/ZKIR patch table or downgrade
+only one Ledger or proof crate; either action can create two incompatible
+Midnight type graphs.
+This source closure is an interoperability candidate, not a registry release
+or proof of live network deployment.
+
 The runtime parity tests use fresh byte-for-byte TypeScript captures for Counter, Map, Set and List. The Ledger 8 JSON oracles remain intact. The captures use Compact 0.36.0, Compact Runtime 0.21.0 and Onchain Runtime 4.0.1, with the release's bundled ZKIR v3 compiler. The fixtures have no attached keys or IR in the installed operation.
 
 | Fixture | Compact source | Revision |
@@ -82,7 +131,7 @@ The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.1
 The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
 path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
 fresh output directory. It compiles the checked-in Counter itself, checks
-compiler 0.31.214, language 0.23.105 and runtime 0.18.0 in both generated
+compiler 0.31.215, language 0.23.105 and runtime 0.18.0 in both generated
 metadata files, verifies the manifest hashes, and checks Onchain Runtime
 4.0.1 module identity. Its capture records the source, supplied compiler,
 generated JavaScript and declaration, runtime and official oracle hashes,

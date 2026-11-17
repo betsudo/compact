@@ -28,8 +28,9 @@ import tarfile
 import tempfile
 import tomllib
 
+from consumer_cargo import with_pinned_patches
 from consumer_safety import check_consumer_safety
-from check_release_packages import LOCKS, compatibility_record
+from check_release_packages import LOCKS, archive_source_patches, compatibility_record
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -95,6 +96,31 @@ def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
         json.dumps({"files": files, "package": entry["sha256"]}, sort_keys=True)
     )
     return directory
+
+
+def stage_ledger_vendor_static(vendor: Path, packages: list[dict]) -> None:
+    # The pinned Ledger 2.2.0 transient crypto crate uses a sibling workspace
+    # path for its embedded verifier parameters. Cargo vendors Git crates
+    # individually, so restore that path with the file from the same Git source.
+    old = vendor / "midnight-transient-crypto-2.2.0"
+    if not old.exists():
+        return
+    sources = {
+        (package["version"], package["source"])
+        for package in packages if package["name"] == "midnight-transient-crypto"
+    }
+    revisions = {source for version, source in sources
+                 if version == "2.2.0" and (source or "").startswith("git+")}
+    if len(revisions) != 1 or ("3.1.0", next(iter(revisions))) not in sources:
+        raise RuntimeError("Ledger transient crypto versions did not resolve from the same Git source")
+    current = vendor / "midnight-transient-crypto-3.1.0"
+    relative = "static/bls_midnight_2p14"
+    checksums = json.loads((current / ".cargo-checksum.json").read_text())["files"]
+    if sha256(current / relative) != checksums[relative]:
+        raise RuntimeError("vendored Ledger verifier parameters failed checksum verification")
+    sibling = vendor / "transient-crypto" / relative
+    sibling.parent.mkdir(parents=True)
+    shutil.copyfile(current / relative, sibling)
 
 
 def archived_source_hashes(archives: dict[str, Path]) -> dict[str, str]:
@@ -171,7 +197,7 @@ def project_contract(
 
 def check_graph(
     metadata: dict, consumer: Path, contracts: dict[str, Path],
-    archives: dict[str, Path], entries: list[dict],
+    archives: dict[str, Path], entries: list[dict], compatibility: dict,
 ) -> None:
     packages = metadata["packages"]
     lock_packages = tomllib.loads((consumer / "Cargo.lock").read_text())["package"]
@@ -201,6 +227,20 @@ def check_graph(
     runtime_id = package_ids[RUNTIME]
     if package_ids[MACROS] not in {dependency["pkg"] for dependency in nodes[runtime_id]["deps"]}:
         raise RuntimeError("archived runtime did not resolve the archived macros")
+    if sources := compatibility.get("ledger_git_sources"):
+        archived_manifest = tomllib.loads((archives[RUNTIME] / "Cargo.toml").read_text())
+        direct = {dep["pkg"] for dep in nodes[runtime_id]["deps"]}
+        for name, dependency in archived_manifest["dependencies"].items():
+            if name not in sources:
+                continue
+            matches = [package for package in packages if package["id"] in direct and package["name"] == name]
+            if not matches and isinstance(dependency, dict) and dependency.get("optional"):
+                continue
+            source = sources[name]
+            expected_source = f'git+{source["git"]}?rev={source["rev"]}#{source["rev"]}'
+            version = compatibility["ledger_dependencies"][name].removeprefix("=")
+            if len(matches) != 1 or matches[0]["source"] != expected_source or matches[0]["version"] != version:
+                raise RuntimeError(f"{name} did not resolve to the archived runtime's pinned Git dependency")
     for name, contract in contracts.items():
         package_name = f"compact-contract-{name}"
         found = [package for package in packages if package["name"] == package_name]
@@ -239,8 +279,24 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="rust-archive-consumer-", dir=ROOT / "target") as scratch:
         temporary = Path(scratch)
         vendor = temporary / "vendor"
-        run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
-             "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
+        # Vendor only the runtime rehearsal closure. The full workspace also
+        # contains Passport's independently pinned registry packages, which can
+        # have the same name/version as the Ledger Git packages.
+        seed = temporary / "vendor-seed"
+        seed.mkdir()
+        seed_manifest = seed / "Cargo.toml"
+        seed_manifest.write_text(with_pinned_patches(
+            '[workspace]\n[package]\nname="archive-vendor-seed"\nversion="0.0.0"\n'
+            'edition="2024"\n[lib]\npath="lib.rs"\n[dependencies]\n'
+            + 'midnight-compact-runtime={path=' + json.dumps(str(ROOT / "runtime-rs"))
+            + ',features=["ledger-transaction"]}\n', ROOT))
+        (seed / "lib.rs").write_text("// Manifest only: resolve the runtime archive dependency closure.\n")
+        shutil.copyfile(ROOT / "Cargo.lock", seed / "Cargo.lock")
+        seed_metadata = json.loads(run(
+            ["cargo", "metadata", "--offline", "--format-version", "1"], cwd=seed))
+        vendor_config = run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
+                             "--manifest-path", str(seed_manifest), str(vendor)], cwd=seed)
+        stage_ledger_vendor_static(vendor, seed_metadata["packages"])
         archives = {
             entry["name"]: install_archive(vendor, entry, compatibility["macros_version"])
             for entry in entries
@@ -259,7 +315,7 @@ def main() -> None:
         consumer = temporary / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / ".cargo").mkdir()
-        (consumer / "Cargo.toml").write_text(
+        manifest = (
             '[package]\nname = "compact-rust-archive-consumer"\nversion = "0.1.0"\n'
             'edition = "2024"\n\n[workspace]\n\n[dependencies]\n'
             + "".join(
@@ -268,10 +324,11 @@ def main() -> None:
                 for name, contract in contracts.items()
             )
         )
-        (consumer / ".cargo/config.toml").write_text(
-            '[source.crates-io]\nreplace-with = "archive-vendor"\n'
-            f'[source.archive-vendor]\ndirectory = {json.dumps(str(vendor), ensure_ascii=False)}\n'
-        )
+        (consumer / "Cargo.toml").write_text(manifest + "\n" + archive_source_patches(compatibility))
+        # Preserve Cargo's Git and registry replacements for the same vendor
+        # directory. The staged runtime and macro archives are in that directory.
+        (consumer / ".cargo/config.toml").write_text(vendor_config)
+        shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         (consumer / "tests/counter.rs").write_text(
             'use compact_contract_counter as counter;\n'
             'use compact_contract_cell_boolean as cell;\n'
@@ -351,7 +408,7 @@ def main() -> None:
         environment.setdefault("CARGO_BUILD_JOBS", "2")
         metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
                                   cwd=consumer, env=environment))
-        check_graph(metadata, consumer, contracts, archives, entries)
+        check_graph(metadata, consumer, contracts, archives, entries, compatibility)
         run(["cargo", "test", "--locked", "--offline", "--quiet"], cwd=consumer, env=environment)
         check_consumer_safety(consumer, environment)
         compile_rejections = {

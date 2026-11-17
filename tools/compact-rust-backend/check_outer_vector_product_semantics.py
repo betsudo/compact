@@ -24,6 +24,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import sys
@@ -238,7 +240,7 @@ def main():
         consumer.mkdir()
         shutil.copyfile(FIXTURES / "consumer.rs", consumer / "consumer.rs")
         manifest = consumer / "Cargo.toml"
-        manifest.write_text('[workspace]\n[package]\nname="outer-vector-product-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + "\n".join(deps) + "\n")
+        manifest.write_text(with_pinned_patches('[workspace]\n[package]\nname="outer-vector-product-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + "\n".join(deps) + "\n", ROOT))
         for path in (consumer / "consumer.rs", manifest):
             bind(path)
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")

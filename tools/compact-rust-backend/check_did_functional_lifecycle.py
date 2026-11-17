@@ -198,6 +198,10 @@ def run(args):
         for name in NEGATIVES:
             shutil.copyfile(CONTROLS / f"{name}.rs", consumer / f"{name}.rs")
             lines += ["[[bin]]", f'name="{name}"', f'path="{name}.rs"', f'required-features=["{name}"]']
+        generated_manifest = (generated / "contract/Cargo.toml").read_text()
+        patch = re.search(r"(?ms)^\[patch\.crates-io\]\n.*?(?=^\[|\Z)", generated_manifest)
+        require(patch is not None, "generated contract omitted its Cargo source patch table")
+        lines += ["", *patch.group(0).rstrip().splitlines()]
         manifest_path.write_text("\n".join(lines) + "\n")
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         execute(["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", manifest_path],

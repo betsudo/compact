@@ -81,7 +81,7 @@ pub mod fab {
 /// Increment when generated Rust and the runtime's public contract change.
 pub const RUST_RUNTIME_ABI: u32 = 54;
 /// Ledger version used by the native Rust runtime dependencies.
-pub const LEDGER_VERSION: &str = "ledger-9.1.0.1";
+pub const LEDGER_VERSION: &str = "ledger-9.1.0.2";
 
 /// Compact `Field` is the scalar field used by the Midnight circuit runtime.
 pub use midnight_transient_crypto::curve::Fr;

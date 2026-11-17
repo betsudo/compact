@@ -125,6 +125,8 @@ impl Ledger9Target {
         ],
     };
     pub(crate) fn ledger_version(self) -> &'static str {
+        // Ledger 9.1.0.2 is a client/runtime patch and does not change the
+        // Compact language or checked-effect semantics qualified at 9.1.0.1.
         "9.1.0.1"
     }
     pub(crate) fn supports(self, capability: Capability) -> bool {

@@ -292,6 +292,26 @@ fn crate_manifest(source: &Path, runtime: RuntimeDependency<'_>) -> Result<Strin
     transaction_feature.push("midnight-compact-runtime/ledger-transaction");
     features["ledger-transaction"] = Item::Value(TomlValue::Array(transaction_feature));
     document["features"] = Item::Table(features);
+
+    let sources = compatibility::required().ledger_git_sources;
+    if !sources.is_empty() {
+        let mut crates_io = Table::new();
+        for (package, source) in sources {
+            let mut patch = InlineTable::new();
+            patch.insert("git", TomlValue::from(source.git));
+            patch.insert("rev", TomlValue::from(source.rev));
+            if let Some(package) = source.package {
+                patch.insert("package", TomlValue::from(package));
+            }
+            if let Some(version) = source.version {
+                patch.insert("version", TomlValue::from(version));
+            }
+            crates_io[&package] = Item::Value(TomlValue::InlineTable(patch));
+        }
+        let mut patches = Table::new();
+        patches["crates-io"] = Item::Table(crates_io);
+        document["patch"] = Item::Table(patches);
+    }
     Ok(document.to_string())
 }
 
@@ -1133,6 +1153,26 @@ mod tests {
             document["lints"]["clippy"]["bool_comparison"].as_str(),
             Some("allow")
         );
+        let sources = compact_rust_backend::compatibility::required().ledger_git_sources;
+        for (package, source) in sources {
+            let patch = &document["patch"]["crates-io"][&package];
+            assert_eq!(
+                patch.get("git").and_then(toml_edit::Item::as_str),
+                Some(source.git.as_str())
+            );
+            assert_eq!(
+                patch.get("rev").and_then(toml_edit::Item::as_str),
+                Some(source.rev.as_str())
+            );
+            assert_eq!(
+                patch.get("package").and_then(toml_edit::Item::as_str),
+                source.package.as_deref()
+            );
+            assert_eq!(
+                patch.get("version").and_then(toml_edit::Item::as_str),
+                source.version.as_deref()
+            );
+        }
     }
 
     #[test]

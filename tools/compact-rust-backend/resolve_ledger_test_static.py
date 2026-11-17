@@ -26,14 +26,15 @@ import argparse
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
-import tarfile
 import tomllib
 
 PACKAGE = "midnight-ledger-v9"
-VERSION = "1.0.1"
-SOURCE = "registry+https://github.com/rust-lang/crates.io-index"
-CHECKSUM = "7dd8a21fcae84dc92c8edf7b31d40260d7a384b26695d1179311cafb28928b83"
+VERSION = "1.0.2"
+REVISION = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6"
+REPOSITORY = "https://github.com/betsudo/midnight-ledger"
+SOURCE = f"git+{REPOSITORY}?rev={REVISION}#{REVISION}"
 FIXTURE_HASHES = {
     "spend.bzkir": "d211cacb22391b9db60f945787d98c16d344cbb4790246132117084c080399c1",
     "spend.verifier": "d15a1295780549f534287a39c938005e1faa3232be21861573bd0cdb148949cb",
@@ -47,6 +48,12 @@ def require(condition, message):
         raise ValueError(message)
 
 
+def git_output(crate, *args):
+    return subprocess.run(
+        ["git", "-C", str(crate), *args], check=True, capture_output=True
+    ).stdout
+
+
 def resolve(metadata, lock):
     packages = [p for p in metadata["packages"] if p["name"] == PACKAGE]
     locked = [p for p in lock["package"] if p["name"] == PACKAGE]
@@ -54,21 +61,20 @@ def resolve(metadata, lock):
     package, entry = packages[0], locked[0]
     for item in (package, entry):
         require(item["version"] == VERSION and item["source"] == SOURCE,
-                "ledger version/source differs from audited registry package")
-    require(entry.get("checksum") == CHECKSUM, "ledger lock checksum differs from audited package")
+                "ledger version/source differs from the audited Git package")
+    require("checksum" not in entry, "Git ledger lock entry must not carry a registry checksum")
     manifest = Path(package["manifest_path"])
     require(manifest.is_absolute(), "metadata manifest path must be absolute")
     crate = manifest.parent.resolve(strict=True)
     require(not any(c in str(crate) for c in "\r\n"), "unsafe environment path")
-    require(crate.name == f"{PACKAGE}-{VERSION}" and not manifest.is_symlink(),
-            "resolved manifest identity mismatch")
-    registry = crate.parent.parent.parent
-    require(registry.name == "registry" and crate.parent.parent.name == "src",
-            "ledger manifest is outside the Cargo registry source layout")
-    archive = registry / "cache" / crate.parent.name / f"{crate.name}.crate"
+    require(not manifest.is_symlink(), "symlinked ledger manifest path")
     identity = tomllib.loads(manifest.read_text())["package"]
     require(identity["name"] == PACKAGE and identity["version"] == VERSION,
             "resolved manifest identity mismatch")
+    repository = Path(git_output(crate, "rev-parse", "--show-toplevel").decode().strip())
+    require(crate == repository / "ledger", "ledger package is outside the expected Git source path")
+    require(git_output(crate, "rev-parse", "HEAD").decode().strip() == REVISION,
+            "ledger checkout revision differs from the locked source")
     static = crate / "static"
     files = ["Cargo.toml", "static/dust/spend.prover.sha256"]
     for name, digest in FIXTURE_HASHES.items():
@@ -79,23 +85,17 @@ def resolve(metadata, lock):
         files.extend((f"static/dust/{name}", f"static/dust/{name}.sha256"))
     require((static / "dust/spend.prover.sha256").read_text().split()[0] == PROVER_HASH,
             "upstream prover digest declaration mismatch")
-    with archive.open("rb") as cached:
-        require(hashlib.file_digest(cached, "sha256").hexdigest() == CHECKSUM,
-                "cached ledger crate checksum mismatch")
-        cached.seek(0)
-        with tarfile.open(fileobj=cached, mode="r:gz") as published:
-            for relative in files:
-                path = crate / relative
-                member = published.getmember(f"{crate.name}/{relative}")
-                require(member.isfile() and path.resolve(strict=True) == path,
-                        f"ledger crate member is not a regular extracted file: {relative}")
-                with published.extractfile(member) as source:
-                    require(source.read() == path.read_bytes(),
-                            f"extracted ledger file differs from the crate archive: {relative}")
+    for relative in files:
+        path = crate / relative
+        require(path.resolve(strict=True) == path and path.is_file(),
+                f"ledger source member is not a regular file: {relative}")
+        committed = git_output(crate, "show", f"{REVISION}:ledger/{relative}")
+        require(committed == path.read_bytes(),
+                f"ledger source member differs from the locked Git commit: {relative}")
     return {
         "format": "compact-ledger-test-static/v2",
         "package": PACKAGE, "version": VERSION, "source": SOURCE,
-        "crate_sha256": CHECKSUM, "crate_archive": str(archive),
+        "source_repository": REPOSITORY, "source_revision": REVISION,
         "static_directory": str(static), "fixture_sha256": FIXTURE_HASHES,
         "upstream_prover_sha256": PROVER_HASH,
         "scope": "External test resolver base; upstream provider supplies and verifies proving material",
@@ -120,7 +120,8 @@ def main(argv=None):
                 print(f"MIDNIGHT_LEDGER_TEST_STATIC_DIR={record['static_directory']}", file=output)
         print(record["static_directory"])
         return 0
-    except (OSError, ValueError, KeyError, TypeError, IndexError, tarfile.TarError) as error:
+    except (OSError, ValueError, KeyError, TypeError, IndexError,
+            subprocess.CalledProcessError) as error:
         print(f"ledger static fixture resolution failed: {error}", file=sys.stderr)
         return 1
 

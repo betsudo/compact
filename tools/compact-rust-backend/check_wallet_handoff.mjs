@@ -29,8 +29,8 @@ const [deployPath, transactionPath, packageRoot] = arguments_.length === 3
 
 const packageDirectory = resolve(packageRoot);
 const manifest = JSON.parse(await readFile(resolve(packageDirectory, 'package.json'), 'utf8'));
-if (manifest.name !== '@midnight-ntwrk/ledger-v9' || manifest.version !== '1.0.1') {
-  throw new Error(`expected @midnight-ntwrk/ledger-v9@1.0.1, got ${manifest.name}@${manifest.version}`);
+if (manifest.name !== '@midnight-ntwrk/ledger-v9' || manifest.version !== '1.0.2') {
+  throw new Error(`expected @midnight-ntwrk/ledger-v9@1.0.2, got ${manifest.name}@${manifest.version}`);
 }
 
 const ledger = await import(pathToFileURL(resolve(packageDirectory, 'midnight_ledger_wasm_v9_fs.js')).href);
@@ -71,7 +71,7 @@ if (deployPath) {
   if (deployAddress !== callAddress) {
     throw new Error(`deployment and call addresses differ: ${deployAddress} != ${callAddress}`);
   }
-  console.log(`ledger-v9 1.0.1 round-tripped ${deploy.length} funded deployment and ${call.length} funded call bytes at ${deployAddress}`);
+  console.log(`ledger-v9 1.0.2 round-tripped ${deploy.length} funded deployment and ${call.length} funded call bytes at ${deployAddress}`);
 } else {
-  console.log(`ledger-v9 1.0.1 round-tripped ${call.length} funded call bytes`);
+  console.log(`ledger-v9 1.0.2 round-tripped ${call.length} funded call bytes`);
 }

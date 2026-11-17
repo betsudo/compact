@@ -25,7 +25,7 @@ controls = { package = "compact-contract-field-defaults", path = "../../family-c
 hex = "=0.4.3"
 serde_json = "1"
 midnight-base-crypto = "=1.1.1"
-midnight_ledger = { package = "midnight-ledger-v9", version = "=1.0.1", features = ["test-utilities", "proving"] }
+midnight_ledger = { package = "midnight-ledger-v9", version = "=1.0.2", features = ["test-utilities", "proving"] }
 midnight-onchain-state = "=4.0.1"
 midnight-serialize = "=1.2.1"
 midnight-storage = "=3.0.0"

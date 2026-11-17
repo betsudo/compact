@@ -23,6 +23,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -247,7 +249,7 @@ def main(*, boundaries=False, tuple_guards=False):
             shutil.copyfile(fixtures / (name + ".rs"), consumer / ("src/bin/" + name + ".rs"))
             text += '\n[[bin]]\nname="' + name + '"\npath="src/bin/' + name + '.rs"\nrequired-features=["' + name + '"]\n'
         manifest = consumer / "Cargo.toml"
-        manifest.write_text(text)
+        manifest.write_text(with_pinned_patches(text, ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"]).stdout)
         locked = {(p["name"], p["version"], p.get("source")): p.get("checksum") for p in tomllib.loads((ROOT / "Cargo.lock").read_text())["package"]}

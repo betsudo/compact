@@ -317,6 +317,22 @@
             ];
             cargoLock = {
               lockFile = ./tools/compact-rust-backend/Cargo.lock;
+              # The packages below come from two immutable Ledger/ZK
+              # checkouts. Nix still requires the shared checkout hash for
+              # each package identity referenced by Cargo.lock.
+              outputHashes = {
+                "midnight-base-crypto-1.1.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-base-crypto-derive-1.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-1.2.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-macros-1.0.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-core-1.2.3" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-macros-1.0.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-transient-crypto-3.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-circuits-7.3.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-curves-0.3.1" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-proofs-0.8.2" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-zk-stdlib-2.4.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+              };
             };
             cargoBuildFlags = [ "--bin" "compactc" ];
             # Compiler-backed gates run in build-compiler.yml against the full
@@ -349,7 +365,7 @@
 
           packages.compactc = pkgs.stdenv.mkDerivation {
             name = "compactc";
-            version = "0.31.214"; # NB: also update compiler-version in compiler/compiler-version.ss
+            version = "0.31.215"; # NB: also update compiler-version in compiler/compiler-version.ss
             src = inclusive.lib.inclusive ./. [
               ./compiler
               ./examples

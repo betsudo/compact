@@ -1,11 +1,11 @@
 {
   "provenance": {
     "sourceSha256": "10ced7203dddacb0f8f72fb7b8cd77601ce48e27d44e1629404971c9500a919f",
-    "generatedIndexSha256": "e290cdbf85f08a14671ec4424da029f05df484ed12383f68dbfb00853f8644b0",
-    "runtimeVersion": "0.17.0",
-    "runtimeBuiltinsSha256": "ac57d9e7b09cb7696ce47832213086f666d8ce1819e3b792c068c8c2cc8fc4f5",
-    "runtimeTypesSha256": "1a58a9085563fe1352e7692c0d38ef4e8e2ab6efbc65fae432048f41e88cb3b4",
-    "ledgerModuleSha256": "97cf7a01940f6e3d01b1fd263a734decbbc89dfba201ecc5c63d70174e657c02",
+    "generatedIndexSha256": "0f133f8249089f9e2152c0cf0d3ab5310893aa55910e5cba0faf3686cb98cf1e",
+    "runtimeVersion": "0.18.0",
+    "runtimeBuiltinsSha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+    "runtimeTypesSha256": "a85eaf262d85d456791e7e7f9fbc058e7e11babb85aeefd17ad4f84cc9adcc7a",
+    "ledgerModuleSha256": "b504acb16a4bae340479b09000ab8ce36d1e9049dd56ec01e3e194df10243de9",
     "scope": "unchanged original source; explicitly seeded prior game and coin state"
   },
   "rows": [
@@ -2508,10 +2508,10 @@
         null
       ],
       "reportedGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "1445000000",
+        "computeTime": "14518521335",
+        "bytesWritten": "1074",
+        "bytesDeleted": "1074"
       },
       "replayGas": {
         "readTime": "1445000000",
@@ -5044,10 +5044,10 @@
         null
       ],
       "reportedGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "1445000000",
+        "computeTime": "14518521335",
+        "bytesWritten": "1074",
+        "bytesDeleted": "1074"
       },
       "replayGas": {
         "readTime": "1445000000",
@@ -7578,10 +7578,10 @@
         null
       ],
       "reportedGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "1445000000",
+        "computeTime": "14518521335",
+        "bytesWritten": "1074",
+        "bytesDeleted": "1074"
       },
       "replayGas": {
         "readTime": "1445000000",
@@ -10112,10 +10112,10 @@
         null
       ],
       "reportedGas": {
-        "readTime": "0",
-        "computeTime": "1102262433",
-        "bytesWritten": "0",
-        "bytesDeleted": "0"
+        "readTime": "1445000000",
+        "computeTime": "14518521335",
+        "bytesWritten": "1074",
+        "bytesDeleted": "1074"
       },
       "replayGas": {
         "readTime": "1445000000",

@@ -1,14 +1,20 @@
 # Select versions and an execution target
 
-The local Ledger 9 migration pairs compiler **0.31.214**, Compact language
+The local Ledger 9 migration pairs compiler **0.31.215**, Compact language
 **0.23.105**, TypeScript runtime **0.18.0** and
 `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Rust backend, runtime and
 macros source packages are **0.2.0**. The generated crates require Rust
 **1.99**, with **1.99.0** pinned for the local checks. The native graph
-uses the published `midnight-ledger-v9@1.0.1` crate and the exact
+uses the source-pinned `midnight-ledger-v9@1.0.2` crate and the exact
 dependencies in the [runtime compatibility record](../../../runtime-rs/compatibility.json).
 The ordinary Rust target emits ZKIR v3. Local proof qualification used
-the ZKIR v3 **3.2.0** CLI.
+the ZKIR v3 **3.2.1** CLI.
+
+The active compiler/runtime, generated-contract fixtures and proof runner use
+Ledger 1.0.2, storage 3.1.0 and transient-crypto 3.1.0 from the pinned Ledger
+source. `tests-rust-backend/passport-dogfood` deliberately retains
+transient-crypto 3.0.1 until the Passport cohort migrates; it is not evidence
+for this DID/runtime qualification.
 
 See the [Ledger 9 adoption plan](../plans/ledger9-adoption.md) for the
 macOS arm64 checks, archive consumer rehearsal and remaining integration

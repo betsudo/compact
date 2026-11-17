@@ -5,11 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Toolchain 0.31.214, language 0.23.105, runtime 0.18.0]
+## [Toolchain 0.31.215, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.
 
 ### Changed
+
+- Pair generated Rust contracts and the source runtime with one exact
+  Ledger 9.1.0.2 source graph. Generated Cargo manifests carry the same
+  Ledger and ZK patches as the compiler workspace so transitive dependencies
+  cannot fall back to incompatible registry copies. The functional checked
+  effect label remains 9.1.0.1 because the 9.1.0.2 client patch does not
+  change Compact language or effect semantics. Active proof consumers use
+  ZKIR 3.2.1; the Passport dogfood fixture retains its pre-migration
+  transient-crypto dependency and is outside this DID/runtime qualification.
 
 - Compare `Opaque<"Uint8Array">` values by length and contents in generated
   TypeScript. Distinct arrays with identical bytes now compare equal.

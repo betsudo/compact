@@ -19,10 +19,13 @@
 
 import argparse
 import hashlib
+import os
 from pathlib import Path
 import json
+import shutil
 import subprocess
 import tarfile
+import tempfile
 import tomllib
 
 
@@ -78,7 +81,12 @@ def compatibility_record() -> dict[str, object]:
         actual = dependency.get("version") if isinstance(dependency, dict) else dependency
         source = record.get("ledger_git_sources", {}).get(name)
         selected_source = {key: dependency.get(key) for key in ("git", "rev")} if isinstance(dependency, dict) else {}
-        source_matches = selected_source == source if source else not any(selected_source.values())
+        if source:
+            source_matches = (selected_source == {key: source.get(key) for key in ("git", "rev")}
+                              and source.get("version", version) == version
+                              and not source.keys() - {"git", "rev", "version"})
+        else:
+            source_matches = not any(selected_source.values())
         if isinstance(dependency, dict):
             forbidden = {"branch", "tag", "registry", "registry-index", "workspace", "package"}
             source_matches = source_matches and not forbidden.intersection(dependency)
@@ -87,6 +95,46 @@ def compatibility_record() -> dict[str, object]:
         if actual != version or not source_matches:
             raise RuntimeError(f"runtime compatibility dependency mismatch: {name}")
     return record
+
+
+def archive_source_patches(compatibility: dict) -> str:
+    """Restore Git source selectors removed by Cargo's archive normalization."""
+    lines = ["[patch.crates-io]"]
+    for package, source in compatibility.get("ledger_git_sources", {}).items():
+        fields = ", ".join(f"{key} = {json.dumps(value)}" for key, value in source.items())
+        lines.append(f"{json.dumps(package)} = {{ {fields} }}")
+    return "\n".join(lines) + "\n"
+
+
+def package_runtime(compatibility: dict, target: Path) -> None:
+    # The extra archive pins can change workspace resolution, including the
+    # unrelated Passport cohort. Run Cargo in a private copy of the Git checkout
+    # so it retains VCS provenance without rewriting the source lockfile.
+    with tempfile.TemporaryDirectory(prefix="compact-runtime-rehearsal-") as directory:
+        scratch = Path(directory)
+        checkout = scratch / "source"
+        subprocess.run(["git", "clone", "--quiet", "--shared", "--no-checkout", str(ROOT), str(checkout)],
+                       check=True)
+        head = output("git", "rev-parse", "HEAD")
+        subprocess.run(["git", "checkout", "--quiet", "--detach", head], cwd=checkout, check=True)
+        changes = subprocess.check_output(["git", "diff", "--binary", "HEAD"], cwd=ROOT)
+        if changes:
+            subprocess.run(["git", "apply", "--binary", "-"], input=changes, cwd=checkout, check=True)
+        untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z",
+                                            "--", "runtime-rs/", "runtime-rs-macros/"], cwd=ROOT)
+        for entry in untracked.split(b"\0"):
+            if entry:
+                relative = Path(os.fsdecode(entry))
+                destination = checkout / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(ROOT / relative, destination, follow_symlinks=False)
+        config = scratch / "patches.toml"
+        macros = checkout / "runtime-rs-macros"
+        config.write_text(archive_source_patches(compatibility)
+                          + f'{PACKAGES[0]} = {{ path = {json.dumps(str(macros))} }}\n')
+        subprocess.run(["cargo", "package", "-p", PACKAGES[1], "--allow-dirty",
+                        "--target-dir", str(target), "--config", str(config)],
+                       cwd=checkout, check=True)
 
 
 def package_directory() -> Path:
@@ -209,15 +257,10 @@ def main() -> None:
     from check_standalone_lock import compare_locks
 
     compare_locks(ROOT / "Cargo.lock", ROOT / "tools/compact-rust-backend/Cargo.lock")
-    compatibility_record()
-    run("package", "-p", PACKAGES[0], "--allow-dirty")
+    compatibility = compatibility_record()
+    run("package", "-p", PACKAGES[0], "--locked", "--allow-dirty")
     packages = [inspect_package(PACKAGES[0])]
-
-    # The runtime's exact macro version must be published before an ordinary
-    # cargo package can resolve it. The patch verifies the unpacked package
-    # against the local source without changing the packaged manifest.
-    patch = "patch.crates-io.midnight-compact-runtime-macros.path=" + json.dumps(str(MACROS))
-    run("package", "-p", PACKAGES[1], "--allow-dirty", "--config", patch)
+    package_runtime(compatibility, package_directory().parent)
     packages.append(inspect_package(PACKAGES[1]))
     actual = manifest(packages, args.candidate_tag)
     if expected is not None:

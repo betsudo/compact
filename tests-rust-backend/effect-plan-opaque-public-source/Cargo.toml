@@ -30,6 +30,6 @@ compact-rust-backend = { path = "../../tools/compact-rust-backend" }
 serde_json = "1"
 [dev-dependencies]
 midnight-onchain-state = "=4.0.1"
-midnight-storage = "=3.0.0"
+midnight-storage = "=3.1.0"
 midnight-base-crypto = "=1.1.1"
 rand = "=0.8.6"
