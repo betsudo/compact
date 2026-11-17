@@ -7,6 +7,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import subprocess
 import sys
 import tempfile
@@ -43,6 +44,9 @@ class KeywordForLinuxWorkflowControls(unittest.TestCase):
 
     def test_selected_sha_and_fail_closed_graph(self):
         text = WORKFLOW.read_text()
+        for ref in re.findall(r'^\s+uses:\s+([^\s#]+)', text, re.MULTILINE):
+            if not ref.startswith('./'):
+                self.assertRegex(ref, r'^[^@]+@[0-9a-f]{40}$')
         self.assertIn("'codex/ledger9-keyword-for-linux/*'", text)
         self.assertIn('refs/heads/codex/ledger9-keyword-for-linux/$SOURCE_SHA', text)
         self.assertIn('test "$EXPECTED_SHA" = "$SOURCE_SHA"', text)
