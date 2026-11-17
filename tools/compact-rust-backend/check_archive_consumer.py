@@ -28,6 +28,7 @@ import tarfile
 import tempfile
 import tomllib
 
+from consumer_cargo import with_pinned_patches
 from consumer_safety import check_consumer_safety
 from check_release_packages import LOCKS, compatibility_record
 
@@ -239,8 +240,23 @@ def main() -> None:
     with tempfile.TemporaryDirectory(prefix="rust-archive-consumer-", dir=ROOT / "target") as scratch:
         temporary = Path(scratch)
         vendor = temporary / "vendor"
-        run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
-             "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
+        # Vendor only the runtime rehearsal closure. The full workspace also
+        # contains Passport's independently pinned registry packages, which can
+        # have the same name/version as the Ledger Git packages.
+        seed = temporary / "vendor-seed"
+        seed.mkdir()
+        seed_manifest = seed / "Cargo.toml"
+        seed_manifest.write_text(with_pinned_patches(
+            '[workspace]\n[package]\nname="archive-vendor-seed"\nversion="0.0.0"\n'
+            'edition="2024"\n[lib]\npath="lib.rs"\n[dependencies]\n'
+            + 'midnight-compact-runtime={path=' + json.dumps(str(ROOT / "runtime-rs"))
+            + ',features=["ledger-transaction"]}\n', ROOT))
+        (seed / "lib.rs").write_text("// Manifest only: resolve the runtime archive dependency closure.\n")
+        shutil.copyfile(ROOT / "Cargo.lock", seed / "Cargo.lock")
+        run(["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", str(seed_manifest)],
+            cwd=seed)
+        vendor_config = run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
+                             "--manifest-path", str(seed_manifest), str(vendor)], cwd=seed)
         archives = {
             entry["name"]: install_archive(vendor, entry, compatibility["macros_version"])
             for entry in entries
@@ -259,7 +275,7 @@ def main() -> None:
         consumer = temporary / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / ".cargo").mkdir()
-        (consumer / "Cargo.toml").write_text(
+        manifest = (
             '[package]\nname = "compact-rust-archive-consumer"\nversion = "0.1.0"\n'
             'edition = "2024"\n\n[workspace]\n\n[dependencies]\n'
             + "".join(
@@ -268,10 +284,11 @@ def main() -> None:
                 for name, contract in contracts.items()
             )
         )
-        (consumer / ".cargo/config.toml").write_text(
-            '[source.crates-io]\nreplace-with = "archive-vendor"\n'
-            f'[source.archive-vendor]\ndirectory = {json.dumps(str(vendor), ensure_ascii=False)}\n'
-        )
+        (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, ROOT))
+        # Preserve Cargo's Git and registry replacements for the same vendor
+        # directory. The staged runtime and macro archives are in that directory.
+        (consumer / ".cargo/config.toml").write_text(vendor_config)
+        shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         (consumer / "tests/counter.rs").write_text(
             'use compact_contract_counter as counter;\n'
             'use compact_contract_cell_boolean as cell;\n'

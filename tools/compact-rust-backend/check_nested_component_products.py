@@ -21,6 +21,8 @@ Always uses an absent output directory and unedited whole generated SDKs.
 """
 import argparse
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import os, json, subprocess, time, hashlib, shutil, tomllib, datetime
 from check_stateful_product_vector_widening import reject_compiler_overrides, source_manifest_snapshot
 from check_passport_current_profile import bounded_command, cargo_target
@@ -182,7 +184,7 @@ def main():
         shutil.copyfile(F / 'consumer.rs', U / 'consumer.rs')
         shutil.copyfile(W / 'Cargo.lock', U / 'Cargo.lock')
         M = U / 'Cargo.toml'
-        M.write_text('[workspace]\n[package]\nname="nested-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(deps) + '\n')
+        M.write_text(with_pinned_patches('[workspace]\n[package]\nname="nested-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(deps) + '\n', ROOT))
         bound.update({str(p): sha(p) for p in [M, U / 'consumer.rs']})
         env['COMPACT_NESTED_COMPONENT_PRODUCTS_TS'] = str(ts)
         run('consumer-resolve', ['cargo', 'metadata', '--offline', '--manifest-path', M, '--format-version', '1'])

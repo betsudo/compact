@@ -22,13 +22,13 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 import tempfile
 import time
 import tomllib
 
+from consumer_cargo import with_pinned_patches
 import proof_commands
 
 from target_checks import (
@@ -157,13 +157,7 @@ def check_manifest(output: Path, *, require_zkir: bool = True) -> None:
 
 
 def write_consumer_manifest(consumer: Path, manifest: str) -> None:
-    # Cargo reads patches only from the root manifest. The generated contract
-    # is a dependency of this consumer, so its patch table is ignored here.
-    root_manifest = (ROOT / "Cargo.toml").read_text()
-    patches = re.search(r"(?ms)^\[patch\.crates-io\]\n.*?(?=^\[|\Z)", root_manifest)
-    if patches is None:
-        raise ValueError("workspace manifest is missing the pinned Ledger source patches")
-    (consumer / "Cargo.toml").write_text(manifest.rstrip() + "\n\n" + patches.group().rstrip() + "\n")
+    (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, ROOT))
 
 
 def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:

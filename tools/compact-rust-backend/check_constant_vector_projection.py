@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -257,7 +259,7 @@ def main():
             lines.extend(['[[bin]]', f'name="{name}"', f'path="src/bin/{name}.rs"',
                           f'required-features=["{name}"]'])
         manifest = consumer / "Cargo.toml"
-        manifest.write_text("\n".join(lines) + "\n")
+        manifest.write_text(with_pinned_patches("\n".join(lines) + "\n", ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)

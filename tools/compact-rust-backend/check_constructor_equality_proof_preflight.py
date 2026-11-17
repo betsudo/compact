@@ -23,6 +23,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import sys
@@ -374,7 +376,7 @@ def main(*, boundaries=False, tuple_guards=False):
             consumer=lane/"consumer";(consumer/"proof").mkdir(parents=True)
             manifest=consumer/"Cargo.toml"
             package=tomllib.loads((generated/"contract/Cargo.toml").read_text())["package"]["name"]
-            manifest.write_text(consumer_manifest(package))
+            manifest.write_text(with_pinned_patches(consumer_manifest(package), ROOT))
             shutil.copyfile(ROOT/"tools/compact-rust-backend/tests/constructor_vector_operands/proof.rs",consumer/"proof/prove.rs")
             shutil.copyfile(fixture/"constructors"/(spec["constructor_consumer"]+".rs"),consumer/"proof/constructor.rs")
             recipe=sdk.source_testkit(ROOT/"testkit-rs",lane/"testkit-rs")

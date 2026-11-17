@@ -26,6 +26,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import time
@@ -213,7 +215,7 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         shutil.copyfile(spec["fixtures"] / "consumer.rs", consumer / "consumer.rs")
         cm = consumer / "Cargo.toml"
-        cm.write_text('[workspace]\n[package]\nname="nested-product-request-field-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\ncandidate={package=' + json.dumps(package) + ',path=' + json.dumps(str(manifest.parent)) + ',features=["ledger-transaction"]}\n')
+        cm.write_text(with_pinned_patches('[workspace]\n[package]\nname="nested-product-request-field-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\ncandidate={package=' + json.dumps(package) + ',path=' + json.dumps(str(manifest.parent)) + ',features=["ledger-transaction"]}\n', ROOT))
         bind(p for p in consumer.rglob("*.rs"))
         resolve(cm, spec["name"] + "-consumer-lock")
         result = execute("four-route-test", ["cargo", "test", "--locked", "--offline", "--manifest-path", cm, "--lib"])

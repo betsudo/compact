@@ -25,6 +25,8 @@ import copy
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import time
@@ -368,7 +370,7 @@ def main():
             allowed_local_packages.add((package, "0.1.0"))
             dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
         manifest = consumer / "Cargo.toml"
-        manifest.write_text('[workspace]\n[package]\nname="vector-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
+        manifest.write_text(with_pinned_patches('[workspace]\n[package]\nname="vector-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n', ROOT))
         env["COMPACT_VECTOR_COMPONENT_PRODUCTS_TS"] = str(ts)
         report["generated_inputs_before_build"] = {name: inventory(generated / name) for name in names}
         bind_build_inputs([manifest, consumer / "consumer.rs", ts])

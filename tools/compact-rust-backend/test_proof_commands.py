@@ -31,11 +31,21 @@ from unittest.mock import patch
 
 import check_compactc_target as cli
 import proof_commands
+from consumer_cargo import with_pinned_patches
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class ProofCommands(unittest.TestCase):
+    def test_isolated_consumer_copies_versioned_root_patch_table(self):
+        manifest = '[package]\nname = "isolation-control"\nversion = "0.1.0"\n'
+        expected = tomllib.loads((ROOT / "Cargo.toml").read_text())["patch"]
+        rendered = with_pinned_patches(manifest, ROOT)
+        self.assertEqual(tomllib.loads(rendered)["patch"], expected)
+        self.assertEqual(tomllib.loads(rendered)["package"], tomllib.loads(manifest)["package"])
+        with self.assertRaisesRegex(ValueError, "already has Cargo patches"):
+            with_pinned_patches(rendered, ROOT)
+
     def test_native_scenario_inventory_and_shard_partition(self):
         # Freeze the complete pre-shard default invocation list, including
         # which focused modes historically received --proof.
