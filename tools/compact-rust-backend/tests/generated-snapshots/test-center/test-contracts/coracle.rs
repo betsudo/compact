@@ -1643,7 +1643,6 @@ pub mod ledger_contract {
                             .extend(__compact_call_11.private_transcript_outputs);
                         context = __compact_call_11.context;
                         total_cost += __compact_call_11.gas_cost;
-                        __compact_call_11.result;
                         Ok((context, ()))
                     },
                 )?
@@ -1658,7 +1657,6 @@ pub mod ledger_contract {
                             .extend(__compact_call_13.private_transcript_outputs);
                         context = __compact_call_13.context;
                         total_cost += __compact_call_13.gas_cost;
-                        __compact_call_13.result;
                         Ok((context, ()))
                     },
                 )?

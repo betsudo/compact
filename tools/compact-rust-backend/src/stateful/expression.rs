@@ -245,7 +245,15 @@ fn render_control_expression(
                 // let_unit_value lint in generated consumers.
                 let branch_tail = |value: syn::Expr| {
                     if then_ty == Type::Unit {
-                        if matches!(&value, syn::Expr::Tuple(tuple) if tuple.elems.is_empty()) {
+                        let inert_unit_value = match &value {
+                            syn::Expr::Tuple(tuple) => tuple.elems.is_empty(),
+                            syn::Expr::Path(_) => true,
+                            syn::Expr::Field(field) => {
+                                matches!(&*field.base, syn::Expr::Path(_))
+                            }
+                            _ => false,
+                        };
+                        if inert_unit_value {
                             quote::quote!(Ok((context, ())))
                         } else {
                             quote::quote!(#value; Ok((context, ())))
