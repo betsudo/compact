@@ -473,7 +473,10 @@ mod kernel_shielded_effects;
 mod let_return;
 mod literal_bytes_field;
 mod local_v3_application;
-#[cfg(feature = "unshielded-original-proof")]
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 include!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/contract/lib.rs"
@@ -491,13 +494,19 @@ mod opaque_cell_input;
 mod opaque_public;
 mod owned_witness_inputs;
 mod public_products;
-#[cfg(feature = "unshielded-original-proof")]
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 mod shielded_original_mint_self;
 mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_mutation_initializers;
 mod unit_value_operations;
-#[cfg(feature = "unshielded-original-proof")]
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 mod unshielded_original_proof;
 mod wide_add;
 mod wide_casts;

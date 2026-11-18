@@ -681,7 +681,10 @@ pub(super) fn try_run(
         ("--observational-shielded", _) => Some(shielded::observational_shielded(arguments)),
         ("--wallet-funded-receive", _) => Some(shielded::wallet_funded_receive(arguments)),
         ("--kernel-shielded-effects", _) => Some(shielded::kernel_shielded_effects(arguments)),
-        #[cfg(feature = "unshielded-original-proof")]
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
         ("--unshielded-original-proof", _) => Some((|| {
             let root = arguments
                 .next()
@@ -691,7 +694,10 @@ pub(super) fn try_run(
             }
             super::unshielded_original_proof::run(std::path::Path::new(&root))
         })()),
-        #[cfg(feature = "unshielded-original-proof")]
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
         ("--shielded-original-mint-self-proof", _) => Some((|| {
             let root = arguments
                 .next()

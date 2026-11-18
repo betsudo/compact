@@ -208,15 +208,21 @@ pub(super) fn apply(
     .map(|(proof_bytes, _)| proof_bytes)
 }
 
+#[cfg(compact_unshielded_original_generated)]
+pub(super) struct BalanceExpectation<'a> {
+    pub data: &'a StateValue<DefaultDB>,
+    pub token: midnight_compact_runtime::ledger::TokenType,
+    pub amount: u128,
+}
+
+#[cfg(compact_unshielded_original_generated)]
 pub(super) fn apply_with_balance(
     root: &Path,
     name: &'static str,
     stem: &str,
     prepared: ContractCallPrototype<DefaultDB>,
     deploy: ContractDeploy<DefaultDB>,
-    expected_data: &StateValue<DefaultDB>,
-    token: midnight_compact_runtime::ledger::TokenType,
-    expected_balance: u128,
+    expected: BalanceExpectation<'_>,
     standalone: &Proof,
 ) -> Result<usize, Box<dyn Error>> {
     apply_call(
@@ -227,9 +233,10 @@ pub(super) fn apply_with_balance(
         (deploy, false),
         standalone,
         |state| {
-            check_data(state, expected_data)?;
+            check_data(state, expected.data)?;
             if state.balance.size() != 1
-                || state.balance.get(&token).map(|balance| *balance) != Some(expected_balance)
+                || state.balance.get(&expected.token).map(|balance| *balance)
+                    != Some(expected.amount)
             {
                 return Err("v3 call applied unshielded balance differs".into());
             }

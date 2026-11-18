@@ -24,7 +24,7 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
     ) -> Result<(Self, ledger::BalanceValue), CompactError> {
         let (result, value) = ledger::query_balance(
             &self.state.context.query,
-            token.clone(),
+            token,
             mode,
             self.state.context.gas_limit,
             &self.state.context.cost_model,

@@ -16,12 +16,13 @@
 // Default/all-features checks need no generated SDK. The explicit gate selects
 // an absolute current bundle; Cargo tracks this env and every actual include.
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(compact_unshielded_original_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_UNSHIELDED_ORIGINAL_GENERATED");
-    if std::env::var_os("CARGO_FEATURE_UNSHIELDED_ORIGINAL_PROOF").is_some() {
-        let root = std::path::PathBuf::from(
-            std::env::var_os("COMPACT_UNSHIELDED_ORIGINAL_GENERATED")
-                .expect("original unshielded generated root required"),
-        );
+    if std::env::var_os("CARGO_FEATURE_UNSHIELDED_ORIGINAL_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_UNSHIELDED_ORIGINAL_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
         assert!(
             root.is_absolute(),
             "absolute original unshielded root required"
@@ -82,6 +83,7 @@ fn main() {
             );
             println!("cargo::rerun-if-changed={}", path.display());
         }
+        println!("cargo::rustc-cfg=compact_unshielded_original_generated");
     }
     println!("cargo::rustc-check-cfg=cfg(compact_outer_vector_product_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_OUTER_VECTOR_PRODUCT_GENERATED");

@@ -471,7 +471,7 @@ pub(crate) fn expression_contains<'source>(
         | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
         Expr::KernelUnshieldedEffect { key, recipient, amount, .. } =>
-            visit(key) || recipient.as_deref().is_some_and(|value| visit(value)) || visit(amount),
+            visit(key) || recipient.as_deref().is_some_and(visit) || visit(amount),
         Expr::KernelBalance { token } => visit(token),
         Expr::KernelBalanceLessThan { token, amount }
         | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),

@@ -898,9 +898,11 @@ fn run_send_self(root: &Path) -> Result<(), Box<dyn Error>> {
         SEND_SELF_STEM,
         prepared,
         deploy,
-        initial.ledger_state.get_ref(),
-        token,
-        100,
+        v3::BalanceExpectation {
+            data: initial.ledger_state.get_ref(),
+            token,
+            amount: 100,
+        },
         &proof,
     )?;
     println!(
@@ -976,9 +978,11 @@ fn run_balance_case(
         stem,
         prepared,
         deploy,
-        initial.ledger_state.get_ref(),
-        token,
-        100,
+        v3::BalanceExpectation {
+            data: initial.ledger_state.get_ref(),
+            token,
+            amount: 100,
+        },
         &proof,
     )?;
     println!(
@@ -1093,9 +1097,11 @@ fn run_balance_comparator(
         stem,
         prepared,
         deploy,
-        initial.ledger_state.get_ref(),
-        token,
-        100,
+        v3::BalanceExpectation {
+            data: initial.ledger_state.get_ref(),
+            token,
+            amount: 100,
+        },
         &proof,
     )?;
     println!(
