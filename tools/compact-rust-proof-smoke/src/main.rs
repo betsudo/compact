@@ -473,6 +473,11 @@ mod kernel_shielded_effects;
 mod let_return;
 mod literal_bytes_field;
 mod local_v3_application;
+#[cfg(feature = "unshielded-original-proof")]
+include!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/contract/lib.rs"
+));
 mod map_effects;
 mod map_size_expression;
 mod map_value_products;
@@ -490,6 +495,8 @@ mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_mutation_initializers;
 mod unit_value_operations;
+#[cfg(feature = "unshielded-original-proof")]
+mod unshielded_original_proof;
 mod wide_add;
 mod wide_casts;
 mod wide_zero;

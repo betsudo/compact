@@ -681,6 +681,16 @@ pub(super) fn try_run(
         ("--observational-shielded", _) => Some(shielded::observational_shielded(arguments)),
         ("--wallet-funded-receive", _) => Some(shielded::wallet_funded_receive(arguments)),
         ("--kernel-shielded-effects", _) => Some(shielded::kernel_shielded_effects(arguments)),
+        #[cfg(feature = "unshielded-original-proof")]
+        ("--unshielded-original-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("unshielded original artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected unshielded original proof argument".into());
+            }
+            super::unshielded_original_proof::run(std::path::Path::new(&root))
+        })()),
         ("--qualified-coin-set", _) => Some(shielded::qualified_coin_set(arguments)),
         ("--qualified-coin-set-chunked", _) => {
             Some(shielded::qualified_coin_set_chunked(arguments))
