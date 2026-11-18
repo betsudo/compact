@@ -785,6 +785,19 @@ pub(super) fn try_run(
             }
             super::shielded_original_immediate_self::run(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-immediate-user-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded immediate user artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded immediate user proof argument".into());
+            }
+            super::shielded_original_immediate_user::run(std::path::Path::new(&root))
+        })()),
         ("--qualified-coin-set", _) => Some(shielded::qualified_coin_set(arguments)),
         ("--qualified-coin-set-chunked", _) => {
             Some(shielded::qualified_coin_set_chunked(arguments))

@@ -503,6 +503,11 @@ mod shielded_original_immediate_self;
     feature = "unshielded-original-proof",
     compact_unshielded_original_generated
 ))]
+mod shielded_original_immediate_user;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 mod shielded_original_mint_contract;
 #[cfg(all(
     feature = "unshielded-original-proof",
