@@ -33,6 +33,10 @@ const RECEIVE_CONTRACT_CIRCUIT: &str = "receiveUnshieldedTest";
 const RECEIVE_CONTRACT_STEM: &str = "unshielded-original-receive-contract-100";
 const SEND_SELF_CIRCUIT: &str = "sendUnshieldedToSelfTest";
 const SEND_SELF_STEM: &str = "unshielded-original-send-self-100";
+const MINT_CONTRACT_CIRCUIT: &str = "mintUnshieldedToContractTest";
+const MINT_CONTRACT_STEM: &str = "unshielded-original-mint-contract-100";
+const MINT_USER_CIRCUIT: &str = "mintUnshieldedToUserTest";
+const MINT_USER_STEM: &str = "unshielded-original-mint-user-100";
 const GENERATED_RUST: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/contract/lib.rs"
@@ -69,6 +73,14 @@ const GENERATED_SEND_SELF_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/zkir/sendUnshieldedToSelfTest.zkir"
 ));
+const GENERATED_MINT_CONTRACT_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/mintUnshieldedToContractTest.zkir"
+));
+const GENERATED_MINT_USER_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/mintUnshieldedToUserTest.zkir"
+));
 
 fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
     for (name, expected) in [
@@ -95,6 +107,14 @@ fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
         (
             "zkir/sendUnshieldedToSelfTest.zkir",
             GENERATED_SEND_SELF_ZKIR,
+        ),
+        (
+            "zkir/mintUnshieldedToContractTest.zkir",
+            GENERATED_MINT_CONTRACT_ZKIR,
+        ),
+        (
+            "zkir/mintUnshieldedToUserTest.zkir",
+            GENERATED_MINT_USER_ZKIR,
         ),
     ] {
         if std::fs::read(root.join(name))? != expected {
@@ -190,6 +210,148 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     run_balance_comparators(root)?;
     run_send_contract(root)?;
     run_send_self(root)?;
+    run_mint_destination(root, false)?;
+    run_mint_destination(root, true)?;
+    Ok(())
+}
+
+fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>> {
+    use midnight_compact_runtime::ledger::{HashOutput, PublicAddress, TokenType, UserAddress};
+    use midnight_compact_runtime::transaction::RecordedCall;
+
+    let (name, stem, seed) = if is_user {
+        (MINT_USER_CIRCUIT, MINT_USER_STEM, 0x0184_4d55)
+    } else {
+        (MINT_CONTRACT_CIRCUIT, MINT_CONTRACT_STEM, 0x0184_4d43)
+    };
+    let mut rng = StdRng::seed_from_u64(seed);
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = v3::load_operation(root, name)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        name,
+        operation.clone(),
+        &mut rng,
+    );
+    let observed = ObservedContractState::new(
+        deploy.address(),
+        deploy.initial_state.clone(),
+        Observation {
+            transaction_hash: [0; 32],
+            block_hash: [0; 32],
+            block_height: 0,
+        },
+    );
+    let domain = FixedBytes::new([if is_user { 0x85 } else { 0x86 }; 32]);
+    let recipient_bytes = FixedBytes::new([0x92; 32]);
+    let recipient_contract = crate::types::ContractAddress {
+        bytes: recipient_bytes,
+    };
+    let recipient_user = crate::types::UserAddress {
+        bytes: recipient_bytes,
+    };
+    let contract_address =
+        midnight_compact_runtime::ledger::ContractAddress(HashOutput([0x92; 32]));
+    if contract_address == deploy.address() {
+        return Err("mint-to-contract recipient unexpectedly equals minter".into());
+    }
+    let amount = BoundedUint::<18446744073709551615>::new(100)?;
+    let generated = contract::Contract::default();
+    let recorded = if is_user {
+        generated.recording.mintUnshieldedToUserTest(
+            observed.circuit_context(()),
+            domain,
+            recipient_user.clone(),
+            amount,
+        )?
+    } else {
+        generated.recording.mintUnshieldedToContractTest(
+            observed.circuit_context(()),
+            domain,
+            recipient_contract.clone(),
+            amount,
+        )?
+    };
+    let input = if is_user {
+        AlignedValue::concat(&[
+            AlignedValue::from(domain),
+            AlignedValue::from(recipient_user),
+            AlignedValue::from(amount),
+        ])
+    } else {
+        AlignedValue::concat(&[
+            AlignedValue::from(domain),
+            AlignedValue::from(recipient_contract),
+            AlignedValue::from(amount),
+        ])
+    };
+    let prepared = RecordedCall::new(&observed, recorded, name, input)
+        .prepare(verifier.clone(), Fr::from(0_u64))?;
+    if prepared.op != operation {
+        return Err(format!("original {name} operation differs from installed v3 IR").into());
+    }
+    let effects = &prepared
+        .guaranteed_public_transcript
+        .as_ref()
+        .ok_or("original mint destination has no guaranteed effects transcript")?
+        .effects;
+    let raw_domain = HashOutput(domain.into_array());
+    let token = TokenType::Unshielded(deploy.address().custom_unshielded_token_type(raw_domain));
+    let destination = if is_user {
+        PublicAddress::User(UserAddress(HashOutput([0x92; 32])))
+    } else {
+        PublicAddress::Contract(contract_address)
+    };
+    let wrong_tag = if is_user {
+        PublicAddress::Contract(contract_address)
+    } else {
+        PublicAddress::User(UserAddress(HashOutput([0x92; 32])))
+    };
+    let claim = ClaimedUnshieldedSpendsKey(token, destination);
+    let wrong_claim = ClaimedUnshieldedSpendsKey(token, wrong_tag);
+    if prepared.fallible_public_transcript.is_some()
+        || !effects.claimed_nullifiers.is_empty()
+        || !effects.claimed_shielded_receives.is_empty()
+        || !effects.claimed_shielded_spends.is_empty()
+        || !effects.claimed_contract_calls.is_empty()
+        || !effects.shielded_mints.is_empty()
+        || !effects.unshielded_inputs.is_empty()
+        || !effects.unshielded_outputs.is_empty()
+        || effects.unshielded_mints.size() != 1
+        || effects.claimed_unshielded_spends.size() != 1
+        || effects
+            .unshielded_mints
+            .get(&raw_domain)
+            .map(|value| *value)
+            != Some(100)
+        || effects
+            .claimed_unshielded_spends
+            .get(&claim)
+            .map(|value| *value)
+            != Some(100)
+        || effects
+            .claimed_unshielded_spends
+            .get(&wrong_claim)
+            .is_some()
+    {
+        return Err(
+            format!("original {name} effects or destination tag differ from fixture").into(),
+        );
+    }
+    let proof: Proof = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
+    positional_transaction::verify_separately(root, name, stem)?;
+    v3::apply(
+        root,
+        name,
+        stem,
+        prepared,
+        deploy,
+        initial.ledger_state.get_ref(),
+        &proof,
+    )?;
+    println!(
+        "{name}: original 100-unit destination proof, funded strict apply and replay gate passed"
+    );
     Ok(())
 }
 
