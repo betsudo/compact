@@ -28,6 +28,8 @@ const SEND_CONTRACT_CIRCUIT: &str = "sendUnshieldedToContractTest";
 const SEND_CONTRACT_STEM: &str = "unshielded-original-send-contract-100";
 const RECEIVE_CONTRACT_CIRCUIT: &str = "receiveUnshieldedTest";
 const RECEIVE_CONTRACT_STEM: &str = "unshielded-original-receive-contract-100";
+const SEND_SELF_CIRCUIT: &str = "sendUnshieldedToSelfTest";
+const SEND_SELF_STEM: &str = "unshielded-original-send-self-100";
 const GENERATED_RUST: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/contract/lib.rs"
@@ -52,6 +54,10 @@ const GENERATED_RECEIVE_CONTRACT_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/zkir/receiveUnshieldedTest.zkir"
 ));
+const GENERATED_SEND_SELF_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/sendUnshieldedToSelfTest.zkir"
+));
 
 fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
     for (name, expected) in [
@@ -66,6 +72,10 @@ fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
         (
             "zkir/receiveUnshieldedTest.zkir",
             GENERATED_RECEIVE_CONTRACT_ZKIR,
+        ),
+        (
+            "zkir/sendUnshieldedToSelfTest.zkir",
+            GENERATED_SEND_SELF_ZKIR,
         ),
     ] {
         if std::fs::read(root.join(name))? != expected {
@@ -159,6 +169,105 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     println!("{CIRCUIT}: original source fresh proof and funded strict replay gate passed");
     run_balance(root)?;
     run_send_contract(root)?;
+    run_send_self(root)?;
+    Ok(())
+}
+
+fn run_send_self(root: &Path) -> Result<(), Box<dyn Error>> {
+    use midnight_compact_runtime::ledger::{
+        HashOutput, PublicAddress, TokenType, UnshieldedTokenType,
+    };
+    use midnight_compact_runtime::transaction::RecordedCall;
+
+    let mut rng = StdRng::seed_from_u64(0x0184_5353);
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = v3::load_operation(root, SEND_SELF_CIRCUIT)?;
+    let color = FixedBytes::new([0x73; 32]);
+    let token = TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.into_array())));
+    let mut state = ContractState::new(
+        initial.ledger_state.get_ref().clone(),
+        HashMap::new().insert(
+            EntryPointBuf(SEND_SELF_CIRCUIT.as_bytes().to_vec()),
+            operation.clone(),
+        ),
+        ContractMaintenanceAuthority::default(),
+    );
+    state.balance = state.balance.insert(token, 100);
+    let deploy = ContractDeploy::new(&mut rng, state);
+    let observed = ObservedContractState::new(
+        deploy.address(),
+        deploy.initial_state.clone(),
+        Observation {
+            transaction_hash: [0; 32],
+            block_hash: [0; 32],
+            block_height: 0,
+        },
+    );
+    let amount = BoundedUint::<340282366920938463463374607431768211455>::new(100)?;
+    let mut context = observed.circuit_context(());
+    context.query.call_context.balance = observed.contract().balance.clone();
+    let recorded = contract::Contract::default()
+        .recording
+        .sendUnshieldedToSelfTest(context, color, amount)?;
+    let prepared = RecordedCall::new(
+        &observed,
+        recorded,
+        SEND_SELF_CIRCUIT,
+        AlignedValue::concat(&[AlignedValue::from(color), AlignedValue::from(amount)]),
+    )
+    .prepare(verifier.clone(), Fr::from(0_u64))?;
+    if prepared.op != operation {
+        return Err("original self-send operation differs from installed v3 IR".into());
+    }
+    let transcript = prepared
+        .guaranteed_public_transcript
+        .as_ref()
+        .ok_or("original self-send has no guaranteed effects transcript")?;
+    let effects = &transcript.effects;
+    let claim = ClaimedUnshieldedSpendsKey(token, PublicAddress::Contract(deploy.address()));
+    if prepared.fallible_public_transcript.is_some()
+        || !effects.claimed_nullifiers.is_empty()
+        || !effects.claimed_shielded_receives.is_empty()
+        || !effects.claimed_shielded_spends.is_empty()
+        || !effects.claimed_contract_calls.is_empty()
+        || !effects.shielded_mints.is_empty()
+        || !effects.unshielded_mints.is_empty()
+        || effects.claimed_unshielded_spends.size() != 1
+        || effects.unshielded_outputs.size() != 1
+        || effects.unshielded_inputs.size() != 1
+        || effects
+            .claimed_unshielded_spends
+            .get(&claim)
+            .map(|value| *value)
+            != Some(100)
+        || effects.unshielded_outputs.get(&token).map(|value| *value) != Some(100)
+        || effects.unshielded_inputs.get(&token).map(|value| *value) != Some(100)
+    {
+        return Err("original self-send effects differ from 100-unit auto-receive".into());
+    }
+    let proof: Proof = v3::prove_standalone(
+        root,
+        SEND_SELF_CIRCUIT,
+        SEND_SELF_STEM,
+        &prepared,
+        &verifier,
+        None,
+    )?;
+    positional_transaction::verify_separately(root, SEND_SELF_CIRCUIT, SEND_SELF_STEM)?;
+    v3::apply_with_balance(
+        root,
+        SEND_SELF_CIRCUIT,
+        SEND_SELF_STEM,
+        prepared,
+        deploy,
+        initial.ledger_state.get_ref(),
+        token,
+        100,
+        &proof,
+    )?;
+    println!(
+        "{SEND_SELF_CIRCUIT}: original 100-unit auto-receive proof, funded strict apply and replay gate passed"
+    );
     Ok(())
 }
 
