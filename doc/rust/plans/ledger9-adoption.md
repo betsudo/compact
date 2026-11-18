@@ -11,9 +11,18 @@ The original Basic and Storage suites, one host E2E case, and a signed private
 Events material package have later local Darwin arm64 results. The public
 Events two-contract proof, funded application and native Linux gate remain
 open. The [CI budget](ci-runner-resource-budget.md) records measured hosted
-runner use and the proposed compiler-shell handoff without claiming a
+runner use and the bounded compiler-shell handoff without claiming a
 controlled cost or speed improvement. Entries below retain their historical
 revision boundaries.
+
+A further signed stage-only Events companion at `2c7e4eaa3` binds 838
+physical files and passes 17 refusal controls. The separate private
+source-generated TypeScript path passes 13 profile checks and the unchanged
+original `events.ts` cases 2/2; its superseding signed receipt SHA-256 is
+`21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`.
+The original run did not separately capture exact argv/environment/exit-code
+records. Public Outer admission, original Rust execution, proof, funded
+application and native Linux remain open.
 
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.

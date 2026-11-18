@@ -8,9 +8,9 @@
 
 PR [#774](https://github.com/betsudo/compact/pull/774) merged into the Rust
 AST base at `eb3b2adbb`. PR [#775](https://github.com/betsudo/compact/pull/775)
-was rebased onto that source and is open at `297ea0b17`; at 21:52 UTC,
-22 checks succeeded, two were skipped and Rust proof qualification was still
-running. The complete run measurements below
+was rebased onto that source and is open at `297ea0b17`; Rust proof
+qualification was still running at the last check. The complete run
+measurements below
 belong to the earlier `9069c0c` and `867b25d` heads. They cannot establish
 the rebased head's gate result or a CI saving. The measured transfer candidate
 below has no native Linux cold-run benchmark. The full proof, native, package

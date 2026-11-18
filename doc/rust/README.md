@@ -19,8 +19,9 @@ publication and CI resource summary.
 The [cross-contract foundation](https://github.com/betsudo/compact/pull/774)
 merged into `codex/rust-backend-ast` at `eb3b2adbb`. The [20-circuit
 original-token follow-up](https://github.com/betsudo/compact/pull/775) was
-rebased onto it and is open at `297ea0b17`; its new-head CI was running on
-18 November 2026. The earlier complete #775 run passed at `867b25d88`, but
+rebased onto it and is open at `297ea0b17`; Rust proof qualification was
+still running at the last check. The earlier complete #775 run passed at
+`867b25d88`, but
 that result does not qualify the rebased head. Signed local macOS arm64 proof
 evidence covers all 20 unique original-token Rust circuits at its recorded
 source revision. Native Linux proof and funded application remain open in
@@ -47,6 +48,11 @@ A later signed local Events material package binds the exact original sources,
 both generated circuit artifacts and fresh k=8 A/B keys through a separate
 GPG trust anchor. It remains a prerequisite for checked public Outer admission,
 not a proof or transaction result.
+A signed stage-only companion now binds the Events physical material and
+runtime closure. In a separate private source-generated TypeScript run, the
+unchanged original Events suite passed 2/2 cases. Neither result admits a
+public Outer or qualifies the original two-contract Rust proof and funded
+transaction; the [status digest](ledger9-status.md) binds the exact receipts.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner

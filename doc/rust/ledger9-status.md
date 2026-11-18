@@ -1,6 +1,6 @@
 # Ledger 9 Rust AST compatibility status
 
-Verified 18 November 2026. This page summarizes the public branch and the
+Verified 19 November 2026. This page summarizes the public branch and the
 limits of separate local qualifications. The [adoption plan](plans/ledger9-adoption.md)
 and [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
 retain the detailed, source-bound history.
@@ -18,7 +18,7 @@ contract-semantic baseline.
 | Slice | Public state | Qualification boundary |
 | --- | --- | --- |
 | [Cross-contract foundation #774](https://github.com/betsudo/compact/pull/774) | Merged into `codex/rust-backend-ast` at `eb3b2adbb` | Checked call context and refusal foundation; ordinary generated public `pay` execution remains separate. |
-| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Open, rebased on #774 at `297ea0b17`; at 21:52 UTC, 22 checks succeeded, two were skipped and Rust proof qualification was still running | The complete green `867b25d88` run belongs to the earlier source head. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source, not the rebased head. |
+| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Open, rebased on #774 at `297ea0b17`; Rust proof qualification was still running at the last check | The complete green `867b25d88` run belongs to the earlier source head. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source, not the rebased head. |
 | Public generated A `pay` / B `transfer` | Signed local source `49ff23d9d`; unpublished | A source-bound offline gate produced fresh A/B V3 proofs, separately verified them, applied a funded default-strict two-contract transaction with positive Dust, and refused replay with unchanged ledger bytes on Darwin arm64. Native Linux, live-node and original decoy-transcript parity remain open. |
 | [Native Linux gate #773](https://github.com/betsudo/compact/issues/773) | Open | Local Darwin arm64 proof and funded results do not qualify the required x86_64 Linux gate. |
 
@@ -33,8 +33,8 @@ with 12 Inner and five private Outer manifest files; 13 focused contract-call
 tests and library Clippy with warnings denied passed on Darwin arm64. This
 private check does not publish an executable Outer. The
 separately qualified public `pay` route does not execute this original Events
-pair. Original-suite parity, generated Events A/B execution, applied event
-ordering, the host-tool census, native Linux integration and live-node
+pair. Public original-suite parity, generated Events A/B Rust execution,
+applied event ordering, the host-tool census, native Linux integration and live-node
 qualification remain open. [Compatibility tracking #726](https://github.com/betsudo/compact/issues/726),
 [coverage #727](https://github.com/betsudo/compact/issues/727),
 [cross-contract calls #730](https://github.com/betsudo/compact/issues/730),
@@ -97,6 +97,34 @@ anchor and membership fixes. Detached-GPG qualification receipt SHA-256:
 The ZKIR tool binary hash is a signer attestation; its bytes are not bundled.
 The material package does not publish Outer or establish a proof, funded
 transaction, applied event order, live-node or native Linux result.
+
+The signed local Events stage-only companion at `2c7e4eaa3`, stacked on the
+checked-entry head `b465dcce6`, binds 838 physical files: the exact prior
+package, generated Inner and private Outer material, fresh keys, and the
+tracked runtime source closure. Its stage identity SHA-256 is
+`859d8cabae8a1391a82555a78ceb29a662ad089bb77e4d8f35064603656a4413`;
+17 semantic and membership refusals pass. Independent review confirmed the
+final exact-membership repair. Its detached-GPG qualification receipt SHA-256
+is `0a813df62474c3527c7f7107a1930501ffa2325fb9670cf540710e211a24ea90`.
+This package has no public Outer TypeScript or compiler manifest, Events
+identity crate, or public `outerEmit` admission. The prerequisite checked-entry
+source at `b465dcce6` passed 15 focused contract-call tests and library
+Clippy with warnings denied; its signed receipt SHA-256 is
+`e2d62179b2aa37eaf3cdf08b4f5db39d6b0dd9844eed901a209f84c595ec9f46`.
+The generated entry is a source-order check, not a Cargo type-checked crate.
+
+Separately, source-built private TypeScript generation passed 13 profile
+checks, then the unchanged original composable `events.ts` body passed 2/2
+TestChain cases using generated Inner and Outer TypeScript on Darwin arm64.
+The superseding signed receipt, issued after independent audit, has SHA-256
+`21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`.
+It pins all 35 retained artifacts, including the upstream verifier template
+consumed by the test harness. The original run did not separately capture
+exact command arguments, environment, and exit codes; the receipt discloses
+reconstructed reproduction commands. This private result does not qualify
+public generated Rust/TypeScript Outer, genuine proof, independent proof
+verification, funded strict application/replay, applied event delivery,
+live-node execution, or native Linux.
 
 ## CI resource and optimization evidence
 

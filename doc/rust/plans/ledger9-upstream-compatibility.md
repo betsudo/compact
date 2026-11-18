@@ -1,11 +1,20 @@
 # Ledger 9 upstream compatibility
 
-## Publication snapshot, 2026-11-18
+## Publication snapshot, 2026-11-19
 
 See the [dated status digest](../ledger9-status.md) for the merged #774
 foundation, open rebased #775 checks, current local original-suite coverage,
 and the Events material package boundary. The source-bound local Events work
 has not published a generated Outer or qualified a funded two-contract call.
+The signed local Events stage-only companion at `2c7e4eaa3` binds 838
+physical files with 17 membership/semantic refusals. A separate private
+source-generated TypeScript run passes 13 profile checks and the unchanged
+original `events.ts` cases 2/2. Its superseding signed receipt, issued after
+independent audit, has SHA-256
+`21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`;
+it pins the consumed verifier template and discloses the original command
+capture limit. Public Events Rust/TypeScript Outer admission, proof, funded
+application, applied event delivery and native Linux remain open.
 The [CI resource budget](ci-runner-resource-budget.md) separates measured
 runner minutes from unmeasured optimization claims. The inventory and
 historical candidate details below remain necessary; they do not imply that
