@@ -812,6 +812,11 @@ impl<D: DB> OfferBoundPreparedPair<D> {
         (&self.receive, &self.send)
     }
 
+    /// Inspect the complete physical offer retained by the reconciled pair.
+    pub fn offer(&self) -> &Offer<ProofPreimage, D> {
+        &self.offer
+    }
+
     pub fn into_transaction<R: Rng + CryptoRng + ?Sized>(
         self,
         rng: &mut R,
