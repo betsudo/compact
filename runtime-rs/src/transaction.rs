@@ -555,7 +555,7 @@ impl<D: DB> OfferReconciliation<'_, D> {
             .frontier
             .checked_add(second.outputs.len() as u64)
             .ok_or(ZswapIntentError::AllocationMismatch)?;
-        if first.inputs.len() != 0
+        if !first.inputs.is_empty()
             || first.outputs.len() != 1
             || second.inputs.len() != 1
             || second.outputs.is_empty()
