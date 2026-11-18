@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Run the original token Linux integration gate on a signed PR771 descendant.
+"""Run the original token Linux integration gate on a signed PR772 descendant.
 
 The input tarballs are the released packages named by the pinned original test
 lockfile. This manual gate does not start hosted CI. Its output is fresh, local
@@ -60,6 +60,37 @@ SHIELDED_MARKERS = (
     "mintShieldedToSelfTest: unmatched-output commitment refusal passed",
     "mintShieldedToSelfTest: original mint100, matching self spend/receive commitment, funded strict apply and replay passed",
 )
+SHIELDED_BATCHES = (
+    ("mint-self", "--shielded-original-mint-self-proof", SHIELDED_MARKERS),
+    ("mint-contract", "--shielded-original-mint-contract-proof", (
+        "mintShieldedToContractTest: original mint100, matching recipient contract output without auto-receive, funded strict apply and replay passed",
+        "receiveShieldedTest: original self-color receive Effects and proof passed",
+    )),
+    ("mint-user", "--shielded-original-mint-user-proof", (
+        "mintShieldedToUserTest: original mint100, matching user output without auto-receive, funded strict apply and replay passed",
+    )),
+    ("send-self", "--shielded-original-send-self-proof", (
+        "sendShieldedToSelfTest: original send 60 from 100, 2 self output(s), funded strict apply and replay passed",
+        "sendShieldedToSelfTest: original send 100 from 100, 1 self output(s), funded strict apply and replay passed",
+    )),
+    ("send-contract", "--shielded-original-send-contract-proof", (
+        "sendShieldedToContractTest: original send 60 from 100, one recipient and one change output, funded strict apply and replay passed",
+    )),
+    ("send-user", "--shielded-original-send-user-proof", (
+        "sendShieldedToUserTest: original send 60 from 100, one user output and 40 self change, funded strict apply and replay passed",
+    )),
+)
+QUALIFIED_CIRCUITS = (
+    "mintUnshieldedToSelfTest", "getUnshieldedBalanceTest",
+    "getUnshieldedBalanceGtTest", "getUnshieldedBalanceLtTest",
+    "sendUnshieldedToContractTest", "receiveUnshieldedTest",
+    "sendUnshieldedToSelfTest", "mintUnshieldedToContractTest",
+    "mintUnshieldedToUserTest", "sendUnshieldedToUserTest",
+    "mintShieldedToSelfTest", "mintShieldedToContractTest",
+    "receiveShieldedTest", "mintShieldedToUserTest",
+    "sendShieldedToSelfTest", "sendShieldedToContractTest",
+    "sendShieldedToUserTest",
+)
 PROOF_STEMS = (
     "unshielded-original-mint-self",
     "unshielded-original-balance-100",
@@ -76,10 +107,20 @@ PROOF_STEMS = (
     "unshielded-original-mint-user-100",
     "unshielded-original-send-user-100",
     "unshielded-original-mint-shielded-self-100",
+    "unshielded-original-mint-shielded-contract-100",
+    "unshielded-original-mint-shielded-contract-100-recipient-receive",
+    "unshielded-original-mint-shielded-user-100",
+    "unshielded-original-send-shielded-self-change-60",
+    "unshielded-original-send-shielded-self-full-100",
+    "unshielded-original-send-shielded-contract-change-60",
+    "unshielded-original-send-shielded-contract-change-60-recipient-receive",
+    "unshielded-original-send-shielded-user-change-60",
 )
 REPLAY_STEMS = tuple(stem for stem in PROOF_STEMS if stem not in (
     "unshielded-original-receive-contract-100",
     "unshielded-original-mint-contract-receive-100",
+    "unshielded-original-mint-shielded-contract-100-recipient-receive",
+    "unshielded-original-send-shielded-contract-change-60-recipient-receive",
 ))
 
 
@@ -94,6 +135,20 @@ def digest(path: Path) -> str:
 def require(condition: bool, message: str) -> None:
     if not condition:
         raise ValueError(message)
+
+
+def require_qualified_plan() -> None:
+    """Refuse an incomplete selector before reporting source-only readiness."""
+    require(len(QUALIFIED_CIRCUITS) == len(set(QUALIFIED_CIRCUITS)) == 17 and
+            len(PROOF_STEMS) == len(set(PROOF_STEMS)) == 23 and
+            len(REPLAY_STEMS) == 19 and
+            len(SHIELDED_BATCHES) == 6,
+            "original 17-circuit proof/replay inventory differs")
+    source = SOURCE.read_text()
+    dispatch = (ROOT / "tools/compact-rust-proof-smoke/src/direct_dispatch.rs").read_text()
+    require(all(name in source for name in QUALIFIED_CIRCUITS) and
+            all(flag in dispatch and markers for _, flag, markers in SHIELDED_BATCHES),
+            "original circuit source or proof-smoke dispatch differs")
 
 
 def git(*args: str, env: dict[str, str] | None = None) -> str:
@@ -187,12 +242,15 @@ def main() -> int:
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--signed-checkout-head", help="signed equal-tree commit for a GitHub squash merge")
     args = parser.parse_args()
+    require_qualified_plan()
     inputs = pinned_inputs(args.runtime_tar, args.onchain_tar)
     state = source_state(args.signed_checkout_head)
     if args.preflight_only:
-        print(json.dumps({"format": "ledger9-original-token-linux/v2", "status": "prepared",
+        print(json.dumps({"format": "ledger9-original-token-linux/v3", "status": "prepared",
                           "native_linux": False, "source": state, "inputs_sha256": inputs,
-                          "original_tests": 19, "proof_circuits": 11}, sort_keys=True))
+                          "original_tests": 19, "proof_circuits": len(QUALIFIED_CIRCUITS),
+                          "proof_pairs": len(PROOF_STEMS),
+                          "replay_pairs": len(REPLAY_STEMS)}, sort_keys=True))
         return 0
     if not args.output:
         parser.error("--output is required for qualification")
@@ -207,7 +265,7 @@ def main() -> int:
     env["CARGO_TARGET_DIR"] = str(output / "cargo-target")
     env["MIDNIGHT_PP"] = str(output / "proof-parameters")
     (output / "proof-parameters").mkdir()
-    receipt = {"format": "ledger9-original-token-linux/v2", "status": "failed",
+    receipt = {"format": "ledger9-original-token-linux/v3", "status": "failed",
                "native_linux": True, "platform": "Linux x86_64", "source": state,
                "inputs_sha256": inputs, "sdk_matrix": {
                    "contract_semantics": "Ledger 9.1.0.1", "ledger_client": "midnight-ledger-v9 1.0.2",
@@ -239,6 +297,8 @@ def main() -> int:
             output / "compile-probe.log", env)
         circuits = sorted(p.stem for p in (probe / "zkir").glob("*.zkir"))
         require(len(circuits) == 20, "expected all 20 original ZKIR circuits")
+        require(set(QUALIFIED_CIRCUITS) <= set(circuits),
+                "original qualified circuits differ from generated ZKIR")
         parameters = set()
         for circuit in circuits:
             log = output / f"model-{circuit}.log"
@@ -292,13 +352,15 @@ def main() -> int:
                      "--", "--unshielded-original-proof", str(generated)], unshielded_log, env)
         require(all(marker in unshielded for marker in PROOF_MARKERS),
                 "one or more original unshielded proof/strict markers missing")
-        shielded_log = output / "shielded-mint-self-proof-run.log"
-        shielded = run(["cargo", "run", "--locked", "--offline", "-p",
-                       "compact-rust-proof-smoke", "--features", "unshielded-original-proof",
-                       "--", "--shielded-original-mint-self-proof", str(generated)],
-                      shielded_log, env)
-        require(all(marker in shielded for marker in SHIELDED_MARKERS),
-                "original shielded mint-to-self proof/strict marker missing")
+        proof_logs = {"unshielded": digest(unshielded_log)}
+        for name, flag, markers in SHIELDED_BATCHES:
+            log = output / f"shielded-{name}-proof-run.log"
+            text = run(["cargo", "run", "--locked", "--offline", "-p",
+                        "compact-rust-proof-smoke", "--features", "unshielded-original-proof",
+                        "--", flag, str(generated)], log, env)
+            require(all(marker in text for marker in markers),
+                    f"original shielded {name} proof/strict marker missing")
+            proof_logs[name] = digest(log)
         for stem in PROOF_STEMS:
             standalone = generated / f"{stem}.proof"
             transaction = generated / f"{stem}-transaction.proof"
@@ -311,16 +373,40 @@ def main() -> int:
             replay = generated / f"{stem}-ledger-replay.bin"
             require(after.is_file() and replay.is_file() and digest(after) == digest(replay),
                     f"{stem} replay changed serialized Ledger")
-        refusal = generated / "unshielded-original-mint-shielded-self-100-without-offer-refusal.txt"
-        require(refusal.is_file() and
-                "CommitmentsNEClaimedShieldedReceives" in refusal.read_text(),
-                "original shielded mint unmatched-output refusal absent")
-        receipt["proof_circuits"] = {"unshielded": 10, "shielded": 1}
-        receipt["proof_log_sha256"] = {"unshielded": digest(unshielded_log),
-                                        "shielded_mint_self": digest(shielded_log)}
+        refusals = {
+            "unshielded-original-mint-shielded-self-100-without-offer-refusal.txt":
+                "CommitmentsNEClaimedShieldedReceives",
+            "unshielded-original-mint-shielded-contract-100-without-offer-refusal.txt":
+                "AllCommitmentsSubsetCheckFailure",
+            "unshielded-original-mint-shielded-contract-100-without-recipient-refusal.txt":
+                "CommitmentsNEClaimedShieldedReceives",
+            "unshielded-original-mint-shielded-user-100-without-offer-refusal.txt":
+                "AllCommitmentsSubsetCheckFailure",
+            "unshielded-original-send-shielded-self-change-60-without-offer-refusal.txt":
+                "NullifiersNEClaimedNullifiers",
+            "unshielded-original-send-shielded-self-full-100-without-offer-refusal.txt":
+                "NullifiersNEClaimedNullifiers",
+            "unshielded-original-send-shielded-contract-change-60-without-offer-refusal.txt":
+                "NullifiersNEClaimedNullifiers",
+            "unshielded-original-send-shielded-contract-change-60-without-recipient-refusal.txt":
+                "CommitmentsNEClaimedShieldedReceives",
+            "unshielded-original-send-shielded-user-change-60-without-offer-refusal.txt":
+                "NullifiersNEClaimedNullifiers",
+        }
+        for name, reason in refusals.items():
+            refusal = generated / name
+            require(refusal.is_file() and reason in refusal.read_text(),
+                    f"original shielded refusal differs: {name}")
+        self_color = generated / "unshielded-original-mint-shielded-contract-100-recipient-self-color.proof"
+        require(self_color.is_file() and self_color.stat().st_size > 0,
+                "original shielded recipient self-color control proof absent")
+        receipt["proof_circuits"] = {"unshielded": 10, "shielded": 7}
+        receipt["proof_pairs"] = len(PROOF_STEMS)
+        receipt["replay_pairs"] = len(REPLAY_STEMS)
+        receipt["proof_log_sha256"] = proof_logs
         receipt["ledger_static_provenance_sha256"] = digest(static_receipt)
         proof_artifacts = files(generated)
-        require(len(proof_artifacts) == 191 and
+        require(len(proof_artifacts) == 259 and
                 all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
                 "proof batch changed generated files or artifact count")
         receipt["proof_artifacts_sha256"] = proof_artifacts

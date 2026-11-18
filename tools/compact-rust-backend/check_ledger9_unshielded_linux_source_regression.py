@@ -18,7 +18,9 @@
 
 import unittest
 
-from check_ledger9_unshielded_linux import signed_checkout_identity
+from check_ledger9_unshielded_linux import (
+    require_qualified_plan, signed_checkout_identity,
+)
 from verify_ledger9_unshielded_tokens_original import require_compiler_source_tree
 
 
@@ -28,6 +30,9 @@ STALE_COMPILER_HEAD = "cdb4cb64629af69c2b48ea1f3edfae638e7369a6"
 
 
 class OriginalTokenLinuxSourceTests(unittest.TestCase):
+    def test_qualified_plan_matches_source_and_dispatch(self):
+        require_qualified_plan()
+
     def test_squash_merge_requires_signed_equal_tree_provenance(self):
         self.assertEqual(signed_checkout_identity(SIGNED_PR_HEAD), SIGNED_PR_HEAD)
         self.assertEqual(signed_checkout_identity(SQUASH_MERGE_HEAD, SIGNED_PR_HEAD),
