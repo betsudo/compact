@@ -46,7 +46,7 @@
     (call-with-port (open-file-output-port target (file-options no-fail))
       (lambda (port) (put-bytevector port bytes)))))
 
-(define (collect tree wanted?)
+(define (collect-nodes tree wanted?)
   (let loop ([node tree])
     (append (if (wanted? node) (list node) '())
             (if (pair? node)
@@ -57,9 +57,9 @@
   (and (pair? node) (eq? (car node) tag)))
 
 (define (contains? value tree)
-  (not (null? (collect tree (lambda (node) (equal? node value))))))
+  (not (null? (collect-nodes tree (lambda (node) (equal? node value))))))
 
-(define (only name items)
+(define (only-one name items)
   (check name (= (length items) 1))
   (car items))
 
@@ -99,20 +99,20 @@
 
 (check 'caller-flattened flattened)
 (define natives
-  (collect flattened (lambda (node) (tagged? 'native node))))
-(define transient-native (only 'single-transient-commit-native natives))
+  (collect-nodes flattened (lambda (node) (tagged? 'native node))))
+(define transient-native (only-one 'single-transient-commit-native natives))
 (define transient-name (list-ref transient-native 1))
 (define statements
-  (collect flattened (lambda (node) (tagged? '= node))))
+  (collect-nodes flattened (lambda (node) (tagged? '= node))))
 (define transient-call
-  (only 'single-transient-commit-call
+  (only-one 'single-transient-commit-call
     (filter (lambda (node)
               (let ([op (statement-op node)])
                 (and (tagged? 'call op)
                      (eq? (call-target node) transient-name))))
             statements)))
 (define claim
-  (only 'single-contract-claim
+  (only-one 'single-contract-claim
     (filter (lambda (node)
               (let ([op (statement-op node)])
                 (and (tagged? 'public-ledger op)
@@ -157,7 +157,7 @@
 (check 'honest-statement-bound (bound-claim? claim-args))
 
 (define callee-result-call
-  (only 'single-callee-result-witness
+  (only-one 'single-callee-result-witness
     (filter (lambda (node)
               (let ([op (statement-op node)])
                 (and (tagged? 'call op)
