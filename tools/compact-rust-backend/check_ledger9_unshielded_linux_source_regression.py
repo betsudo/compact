@@ -28,7 +28,8 @@ from verify_ledger9_unshielded_tokens_original import require_compiler_source_tr
 
 
 SIGNED_PR_HEAD = "24f7df322876c839cbceadefebb41cbd4dce7103"
-SIGNED_INTEGRATED_HEAD = "06d27825249d3122e9ba6d597204161acda77e0b"
+SIGNED_INTEGRATED_HEAD = "d0d0dfc18e9f73b75b8028c3939c68ad79ed19d2"
+PRE_FOUNDATION_HEAD = "06d27825249d3122e9ba6d597204161acda77e0b"
 SQUASH_MERGE_HEAD = "785eddfc5ec07036c98fdc988c6138e1c8cc834e"
 STALE_COMPILER_HEAD = "cdb4cb64629af69c2b48ea1f3edfae638e7369a6"
 
@@ -71,7 +72,10 @@ class OriginalTokenLinuxSourceTests(unittest.TestCase):
             signed_checkout_identity(SQUASH_MERGE_HEAD, STALE_COMPILER_HEAD)
 
     def test_current_compiler_tree_matches_signed_pin_and_refuses_stale_pin(self):
+        self.assertEqual(gate.SOURCE_HEAD, SIGNED_INTEGRATED_HEAD)
         require_compiler_source_tree(SIGNED_INTEGRATED_HEAD)
+        with self.assertRaisesRegex(ValueError, "compiler source files differ"):
+            require_compiler_source_tree(PRE_FOUNDATION_HEAD)
         with self.assertRaisesRegex(ValueError, "compiler source files differ"):
             require_compiler_source_tree(SIGNED_PR_HEAD)
         with self.assertRaisesRegex(ValueError, "compiler source files differ"):
