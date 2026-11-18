@@ -73,7 +73,7 @@ def command(argv: list[str], cwd: Path, log: Path) -> None:
         raise RuntimeError(f"{argv[0]} failed ({result.returncode}); see {log}")
 
 
-def source_compiler(compiler: Path, head: str, digest: str) -> Path:
+def source_compiler(compiler: Path, head: str, digest: str, scheme_digest: str | None) -> Path:
     compiler = compiler.resolve(strict=True)
     if not compiler.is_file() or not os.access(compiler, os.X_OK):
         raise ValueError(f"source-built compiler is not executable: {compiler}")
@@ -81,6 +81,10 @@ def source_compiler(compiler: Path, head: str, digest: str) -> Path:
         raise ValueError("--compiler-source-head must be a full Git commit ID")
     if not re.fullmatch(r"[0-9a-f]{64}", digest) or sha256(compiler) != digest:
         raise ValueError("source-built compiler SHA-256 does not match --compiler-sha256")
+    if scheme_digest is not None:
+        scheme = compiler.with_name("compactc-scheme")
+        if not re.fullmatch(r"[0-9a-f]{64}", scheme_digest) or not scheme.is_file() or sha256(scheme) != scheme_digest:
+            raise ValueError("source-built Scheme compiler SHA-256 does not match --compiler-scheme-sha256")
     if subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], cwd=ROOT,
                       capture_output=True, check=False).returncode:
         raise ValueError("compiler source head is absent from this checkout")
@@ -99,8 +103,10 @@ def main() -> int:
     compiler_input = parser.add_mutually_exclusive_group(required=True)
     compiler_input.add_argument("--archive", type=Path)
     compiler_input.add_argument("--compiler", type=Path)
+    parser.add_argument("--ts-runtime-profile", choices=["released-0.21.0"])
     parser.add_argument("--compiler-source-head")
     parser.add_argument("--compiler-sha256")
+    parser.add_argument("--compiler-scheme-sha256")
     parser.add_argument("--runtime-tar", type=Path, required=True)
     parser.add_argument("--onchain-tar", type=Path, required=True)
     parser.add_argument("--source", type=Path, default=SOURCE)
@@ -109,8 +115,12 @@ def main() -> int:
     args = parser.parse_args()
     if args.compiler and (not args.compiler_source_head or not args.compiler_sha256):
         parser.error("--compiler-source-head and --compiler-sha256 are required with --compiler")
-    if args.archive and (args.compiler_source_head or args.compiler_sha256):
+    if args.ts_runtime_profile and not args.compiler_scheme_sha256:
+        parser.error("--compiler-scheme-sha256 is required with --ts-runtime-profile")
+    if args.archive and (args.compiler_source_head or args.compiler_sha256 or args.compiler_scheme_sha256):
         parser.error("--compiler-source-head and --compiler-sha256 require --compiler")
+    if args.ts_runtime_profile and not args.compiler:
+        parser.error("--ts-runtime-profile requires --compiler")
     inputs = {
         "runtime": args.runtime_tar,
         "onchain": args.onchain_tar,
@@ -123,7 +133,7 @@ def main() -> int:
         inputs["archive"] = args.archive
     for name, path in inputs.items():
         check(name, path)
-    built_compiler = (source_compiler(args.compiler, args.compiler_source_head, args.compiler_sha256)
+    built_compiler = (source_compiler(args.compiler, args.compiler_source_head, args.compiler_sha256, args.compiler_scheme_sha256)
                       if args.compiler else None)
     if len(re.findall(r"^test\('", inputs["test"].read_text(), re.M)) != 19:
         raise ValueError("original test inventory changed")
@@ -131,6 +141,8 @@ def main() -> int:
         if built_compiler:
             print(json.dumps({"pins": {k: v for k, v in PINS.items() if k != "archive"},
                               "compiler_sha256": sha256(built_compiler),
+                              "compiler_scheme_sha256": (sha256(built_compiler.with_name("compactc-scheme"))
+                                                         if args.compiler_scheme_sha256 else None),
                               "compiler_source_head": args.compiler_source_head,
                               "original_tests": 19, "mode": "verify-only"}, sort_keys=True))
         else:
@@ -162,6 +174,8 @@ def main() -> int:
         source = work / "unshielded-tokens.compact"
         shutil.copyfile(args.source, source)
         compile_options = (["--target", "ts", "--feature-zkir-v3"] if built_compiler else [])
+        if args.ts_runtime_profile:
+            compile_options += ["--ts-runtime-profile", args.ts_runtime_profile]
         compile_command = [str(compiler_path), *compile_options, "--skip-zk", str(source),
                            str(work / "generated")]
         command(compile_command, work, output / "compile.log")
@@ -199,7 +213,10 @@ def main() -> int:
             result["compiler_kind"] = "source-built"
             result["compiler_sha256"] = sha256(built_compiler)
             result["compiler_source_head"] = args.compiler_source_head
+            if args.compiler_scheme_sha256:
+                result["compiler_scheme_sha256"] = args.compiler_scheme_sha256
             result["compiler_command"] = compile_command
+            result["ts_runtime_profile"] = args.ts_runtime_profile or "local-0.18.0"
             result["inputs_sha256"] = {k: v for k, v in PINS.items() if k != "archive"}
             result["limits"] = [
                 "source-built compiler; original test body and contract bytes unchanged",

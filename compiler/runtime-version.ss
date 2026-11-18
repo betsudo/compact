@@ -16,11 +16,13 @@
 #!chezscheme
 
 (library (runtime-version)
-  (export runtime-version-string)
-  (import (chezscheme))
+  (export runtime-version-string selected-runtime-version-string)
+  (import (chezscheme) (config-params))
   (define runtime-version-string
     (let-syntax ([a (lambda (x)
                       (let ([fn "runtime/package.json"])
                         (#%$require-include fn)
                         ((include "runtime/extract-version.ss") fn)))])
-      a)))
+      a))
+  (define (selected-runtime-version-string)
+    (if (ts-runtime-profile) "0.21.0" runtime-version-string)))

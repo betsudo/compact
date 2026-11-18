@@ -90,7 +90,7 @@
             language-version-string)
           (cons
             "runtime-version"
-            runtime-version-string)
+            (selected-runtime-version-string))
           (map (dir-entry output-directory-pathname)
                (filter (lambda (fn) (file-exists? (format "~a/~a" output-directory-pathname fn))) manifest-dir*)))))
     ir)

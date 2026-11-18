@@ -53,6 +53,9 @@ The following flags, if present, affect the compiler's behavior as follows:
     is the version of the Compact runtime JavaScript package that is used by
     generated contract code.
 
+  --ts-runtime-profile released-0.21.0 selects the released asynchronous
+    TypeScript runtime contract. The local 0.18.0 profile remains the default.
+
   --vscode causes error messages to be printed on a single line so they are
     rendered properly within the VS Code extension for Compact.
 
@@ -102,6 +105,7 @@ The following flags, if present, affect the compiler's behavior as follows:
              [(--skip-ts)]
              [(--no-communications-commitment)]
              [(--sourceRoot) (string source-root)]
+             [(--ts-runtime-profile) (string runtime-profile)]
              [(--compact-path) (string search-list)]
              [(--trace-search)]
              [(--trace-passes)]
@@ -110,6 +114,12 @@ The following flags, if present, affect the compiler's behavior as follows:
       (string target-directory-pathname))
      (check-pathname source-pathname)
      (check-pathname target-directory-pathname)
+     (when (and runtime-profile (not (string=? runtime-profile "released-0.21.0")))
+       (fprintf (current-error-port) "compactc: unknown TypeScript runtime profile ~s\n" runtime-profile)
+       (exit 1))
+     (when (and runtime-profile ?--skip-ts)
+       (fprintf (current-error-port) "compactc: TypeScript runtime profile requires TypeScript output\n")
+       (exit 1))
      (parameterize ([trace-passes ?--trace-passes]
                     [skip-zk ?--skip-zk]
                     [emit-rust-ir ?--emit-rust-ir]
@@ -118,6 +128,7 @@ The following flags, if present, affect the compiler's behavior as follows:
                      (and ?--emit-rust-ir (getenv "COMPACT_INTERNAL_CONTRACT_DEPENDENCY_DIRECTORY"))]
                     [no-communications-commitment ?--no-communications-commitment]
                     [feature-zkir-v3 ?--feature-zkir-v3]
+                    [ts-runtime-profile (and runtime-profile 'released-0.21.0)]
                     [compact-path (if ?--compact-path (split-search-path search-list) (compact-path))]
                     [trace-search ?--trace-search])
        (when source-root (register-source-root! source-root))

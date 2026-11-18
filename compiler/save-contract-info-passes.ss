@@ -98,7 +98,7 @@
                language-version-string)
              (cons
                "runtime-version"
-               runtime-version-string)
+               (selected-runtime-version-string))
              (cons
                "circuits"
                (list->vector
