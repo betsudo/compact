@@ -691,6 +691,16 @@ pub(super) fn try_run(
             }
             super::unshielded_original_proof::run(std::path::Path::new(&root))
         })()),
+        #[cfg(feature = "unshielded-original-proof")]
+        ("--shielded-original-mint-self-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded mint artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded mint proof argument".into());
+            }
+            super::shielded_original_mint_self::run(std::path::Path::new(&root))
+        })()),
         ("--qualified-coin-set", _) => Some(shielded::qualified_coin_set(arguments)),
         ("--qualified-coin-set-chunked", _) => {
             Some(shielded::qualified_coin_set_chunked(arguments))

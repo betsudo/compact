@@ -491,6 +491,8 @@ mod opaque_cell_input;
 mod opaque_public;
 mod owned_witness_inputs;
 mod public_products;
+#[cfg(feature = "unshielded-original-proof")]
+mod shielded_original_mint_self;
 mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_mutation_initializers;
