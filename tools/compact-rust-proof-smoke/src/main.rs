@@ -498,17 +498,22 @@ mod public_products;
     feature = "unshielded-original-proof",
     compact_unshielded_original_generated
 ))]
-mod shielded_original_mint_self;
-#[cfg(all(
-    feature = "unshielded-original-proof",
-    compact_unshielded_original_generated
-))]
 mod shielded_original_mint_contract;
 #[cfg(all(
     feature = "unshielded-original-proof",
     compact_unshielded_original_generated
 ))]
+mod shielded_original_mint_self;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 mod shielded_original_mint_user;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_send_contract;
 #[cfg(all(
     feature = "unshielded-original-proof",
     compact_unshielded_original_generated
