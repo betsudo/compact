@@ -16,6 +16,17 @@ Unreleased Ledger 9 migration.
   complete source-only native Linux gate while keeping native Linux and
   live-node qualification open.
 
+## [Toolchain 0.31.217, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Stage private per-address cross-contract call contexts, verified claim data,
+  Zswap snapshots and transactional rollback for generated calls. Keep public
+  generated invocation refused while the remaining ZKIR, Callee and Caller
+  groups are qualified.
+
 ## [Toolchain 0.31.216, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.

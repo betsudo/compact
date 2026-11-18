@@ -49,6 +49,7 @@ describe('createCircuitContext host options', () => {
     const initialQueryContext = initial.currentQueryContext;
     const current = { ...initial, gasCost: compactRuntime.emptyRunningCost() };
     const nextQueryContext = new ocrt.QueryContext(new ocrt.ContractState().data, address);
+    nextQueryContext.block = { ...initialQueryContext.block };
     const gasCost = { readTime: 1n, computeTime: 2n, bytesWritten: 3n, bytesDeleted: 4n };
     const query = vi.spyOn(initialQueryContext, 'query').mockReturnValue({
       context: nextQueryContext,
@@ -95,14 +96,17 @@ describe('createCircuitContext host options', () => {
     expect('callContext' in synthetic).toBe(false);
   });
 
-  test('refuses incomplete and cross-contract option shapes', () => {
+  test('refuses incomplete and unpinned cross-contract option shapes', () => {
     const inputs = options();
-    expect(() => compactRuntime.createCircuitContext({ ...inputs, contractState: undefined as never }))
-      .toThrow(/missing coin key or contract state/);
-    expect(() => compactRuntime.createCircuitContext({ ...inputs, crossContract: {} }))
-      .toThrow(/cross-contract context requires Ledger 9 runtime/);
-    expect(() => compactRuntime.createCircuitContext({ ...inputs, parentBlockHash: '0'.repeat(64) }))
-      .toThrow(/cross-contract context requires Ledger 9 runtime/);
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, contractState: undefined as never })).toThrow(
+      /missing coin key or contract state/,
+    );
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, crossContract: {} as never })).toThrow(
+      /cross-contract providers require a pinned parent block/,
+    );
+    expect(() => compactRuntime.createCircuitContext({ ...inputs, parentBlockHash: 'not-a-hash' })).toThrow(
+      /parent block hash must be canonical/,
+    );
   });
 });
 

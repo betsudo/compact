@@ -21,7 +21,39 @@ export * from './error.js';
 export * from './constants.js';
 export * from './zswap.js';
 export * from './constructor-context.js';
-export * from './circuit-context.js';
+// Keep internal callee-frame construction out of the generated module API.
+export {
+  isLedger9CircuitContext,
+  createCircuitContext,
+  copyCircuitContext,
+  assertCircuitQueryIdentity,
+  assertLiveCircuitCall,
+  finalizeCallProofData,
+  emptyRunningCost,
+  queryLedgerState,
+  emitShieldedSpend,
+  emitShieldedBurn,
+  emitShieldedMint,
+  emitShieldedReceive,
+  emitUnshieldedSpend,
+  emitUnshieldedReceive,
+  emitUnshieldedMint,
+  emitUnshieldedBurn,
+  emitMisc,
+  emitPaused,
+  emitUnpaused,
+} from './circuit-context.js';
+export type {
+  CircuitId,
+  LogEvent,
+  CallProofData,
+  CallProofDataTrace,
+  CircuitCallContext,
+  CrossContractInputs,
+  CircuitContext,
+  HostCircuitContextOptions,
+  CircuitResults,
+} from './circuit-context.js';
 export * from './proof-data.js';
 export * from './witness.js';
 export * from './contract-dependencies.js';

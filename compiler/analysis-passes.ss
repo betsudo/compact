@@ -21,6 +21,7 @@
           (utils)
           (config-params)
           (datatype)
+          (config-params)
           (nanopass)
           (langs)
           (ledger)
@@ -212,7 +213,16 @@
       (define empty-env (string #\m #\t))
       (define outer-module-rib (make-hashtable equal-hash equal?))
       (define outer-module-next-seqno '(0 -1))
-      (define Cell-ADT-env #f)
+      (define stdlib-env #f)
+      (define (standard-library-env src)
+        (or stdlib-env
+            (let ([p (add-rib empty-env)])
+              (do-import src 'CompactStandardLibrary '() ""
+                         (list (with-output-language (Lpreexpand Import-Element)
+                                 `(,src __compact_Cell __compact_Cell)))
+                         p)
+              (set! stdlib-env p)
+              p)))
       (define (env-insert! p src sym info)
         (assert (env? p))
         (let ([a (hashtable-cell (env-rib p) sym #f)])
@@ -811,6 +821,14 @@
                     [(witness ,src ,exported? ,function-name (,type-param* ...) (,arg* ...) ,type)
                      (handle-fun src 'witness pelt exported? function-name type-param*)]
                     [(external-contract ,src ,exported? ,contract-name (,src* ,pure-dcl* ,function-name* ((,src** ,var-name** ,type**) ...) ,type*) ...)
+                     (when (compile-contract-statements)
+                       (for-each
+                         (lambda (src pure-dcl name)
+                           (when pure-dcl
+                             (source-errorf src "circuit ~s in a contract type must have a proof and cannot be declared pure"
+                                            name)))
+                         src* pure-dcl* function-name*)
+                       (standard-library-env src))
                      (let ([info (Info-contract src contract-name (map make-ecdecl-circuit function-name* pure-dcl* type** type*) p)])
                        (env-insert! p src contract-name info)
                        (set! ecdecl* (cons (cons pelt p) ecdecl*))
@@ -1101,14 +1119,7 @@
        `(public-ledger-declaration ,src ,id
           ,(if (public-adt? type)
                type
-               (let ([p (or Cell-ADT-env
-                            (let ([p (add-rib empty-env)])
-                              (do-import src 'CompactStandardLibrary '() ""
-                                         (list (with-output-language (Lpreexpand Import-Element)
-                                                 `(,src __compact_Cell __compact_Cell)))
-                                         p)
-                              (set! Cell-ADT-env p)
-                              p))])
+               (let ([p (standard-library-env src)])
                  (handle-type-ref src 'Cell (list (Info-type src type)) p (lookup p src '__compact_Cell)))))]
       [(constructor ,src (,[arg*] ...) ,expr)
        (let ([var-id* (map arg->id arg*)] [p (add-rib p)])
@@ -1641,8 +1652,6 @@
                          `(topaque ,src ,name))]
                       [("Vector") `(tvector ,src ,(tonat (get-assoc "length" alist)) ,(totype (get-assoc "type" alist)))]
                       [("Tuple") `(ttuple ,src ,(map totype (tolist (get-assoc "types" alist))) ...)]
-                      ;; this will never be exercised since exported circuits cannot take contracts as their
-                      ;; parameter or return value
                       [("Contract")
                        (let ([circuits (tolist (get-assoc "circuits" alist))])
                          `(tcontract ,src
@@ -2405,6 +2414,17 @@
                              elt-name)
             (if (eq? (car elt-name*) elt-name)
                 (let ([declared-type* (car declared-type**)])
+                  (when (compile-contract-statements)
+                    (let* ([info (hashtable-ref (contract-ht) contract-name #f)]
+                           [circuits (and info (assoc "circuits" info))]
+                           [callee (and circuits (vector? (cdr circuits))
+                                       (find (lambda (circuit)
+                                               (equal? (assoc "name" circuit)
+                                                       (cons "name" (symbol->string elt-name))))
+                                             (vector->list (cdr circuits))))])
+                      (unless (and callee (equal? (assoc "proof" callee) '("proof" . #t)))
+                        (source-errorf src "contract circuit ~s.~s does not have a proof statement"
+                                       contract-name elt-name))))
                   (let ([ndeclared (length declared-type*)] [nactual (length actual-type*)])
                     (unless (fx= nactual ndeclared)
                       (source-errorf src "~s.~s requires ~s argument~:*~p but received ~s"
@@ -2493,7 +2513,7 @@
          `(constructor ,src (,arg* ...) ,expr))])
     (Circuit-Definition : Circuit-Definition (ir) -> Circuit-Definition ()
       [(circuit ,src ,function-name (,[arg*] ...) ,[Return-Type : type src "circuit" -> type] ,expr)
-       (when (id-exported? function-name)
+       (when (and (id-exported? function-name) (not (compile-contract-statements)))
          (when (contains-contract? type)
            (source-errorf src "invalid type ~a for circuit ~a return value:\n  exported circuit return values cannot include contract values"
                           (format-type type)
