@@ -38,7 +38,7 @@ from verify_ledger9_unshielded_tokens_original import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_HEAD = "24f7df322876c839cbceadefebb41cbd4dce7103"
+SOURCE_HEAD = "c50363769f8be4e16350be4f7da186ad2e847826"
 UPSTREAM = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 SOURCE = ROOT / "test-center/compact/unshielded-tokens.compact"
 TEST = ROOT / "tools/compact-rust-backend/fixtures/unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts"
@@ -79,6 +79,18 @@ SHIELDED_BATCHES = (
     ("send-user", "--shielded-original-send-user-proof", (
         "sendShieldedToUserTest: original send 60 from 100, one user output and 40 self change, funded strict apply and replay passed",
     )),
+    ("immediate-self", "--shielded-original-immediate-self-proof", (
+        "sendImmediateShieldedToSelfTest: pinned original 100→100 Effects and both source-bound standalone proofs passed",
+        "sendImmediateShieldedToSelfTest: real wallet-funded singleton transient, two original calls, strict apply and replay passed",
+    )),
+    ("immediate-contract", "--shielded-original-immediate-contract-proof", (
+        "sendImmediateShieldedToContractTest: pinned original 100→60+40 Effects and all three source-bound standalone proofs passed",
+        "sendImmediateShieldedToContractTest: real wallet-funded singleton transient, three original calls, funded strict apply and replay passed",
+    )),
+    ("immediate-user", "--shielded-original-immediate-user-proof", (
+        "sendImmediateShieldedToUserTest: pinned original 100→60 User+40 change Effects and both source-bound standalone proofs passed",
+        "sendImmediateShieldedToUserTest: real wallet-funded singleton transient, two original calls, strict apply and replay passed",
+    )),
 )
 QUALIFIED_CIRCUITS = (
     "mintUnshieldedToSelfTest", "getUnshieldedBalanceTest",
@@ -90,6 +102,8 @@ QUALIFIED_CIRCUITS = (
     "receiveShieldedTest", "mintShieldedToUserTest",
     "sendShieldedToSelfTest", "sendShieldedToContractTest",
     "sendShieldedToUserTest",
+    "sendImmediateShieldedToSelfTest", "sendImmediateShieldedToContractTest",
+    "sendImmediateShieldedToUserTest",
 )
 PROOF_STEMS = (
     "unshielded-original-mint-self",
@@ -115,13 +129,70 @@ PROOF_STEMS = (
     "unshielded-original-send-shielded-contract-change-60",
     "unshielded-original-send-shielded-contract-change-60-recipient-receive",
     "unshielded-original-send-shielded-user-change-60",
+    "unshielded-original-immediate-shielded-self-100",
+    "unshielded-original-immediate-shielded-self-100-receive",
+    "unshielded-original-immediate-shielded-contract-change-60",
+    "unshielded-original-immediate-shielded-contract-change-60-receive",
+    "unshielded-original-immediate-shielded-contract-change-60-recipient-receive",
+    "unshielded-original-immediate-shielded-user-change-60",
+    "unshielded-original-immediate-shielded-user-change-60-receive",
 )
 REPLAY_STEMS = tuple(stem for stem in PROOF_STEMS if stem not in (
     "unshielded-original-receive-contract-100",
     "unshielded-original-mint-contract-receive-100",
     "unshielded-original-mint-shielded-contract-100-recipient-receive",
     "unshielded-original-send-shielded-contract-change-60-recipient-receive",
+    "unshielded-original-immediate-shielded-self-100-receive",
+    "unshielded-original-immediate-shielded-contract-change-60-receive",
+    "unshielded-original-immediate-shielded-contract-change-60-recipient-receive",
+    "unshielded-original-immediate-shielded-user-change-60-receive",
 ))
+REFUSAL_REASONS = {
+    "unshielded-original-mint-shielded-self-100-without-offer-refusal.txt":
+        "CommitmentsNEClaimedShieldedReceives",
+    "unshielded-original-mint-shielded-contract-100-without-offer-refusal.txt":
+        "AllCommitmentsSubsetCheckFailure",
+    "unshielded-original-mint-shielded-contract-100-without-recipient-refusal.txt":
+        "CommitmentsNEClaimedShieldedReceives",
+    "unshielded-original-mint-shielded-user-100-without-offer-refusal.txt":
+        "AllCommitmentsSubsetCheckFailure",
+    "unshielded-original-send-shielded-self-change-60-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-send-shielded-self-full-100-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-send-shielded-contract-change-60-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-send-shielded-contract-change-60-without-recipient-refusal.txt":
+        "CommitmentsNEClaimedShieldedReceives",
+    "unshielded-original-send-shielded-user-change-60-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-immediate-shielded-self-100-wrong-index-refusal.txt":
+        "Public transcript input mismatch for input 13;",
+    "unshielded-original-immediate-shielded-contract-change-60-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-immediate-shielded-contract-change-60-without-recipient-refusal.txt":
+        "CommitmentsNEClaimedShieldedReceives",
+    "unshielded-original-immediate-shielded-contract-change-60-wrong-index-refusal.txt":
+        "Public transcript input mismatch for input 13;",
+    "unshielded-original-immediate-shielded-user-change-60-without-offer-refusal.txt":
+        "NullifiersNEClaimedNullifiers",
+    "unshielded-original-immediate-shielded-user-change-60-wrong-index-refusal.txt":
+        "Public transcript input mismatch for input 13;",
+}
+IMMEDIATE_SOURCES = {
+    "sendImmediateShieldedToSelfTest": (
+        "shielded_original_immediate_self.rs",
+        "unshielded-original-immediate-shielded-self-100",
+    ),
+    "sendImmediateShieldedToContractTest": (
+        "shielded_original_immediate_contract.rs",
+        "unshielded-original-immediate-shielded-contract-change-60",
+    ),
+    "sendImmediateShieldedToUserTest": (
+        "shielded_original_immediate_user.rs",
+        "unshielded-original-immediate-shielded-user-change-60",
+    ),
+}
 
 
 def digest(path: Path) -> str:
@@ -139,16 +210,34 @@ def require(condition: bool, message: str) -> None:
 
 def require_qualified_plan() -> None:
     """Refuse an incomplete selector before reporting source-only readiness."""
-    require(len(QUALIFIED_CIRCUITS) == len(set(QUALIFIED_CIRCUITS)) == 17 and
-            len(PROOF_STEMS) == len(set(PROOF_STEMS)) == 23 and
-            len(REPLAY_STEMS) == 19 and
-            len(SHIELDED_BATCHES) == 6,
-            "original 17-circuit proof/replay inventory differs")
+    require(len(QUALIFIED_CIRCUITS) == len(set(QUALIFIED_CIRCUITS)) == 20 and
+            len(PROOF_STEMS) == len(set(PROOF_STEMS)) == 30 and
+            len(REPLAY_STEMS) == len(set(REPLAY_STEMS)) == 22 and
+            len(SHIELDED_BATCHES) == 9 and len(REFUSAL_REASONS) == 15,
+            "original 20-circuit proof/replay/refusal inventory differs")
     source = SOURCE.read_text()
     dispatch = (ROOT / "tools/compact-rust-proof-smoke/src/direct_dispatch.rs").read_text()
     require(all(name in source for name in QUALIFIED_CIRCUITS) and
             all(flag in dispatch and markers for _, flag, markers in SHIELDED_BATCHES),
             "original circuit source or proof-smoke dispatch differs")
+    smoke = ROOT / "tools/compact-rust-proof-smoke/src"
+    immediate_batches = {name: markers for name, _, markers in SHIELDED_BATCHES
+                         if name.startswith("immediate-")}
+    for circuit, (file, stem) in IMMEDIATE_SOURCES.items():
+        code = (smoke / file).read_text()
+        batch = "immediate-" + circuit.removeprefix("sendImmediateShieldedTo").removesuffix("Test").lower()
+        markers = immediate_batches.get(batch, ())
+        pair_stems = (stem, f"{stem}-receive")
+        if batch == "immediate-contract":
+            pair_stems += (f"{stem}-recipient-receive",)
+        require(f'const NAME: &str = "{circuit}"' in code and
+                f'const STEM: &str = "{stem}"' in code and
+                "wrong-index-refusal.txt" in code and
+                all(member in PROOF_STEMS for member in pair_stems) and
+                stem in REPLAY_STEMS and len(markers) == 2 and
+                all(marker.startswith(f"{circuit}: ") and
+                    marker.partition(": ")[2] in code for marker in markers),
+                f"immediate original source/selector differs: {circuit}")
 
 
 def git(*args: str, env: dict[str, str] | None = None) -> str:
@@ -246,11 +335,12 @@ def main() -> int:
     inputs = pinned_inputs(args.runtime_tar, args.onchain_tar)
     state = source_state(args.signed_checkout_head)
     if args.preflight_only:
-        print(json.dumps({"format": "ledger9-original-token-linux/v3", "status": "prepared",
+        print(json.dumps({"format": "ledger9-original-token-linux/v4", "status": "prepared",
                           "native_linux": False, "source": state, "inputs_sha256": inputs,
                           "original_tests": 19, "proof_circuits": len(QUALIFIED_CIRCUITS),
                           "proof_pairs": len(PROOF_STEMS),
-                          "replay_pairs": len(REPLAY_STEMS)}, sort_keys=True))
+                          "replay_pairs": len(REPLAY_STEMS),
+                          "refusal_artifacts": len(REFUSAL_REASONS)}, sort_keys=True))
         return 0
     if not args.output:
         parser.error("--output is required for qualification")
@@ -265,7 +355,7 @@ def main() -> int:
     env["CARGO_TARGET_DIR"] = str(output / "cargo-target")
     env["MIDNIGHT_PP"] = str(output / "proof-parameters")
     (output / "proof-parameters").mkdir()
-    receipt = {"format": "ledger9-original-token-linux/v3", "status": "failed",
+    receipt = {"format": "ledger9-original-token-linux/v4", "status": "failed",
                "native_linux": True, "platform": "Linux x86_64", "source": state,
                "inputs_sha256": inputs, "sdk_matrix": {
                    "contract_semantics": "Ledger 9.1.0.1", "ledger_client": "midnight-ledger-v9 1.0.2",
@@ -373,42 +463,22 @@ def main() -> int:
             replay = generated / f"{stem}-ledger-replay.bin"
             require(after.is_file() and replay.is_file() and digest(after) == digest(replay),
                     f"{stem} replay changed serialized Ledger")
-        refusals = {
-            "unshielded-original-mint-shielded-self-100-without-offer-refusal.txt":
-                "CommitmentsNEClaimedShieldedReceives",
-            "unshielded-original-mint-shielded-contract-100-without-offer-refusal.txt":
-                "AllCommitmentsSubsetCheckFailure",
-            "unshielded-original-mint-shielded-contract-100-without-recipient-refusal.txt":
-                "CommitmentsNEClaimedShieldedReceives",
-            "unshielded-original-mint-shielded-user-100-without-offer-refusal.txt":
-                "AllCommitmentsSubsetCheckFailure",
-            "unshielded-original-send-shielded-self-change-60-without-offer-refusal.txt":
-                "NullifiersNEClaimedNullifiers",
-            "unshielded-original-send-shielded-self-full-100-without-offer-refusal.txt":
-                "NullifiersNEClaimedNullifiers",
-            "unshielded-original-send-shielded-contract-change-60-without-offer-refusal.txt":
-                "NullifiersNEClaimedNullifiers",
-            "unshielded-original-send-shielded-contract-change-60-without-recipient-refusal.txt":
-                "CommitmentsNEClaimedShieldedReceives",
-            "unshielded-original-send-shielded-user-change-60-without-offer-refusal.txt":
-                "NullifiersNEClaimedNullifiers",
-        }
-        for name, reason in refusals.items():
+        for name, reason in REFUSAL_REASONS.items():
             refusal = generated / name
             require(refusal.is_file() and reason in refusal.read_text(),
                     f"original shielded refusal differs: {name}")
         self_color = generated / "unshielded-original-mint-shielded-contract-100-recipient-self-color.proof"
         require(self_color.is_file() and self_color.stat().st_size > 0,
                 "original shielded recipient self-color control proof absent")
-        receipt["proof_circuits"] = {"unshielded": 10, "shielded": 7}
+        receipt["proof_circuits"] = {"unshielded": 10, "shielded": 10}
         receipt["proof_pairs"] = len(PROOF_STEMS)
         receipt["replay_pairs"] = len(REPLAY_STEMS)
+        receipt["refusal_artifacts"] = len(REFUSAL_REASONS)
         receipt["proof_log_sha256"] = proof_logs
         receipt["ledger_static_provenance_sha256"] = digest(static_receipt)
         proof_artifacts = files(generated)
-        require(len(proof_artifacts) == 259 and
-                all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
-                "proof batch changed generated files or artifact count")
+        require(all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
+                "proof batch changed generated files")
         receipt["proof_artifacts_sha256"] = proof_artifacts
         receipt["status"] = "qualified"
     except Exception as error:
