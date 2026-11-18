@@ -37,6 +37,9 @@ const MINT_CONTRACT_CIRCUIT: &str = "mintUnshieldedToContractTest";
 const MINT_CONTRACT_STEM: &str = "unshielded-original-mint-contract-100";
 const MINT_USER_CIRCUIT: &str = "mintUnshieldedToUserTest";
 const MINT_USER_STEM: &str = "unshielded-original-mint-user-100";
+const SEND_USER_CIRCUIT: &str = "sendUnshieldedToUserTest";
+const SEND_USER_STEM: &str = "unshielded-original-send-user-100";
+const SEND_USER_WITHOUT_OFFER_STEM: &str = "unshielded-original-send-user-without-offer";
 const GENERATED_RUST: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/contract/lib.rs"
@@ -81,6 +84,10 @@ const GENERATED_MINT_USER_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/zkir/mintUnshieldedToUserTest.zkir"
 ));
+const GENERATED_SEND_USER_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/sendUnshieldedToUserTest.zkir"
+));
 
 fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
     for (name, expected) in [
@@ -115,6 +122,10 @@ fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
         (
             "zkir/mintUnshieldedToUserTest.zkir",
             GENERATED_MINT_USER_ZKIR,
+        ),
+        (
+            "zkir/sendUnshieldedToUserTest.zkir",
+            GENERATED_SEND_USER_ZKIR,
         ),
     ] {
         if std::fs::read(root.join(name))? != expected {
@@ -212,6 +223,138 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     run_send_self(root)?;
     run_mint_destination(root, false)?;
     run_mint_destination(root, true)?;
+    run_send_user(root)?;
+    Ok(())
+}
+
+fn run_send_user(root: &Path) -> Result<(), Box<dyn Error>> {
+    use midnight_compact_runtime::ledger::{
+        ContractAddress, HashOutput, PublicAddress, TokenType, UnshieldedTokenType, UserAddress,
+    };
+    use midnight_compact_runtime::transaction::RecordedCall;
+
+    let mut rng = StdRng::seed_from_u64(0x0184_5355);
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = v3::load_operation(root, SEND_USER_CIRCUIT)?;
+    let color = FixedBytes::new([0x75; 32]);
+    let token = TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.into_array())));
+    let mut state = ContractState::new(
+        initial.ledger_state.get_ref().clone(),
+        HashMap::new().insert(
+            EntryPointBuf(SEND_USER_CIRCUIT.as_bytes().to_vec()),
+            operation.clone(),
+        ),
+        ContractMaintenanceAuthority::default(),
+    );
+    state.balance = state.balance.insert(token, 100);
+    let deploy = ContractDeploy::new(&mut rng, state);
+    let observed = ObservedContractState::new(
+        deploy.address(),
+        deploy.initial_state.clone(),
+        Observation {
+            transaction_hash: [0; 32],
+            block_hash: [0; 32],
+            block_height: 0,
+        },
+    );
+    let user_bytes = FixedBytes::new([0x93; 32]);
+    let user = crate::types::UserAddress { bytes: user_bytes };
+    let recipient = PublicAddress::User(UserAddress(HashOutput(user_bytes.into_array())));
+    let wrong_tag = PublicAddress::Contract(ContractAddress(HashOutput(user_bytes.into_array())));
+    let amount = BoundedUint::<340282366920938463463374607431768211455>::new(100)?;
+    let mut context = observed.circuit_context(());
+    context.query.call_context.balance = observed.contract().balance.clone();
+    let recorded = contract::Contract::default()
+        .recording
+        .sendUnshieldedToUserTest(context, color, amount, user.clone())?;
+    let prepared = RecordedCall::new(
+        &observed,
+        recorded,
+        SEND_USER_CIRCUIT,
+        AlignedValue::concat(&[
+            AlignedValue::from(color),
+            AlignedValue::from(amount),
+            AlignedValue::from(user),
+        ]),
+    )
+    .prepare(verifier.clone(), Fr::from(0_u64))?;
+    if prepared.op != operation {
+        return Err("original send-to-user operation differs from installed v3 IR".into());
+    }
+    let effects = &prepared
+        .guaranteed_public_transcript
+        .as_ref()
+        .ok_or("original send-to-user has no guaranteed effects transcript")?
+        .effects;
+    let claim = ClaimedUnshieldedSpendsKey(token, recipient);
+    let wrong_claim = ClaimedUnshieldedSpendsKey(token, wrong_tag);
+    if prepared.fallible_public_transcript.is_some()
+        || !effects.claimed_nullifiers.is_empty()
+        || !effects.claimed_shielded_receives.is_empty()
+        || !effects.claimed_shielded_spends.is_empty()
+        || !effects.claimed_contract_calls.is_empty()
+        || !effects.shielded_mints.is_empty()
+        || !effects.unshielded_mints.is_empty()
+        || !effects.unshielded_inputs.is_empty()
+        || effects.unshielded_outputs.size() != 1
+        || effects.claimed_unshielded_spends.size() != 1
+        || effects.unshielded_outputs.get(&token).map(|value| *value) != Some(100)
+        || effects
+            .claimed_unshielded_spends
+            .get(&claim)
+            .map(|value| *value)
+            != Some(100)
+        || effects
+            .claimed_unshielded_spends
+            .get(&wrong_claim)
+            .is_some()
+    {
+        return Err("original send-to-user effects or User tag differ from fixture".into());
+    }
+    let proof: Proof = v3::prove_standalone(
+        root,
+        SEND_USER_CIRCUIT,
+        SEND_USER_STEM,
+        &prepared,
+        &verifier,
+        None,
+    )?;
+    positional_transaction::verify_separately(root, SEND_USER_CIRCUIT, SEND_USER_STEM)?;
+    let missing_offer = v3::apply(
+        root,
+        SEND_USER_CIRCUIT,
+        SEND_USER_WITHOUT_OFFER_STEM,
+        prepared.clone(),
+        deploy.clone(),
+        initial.ledger_state.get_ref(),
+        &proof,
+    );
+    let refusal = match missing_offer {
+        Ok(_) => return Err("send-to-user without the matching offer was admitted".into()),
+        Err(error) => error.to_string(),
+    };
+    if !refusal.contains("claimed_unshielded_spends is not a subset of real_unshielded_spends")
+        || !refusal.contains("superset: []")
+    {
+        return Err(format!("send-to-user missing-offer refusal differs: {refusal}").into());
+    }
+    v3::write_new(
+        root.join(format!("{SEND_USER_WITHOUT_OFFER_STEM}-refusal.txt")),
+        refusal.as_bytes(),
+    )?;
+    apply_unshielded_destination(
+        root,
+        (SEND_USER_CIRCUIT, SEND_USER_STEM),
+        prepared,
+        deploy,
+        None,
+        token,
+        recipient,
+        &proof,
+    )?;
+    println!(
+        "{SEND_USER_CIRCUIT}: original 100-unit User send, funded strict apply and replay gate passed"
+    );
     Ok(())
 }
 
@@ -356,7 +499,7 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
     }
     let proof: Proof = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
     positional_transaction::verify_separately(root, name, stem)?;
-    apply_mint_destination(
+    apply_unshielded_destination(
         root,
         (name, stem),
         prepared,
@@ -372,7 +515,7 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
     Ok(())
 }
 
-fn apply_mint_destination(
+fn apply_unshielded_destination(
     root: &Path,
     (name, stem): (&'static str, &str),
     prepared: ContractCallPrototype<DefaultDB>,
@@ -580,7 +723,13 @@ fn apply_mint_destination(
         .ok_or("mint minter absent after apply")?;
     let expected_data = contract::initial_state(ConstructorContext::new(()))?;
     if minter_after.data.get_ref() != expected_data.ledger_state.get_ref()
-        || !minter_after.balance.is_empty()
+        || minter_after
+            .balance
+            .get(&token)
+            .map(|value| *value)
+            .unwrap_or(0)
+            != 0
+        || minter_after.balance.size() > 1
     {
         return Err("mint destination source state or balance changed".into());
     }
