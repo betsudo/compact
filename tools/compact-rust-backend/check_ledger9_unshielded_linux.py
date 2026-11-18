@@ -38,7 +38,7 @@ from verify_ledger9_unshielded_tokens_original import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_HEAD = "c50363769f8be4e16350be4f7da186ad2e847826"
+SOURCE_HEAD = "447ff2a13c270f9d7fbe0fa7cd287ce7640057d9"
 UPSTREAM = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 SOURCE = ROOT / "test-center/compact/unshielded-tokens.compact"
 TEST = ROOT / "tools/compact-rust-backend/fixtures/unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts"
@@ -477,8 +477,9 @@ def main() -> int:
         receipt["proof_log_sha256"] = proof_logs
         receipt["ledger_static_provenance_sha256"] = digest(static_receipt)
         proof_artifacts = files(generated)
-        require(all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
-                "proof batch changed generated files")
+        require(len(proof_artifacts) == 303 and
+                all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
+                "proof batch changed generated files or exact artifact count")
         receipt["proof_artifacts_sha256"] = proof_artifacts
         receipt["status"] = "qualified"
     except Exception as error:

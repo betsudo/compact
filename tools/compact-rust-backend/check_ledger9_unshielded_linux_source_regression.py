@@ -28,7 +28,7 @@ from verify_ledger9_unshielded_tokens_original import require_compiler_source_tr
 
 
 SIGNED_PR_HEAD = "24f7df322876c839cbceadefebb41cbd4dce7103"
-SIGNED_INTEGRATED_HEAD = "c50363769f8be4e16350be4f7da186ad2e847826"
+SIGNED_INTEGRATED_HEAD = "447ff2a13c270f9d7fbe0fa7cd287ce7640057d9"
 SQUASH_MERGE_HEAD = "785eddfc5ec07036c98fdc988c6138e1c8cc834e"
 STALE_COMPILER_HEAD = "cdb4cb64629af69c2b48ea1f3edfae638e7369a6"
 

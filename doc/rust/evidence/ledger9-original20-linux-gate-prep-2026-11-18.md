@@ -3,7 +3,7 @@
 This source-only slice extends the manual integration gate tracked by
 [issue #773](https://github.com/betsudo/compact/issues/773) to every circuit
 in the pinned original `unshielded-tokens` suite. It is based on signed
-integrated head `c50363769f8be4e16350be4f7da186ad2e847826`, which
+integrated head `447ff2a13c270f9d7fbe0fa7cd287ce7640057d9`, which
 includes the read-only runtime offer accessor used by the immediate Contract
 qualification. The gate binds the compiler, Rust runtime/backend, Cargo lock
 and Nix inputs to that exact signed source head.
