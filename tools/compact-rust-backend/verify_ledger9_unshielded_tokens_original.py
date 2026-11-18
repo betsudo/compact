@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
-"""Run pinned original unshielded-token Test Center assertions with released 0.36.
+"""Run pinned original unshielded-token Test Center assertions.
 
 The original test body and contract are byte-exact at upstream 672bd0f. A
 private runner supplies the async Test Center startContract bridge and uses
-released Runtime 0.21.0; this is a released-matrix host qualification, not a
-proof or a claim about the source-built upstream compiler.
+released Runtime 0.21.0. The archive mode retains the released 0.36.0
+baseline; compiler mode tests separately identified source-built JavaScript.
+Neither mode creates a proof or a funded transaction.
 """
 
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import platform
 import re
@@ -71,17 +73,45 @@ def command(argv: list[str], cwd: Path, log: Path) -> None:
         raise RuntimeError(f"{argv[0]} failed ({result.returncode}); see {log}")
 
 
+def source_compiler(compiler: Path, head: str, digest: str) -> Path:
+    compiler = compiler.resolve(strict=True)
+    if not compiler.is_file() or not os.access(compiler, os.X_OK):
+        raise ValueError(f"source-built compiler is not executable: {compiler}")
+    if not re.fullmatch(r"[0-9a-f]{40}", head):
+        raise ValueError("--compiler-source-head must be a full Git commit ID")
+    if not re.fullmatch(r"[0-9a-f]{64}", digest) or sha256(compiler) != digest:
+        raise ValueError("source-built compiler SHA-256 does not match --compiler-sha256")
+    if subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], cwd=ROOT,
+                      capture_output=True, check=False).returncode:
+        raise ValueError("compiler source head is absent from this checkout")
+    # The adapter itself may be a later commit. Compiler, runtime, lock and
+    # Nix recipe bytes must still be those named by the supplied source head.
+    tracked = ["compiler", "runtime-rs", "tools/compact-rust-backend/src",
+               "tools/compact-rust-cli", "Cargo.lock", "flake.nix", "flake.lock"]
+    if subprocess.run(["git", "diff", "--quiet", head, "--", *tracked],
+                      cwd=ROOT, check=False).returncode:
+        raise ValueError("compiler source files differ from --compiler-source-head")
+    return compiler
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--archive", type=Path, required=True)
+    compiler_input = parser.add_mutually_exclusive_group(required=True)
+    compiler_input.add_argument("--archive", type=Path)
+    compiler_input.add_argument("--compiler", type=Path)
+    parser.add_argument("--compiler-source-head")
+    parser.add_argument("--compiler-sha256")
     parser.add_argument("--runtime-tar", type=Path, required=True)
     parser.add_argument("--onchain-tar", type=Path, required=True)
     parser.add_argument("--source", type=Path, default=SOURCE)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
+    if args.compiler and (not args.compiler_source_head or not args.compiler_sha256):
+        parser.error("--compiler-source-head and --compiler-sha256 are required with --compiler")
+    if args.archive and (args.compiler_source_head or args.compiler_sha256):
+        parser.error("--compiler-source-head and --compiler-sha256 require --compiler")
     inputs = {
-        "archive": args.archive,
         "runtime": args.runtime_tar,
         "onchain": args.onchain_tar,
         "source": args.source,
@@ -89,35 +119,52 @@ def main() -> int:
         "package": FIXTURE / "package.json",
         "lock": FIXTURE / "package-lock.json",
     }
+    if args.archive:
+        inputs["archive"] = args.archive
     for name, path in inputs.items():
         check(name, path)
+    built_compiler = (source_compiler(args.compiler, args.compiler_source_head, args.compiler_sha256)
+                      if args.compiler else None)
     if len(re.findall(r"^test\('", inputs["test"].read_text(), re.M)) != 19:
         raise ValueError("original test inventory changed")
     if args.verify_only:
-        print(json.dumps({"pins": PINS, "original_tests": 19, "mode": "verify-only"}, sort_keys=True))
+        if built_compiler:
+            print(json.dumps({"pins": {k: v for k, v in PINS.items() if k != "archive"},
+                              "compiler_sha256": sha256(built_compiler),
+                              "compiler_source_head": args.compiler_source_head,
+                              "original_tests": 19, "mode": "verify-only"}, sort_keys=True))
+        else:
+            print(json.dumps({"pins": PINS, "original_tests": 19, "mode": "verify-only"}, sort_keys=True))
         return 0
     if not args.output_dir:
         parser.error("--output-dir is required for a run")
     if (platform.system(), platform.machine()) != ("Darwin", "arm64"):
-        raise ValueError("the pinned release archive is Darwin arm64")
+        raise ValueError("the pinned host adapter is Darwin arm64")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="unshielded-original-", dir=output) as tmp:
         work = Path(tmp)
-        compiler = work / "compiler"
-        compiler.mkdir()
-        with zipfile.ZipFile(args.archive) as z:
-            if any(Path(n).name != n for n in z.namelist()):
-                raise ValueError("unexpected archive member path")
-            z.extractall(compiler)
-        for name in ("compactc", "compactc.bin", "zkir-v3"):
-            path = compiler / name
-            if not path.is_file():
-                raise ValueError(f"release archive missing {name}")
-            path.chmod(path.stat().st_mode | 0o111)
+        if built_compiler:
+            compiler_path = built_compiler
+        else:
+            compiler = work / "compiler"
+            compiler.mkdir()
+            with zipfile.ZipFile(args.archive) as z:
+                if any(Path(n).name != n for n in z.namelist()):
+                    raise ValueError("unexpected archive member path")
+                z.extractall(compiler)
+            for name in ("compactc", "compactc.bin", "zkir-v3"):
+                path = compiler / name
+                if not path.is_file():
+                    raise ValueError(f"release archive missing {name}")
+                path.chmod(path.stat().st_mode | 0o111)
+            compiler_path = compiler / "compactc"
         source = work / "unshielded-tokens.compact"
         shutil.copyfile(args.source, source)
-        command([str(compiler / "compactc"), "--skip-zk", str(source), str(work / "generated")], work, output / "compile.log")
+        compile_options = (["--target", "ts", "--feature-zkir-v3"] if built_compiler else [])
+        compile_command = [str(compiler_path), *compile_options, "--skip-zk", str(source),
+                           str(work / "generated")]
+        command(compile_command, work, output / "compile.log")
         for name in ("package.json", "package-lock.json"):
             shutil.copyfile(FIXTURE / name, work / name)
         shutil.copyfile(args.runtime_tar, work / "compact-runtime-0.21.0.tgz")
@@ -147,6 +194,18 @@ def main() -> int:
             "inputs_sha256": PINS,
             "limits": ["released-matrix private harness; original test body and contract bytes unchanged", "--skip-zk execution of generated JavaScript; no fresh proof or funded Ledger transaction", "full Test Center and native Linux unrun"],
         }
+        if built_compiler:
+            result.pop("released_compact")
+            result["compiler_kind"] = "source-built"
+            result["compiler_sha256"] = sha256(built_compiler)
+            result["compiler_source_head"] = args.compiler_source_head
+            result["compiler_command"] = compile_command
+            result["inputs_sha256"] = {k: v for k, v in PINS.items() if k != "archive"}
+            result["limits"] = [
+                "source-built compiler; original test body and contract bytes unchanged",
+                "--skip-zk generated JavaScript only; Rust, proof and funded Ledger behavior are separate gates",
+                "full Test Center and native Linux unrun",
+            ]
         (output / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, sort_keys=True))
     return 0
