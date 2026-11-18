@@ -30,9 +30,13 @@ fn main() {
             "contract/lib.rs",
             "contract/compact-rust-ir.json",
             "zkir/mintUnshieldedToSelfTest.zkir",
+            "zkir/getUnshieldedBalanceTest.zkir",
             "zkir/mintUnshieldedToSelfTest.bzkir",
+            "zkir/getUnshieldedBalanceTest.bzkir",
             "keys/mintUnshieldedToSelfTest.prover",
             "keys/mintUnshieldedToSelfTest.verifier",
+            "keys/getUnshieldedBalanceTest.prover",
+            "keys/getUnshieldedBalanceTest.verifier",
         ] {
             let path = root.join(member);
             assert!(
