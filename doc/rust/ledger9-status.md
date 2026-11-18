@@ -176,6 +176,18 @@ unchanged complete candidate, public admission, original generated Rust
 execution, fresh proof and independent verification, funded strict application
 and replay, applied event order and native Linux remain open.
 
+At signed local source `7c86fc29f`, the unchanged signed v4 candidate now
+passes identity and generated Outer Cargo checks and Clippy with warnings
+denied on Darwin arm64. Four forced-rebuild controls refuse changed original
+source, Inner verifier, Outer Rust and Outer TypeScript; a clean positive
+preflight followed by dependency redirection refuses the changed Cargo file.
+The copied package re-verifies before and after, allowing only two captured
+Cargo lockfiles. Independent review checked the source and all 26 command
+logs; the [signed qualification](/Users/ysh/.codex/local-evidence/ledger9-events-v4-cargo-gate-20261119/evidence-7c/qualification.json)
+SHA-256 is `4558cfb52d55623ca1ec099be59f4c790dd4979dac6f5b306dec8e010b9ff7a4`.
+This qualifies local compilation of the physical candidate; original Rust
+execution, public CLI admission, proof, funded application and Linux remain open.
+
 ## CI resource and optimization evidence
 
 The complete [#774 run](https://github.com/betsudo/compact/actions/runs/44328366189)
