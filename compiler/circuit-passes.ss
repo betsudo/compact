@@ -23,6 +23,7 @@
           (config-params)
           (nanopass)
           (langs)
+          (contract-entry-point)
           (rust-vector-indices)
           (pass-helpers))
 
@@ -1947,6 +1948,9 @@
       [(emit-log ,src ,nat ,len ,expr)
        (raise 'emit)]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[expr*] ...)
+       (raise 'ledger)]
+      [(contract-call ,src ,elt-name (,expr ,type) ,expr* ...)
+       (guard (compile-contract-statements))
        (raise 'ledger)]))
 
   (define-pass reduce-to-circuit : Lnovectorref (ir) -> Lcircuit ()
@@ -2244,6 +2248,9 @@
 
   (define-pass flatten-datatypes : Lcircuit (ir) -> Lflattened ()
     (definitions
+      (define synthesized-callables '())
+      (define kernel-name #f)
+      (define claim-operation #f)
       (define fun-ht (make-eq-hashtable))
       (define var-ht (make-eq-hashtable))
       (define (make-new-id id)
@@ -2355,14 +2362,100 @@
           (hashtable-set! var-ht var-name wump)
           (with-output-language (Lflattened Argument)
             `(argument (,(map car vn.pt*) ...) ,(build-type original-type (map cdr vn.pt*))))))
+
+      (define (register-claim-operation! pelt)
+        (nanopass-case (Lflattened Program-Element) pelt
+          [(kernel-declaration ,public-binding)
+           (nanopass-case (Lflattened Public-Ledger-Binding) public-binding
+             [(,src ,ledger-field-name (,path-index* ...) ,primitive-type)
+              (nanopass-case (Lflattened Primitive-Type) primitive-type
+                [(tadt ,src^ ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...))
+                 (for-each
+                   (lambda (op)
+                     (nanopass-case (Lflattened ADT-Op) op
+                       [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...)
+                                    (,ledger-op-formal* ...) (,type* ...) ,type ,vm-code)
+                        (when (eq? ledger-op 'claimContractCall)
+                          (set! kernel-name ledger-field-name)
+                          (set! claim-operation op))]))
+                   adt-op*)]
+                [else (void)])])]
+          [else (void)]))
+
+      (define (synthetic-arguments src type*)
+        (map (lambda (type)
+               (do-argument (make-temp-id src 'argument) type (Type->Wump type)))
+             type*))
+
+      (define (lower-bound-call src elt-name receiver receiver-type actual* test var-name)
+        (unless claim-operation
+          (source-errorf src "cross-contract call requires the standard ledger kernel"))
+        (when (no-communications-commitment)
+          (source-errorf src "cross-contract call requires communications commitments"))
+        (nanopass-case (Lcircuit Type) receiver-type
+          [(tcontract ,src^ ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+           (let* ([signature (find (lambda (entry) (eq? (car entry) elt-name))
+                                   (map list elt-name* type** type*))]
+                  [arg-type* (cadr signature)]
+                  [result-type (caddr signature)]
+                  [field-type (with-output-language (Lcircuit Type) `(tfield ,src))]
+                  [call-result (with-output-language (Lcircuit Type)
+                                 `(ttuple ,src ,result-type ,field-type))]
+                  [commit-input (with-output-language (Lcircuit Type)
+                                  `(ttuple ,src ,arg-type* ... ,result-type))]
+                  [witness-name (make-temp-id src 'callee-result)]
+                  [commit-name (make-temp-id src 'transientCommit)]
+                  [randomness (make-temp-id src 'call-randomness)]
+                  [commitment (make-temp-id src 'call-commitment)]
+                  [actual* (fold-right wump->elts '() actual*)]
+                  [receiver* (wump->elts receiver)]
+                  [entry-hash (with-output-language (Lcircuit Triv)
+                                `(quote ,(contract-entry-point-hash elt-name)))]
+                  [limb* (wump->elts (Triv entry-hash))]
+                  [witness-arg* (synthetic-arguments src arg-type*)]
+                  [commit-arg* (synthetic-arguments src (list commit-input field-type))])
+             (let-values ([(result result*)
+                           (wump-fold-right
+                             (lambda (type vars)
+                               (let ([var (make-new-id var-name)])
+                                 (values var (cons var vars))))
+                             '()
+                             (Type->Wump result-type))])
+               (hashtable-set! var-ht var-name result)
+               (set! synthesized-callables
+                 (cons*
+                   (with-output-language (Lflattened Witness-Declaration)
+                     `(witness ,src ,witness-name (,witness-arg* ...)
+                        ,(Type call-result)))
+                   (with-output-language (Lflattened Native-Declaration)
+                     `(native ,src ,commit-name
+                        ,(make-native-entry "__compactRuntime.transientCommit"
+                           'circuit '(#f #f) '(#f #f #f))
+                        (,commit-arg* ...)
+                        ,(Type field-type)))
+                   synthesized-callables))
+               (with-output-language (Lflattened Statement)
+                 (list
+                   `(= ,test (,result* ... ,randomness)
+                       (call ,src ,witness-name ,actual* ...))
+                   `(= ,test (,commitment)
+                       (call ,src ,commit-name ,actual* ... ,result* ... ,randomness))
+                   `(= ,test ()
+                       (public-ledger ,src ,kernel-name #f () ,src
+                         ,claim-operation ,receiver* ... ,limb* ... ,commitment))))))]))
       )
     (Program : Program (ir) -> Program ()
       [(program ,src ((,export-name* ,name*) ...) ,pelt* ...)
-       `(program ,src ((,export-name* ,name*) ...)
+       (when (and (feature-zkir-v3) (compile-contract-statements))
+         (for-each (lambda (pelt)
+                     (when (Lcircuit-Kernel-Declaration? pelt)
+                       (register-claim-operation! (Kernel-Declaration pelt))))
+                   pelt*))
+       (let ([flattened
           ; like map but arranges to process native and witness declarations first
           ; so that their fun-ht entries are available before processing
           ; any circuits
-          ,(let f ([pelt* pelt*])
+          (let f ([pelt* pelt*])
              (if (null? pelt*)
                '()
                (let ([pelt (car pelt*)] [pelt* (cdr pelt*)])
@@ -2382,8 +2475,8 @@
                    [(Lcircuit-Ledger-Declaration? pelt)
                     (let ([pelt* (f pelt*)])
                       (cons (Ledger-Declaration pelt) pelt*))]
-                   [else (assert cannot-happen)]))))
-          ...)])
+                   [else (assert cannot-happen)]))))])
+         `(program ,src ((,export-name* ,name*) ...) ,synthesized-callables ... ,flattened ...))])
     (Native-Declaration : Native-Declaration (ir) -> Native-Declaration ()
       [(native ,src ,function-name ,native-entry ((,var-name* ,[Type->Wump : type* -> * wump*]) ...) ,[Type->Wump : type -> * wump])
        (let ([arg* (map do-argument var-name* type* wump*)] [primitive-type* (wump->elts wump)])
@@ -2723,8 +2816,11 @@
                        (,var-name* ...)
                        (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op^ ,triv* ...))))))]
       [(contract-call ,src ,elt-name (,triv ,type) ,triv* ...)
-       (guard (feature-zkir-v3))
+       (guard (and (feature-zkir-v3) (not (compile-contract-statements))))
        (source-errorf src "cross-contract calls are not yet supported")]
+      [(contract-call ,src ,elt-name (,[Triv : triv -> * receiver] ,type) ,[* wump*] ...)
+       (guard (feature-zkir-v3))
+       (lower-bound-call src elt-name receiver type wump* test var-name)]
       [(contract-call ,src ,elt-name (,[Single-Triv : triv] ,type) ,[* wump*] ...)
        (let-values ([(wump var-name*)
                      (wump-fold-right

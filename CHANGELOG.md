@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.217, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Stage private per-address cross-contract call contexts, verified claim data,
+  Zswap snapshots and transactional rollback for generated calls. Keep public
+  generated invocation refused while the remaining ZKIR, Callee and Caller
+  groups are qualified.
+
 ## [Toolchain 0.31.216, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.
