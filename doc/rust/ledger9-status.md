@@ -126,6 +126,41 @@ public generated Rust/TypeScript Outer, genuine proof, independent proof
 verification, funded strict application/replay, applied event delivery,
 live-node execution, or native Linux.
 
+The signed v3 private Events companion at local `e6f94deda` adds exact
+generated Outer TypeScript and its physical compiler manifest to the prior
+material and binds 1,649 files across 84 directories. Its identity SHA-256
+is `dd6c75875e40461713da289aae49f1f3c6f780433bb6de2f74b1030db5c90072`.
+The exact-head verifier checks a separate GPG trust anchor and all local
+checker dependencies before accepting the package; 18 negative controls
+pass. Independent review found no remaining actionable issue. The
+[detached-signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-v3-companion-20261119/qualification-receipt-e6f94deda.json)
+has SHA-256 `984f9cc7b6c645c4e618491e2fb7b29ff3adf5415873e1f2be346f0ea00e8d33`.
+This remains private and has no public Outer admission.
+
+At signed local `8302e704f`, a source-owned checked Events identity crate
+binds the original A/B sources, physical generated artifacts, runtime closure,
+verifier keys and resolver key bytes. An explicit-keyring gate verifies the
+v3 package before and after copying it, then Cargo checks the identity crate
+and generated Outer, runs identity Clippy with warnings denied, and refuses
+three physical tamper probes. The independently reviewed
+[detached-signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-identity-crate-20261119/qualification-receipt-830.json)
+has SHA-256 `27d7efd26f33395655c61e443e78b7d9d60839e7bd240a420cdb1e3bac1c5717`.
+The generated Outer Cargo check passes; its nine strict Clippy diagnostics
+are retained separately in that receipt's evidence.
+
+A follow-up source fix at signed local `17bf098f8` exposes the generated
+checked Events error types and removes unnecessary Field clones. Focused
+source tests, fresh scratch generated Outer Cargo check and Clippy with
+warnings denied pass on Darwin arm64. The [local qualification](/Users/ysh/.codex/local-evidence/ledger9-events-outer-clippy-20261119/qualification.json)
+has SHA-256 `97a9831a396465d0ea6b8bf9e6d8a4b743c2d25c3f5ce454f1e4e29a50f114cd`;
+its scratch identity pin substitution was unsigned. The reviewed source fix,
+checked identity and v3 checker chain are integrated locally at
+`c9ab32346`; the signed v3 package verifies from that head, but its combined
+generated crate and complete candidate have not been qualified there.
+Public generated Rust/TypeScript parity, genuine proof, independent proof
+verification, funded default-strict application and replay, applied event
+order, live-node execution and native Linux remain open.
+
 ## CI resource and optimization evidence
 
 The complete [#774 run](https://github.com/betsudo/compact/actions/runs/44328366189)

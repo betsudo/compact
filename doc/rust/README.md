@@ -53,6 +53,13 @@ runtime closure. In a separate private source-generated TypeScript run, the
 unchanged original Events suite passed 2/2 cases. Neither result admits a
 public Outer or qualifies the original two-contract Rust proof and funded
 transaction; the [status digest](ledger9-status.md) binds the exact receipts.
+The next signed private package binds 1,649 files, including generated Outer
+TypeScript and its compiler manifest. A source-owned checked Events identity
+crate now Cargo type-checks with the generated Outer Rust; a separate local
+fix also makes that generated Outer pass strict Clippy. These are separate
+Darwin arm64 stages, pending one complete signed candidate, public admission,
+proof and funded application. The [status digest](ledger9-status.md) records
+their source heads, receipts and remaining limits.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
