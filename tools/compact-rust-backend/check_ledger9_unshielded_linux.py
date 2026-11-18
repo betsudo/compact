@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Run the original unshielded-token Linux integration gate on a signed PR771 descendant.
+"""Run the original token Linux integration gate on a signed PR771 descendant.
 
 The input tarballs are the released packages named by the pinned original test
 lockfile. This manual gate does not start hosted CI. Its output is fresh, local
@@ -36,15 +36,49 @@ import tempfile
 from verify_ledger9_unshielded_tokens_original import PINS, source_compiler
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_HEAD = "29e6e6d8796cd144a8bc44fc08012d5b6ab19896"
+SOURCE_HEAD = "cdb4cb64629af69c2b48ea1f3edfae638e7369a6"
 UPSTREAM = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 SOURCE = ROOT / "test-center/compact/unshielded-tokens.compact"
 TEST = ROOT / "tools/compact-rust-backend/fixtures/unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts"
 PROOF_MARKERS = (
     "mintUnshieldedToSelfTest: original source fresh proof and funded strict replay gate passed",
-    "getUnshieldedBalanceTest: original 100-unit balance proof and funded strict replay gate passed",
+    "getUnshieldedBalanceTest: original 100-unit result, 100-unit seeded balance proof and funded strict replay gate passed",
+    "getUnshieldedBalanceTest: original 0-unit result, 100-unit seeded balance proof and funded strict replay gate passed",
+    "getUnshieldedBalanceGtTest(50): original true result, funded strict application and replay gate passed",
+    "getUnshieldedBalanceGtTest(150): original false result, funded strict application and replay gate passed",
+    "getUnshieldedBalanceLtTest(50): original false result, funded strict application and replay gate passed",
+    "getUnshieldedBalanceLtTest(150): original true result, funded strict application and replay gate passed",
     "sendUnshieldedToContractTest+receiveUnshieldedTest: original 100-unit two-contract transaction, funded strict apply and replay gate passed",
+    "sendUnshieldedToSelfTest: original 100-unit auto-receive proof, funded strict apply and replay gate passed",
+    "mintUnshieldedToContractTest: original 100-unit destination proof, funded strict apply and replay gate passed",
+    "mintUnshieldedToUserTest: original 100-unit destination proof, funded strict apply and replay gate passed",
+    "sendUnshieldedToUserTest: original 100-unit User send, funded strict apply and replay gate passed",
 )
+SHIELDED_MARKERS = (
+    "mintShieldedToSelfTest: unmatched-output commitment refusal passed",
+    "mintShieldedToSelfTest: original mint100, matching self spend/receive commitment, funded strict apply and replay passed",
+)
+PROOF_STEMS = (
+    "unshielded-original-mint-self",
+    "unshielded-original-balance-100",
+    "unshielded-original-balance-other-color-0",
+    "unshielded-original-balance-gt-50",
+    "unshielded-original-balance-gt-150",
+    "unshielded-original-balance-lt-50",
+    "unshielded-original-balance-lt-150",
+    "unshielded-original-send-contract-100",
+    "unshielded-original-receive-contract-100",
+    "unshielded-original-send-self-100",
+    "unshielded-original-mint-contract-100",
+    "unshielded-original-mint-contract-receive-100",
+    "unshielded-original-mint-user-100",
+    "unshielded-original-send-user-100",
+    "unshielded-original-mint-shielded-self-100",
+)
+REPLAY_STEMS = tuple(stem for stem in PROOF_STEMS if stem not in (
+    "unshielded-original-receive-contract-100",
+    "unshielded-original-mint-contract-receive-100",
+))
 
 
 def digest(path: Path) -> str:
@@ -98,10 +132,11 @@ def source_state() -> dict[str, str]:
         subprocess.run(["gpg", "--batch", "--import-ownertrust"], env=env,
                        input="F8851C118C66BF98DB9B1B5DB75A9FB8C6327844:6:\n",
                        text=True, check=True, capture_output=True)
-        signature = git("log", "-1", "--format=%G?%n%GK%n%B", env=env)
-        require(signature.startswith("G\nB75A9FB8C6327844\n") and
-                "Signed-off-by:" in signature and "Assisted-by: AI" in signature,
-                "signed DCO+Assisted source required")
+        for commit in (SOURCE_HEAD, head):
+            signature = git("log", "-1", "--format=%G?%n%GK%n%B", commit, env=env)
+            require(signature.startswith("G\nB75A9FB8C6327844\n") and
+                    "Signed-off-by:" in signature and "Assisted-by: AI" in signature,
+                    f"signed DCO+Assisted source required: {commit}")
     return {"head": head, "tree": git("rev-parse", "HEAD^{tree}"),
             "compiler_source_head": SOURCE_HEAD, "upstream": UPSTREAM}
 
@@ -141,9 +176,9 @@ def main() -> int:
     inputs = pinned_inputs(args.runtime_tar, args.onchain_tar)
     state = source_state()
     if args.preflight_only:
-        print(json.dumps({"format": "ledger9-unshielded-linux/v1", "status": "prepared",
+        print(json.dumps({"format": "ledger9-original-token-linux/v2", "status": "prepared",
                           "native_linux": False, "source": state, "inputs_sha256": inputs,
-                          "original_tests": 19}, sort_keys=True))
+                          "original_tests": 19, "proof_circuits": 11}, sort_keys=True))
         return 0
     if not args.output:
         parser.error("--output is required for qualification")
@@ -158,7 +193,7 @@ def main() -> int:
     env["CARGO_TARGET_DIR"] = str(output / "cargo-target")
     env["MIDNIGHT_PP"] = str(output / "proof-parameters")
     (output / "proof-parameters").mkdir()
-    receipt = {"format": "ledger9-unshielded-linux/v1", "status": "failed",
+    receipt = {"format": "ledger9-original-token-linux/v2", "status": "failed",
                "native_linux": True, "platform": "Linux x86_64", "source": state,
                "inputs_sha256": inputs, "sdk_matrix": {
                    "contract_semantics": "Ledger 9.1.0.1", "ledger_client": "midnight-ledger-v9 1.0.2",
@@ -235,18 +270,44 @@ def main() -> int:
                            "--provenance", str(static_receipt)], output / "ledger-static.log", env).strip()
         env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"] = static_path
         env["COMPACT_UNSHIELDED_ORIGINAL_GENERATED"] = str(generated)
-        proof_log = output / "proof-run.log"
-        proof = run(["cargo", "run", "--locked", "--offline", "-p",
+        unshielded_log = output / "unshielded-proof-run.log"
+        unshielded = run(["cargo", "run", "--locked", "--offline", "-p",
                      "compact-rust-proof-smoke", "--features", "unshielded-original-proof",
-                     "--", "--unshielded-original-proof", str(generated)], proof_log, env)
-        require(all(marker in proof for marker in PROOF_MARKERS),
-                "mint, balance or two-contract strict proof marker missing")
-        require(digest(generated / "unshielded-original-send-contract-100-ledger-after.bin") ==
-                digest(generated / "unshielded-original-send-contract-100-ledger-replay.bin"),
-                "two-contract replay changed serialized Ledger")
-        receipt["proof_log_sha256"] = digest(proof_log)
+                     "--", "--unshielded-original-proof", str(generated)], unshielded_log, env)
+        require(all(marker in unshielded for marker in PROOF_MARKERS),
+                "one or more original unshielded proof/strict markers missing")
+        shielded_log = output / "shielded-mint-self-proof-run.log"
+        shielded = run(["cargo", "run", "--locked", "--offline", "-p",
+                       "compact-rust-proof-smoke", "--features", "unshielded-original-proof",
+                       "--", "--shielded-original-mint-self-proof", str(generated)],
+                      shielded_log, env)
+        require(all(marker in shielded for marker in SHIELDED_MARKERS),
+                "original shielded mint-to-self proof/strict marker missing")
+        for stem in PROOF_STEMS:
+            standalone = generated / f"{stem}.proof"
+            transaction = generated / f"{stem}-transaction.proof"
+            require(standalone.is_file() and standalone.stat().st_size > 0 and
+                    transaction.is_file() and transaction.stat().st_size > 0 and
+                    digest(standalone) != digest(transaction),
+                    f"fresh standalone and transaction-bound proofs differ for {stem}")
+        for stem in REPLAY_STEMS:
+            after = generated / f"{stem}-ledger-after.bin"
+            replay = generated / f"{stem}-ledger-replay.bin"
+            require(after.is_file() and replay.is_file() and digest(after) == digest(replay),
+                    f"{stem} replay changed serialized Ledger")
+        refusal = generated / "unshielded-original-mint-shielded-self-100-without-offer-refusal.txt"
+        require(refusal.is_file() and
+                "CommitmentsNEClaimedShieldedReceives" in refusal.read_text(),
+                "original shielded mint unmatched-output refusal absent")
+        receipt["proof_circuits"] = {"unshielded": 10, "shielded": 1}
+        receipt["proof_log_sha256"] = {"unshielded": digest(unshielded_log),
+                                        "shielded_mint_self": digest(shielded_log)}
         receipt["ledger_static_provenance_sha256"] = digest(static_receipt)
-        receipt["proof_artifacts_sha256"] = files(generated)
+        proof_artifacts = files(generated)
+        require(len(proof_artifacts) == 191 and
+                all(proof_artifacts.get(name) == sha for name, sha in artifacts.items()),
+                "proof batch changed generated files or artifact count")
+        receipt["proof_artifacts_sha256"] = proof_artifacts
         receipt["status"] = "qualified"
     except Exception as error:
         receipt["failure"] = str(error)
