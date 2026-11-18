@@ -6,6 +6,37 @@ typed generated Rust. The Rust AST development line retains its existing
 backend-specific guarantees and historical Ledger 8 coverage.
 Track completion in [#726][tracking].
 
+## Current local coverage (2026-11-18)
+
+Merged [PR #772](https://github.com/betsudo/compact/pull/772) establishes the
+grouped original-token baseline. At signed, unpublished local source
+`447ff2a13c270f9d7fbe0fa7cd287ce7640057d9`, all 20 unique original-token
+Rust circuits pass on macOS arm64. The exact generated bundle remains 91
+byte-checked files; the 303-file proof tree includes 30 named proof/input
+pairs, 22 byte-identical Ledger replay pairs and 15 named refusal artifacts.
+The runtime suite passes 66 tests. The 19 original TypeScript assertions are
+inherited through an identical generated JavaScript hash; they were not
+rerun in this Rust proof batch. Supporting receipts and proof artifacts
+remain local; they are not GitHub-hosted qualification artifacts.
+
+The manual 20-circuit Linux selector is source-only prepared. Native Linux
+x86_64 proofs and funded application remain required under
+[#773](https://github.com/betsudo/compact/issues/773), alongside live-node
+qualification. Draft [PR #774](https://github.com/betsudo/compact/pull/774)
+ports private cross-contract call context, rollback and provenance;
+generated public `pay` and its cross-contract proof/funded transaction
+qualification remain open.
+This token coverage does not complete the wider upstream suite inventory
+below.
+
+The unchanged generated hashes and proof inventory establish source and
+artifact binding, not an optimization result. No new `k`, row count,
+prover latency or hosted CI savings measurement is claimed here. The
+[CI test graph](ci-test-graph.md) and
+[runner resource budget](ci-runner-resource-budget.md) retain earlier hosted
+CI and local transfer measurements separately from further unmeasured
+optimization work.
+
 ## Baselines
 
 - The [upstream test and language baseline][upstream] is
