@@ -1431,7 +1431,7 @@ by native Linux qualification; the prior macOS arm64 results remain historical.
 The subsequent private Events v3 companion at signed local `e6f94deda`
 physically binds 1,649 files across 84 directories, including private
 generated Outer TypeScript and its compiler manifest. Its independently
-reviewed [detached-signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-v3-companion-20261119/qualification-receipt-e6f94deda.json)
+reviewed detached-signed receipt (`qualification-receipt-e6f94deda.json`, retained locally)
 SHA-256 `984f9cc7b6c645c4e618491e2fb7b29ff3adf5415873e1f2be346f0ea00e8d33`
 records 18 negative controls and binds the complete local checker dependency
 chain. This is still stage-only and private.
@@ -1439,15 +1439,27 @@ chain. This is still stage-only and private.
 The source-owned checked Events identity crate at signed local `8302e704f`
 passes Cargo check and strict Clippy against the verified v3 package; the
 generated Outer also Cargo checks. Three tamper controls refuse after a
-forced rebuild. The reviewed [detached-signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-identity-crate-20261119/qualification-receipt-830.json)
+forced rebuild. The reviewed detached-signed receipt (`qualification-receipt-830.json`, retained locally)
 SHA-256 `27d7efd26f33395655c61e443e78b7d9d60839e7bd240a420cdb1e3bac1c5717`
 retains exact physical pins. Generated Outer strict Clippy then reported nine
 diagnostics; a separate signed source fix at `17bf098f8` passes focused tests,
 scratch Cargo check and strict Clippy on Darwin arm64. Its
-[qualification](/Users/ysh/.codex/local-evidence/ledger9-events-outer-clippy-20261119/qualification.json)
+qualification (`qualification.json`, retained locally)
 SHA-256 is `97a9831a396465d0ea6b8bf9e6d8a4b743c2d25c3f5ce454f1e4e29a50f114cd`.
 The separate slices are integrated locally at `c9ab32346` with v3 signature
 verification, but no exact-head combined crate qualification or complete
 signed public candidate is claimed. The original generated Rust/TypeScript
 two-contract execution, independent proof, funded default-strict application
 and replay, applied log order and native Linux remain open.
+
+The signed v4 physical candidate at local `8ea671f79` now combines those
+source stages without changing the signed v3 parent. Its exact identity
+`605312a3bc2dfbe82212921e402f2cc1705a015e0dc12e59ca6432af46facf8b`
+binds 2,460 files/119 directories, checked identity/build gate, fresh Outer
+Rust, Cargo dependency and complete manifest, with prior TypeScript/IR/ZKIR/
+keys/runtime bytes preserved. Independent exact-digest external-keyring
+verification passed; 18 refusals pass. Its signed receipt (`qualification-receipt-8ea671f79.json`, retained locally)
+SHA-256 is `84b2e7532177e2adeb7cb2b8f345e31a02f095b45dac65c9b0958007ba7874e4`.
+This physical candidate has no CLI admission. Complete-candidate Cargo gates,
+original Rust execution, fresh independently verified proofs, funded strict
+application/replay, applied log order and Linux remain required.

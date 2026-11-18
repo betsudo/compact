@@ -656,25 +656,37 @@ required before treating the follow-up as accepted.
 
 The signed v3 Events companion at `e6f94deda` extends the prior 838-file
 stage to 1,649 physical files with private Outer TypeScript and compiler
-manifest. Its [reviewed signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-v3-companion-20261119/qualification-receipt-e6f94deda.json)
+manifest. Its reviewed signed receipt (`qualification-receipt-e6f94deda.json`, retained locally)
 SHA-256 `984f9cc7b6c645c4e618491e2fb7b29ff3adf5415873e1f2be346f0ea00e8d33`
 binds the transitive checker source and 18 refusal controls. It has no public
 Outer admission.
 
 A source-owned checked Events identity crate at signed `8302e704f` binds
 exact physical sources, keys, runtime closure and resolver values. Its
-[reviewed signed receipt](/Users/ysh/.codex/local-evidence/ledger9-ccc-events-identity-crate-20261119/qualification-receipt-830.json)
+reviewed signed receipt (`qualification-receipt-830.json`, retained locally)
 SHA-256 `27d7efd26f33395655c61e443e78b7d9d60839e7bd240a420cdb1e3bac1c5717`
 records verified package copying, identity Cargo check and Clippy, generated
 Outer Cargo check and three tamper refusals on Darwin arm64. The generated
 Outer had nine strict Clippy diagnostics. Signed source fix `17bf098f8`
 passes focused tests and scratch generated Outer Cargo check and Clippy; its
-[local qualification](/Users/ysh/.codex/local-evidence/ledger9-events-outer-clippy-20261119/qualification.json)
+local qualification (`qualification.json`, retained locally)
 SHA-256 is `97a9831a396465d0ea6b8bf9e6d8a4b743c2d25c3f5ce454f1e4e29a50f114cd`.
 The identity, Clippy fix and v3 checker are locally integrated at
 `c9ab32346`, where the v3 package verifies. A complete signed candidate,
 public CLI admission, generated two-contract parity, independent proof,
 funded strict application/replay and native Linux qualification remain open.
+
+The subsequent signed v4 physical candidate at `8ea671f79` binds 2,460
+files/119 directories, with identity SHA-256
+`605312a3bc2dfbe82212921e402f2cc1705a015e0dc12e59ca6432af46facf8b`.
+It combines checked Outer Rust, Cargo and complete manifest with the exact
+v3 TypeScript, IR, keys and runtime closure, preserving the signed parent.
+Independent exact-digest external-keyring verification and 18 refusal controls
+pass. Its signed receipt (`qualification-receipt-8ea671f79.json`, retained locally)
+SHA-256 is `84b2e7532177e2adeb7cb2b8f345e31a02f095b45dac65c9b0958007ba7874e4`.
+Status is `candidate-no-cli-admission`; complete-candidate Cargo qualification,
+public CLI admission, original Rust execution, independently verified fresh
+proofs, funded strict application/replay and Linux remain required.
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
