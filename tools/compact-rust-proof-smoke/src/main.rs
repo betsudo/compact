@@ -499,6 +499,11 @@ mod public_products;
     compact_unshielded_original_generated
 ))]
 mod shielded_original_mint_self;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_mint_contract;
 mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_mutation_initializers;

@@ -226,6 +226,8 @@ def main() -> int:
         tool_bin = output / "tool-bin"
         tool_bin.mkdir()
         (tool_bin / "zkir-v3").symlink_to(zkir)
+        # passes.ss probes `zkir` before invoking `zkir-v3` for v3 circuits.
+        (tool_bin / "zkir").symlink_to(zkir)
         env["PATH"] = f"{tool_bin}:{env['PATH']}"
         run(["cargo", "fetch", "--locked"], output / "cargo-fetch.log", env)
         compile_args = [str(compiler), "--target", "rust", "--target", "ts",
