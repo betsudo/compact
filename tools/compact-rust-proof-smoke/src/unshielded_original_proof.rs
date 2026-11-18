@@ -227,6 +227,17 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
     let mut rng = StdRng::seed_from_u64(seed);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
     let (_, verifier, operation) = v3::load_operation(root, name)?;
+    let recipient_deploy = if is_user {
+        None
+    } else {
+        let (_, _, receive_operation) = v3::load_operation(root, RECEIVE_CONTRACT_CIRCUIT)?;
+        Some(v3::deploy(
+            initial.ledger_state.get_ref().clone(),
+            RECEIVE_CONTRACT_CIRCUIT,
+            receive_operation,
+            &mut rng,
+        ))
+    };
     let deploy = v3::deploy(
         initial.ledger_state.get_ref().clone(),
         name,
@@ -243,7 +254,12 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
         },
     );
     let domain = FixedBytes::new([if is_user { 0x85 } else { 0x86 }; 32]);
-    let recipient_bytes = FixedBytes::new([0x92; 32]);
+    let recipient_bytes = recipient_deploy
+        .as_ref()
+        .map(|recipient| {
+            midnight_compact_runtime::ledger::contract_address_bytes(&recipient.address())
+        })
+        .unwrap_or_else(|| FixedBytes::new([0x92; 32]));
     let recipient_contract = crate::types::ContractAddress {
         bytes: recipient_bytes,
     };
@@ -251,7 +267,7 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
         bytes: recipient_bytes,
     };
     let contract_address =
-        midnight_compact_runtime::ledger::ContractAddress(HashOutput([0x92; 32]));
+        midnight_compact_runtime::ledger::ContractAddress(HashOutput(recipient_bytes.into_array()));
     if contract_address == deploy.address() {
         return Err("mint-to-contract recipient unexpectedly equals minter".into());
     }
@@ -298,14 +314,14 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
     let raw_domain = HashOutput(domain.into_array());
     let token = TokenType::Unshielded(deploy.address().custom_unshielded_token_type(raw_domain));
     let destination = if is_user {
-        PublicAddress::User(UserAddress(HashOutput([0x92; 32])))
+        PublicAddress::User(UserAddress(HashOutput(recipient_bytes.into_array())))
     } else {
         PublicAddress::Contract(contract_address)
     };
     let wrong_tag = if is_user {
         PublicAddress::Contract(contract_address)
     } else {
-        PublicAddress::User(UserAddress(HashOutput([0x92; 32])))
+        PublicAddress::User(UserAddress(HashOutput(recipient_bytes.into_array())))
     };
     let claim = ClaimedUnshieldedSpendsKey(token, destination);
     let wrong_claim = ClaimedUnshieldedSpendsKey(token, wrong_tag);
@@ -340,17 +356,308 @@ fn run_mint_destination(root: &Path, is_user: bool) -> Result<(), Box<dyn Error>
     }
     let proof: Proof = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
     positional_transaction::verify_separately(root, name, stem)?;
-    v3::apply(
+    apply_mint_destination(
         root,
-        name,
-        stem,
+        (name, stem),
         prepared,
         deploy,
-        initial.ledger_state.get_ref(),
+        recipient_deploy,
+        token,
+        destination,
         &proof,
     )?;
     println!(
         "{name}: original 100-unit destination proof, funded strict apply and replay gate passed"
+    );
+    Ok(())
+}
+
+fn apply_mint_destination(
+    root: &Path,
+    (name, stem): (&'static str, &str),
+    prepared: ContractCallPrototype<DefaultDB>,
+    minter: ContractDeploy<DefaultDB>,
+    recipient: Option<ContractDeploy<DefaultDB>>,
+    token: midnight_compact_runtime::ledger::TokenType,
+    destination: midnight_compact_runtime::ledger::PublicAddress,
+    standalone: &Proof,
+) -> Result<(), Box<dyn Error>> {
+    use midnight_compact_runtime::ledger::{PublicAddress, TokenType};
+    use midnight_ledger::structure::{ProofVersioned, UnshieldedOffer, UtxoOutput};
+
+    let mut rng = StdRng::seed_from_u64(if recipient.is_some() {
+        0x0184_4d52
+    } else {
+        0x0184_4d57
+    });
+    let mut funded = qualified_coin_funding::fee_funded_state_with_utxos(&mut rng, 1)?;
+    let minter_address = minter.address();
+    funded.ledger.contract = funded
+        .ledger
+        .contract
+        .insert(minter_address, minter.initial_state);
+    let recipient_address = recipient.as_ref().map(|contract| contract.address());
+    if let Some(contract) = &recipient {
+        funded.ledger.contract = funded
+            .ledger
+            .contract
+            .insert(contract.address(), contract.initial_state.clone());
+    }
+    let mut calls = vec![prepared];
+    let mut receive_standalone = None;
+    if let Some(address) = recipient_address {
+        let (_, verifier, operation) = v3::load_operation(root, RECEIVE_CONTRACT_CIRCUIT)?;
+        let recipient_state = funded
+            .ledger
+            .contract
+            .get(&address)
+            .ok_or("mint recipient deployment missing")?;
+        let observed = ObservedContractState::new(
+            address,
+            recipient_state.clone(),
+            Observation {
+                transaction_hash: [0; 32],
+                block_hash: [0; 32],
+                block_height: 0,
+            },
+        );
+        let TokenType::Unshielded(raw_type) = token else {
+            return Err("mint destination token is not unshielded".into());
+        };
+        let receive = contract::Contract::default()
+            .recording
+            .receiveUnshieldedTest_call(
+                &observed,
+                (),
+                FixedBytes::new(raw_type.0.0),
+                BoundedUint::<340282366920938463463374607431768211455>::new(100)?,
+            )?;
+        let prepared_receive = receive.prepare(verifier.clone(), Fr::from(0_u64))?;
+        if prepared_receive.op != operation {
+            return Err("mint recipient receive operation differs from installed v3 IR".into());
+        }
+        let effects = &prepared_receive
+            .guaranteed_public_transcript
+            .as_ref()
+            .ok_or("mint recipient has no guaranteed receive effects")?
+            .effects;
+        if prepared_receive.fallible_public_transcript.is_some()
+            || effects.unshielded_inputs.size() != 1
+            || effects.unshielded_inputs.get(&token).map(|value| *value) != Some(100)
+            || !effects.claimed_nullifiers.is_empty()
+            || !effects.claimed_shielded_receives.is_empty()
+            || !effects.claimed_shielded_spends.is_empty()
+            || !effects.claimed_contract_calls.is_empty()
+            || !effects.shielded_mints.is_empty()
+            || !effects.unshielded_mints.is_empty()
+            || !effects.unshielded_outputs.is_empty()
+            || !effects.claimed_unshielded_spends.is_empty()
+        {
+            return Err("mint recipient receive effects differ from 100-unit input".into());
+        }
+        let receive_stem = "unshielded-original-mint-contract-receive-100";
+        let proof = v3::prove_standalone(
+            root,
+            RECEIVE_CONTRACT_CIRCUIT,
+            receive_stem,
+            &prepared_receive,
+            &verifier,
+            None,
+        )?;
+        positional_transaction::verify_separately(root, RECEIVE_CONTRACT_CIRCUIT, receive_stem)?;
+        receive_standalone = Some(proof);
+        calls.push(prepared_receive);
+    }
+    let offer = if let PublicAddress::User(owner) = destination {
+        let TokenType::Unshielded(raw_type) = token else {
+            return Err("mint-to-user token is not unshielded".into());
+        };
+        Some(UnshieldedOffer::<Signature, DefaultDB> {
+            inputs: vec![].into(),
+            outputs: vec![UtxoOutput {
+                value: 100,
+                owner,
+                type_: raw_type,
+            }]
+            .into(),
+            signatures: vec![].into(),
+        })
+    } else {
+        None
+    };
+    let resolver_names = if recipient.is_some() {
+        vec![name, RECEIVE_CONTRACT_CIRCUIT]
+    } else {
+        vec![name]
+    };
+    let resolver = qualified_coin_funding::fee_resolver_for_circuits(root, &resolver_names)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> = Intent::new(
+        &mut rng,
+        offer,
+        None,
+        calls,
+        vec![],
+        vec![],
+        None,
+        funded.time + funded.ledger.parameters.global_ttl,
+    );
+    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
+    let proven = executor
+        .block_on(midnight_ledger::test_utilities::tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("{name} transaction proving failed: {error:?}"))?;
+    let sealed = proven.seal(StdRng::from_rng(rand::rngs::OsRng)?);
+    let sealed = executor.block_on(funded.balance_tx(
+        StdRng::from_rng(rand::rngs::OsRng)?,
+        sealed,
+        &resolver,
+    ))?;
+    let mut tx_calls = sealed.calls();
+    let (segment, mint_call) = tx_calls
+        .next()
+        .ok_or("mint destination transaction missing mint call")?;
+    if mint_call.address != minter_address
+        || mint_call.entry_point != EntryPointBuf(name.as_bytes().to_vec())
+    {
+        return Err("mint destination transaction changed mint call address or entry".into());
+    }
+    let ProofVersioned::V3(mint_proof) = &mint_call.proof else {
+        return Err("mint destination transaction proof is not v3".into());
+    };
+    if mint_proof == standalone {
+        return Err("mint destination transaction proof equals standalone proof".into());
+    }
+    if let Some(address) = recipient_address {
+        let (other_segment, receive_call) = tx_calls
+            .next()
+            .ok_or("mint contract transaction missing receive call")?;
+        let ProofVersioned::V3(receive_proof) = &receive_call.proof else {
+            return Err("mint recipient transaction proof is not v3".into());
+        };
+        if other_segment != segment
+            || receive_call.address != address
+            || receive_call.entry_point
+                != EntryPointBuf(RECEIVE_CONTRACT_CIRCUIT.as_bytes().to_vec())
+            || Some(receive_proof) == receive_standalone.as_ref()
+        {
+            return Err("mint contract receive call differs from bound recipient".into());
+        }
+        v3::write_new(
+            root.join("unshielded-original-mint-contract-receive-100-transaction.proof"),
+            &receive_proof.0,
+        )?;
+    }
+    if tx_calls.next().is_some() || v3::positive_fee_dust_spends(&sealed) != 1 {
+        return Err("mint destination call count or positive fee funding differs".into());
+    }
+    let mut transaction_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut transaction_bytes)?;
+    v3::write_new(
+        root.join(format!("{stem}-transaction.bin")),
+        &transaction_bytes,
+    )?;
+    v3::write_new(
+        root.join(format!("{stem}-transaction.proof")),
+        &mint_proof.0,
+    )?;
+    let time = funded.time;
+    let strictness = WellFormedStrictness::default();
+    let verified = sealed.well_formed(&funded.ledger, strictness, time)?;
+    let result = funded.apply(&sealed, strictness)?;
+    if !matches!(result, TransactionResult::Success(_)) {
+        return Err(format!("{name} funded default-strict application failed: {result:?}").into());
+    }
+    let minter_after = funded
+        .ledger
+        .contract
+        .get(&minter_address)
+        .ok_or("mint minter absent after apply")?;
+    let expected_data = contract::initial_state(ConstructorContext::new(()))?;
+    if minter_after.data.get_ref() != expected_data.ledger_state.get_ref()
+        || !minter_after.balance.is_empty()
+    {
+        return Err("mint destination source state or balance changed".into());
+    }
+    if let Some(address) = recipient_address {
+        let recipient_after = funded
+            .ledger
+            .contract
+            .get(&address)
+            .ok_or("mint recipient absent after apply")?;
+        if recipient_after.data.get_ref() != expected_data.ledger_state.get_ref()
+            || recipient_after.balance.get(&token).map(|value| *value) != Some(100)
+            || recipient_after.balance.size() != 1
+        {
+            return Err("mint contract recipient state or 100-unit balance differs".into());
+        }
+        let mut bytes = Vec::new();
+        tagged_serialize(recipient_after, &mut bytes)?;
+        v3::write_new(root.join(format!("{stem}-recipient-state.bin")), &bytes)?;
+    } else {
+        let PublicAddress::User(owner) = destination else {
+            return Err("mint user recipient tag changed".into());
+        };
+        let TokenType::Unshielded(raw_type) = token else {
+            return Err("mint user token tag changed".into());
+        };
+        let matches = funded
+            .ledger
+            .utxo
+            .utxos
+            .iter()
+            .filter(|row| {
+                let (utxo, _) = &**row;
+                utxo.owner == owner && utxo.type_ == raw_type && utxo.value == 100
+            })
+            .count();
+        if matches != 1 {
+            return Err(format!("mint user 100-unit UTXO count differs: {matches}").into());
+        }
+    }
+    let updated = funded.ledger.clone();
+    let context = |state: LedgerState<DefaultDB>| TransactionContext {
+        ref_state: state,
+        block_context: BlockContext {
+            tblock: time,
+            last_block_time: time,
+            ..BlockContext::default()
+        },
+        whitelist: None,
+    };
+    let (replayed, replay_result) = updated.apply(&verified, &context(updated.clone()));
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != updated
+    {
+        return Err(
+            format!("mint destination replay refused incorrectly: {replay_result:?}").into(),
+        );
+    }
+    let mut after_bytes = Vec::new();
+    let mut replay_bytes = Vec::new();
+    tagged_serialize(&updated, &mut after_bytes)?;
+    tagged_serialize(&replayed, &mut replay_bytes)?;
+    if after_bytes != replay_bytes {
+        return Err("mint destination replay changed serialized Ledger bytes".into());
+    }
+    v3::write_new(root.join(format!("{stem}-ledger-after.bin")), &after_bytes)?;
+    v3::write_new(
+        root.join(format!("{stem}-ledger-replay.bin")),
+        &replay_bytes,
+    )?;
+    println!(
+        "{name}: transaction destination matched 100-unit claim, funded default-strict apply and replay gate passed"
     );
     Ok(())
 }
