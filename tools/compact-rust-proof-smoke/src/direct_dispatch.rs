@@ -720,6 +720,19 @@ pub(super) fn try_run(
             }
             super::shielded_original_mint_contract::run(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-mint-user-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded user mint artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded user mint proof argument".into());
+            }
+            super::shielded_original_mint_user::run(std::path::Path::new(&root))
+        })()),
         ("--qualified-coin-set", _) => Some(shielded::qualified_coin_set(arguments)),
         ("--qualified-coin-set-chunked", _) => {
             Some(shielded::qualified_coin_set_chunked(arguments))
