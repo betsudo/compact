@@ -31,12 +31,20 @@ fn main() {
             "contract/compact-rust-ir.json",
             "zkir/mintUnshieldedToSelfTest.zkir",
             "zkir/getUnshieldedBalanceTest.zkir",
+            "zkir/sendUnshieldedToContractTest.zkir",
+            "zkir/receiveUnshieldedTest.zkir",
             "zkir/mintUnshieldedToSelfTest.bzkir",
             "zkir/getUnshieldedBalanceTest.bzkir",
+            "zkir/sendUnshieldedToContractTest.bzkir",
+            "zkir/receiveUnshieldedTest.bzkir",
             "keys/mintUnshieldedToSelfTest.prover",
             "keys/mintUnshieldedToSelfTest.verifier",
             "keys/getUnshieldedBalanceTest.prover",
             "keys/getUnshieldedBalanceTest.verifier",
+            "keys/sendUnshieldedToContractTest.prover",
+            "keys/sendUnshieldedToContractTest.verifier",
+            "keys/receiveUnshieldedTest.prover",
+            "keys/receiveUnshieldedTest.verifier",
         ] {
             let path = root.join(member);
             assert!(
