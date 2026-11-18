@@ -1,5 +1,20 @@
 # Ledger 9 adoption on the Rust AST line
 
+## Publication snapshot, 2026-11-18
+
+The [dated compatibility status](../ledger9-status.md) records the current
+GitHub branch and separate, source-bound local results. Cross-contract
+foundation [#774](https://github.com/betsudo/compact/pull/774) is merged;
+original-token [#775](https://github.com/betsudo/compact/pull/775) is open on
+that base. The complete earlier #775 CI run does not qualify its rebased head.
+The original Basic and Storage suites, one host E2E case, and a signed private
+Events material package have later local Darwin arm64 results. The public
+Events two-contract proof, funded application and native Linux gate remain
+open. The [CI budget](ci-runner-resource-budget.md) records measured hosted
+runner use and the proposed compiler-shell handoff without claiming a
+controlled cost or speed improvement. Entries below retain their historical
+revision boundaries.
+
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.
 The earlier entries record each migration step at its tested revision.

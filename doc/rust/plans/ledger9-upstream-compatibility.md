@@ -1,5 +1,16 @@
 # Ledger 9 upstream compatibility
 
+## Publication snapshot, 2026-11-18
+
+See the [dated status digest](../ledger9-status.md) for the merged #774
+foundation, open rebased #775 checks, current local original-suite coverage,
+and the Events material package boundary. The source-bound local Events work
+has not published a generated Outer or qualified a funded two-contract call.
+The [CI resource budget](ci-runner-resource-budget.md) separates measured
+runner minutes from unmeasured optimization claims. The inventory and
+historical candidate details below remain necessary; they do not imply that
+the full pinned corpus or native Linux integration is complete.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing

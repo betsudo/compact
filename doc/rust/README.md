@@ -13,6 +13,45 @@ migration status and the [versions and targets guide](guides/versions-and-target
 for the matching compiler, Rust and TypeScript runtime, and ZKIR tools.
 The [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
 tracks mainstream Ledger 9 capabilities and test coverage across both targets.
+The [dated Ledger 9 status digest](ledger9-status.md) gives a GitHub-safe
+publication and CI resource summary.
+
+The [cross-contract foundation](https://github.com/betsudo/compact/pull/774)
+merged into `codex/rust-backend-ast` at `eb3b2adbb`. The [20-circuit
+original-token follow-up](https://github.com/betsudo/compact/pull/775) was
+rebased onto it and is open at `297ea0b17`; its new-head CI was running on
+18 November 2026. The earlier complete #775 run passed at `867b25d88`, but
+that result does not qualify the rebased head. Signed local macOS arm64 proof
+evidence covers all 20 unique original-token Rust circuits at its recorded
+source revision. Native Linux proof and funded application remain open in
+[#773](https://github.com/betsudo/compact/issues/773).
+Ordinary generated public `pay` is not qualified by the merged foundation.
+An independently reviewed local follow-up now qualifies public generated
+`pay` with fresh A/B proofs and funded offline replay at its signed head;
+the [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
+records its exact scope and remaining gates.
+An earlier exact-head local gate for the pinned original composable Events sources
+emits Inner Rust and TypeScript and confirms that ordinary Outer Rust refuses
+at the live-coordinator boundary. It does not execute the original two-contract
+call or establish proof and funded application parity.
+Later signed local slices execute the original Basic suite (12/12 on released
+Compact and 12/12 on the private source path), the original Storage suite
+(6/6 on each TypeScript path and 7/7 generated Rust consumer tests), and the
+PM-19252 host case (18/18 on released Compact). A private generated Events
+Outer continuation executes its pre-child event and Inner call in a bounded
+in-memory runtime test. These results are tied to their separate local heads;
+the public Events Outer, full two-contract proof and funded application, and
+native Linux qualification remain open. See the [status digest](ledger9-status.md)
+for exact scope and receipts.
+A later signed local Events material package binds the exact original sources,
+both generated circuit artifacts and fresh k=8 A/B keys through a separate
+GPG trust anchor. It remains a prerequisite for checked public Outer admission,
+not a proof or transaction result.
+The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
+record measured hosted runs and local transfer observations. The grouped #774
+and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
+minutes respectively, with different scopes and source heads. This migration
+checkpoint does not claim a measured circuit-size, prover-speed or CI-cost gain.
 
 ## Retained Ledger 8 delivery
 

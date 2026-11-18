@@ -4,6 +4,42 @@
 
 # CI runner resource usage and bounded guard repair
 
+## Current publication boundary, 2026-11-18
+
+PR [#774](https://github.com/betsudo/compact/pull/774) merged into the Rust
+AST base at `eb3b2adbb`. PR [#775](https://github.com/betsudo/compact/pull/775)
+was rebased onto that source and is open at `297ea0b17`; at 21:52 UTC,
+22 checks succeeded, two were skipped and Rust proof qualification was still
+running. The complete run measurements below
+belong to the earlier `9069c0c` and `867b25d` heads. They cannot establish
+the rebased head's gate result or a CI saving. The measured transfer candidate
+below has no native Linux cold-run benchmark. The full proof, native, package
+and E2E gates remain required; [#773](https://github.com/betsudo/compact/issues/773)
+still needs its native Linux qualification.
+
+## Later grouped Ledger 9 baseline, 2026-11-18
+
+The complete [draft PR #774 run](https://github.com/betsudo/compact/actions/runs/44328366189)
+passed at signed head `9069c0ccc9fcd726ec6e650867a84ce305ecf3b4`.
+Its 19 successful and three skipped jobs span 119.67 minutes from first
+assigned start to final completion and total 468.67 assigned runner
+minutes. The Rust proof qualification job took 97.48 minutes; native
+Rust backend and wallet qualification took 53.95 minutes. These figures
+are job start/end intervals from GitHub Actions metadata, not billed
+minutes. This run exercises a broader Ledger 9 source and proof cohort
+than the earlier runs below, so their time differences do not measure a
+workflow speedup or regression.
+
+The complete [draft PR #775 run](https://github.com/betsudo/compact/actions/runs/44357332678)
+passed at signed head `867b25d88b69ca8c88122a37df182d34af7c923a`.
+Its 19 successful and three skipped jobs span 131.27 minutes from first
+assigned start to final completion and total 439.60 assigned runner
+minutes. The Rust proof qualification job took 110.98 minutes. Its
+25 successful PR checks and three skipped checks are green. These are
+GitHub job start/end intervals, not billed minutes; the two grouped
+runs have different scopes and do not establish a controlled CI cost
+improvement. No native Linux manual #773 result follows from this PR run.
+
 ## Measured state, 2026-11-09
 
 PR #721 and draft #722 had no runs while repository Actions were disabled. Once the
