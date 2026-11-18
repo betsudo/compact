@@ -33,10 +33,12 @@ import subprocess
 import sys
 import tempfile
 
-from verify_ledger9_unshielded_tokens_original import PINS, source_compiler
+from verify_ledger9_unshielded_tokens_original import (
+    PINS, require_compiler_source_tree, source_compiler,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_HEAD = "cdb4cb64629af69c2b48ea1f3edfae638e7369a6"
+SOURCE_HEAD = "24f7df322876c839cbceadefebb41cbd4dce7103"
 UPSTREAM = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 SOURCE = ROOT / "test-center/compact/unshielded-tokens.compact"
 TEST = ROOT / "tools/compact-rust-backend/fixtures/unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts"
@@ -110,11 +112,13 @@ def pinned_inputs(runtime: Path, onchain: Path) -> dict[str, str]:
     return found
 
 
-def source_state() -> dict[str, str]:
-    head = git("rev-parse", "HEAD")
-    require(git("status", "--porcelain") == "", "exact-head source must be clean")
-    subprocess.run(["git", "merge-base", "--is-ancestor", SOURCE_HEAD, head],
-                   cwd=ROOT, check=True)
+def signed_checkout_identity(head: str, signed_checkout_head: str | None = None) -> str:
+    if signed_checkout_head is not None:
+        require(re.fullmatch(r"[0-9a-f]{40}", signed_checkout_head) is not None,
+                "--signed-checkout-head must be a full Git commit ID")
+        require(git("rev-parse", f"{signed_checkout_head}^{{tree}}") ==
+                git("rev-parse", f"{head}^{{tree}}"),
+                "signed checkout tree differs from current HEAD")
     key = ROOT / ".github/keys/ledger9-vector-source-signing.asc"
     require(key.is_file() and not key.is_symlink(), "pinned public signing key missing")
     with tempfile.TemporaryDirectory(prefix="ledger9-source-key-") as home:
@@ -132,13 +136,22 @@ def source_state() -> dict[str, str]:
         subprocess.run(["gpg", "--batch", "--import-ownertrust"], env=env,
                        input="F8851C118C66BF98DB9B1B5DB75A9FB8C6327844:6:\n",
                        text=True, check=True, capture_output=True)
-        for commit in (SOURCE_HEAD, head):
+        for commit in (SOURCE_HEAD, signed_checkout_head or head):
             signature = git("log", "-1", "--format=%G?%n%GK%n%B", commit, env=env)
             require(signature.startswith("G\nB75A9FB8C6327844\n") and
-                    "Signed-off-by:" in signature and "Assisted-by: AI" in signature,
-                    f"signed DCO+Assisted source required: {commit}")
+                    "Signed-off-by:" in signature,
+                    f"signed DCO source required: {commit}")
+    return signed_checkout_head or head
+
+
+def source_state(signed_checkout_head: str | None = None) -> dict[str, str]:
+    head = git("rev-parse", "HEAD")
+    require(git("status", "--porcelain") == "", "exact-head source must be clean")
+    require_compiler_source_tree(SOURCE_HEAD)
+    signed_head = signed_checkout_identity(head, signed_checkout_head)
     return {"head": head, "tree": git("rev-parse", "HEAD^{tree}"),
-            "compiler_source_head": SOURCE_HEAD, "upstream": UPSTREAM}
+            "signed_checkout_head": signed_head, "compiler_source_head": SOURCE_HEAD,
+            "upstream": UPSTREAM}
 
 
 def run(argv: list[str], log: Path, env: dict[str, str]) -> str:
@@ -172,9 +185,10 @@ def main() -> int:
     parser.add_argument("--onchain-tar", required=True, type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--signed-checkout-head", help="signed equal-tree commit for a GitHub squash merge")
     args = parser.parse_args()
     inputs = pinned_inputs(args.runtime_tar, args.onchain_tar)
-    state = source_state()
+    state = source_state(args.signed_checkout_head)
     if args.preflight_only:
         print(json.dumps({"format": "ledger9-original-token-linux/v2", "status": "prepared",
                           "native_linux": False, "source": state, "inputs_sha256": inputs,
