@@ -150,8 +150,9 @@ def main() -> int:
         return 0
     if not args.output_dir:
         parser.error("--output-dir is required for a run")
-    if (platform.system(), platform.machine()) != ("Darwin", "arm64"):
-        raise ValueError("the pinned host adapter is Darwin arm64")
+    host = (platform.system(), platform.machine())
+    if host not in (("Darwin", "arm64"), ("Linux", "x86_64")):
+        raise ValueError("the pinned host adapter requires Darwin arm64 or Linux x86_64")
     output = args.output_dir.resolve()
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="unshielded-original-", dir=output) as tmp:
@@ -197,7 +198,7 @@ def main() -> int:
         result = {
             "upstream": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
             "pr771_base": "d6513a24debac14d43a8199460d9dc2c6d9af2b1",
-            "platform": "Darwin arm64",
+            "platform": " ".join(host),
             "original_cases_passed": 19,
             "original_cases_total": 19,
             "released_compact": "0.36.0",
@@ -206,7 +207,7 @@ def main() -> int:
             "generated_js_sha256": sha256(retained / "contract/index.js"),
             "generated_manifest_sha256": sha256(retained / "compiler/contract-manifest.json"),
             "inputs_sha256": PINS,
-            "limits": ["released-matrix private harness; original test body and contract bytes unchanged", "--skip-zk execution of generated JavaScript; no fresh proof or funded Ledger transaction", "full Test Center and native Linux unrun"],
+            "limits": ["released-matrix private harness; original test body and contract bytes unchanged", "--skip-zk execution of generated JavaScript; no fresh proof or funded Ledger transaction", "full Test Center unrun; this adapter does not qualify the proof gate"],
         }
         if built_compiler:
             result.pop("released_compact")
@@ -221,7 +222,7 @@ def main() -> int:
             result["limits"] = [
                 "source-built compiler; original test body and contract bytes unchanged",
                 "--skip-zk generated JavaScript only; Rust, proof and funded Ledger behavior are separate gates",
-                "full Test Center and native Linux unrun",
+                "full Test Center unrun; this adapter does not qualify the proof gate",
             ]
         (output / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, sort_keys=True))
