@@ -46,6 +46,7 @@ fn main() {
             "zkir/sendShieldedToSelfTest.zkir",
             "zkir/sendShieldedToContractTest.zkir",
             "zkir/sendShieldedToUserTest.zkir",
+            "zkir/sendImmediateShieldedToSelfTest.zkir",
             "zkir/mintUnshieldedToSelfTest.bzkir",
             "zkir/getUnshieldedBalanceTest.bzkir",
             "zkir/getUnshieldedBalanceGtTest.bzkir",
@@ -62,6 +63,7 @@ fn main() {
             "zkir/sendShieldedToSelfTest.bzkir",
             "zkir/sendShieldedToContractTest.bzkir",
             "zkir/sendShieldedToUserTest.bzkir",
+            "zkir/sendImmediateShieldedToSelfTest.bzkir",
             "keys/mintUnshieldedToSelfTest.prover",
             "keys/mintUnshieldedToSelfTest.verifier",
             "keys/getUnshieldedBalanceTest.prover",
@@ -94,6 +96,8 @@ fn main() {
             "keys/sendShieldedToContractTest.verifier",
             "keys/sendShieldedToUserTest.prover",
             "keys/sendShieldedToUserTest.verifier",
+            "keys/sendImmediateShieldedToSelfTest.prover",
+            "keys/sendImmediateShieldedToSelfTest.verifier",
         ] {
             let path = root.join(member);
             assert!(

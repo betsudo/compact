@@ -453,6 +453,55 @@ impl<D: DB> OfferBackedObservedState<D> {
             admission: OfferAdmission::CompleteLedger,
         })
     }
+
+    /// Bind two state-preserving calls on this contract to one physical offer.
+    /// The first must create one contract transient output; the second must
+    /// consume it before creating persistent output(s). Each recorded trace is
+    /// checked against this observation, then their ordered intent events are
+    /// reconciled together. Neither half is independently admitted.
+    pub fn prepare_transient_receive_then_send<
+        ReceivePrivate,
+        ReceiveOutput: Into<AlignedValue>,
+        SendPrivate,
+        SendOutput: Into<AlignedValue>,
+    >(
+        &self,
+        receive: RecordedCall<'_, ReceivePrivate, ReceiveOutput, D>,
+        receive_verifier: VerifierKey,
+        receive_rand: Fr,
+        send: RecordedCall<'_, SendPrivate, SendOutput, D>,
+        send_verifier: VerifierKey,
+        send_rand: Fr,
+    ) -> Result<OfferBoundPreparedPair<D>, ObservedCallError> {
+        if !std::ptr::eq(receive.observed, &self.observed)
+            || !std::ptr::eq(send.observed, &self.observed)
+        {
+            return Err(ObservedCallError::OfferMismatch);
+        }
+        if self.transients.is_none()
+            || self.offer.transient.len() != 1
+            || self.placement != OfferPlacement::Guaranteed
+        {
+            return Err(ObservedCallError::ZswapIntent(
+                ZswapIntentError::TransientPairShapeMismatch,
+            ));
+        }
+        self.reconciliation()
+            .reconcile_transient_pair(&receive.recorded, &send.recorded)
+            .map_err(ObservedCallError::ZswapIntent)?;
+        let receive =
+            receive.prepare_inner(receive_verifier, receive_rand, Some(self.partition))?;
+        let send = send.prepare_inner(send_verifier, send_rand, Some(self.partition))?;
+        self.placement
+            .validate_prototype(&receive)
+            .and_then(|()| self.placement.validate_prototype(&send))
+            .map_err(ObservedCallError::ZswapIntent)?;
+        Ok(OfferBoundPreparedPair {
+            receive,
+            send,
+            offer: self.offer.clone(),
+        })
+    }
     fn reconciliation(&self) -> OfferReconciliation<'_, D> {
         OfferReconciliation {
             observed: &self.observed,
@@ -488,12 +537,76 @@ struct OfferReconciliation<'a, D: DB> {
     placement: OfferPlacement,
 }
 impl<D: DB> OfferReconciliation<'_, D> {
+    fn reconcile_transient_pair<RP, RO, SP, SO>(
+        &self,
+        receive: &RecordedCircuitResult<RP, RO, D>,
+        send: &RecordedCircuitResult<SP, SO, D>,
+    ) -> Result<(), ZswapIntentError> {
+        use crate::zswap::IntentEvent;
+        self.validate_recorded(receive)?;
+        self.validate_recorded(send)?;
+        let first = receive.execution.context.circuit_zswap();
+        let second = send.execution.context.circuit_zswap();
+        let first_end = self
+            .frontier
+            .checked_add(first.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        let second_end = self
+            .frontier
+            .checked_add(second.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        if first.inputs.len() != 0
+            || first.outputs.len() != 1
+            || second.inputs.len() != 1
+            || second.outputs.is_empty()
+            || first.allocation != second.allocation
+            || !matches!(
+                first.allocation,
+                crate::zswap::Allocation::CanonicalOfferBound { .. }
+            )
+            || first.next_index != first_end
+            || second.next_index != second_end
+        {
+            return Err(ZswapIntentError::TransientPairShapeMismatch);
+        }
+        // This adapter does not compose storage mutations. Both calls must
+        // leave the observed state intact so their independent traces share
+        // the exact state installed in the one Ledger transaction.
+        if receive.execution.context.query.state.get_ref() != self.observed.contract.data.get_ref()
+            || send.execution.context.query.state.get_ref() != self.observed.contract.data.get_ref()
+        {
+            return Err(ZswapIntentError::TransientPairStateMismatch);
+        }
+        let mut joined = first.clone();
+        let input_offset = joined.inputs.len();
+        let output_offset = joined.outputs.len();
+        joined.inputs.extend(second.inputs.iter().cloned());
+        joined.outputs.extend(second.outputs.iter().cloned());
+        joined
+            .events
+            .extend(second.events.iter().map(|event| match *event {
+                IntentEvent::Input(index) => IntentEvent::Input(input_offset + index),
+                IntentEvent::Output(index) => IntentEvent::Output(output_offset + index),
+            }));
+        joined.next_index = self
+            .frontier
+            .checked_add(joined.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        self.reconcile_plan(&joined)
+    }
+
     fn reconcile<Private, Output>(
         &self,
         recorded: &RecordedCircuitResult<Private, Output, D>,
     ) -> Result<(), ZswapIntentError> {
-        use crate::ledger::{CoinInfo, CoinRecipient};
-        use midnight_coin_structure::transfer::SenderEvidence;
+        self.validate_recorded(recorded)?;
+        self.reconcile_plan(recorded.execution.context.circuit_zswap())
+    }
+
+    fn validate_recorded<Private, Output>(
+        &self,
+        recorded: &RecordedCircuitResult<Private, Output, D>,
+    ) -> Result<(), ZswapIntentError> {
         let context = &recorded.execution.context;
         let plan = context.circuit_zswap();
         if !recorded.public.initial_intents().is_empty()
@@ -502,6 +615,18 @@ impl<D: DB> OfferReconciliation<'_, D> {
             || context.query.call_context.com_indices != self.observed.com_indices
             || plan.allocation != self.observed.allocation
         {
+            return Err(ZswapIntentError::AllocationMismatch);
+        }
+        Ok(())
+    }
+
+    fn reconcile_plan(
+        &self,
+        plan: &crate::zswap::CircuitZswapPlan,
+    ) -> Result<(), ZswapIntentError> {
+        use crate::ledger::{CoinInfo, CoinRecipient};
+        use midnight_coin_structure::transfer::SenderEvidence;
+        if plan.allocation != self.observed.allocation {
             return Err(ZswapIntentError::AllocationMismatch);
         }
         let canonical = matches!(
@@ -658,6 +783,8 @@ pub enum ZswapIntentError {
     TransientDuplicate,
     TransientEventMismatch,
     TransientInputMismatch,
+    TransientPairShapeMismatch,
+    TransientPairStateMismatch,
     WalletFundingOwner,
     WalletFundingDuplicate,
     WalletFundingMismatch,
@@ -670,6 +797,38 @@ pub struct OfferBoundPreparedCall<D: DB = DefaultDB> {
     call: ContractCallPrototype<D>,
     offer: Offer<ProofPreimage, D>,
     placement: OfferPlacement,
+}
+
+/// Two same-contract calls admitted only after their ordered Zswap intent
+/// stream is reconciled against one complete physical offer.
+pub struct OfferBoundPreparedPair<D: DB = DefaultDB> {
+    receive: ContractCallPrototype<D>,
+    send: ContractCallPrototype<D>,
+    offer: Offer<ProofPreimage, D>,
+}
+
+impl<D: DB> OfferBoundPreparedPair<D> {
+    pub fn prototypes(&self) -> (&ContractCallPrototype<D>, &ContractCallPrototype<D>) {
+        (&self.receive, &self.send)
+    }
+
+    pub fn into_transaction<R: Rng + CryptoRng + ?Sized>(
+        self,
+        rng: &mut R,
+        network_id: impl Into<String>,
+        ttl: Timestamp,
+    ) -> Transaction<Signature, ProofPreimageMarker, PedersenRandomness, D> {
+        let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, D> =
+            Intent::empty(rng, ttl)
+                .add_call::<ProofPreimage>(self.receive)
+                .add_call::<ProofPreimage>(self.send);
+        Transaction::new(
+            network_id,
+            HashMap::new().insert(1_u16, intent),
+            Some(self.offer),
+            HashMap::new(),
+        )
+    }
 }
 
 impl<D: DB> OfferBoundPreparedCall<D> {
