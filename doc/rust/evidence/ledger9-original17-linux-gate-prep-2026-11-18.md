@@ -6,7 +6,8 @@ merged #772 source to the signed descendant that qualifies seventeen of the
 twenty unchanged original token circuits. It retains the pinned original
 Compact and TypeScript fixtures, released Compact 0.36.0 and Runtime 0.21.0
 tarball hashes, Ledger 9.1.0.1 semantics, source-built compiler equality,
-physical ZKIR 3.2.1 keys, and the `zkir`/`zkir-v3` launcher aliases.
+physical ZKIR v3 keys from the flake-pinned 3.2.0 native CLI, and the
+`zkir`/`zkir-v3` launcher aliases.
 
 The gate now selects ten unshielded and seven shielded unique circuits. It
 requires twenty-three fresh standalone/transaction proof pairs, nineteen
