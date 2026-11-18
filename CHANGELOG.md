@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.218, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Qualify all 20 pinned original-token Rust circuits with source-bound proofs,
+  funded default-strict application and replay/refusal checks. Prepare the
+  complete source-only native Linux gate while keeping native Linux and
+  live-node qualification open.
+
 ## [Toolchain 0.31.216, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.
