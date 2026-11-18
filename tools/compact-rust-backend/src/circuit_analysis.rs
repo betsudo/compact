@@ -553,6 +553,15 @@ fn expression_contains_with_actions<'source>(
         | Expr::EmitUnpaused { value }
         | Expr::KernelClaim { value, .. } => visit(value),
         Expr::KernelMintShielded { domain, amount } => visit(domain) || visit(amount),
+        Expr::KernelUnshieldedEffect {
+            key,
+            recipient,
+            amount,
+            ..
+        } => visit(key) || recipient.as_deref().is_some_and(visit) || visit(amount),
+        Expr::KernelBalance { token } => visit(token),
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
         Expr::Unit

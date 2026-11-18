@@ -90,3 +90,71 @@ pub(crate) fn shielded_recipient_type() -> Type {
         ],
     }
 }
+
+pub(crate) fn token_type() -> Type {
+    let bytes = Type::Bytes { length: 32 };
+    Type::Struct {
+        name: "Either".into(),
+        fields: vec![
+            StructField {
+                name: "is_left".into(),
+                ty: Type::Boolean,
+            },
+            StructField {
+                name: "left".into(),
+                ty: bytes.clone(),
+            },
+            StructField {
+                name: "right".into(),
+                ty: bytes,
+            },
+        ],
+    }
+}
+
+pub(crate) fn unshielded_recipient_type() -> Type {
+    let address = |name: &str| Type::Struct {
+        name: name.into(),
+        fields: vec![StructField {
+            name: "bytes".into(),
+            ty: Type::Bytes { length: 32 },
+        }],
+    };
+    Type::Struct {
+        name: "Either".into(),
+        fields: vec![
+            StructField {
+                name: "is_left".into(),
+                ty: Type::Boolean,
+            },
+            StructField {
+                name: "left".into(),
+                ty: address("ContractAddress"),
+            },
+            StructField {
+                name: "right".into(),
+                ty: address("UserAddress"),
+            },
+        ],
+    }
+}
+
+/// Compact monomorphizes repeated `Either<A, B>` instantiations as
+/// `EitherCompact1`, `EitherCompact2`, and so on. The Kernel operand contract
+/// is the field structure of that instantiation, not the assigned suffix.
+pub(crate) fn same_either_instantiation(actual: &Type, expected: &Type) -> bool {
+    let (
+        Type::Struct { name, fields },
+        Type::Struct {
+            fields: expected_fields,
+            ..
+        },
+    ) = (actual, expected)
+    else {
+        return false;
+    };
+    let generated = name.strip_prefix("EitherCompact").is_some_and(|suffix| {
+        !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit())
+    });
+    (name == "Either" || generated) && fields == expected_fields
+}

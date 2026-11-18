@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Original queries bodies, without new checks or traversal.
 use super::super::borrowed_operations::LeafQuery;
@@ -31,6 +42,50 @@ impl Lowerer<'_> {
                     ));
                 }
                 (Operation::KernelSelf, ty.clone())
+            }
+            Expr::KernelBalance { token }
+            | Expr::KernelBalanceLessThan { token, .. }
+            | Expr::KernelBalanceGreaterThan { token, .. } => {
+                let token_path = format!("{path}.token");
+                let token = self.expression(token, scope, bindings, &token_path)?;
+                if !crate::coin_shapes::same_either_instantiation(
+                    &token.ty,
+                    &crate::coin_shapes::token_type(),
+                ) {
+                    return Err(invalid(
+                        &token_path,
+                        "Kernel balance requires canonical TokenType",
+                    ));
+                }
+                match expression {
+                    Expr::KernelBalance { .. } => (
+                        Operation::KernelBalance { token },
+                        uint(&u128::MAX.to_string()),
+                    ),
+                    Expr::KernelBalanceLessThan { amount, .. }
+                    | Expr::KernelBalanceGreaterThan { amount, .. } => {
+                        let amount_path = format!("{path}.amount");
+                        let amount = self.expression(amount, scope, bindings, &amount_path)?;
+                        if amount.ty != uint(&u128::MAX.to_string()) {
+                            return Err(invalid(
+                                &amount_path,
+                                "Kernel balance bound must be Uint<128>",
+                            ));
+                        }
+                        if matches!(expression, Expr::KernelBalanceLessThan { .. }) {
+                            (
+                                Operation::KernelBalanceLessThan { token, amount },
+                                Type::Boolean,
+                            )
+                        } else {
+                            (
+                                Operation::KernelBalanceGreaterThan { token, amount },
+                                Type::Boolean,
+                            )
+                        }
+                    }
+                    _ => unreachable!(),
+                }
             }
             Expr::MerkleCheckRoot { field, index, root }
             | Expr::HistoricMerkleCheckRoot { field, index, root } => self.merkle_query(

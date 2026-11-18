@@ -169,6 +169,17 @@ pub(super) enum Operation {
     OwnPublicKey,
     /// Ordered official VM observation of the current contract address.
     KernelSelf,
+    KernelBalance {
+        token: Value,
+    },
+    KernelBalanceLessThan {
+        token: Value,
+        amount: Value,
+    },
+    KernelBalanceGreaterThan {
+        token: Value,
+        amount: Value,
+    },
     EmitShieldedSpend(Value),
     EmitShieldedBurn(Value),
     EmitShieldedMint(Value),
@@ -186,6 +197,12 @@ pub(super) enum Operation {
     },
     KernelMintShielded {
         domain: Value,
+        amount: Value,
+    },
+    KernelUnshieldedEffect {
+        kind: crate::ir::KernelUnshieldedEffectKind,
+        key: Value,
+        recipient: Option<Value>,
         amount: Value,
     },
     /// The ledger8 commitment signature qualified by this rollout is a Bytes32 pair.

@@ -379,6 +379,41 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
         Expr::KernelMintShielded { domain, amount } => {
             binary!("kernel_mint_shielded", "domain", domain, "amount", amount)
         }
+        Expr::KernelUnshieldedEffect {
+            effect,
+            key,
+            recipient,
+            amount,
+        } => {
+            s.tag("kernel_unshielded_effect");
+            s.text(
+                "effect",
+                match effect {
+                    KernelUnshieldedEffectKind::Mint => "mint",
+                    KernelUnshieldedEffectKind::Inputs => "inputs",
+                    KernelUnshieldedEffectKind::Outputs => "outputs",
+                    KernelUnshieldedEffectKind::Claim => "claim",
+                },
+            );
+            s.node("key", Owner::Expr(key));
+            if let Some(recipient) = recipient {
+                s.node("recipient", Owner::Expr(recipient));
+            }
+            s.node("amount", Owner::Expr(amount));
+        }
+        Expr::KernelBalance { token } => unary!("kernel_balance", "token", token),
+        Expr::KernelBalanceLessThan { token, amount } => {
+            binary!("kernel_balance_less_than", "token", token, "amount", amount)
+        }
+        Expr::KernelBalanceGreaterThan { token, amount } => {
+            binary!(
+                "kernel_balance_greater_than",
+                "token",
+                token,
+                "amount",
+                amount
+            )
+        }
         Expr::CreateZswapInput { coin } => unary!("create_zswap_input", "coin", coin),
         Expr::CreateZswapOutput { coin, recipient } => {
             binary!("create_zswap_output", "coin", coin, "recipient", recipient)

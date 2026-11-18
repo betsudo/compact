@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Toolchain 0.31.215, language 0.23.105, runtime 0.18.0]
+## [Toolchain 0.31.216, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.
 
@@ -29,6 +29,10 @@ Unreleased Ledger 9 migration.
 
 ### Added
 
+- Qualify the pinned original Ledger 9 token contract in both generated targets.
+  Rust now records its unshielded kernel balance queries and token effects,
+  with independent proof verification, funded application, and replay checks
+  for the ten original unshielded circuits and shielded mint to self.
 - Emit generated declared-interface metadata and accept contract-typed exported
   circuit arguments when their declarations match the compiled contracts.
 - Expose generated circuit signature metadata and runtime descriptor types for

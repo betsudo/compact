@@ -418,7 +418,8 @@ fn misc_event_manifest() -> Result<Value, String> {
 }
 
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &misc_event_manifest()?)?;
+    let current = legacy_source(path, current, &ledger9_token_expression_manifest()?)?;
+    let current = legacy_source(path, &current, &misc_event_manifest()?)?;
     let current = legacy_source(path, &current, &pause_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_burn_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_mint_event_manifest()?)?;
@@ -499,6 +500,18 @@ fn keccak_encoding_manifest(bytes: &[u8]) -> Result<Value, String> {
 }
 fn before_keccak_encoding(path: &str, current: &str) -> Result<String, String> {
     legacy_source(path, current, &keccak_encoding_manifest(KECCAK_ENCODING)?)
+}
+
+// The original Ledger 9 token operations extend four retired test-only matchers.
+// Reverse their exact edits before applying any earlier signed projection.
+const LEDGER9_TOKEN_EXPRESSION: &[u8] = include_bytes!("ledger9-token-expression-20261118.json");
+fn ledger9_token_expression_manifest() -> Result<Value, String> {
+    if digest(LEDGER9_TOKEN_EXPRESSION)
+        != "68d59039e70aa4d66567c6cccd2a4b812150b48ae6c5cd3ebe33dc215ae53297"
+    {
+        return Err("unreviewed Ledger 9 token expression checkpoint".into());
+    }
+    serde_json::from_slice(LEDGER9_TOKEN_EXPRESSION).map_err(|error| error.to_string())
 }
 fn before_fold_enum(path: &str, current: &str) -> Result<String, String> {
     let before_sha512 = before_sha512_enum(path, current)?;
@@ -632,6 +645,19 @@ pub(super) fn legacy_authority() -> Value {
     authority["map_size_enum_projection"] = map_size_enum_manifest(MAP_SIZE_ENUM).unwrap();
     authority["start_funding_projection"] = start_funding_manifest(START_FUNDING).unwrap();
     authority
+}
+
+#[test]
+fn ledger9_token_projection_keeps_retired_owners_exact() {
+    let manifest = ledger9_token_expression_manifest().unwrap();
+    assert_eq!(manifest["owners"].as_object().unwrap().len(), 4);
+    let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in manifest["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(repository.join(path)).unwrap();
+        let previous = legacy_source(path, &current, &manifest).unwrap();
+        assert_eq!(digest(previous.as_bytes()), owner["previous_sha256"]);
+        assert!(legacy_source(path, &(current + "\n// drift\n"), &manifest).is_err());
+    }
 }
 
 #[test]

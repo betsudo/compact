@@ -23,6 +23,101 @@ fn amount_type() -> Type {
         max: u64::MAX.to_string(),
     }
 }
+
+#[test]
+fn balance_queries_record_typed_token_and_refuse_wrong_domain() {
+    let mut token_type = crate::coin_shapes::token_type();
+    if let Type::Struct { name, .. } = &mut token_type {
+        *name = "EitherCompact3".into();
+    }
+    let token = value(0, token_type);
+    let amount = value(
+        1,
+        Type::Unsigned {
+            max: u128::MAX.to_string(),
+        },
+    );
+    let source = StatefulCircuit {
+        source: None,
+        name: "balance".into(),
+        internal: false,
+        parameters: vec![
+            Parameter {
+                name: "token".into(),
+                ty: token.ty.clone(),
+            },
+            Parameter {
+                name: "amount".into(),
+                ty: amount.ty.clone(),
+            },
+        ],
+        actions: vec![],
+        result: amount.ty.clone(),
+        return_value: StateReturn::Expression {
+            value: Expr::KernelBalance {
+                token: Box::new(Expr::Parameter {
+                    name: "token".into(),
+                }),
+            },
+        },
+    };
+    let validate_balance = |plan| {
+        let types = type_environment::TypeEnvironment::from_sources(
+            &source,
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+        )
+        .unwrap();
+        validate::check(
+            plan,
+            declarations::Declarations::default().with_type_environment(types),
+        )
+    };
+    for (operation, ty, method) in [
+        (
+            Operation::KernelBalance {
+                token: token.clone(),
+            },
+            amount.ty.clone(),
+            "kernel_balance",
+        ),
+        (
+            Operation::KernelBalanceLessThan {
+                token: token.clone(),
+                amount: amount.clone(),
+            },
+            Type::Boolean,
+            "kernel_balance_less_than",
+        ),
+        (
+            Operation::KernelBalanceGreaterThan {
+                token: token.clone(),
+                amount: amount.clone(),
+            },
+            Type::Boolean,
+            "kernel_balance_greater_than",
+        ),
+    ] {
+        let original = Plan {
+            parameters: vec![token.clone(), amount.clone()],
+            result_type: ty.clone(),
+            body: Block {
+                bindings: vec![binding(2, ty.clone(), operation)],
+                result: value(2, ty),
+            },
+        };
+        let checked = validate_balance(original.clone()).unwrap();
+        let rendered = render(&checked).unwrap();
+        let steps = rendered.steps;
+        let source = quote::quote!(#(#steps)*).to_string();
+        assert!(source.contains(method), "{method}");
+        let mut bad = original;
+        bad.parameters[0].ty = bytes_type();
+        assert!(validate_balance(bad).is_err(), "{method} token mismatch");
+    }
+}
 fn value(id: usize, ty: Type) -> Value {
     Value { id, ty }
 }
@@ -414,4 +509,201 @@ fn mint_witness_operands_evaluate_once_in_domain_then_amount_order() {
         panic!("source refusal")
     };
     assert_eq!(gap.path, "return_value.value.domain");
+}
+
+#[test]
+fn unshielded_kernel_effects_keep_exact_types_and_source_operand_order() {
+    use crate::ir::KernelUnshieldedEffectKind as Kind;
+    for (kind, key_ty, amount_ty, method) in [
+        (
+            Kind::Mint,
+            bytes_type(),
+            amount_type(),
+            "kernel_mint_unshielded",
+        ),
+        (
+            Kind::Inputs,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_inc_unshielded_inputs",
+        ),
+        (
+            Kind::Outputs,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_inc_unshielded_outputs",
+        ),
+        (
+            Kind::Claim,
+            super::super::kernel_shapes::token_type(),
+            Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+            "kernel_claim_unshielded_coin_spend",
+        ),
+    ] {
+        let claim = kind == Kind::Claim;
+        let mut witnesses = vec![
+            WitnessDeclaration {
+                source: None,
+                name: "key".into(),
+                parameters: vec![],
+                result: key_ty.clone(),
+            },
+            WitnessDeclaration {
+                source: None,
+                name: "amount".into(),
+                parameters: vec![],
+                result: amount_ty.clone(),
+            },
+        ];
+        if claim {
+            // The compiler gives distinct generic instantiations distinct Rust
+            // names when both occur in one contract.
+            let mut recipient_type = super::super::kernel_shapes::recipient_type();
+            let Type::Struct { name, .. } = &mut recipient_type else {
+                unreachable!()
+            };
+            *name = "EitherCompact1".into();
+            witnesses.push(WitnessDeclaration {
+                source: None,
+                name: "recipient".into(),
+                parameters: vec![],
+                result: recipient_type,
+            });
+        }
+        let maps = witnesses.iter().map(|w| (w.name.as_str(), w)).collect();
+        let witness = |name: &str| {
+            Box::new(Expr::WitnessCall {
+                name: name.into(),
+                arguments: vec![],
+            })
+        };
+        let checked = check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: kind,
+                key: witness("key"),
+                recipient: claim.then(|| witness("recipient")),
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps,
+        )
+        .unwrap();
+        let bindings = &checked.plan().body.bindings;
+        let expected = if claim {
+            vec!["key", "recipient", "amount"]
+        } else {
+            vec!["key", "amount"]
+        };
+        assert_eq!(bindings.len(), expected.len() + 1, "{kind:?}");
+        for (binding, name) in bindings.iter().zip(&expected) {
+            assert!(matches!(binding.operation, Operation::Witness { .. }));
+            assert_eq!(binding.path, format!("return_value.value.{name}"));
+        }
+        let Operation::KernelUnshieldedEffect {
+            kind: observed,
+            key,
+            recipient,
+            amount,
+        } = &bindings.last().unwrap().operation
+        else {
+            panic!("missing unshielded effect")
+        };
+        assert_eq!(*observed, kind);
+        assert_eq!(key, &bindings[0].value);
+        assert_eq!(amount, &bindings[expected.len() - 1].value);
+        assert_eq!(recipient.as_ref(), claim.then_some(&bindings[1].value));
+        let rendered = render(&checked).unwrap();
+        let steps = rendered.steps;
+        let source = quote::quote!(#(#steps)*).to_string();
+        assert_eq!(
+            source.matches("try_witness_metered").count(),
+            expected.len()
+        );
+        assert_eq!(source.matches(method).count(), 1, "{kind:?}");
+        assert_eq!(
+            source.matches("token_type_from_compact").count(),
+            usize::from(!matches!(kind, Kind::Mint))
+        );
+    }
+}
+
+#[test]
+fn unshielded_claim_cardinality_and_operand_types_refuse_before_render() {
+    use crate::ir::KernelUnshieldedEffectKind as Kind;
+    let witnesses = [
+        WitnessDeclaration {
+            source: None,
+            name: "key".into(),
+            parameters: vec![],
+            result: super::super::kernel_shapes::token_type(),
+        },
+        WitnessDeclaration {
+            source: None,
+            name: "amount".into(),
+            parameters: vec![],
+            result: Type::Unsigned {
+                max: u128::MAX.to_string(),
+            },
+        },
+        WitnessDeclaration {
+            source: None,
+            name: "wrong_recipient".into(),
+            parameters: vec![],
+            result: bytes_type(),
+        },
+    ];
+    let maps = witnesses.iter().map(|w| (w.name.as_str(), w)).collect();
+    let witness = |name: &str| {
+        Box::new(Expr::WitnessCall {
+            name: name.into(),
+            arguments: vec![],
+        })
+    };
+    for recipient in [None, Some(witness("wrong_recipient"))] {
+        assert!(
+            check(
+                &root(Expr::KernelUnshieldedEffect {
+                    effect: Kind::Claim,
+                    key: witness("key"),
+                    recipient,
+                    amount: witness("amount"),
+                }),
+                &HashMap::new(),
+                &maps
+            )
+            .is_err()
+        );
+    }
+    assert!(
+        check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: Kind::Mint,
+                key: witness("key"),
+                recipient: None,
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps
+        )
+        .is_err()
+    );
+    assert!(
+        check(
+            &root(Expr::KernelUnshieldedEffect {
+                effect: Kind::Inputs,
+                key: witness("key"),
+                recipient: Some(witness("wrong_recipient")),
+                amount: witness("amount"),
+            }),
+            &HashMap::new(),
+            &maps
+        )
+        .is_err()
+    );
 }

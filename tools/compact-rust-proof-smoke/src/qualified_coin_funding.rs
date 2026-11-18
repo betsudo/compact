@@ -134,6 +134,14 @@ pub(super) fn fee_resolver(
     root: &Path,
     circuit: &'static str,
 ) -> Result<LedgerResolver, Box<dyn Error>> {
+    fee_resolver_for_circuits(root, &[circuit])
+}
+
+/// Resolve only the exact generated circuits installed in a local transaction.
+pub(super) fn fee_resolver_for_circuits(
+    root: &Path,
+    circuits: &[&'static str],
+) -> Result<LedgerResolver, Box<dyn Error>> {
     let zswap = ZswapResolver(MidnightDataProvider::new(
         FetchMode::Synchronous,
         OutputMode::Log,
@@ -145,15 +153,26 @@ pub(super) fn fee_resolver(
         DUST_EXPECTED_FILES.to_owned(),
     )?);
     let root = root.to_owned();
+    let circuits = circuits.to_vec();
     Ok(LedgerResolver::new(
         zswap,
         dust,
         Box::new(move |location| {
-            let resolver = ArtifactResolver {
-                root: root.clone(),
-                circuit,
-            };
-            Box::pin(async move { resolver.resolve_key(location).await })
+            let circuit = circuits
+                .iter()
+                .copied()
+                .find(|circuit| location.0.as_ref() == *circuit);
+            let root = root.clone();
+            Box::pin(async move {
+                match circuit {
+                    Some(circuit) => {
+                        ArtifactResolver { root, circuit }
+                            .resolve_key(location)
+                            .await
+                    }
+                    None => Ok(None),
+                }
+            })
         }),
     ))
 }

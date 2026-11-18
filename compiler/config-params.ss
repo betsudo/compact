@@ -50,4 +50,8 @@
 
   ; feature flags
   (export-parameter feature-zkir-v3 #f)
+
+  ; Select the released asynchronous TypeScript runtime contract explicitly.
+  ; The historical local 0.18 generator remains the default.
+  (export-parameter ts-runtime-profile #f)
 )

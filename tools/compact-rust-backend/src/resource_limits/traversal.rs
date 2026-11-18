@@ -1267,6 +1267,26 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Expr(domain), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
             }
+            Expr::KernelUnshieldedEffect {
+                key,
+                recipient,
+                amount,
+                ..
+            } => {
+                scan.push(Node::Expr(key), visit_depth + 1, owner)?;
+                if let Some(recipient) = recipient {
+                    scan.push(Node::Expr(recipient), visit_depth + 1, owner)?;
+                }
+                scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
+            }
+            Expr::KernelBalance { token } => {
+                scan.push(Node::Expr(token), visit_depth + 1, owner)?;
+            }
+            Expr::KernelBalanceLessThan { token, amount }
+            | Expr::KernelBalanceGreaterThan { token, amount } => {
+                scan.push(Node::Expr(token), visit_depth + 1, owner)?;
+                scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
+            }
             Expr::CreateZswapInput { coin } => {
                 scan.push(Node::Expr(coin), visit_depth + 1, owner)?;
             }

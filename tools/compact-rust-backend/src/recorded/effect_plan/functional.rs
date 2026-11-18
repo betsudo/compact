@@ -29,9 +29,11 @@ pub(crate) enum Capability {
     Pure,
     ExecutionIdentity,
     KernelAddress,
+    KernelBalance,
     EventEmission,
     KernelClaims,
     ShieldedMint,
+    UnshieldedEffect,
     ZswapInput,
     ZswapOutput,
     QualifiedCellWrite,
@@ -380,6 +382,9 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::Convert { .. } => Capability::Pure,
                 Operation::OwnPublicKey => Capability::ExecutionIdentity,
                 Operation::KernelSelf => Capability::KernelAddress,
+                Operation::KernelBalance { .. }
+                | Operation::KernelBalanceLessThan { .. }
+                | Operation::KernelBalanceGreaterThan { .. } => Capability::KernelBalance,
                 Operation::EmitShieldedSpend(_)
                 | Operation::EmitShieldedBurn(_)
                 | Operation::EmitShieldedMint(_)
@@ -393,6 +398,7 @@ impl<'plan, 'source> FunctionalProgram<'plan, 'source> {
                 | Operation::EmitUnpaused(_) => Capability::EventEmission,
                 Operation::KernelClaim { .. } => Capability::KernelClaims,
                 Operation::KernelMintShielded { .. } => Capability::ShieldedMint,
+                Operation::KernelUnshieldedEffect { .. } => Capability::UnshieldedEffect,
                 Operation::CreateZswapInput { .. } => Capability::ZswapInput,
                 Operation::CreateZswapOutput { .. } => Capability::ZswapOutput,
                 Operation::CellWriteCoin { .. } | Operation::SetInsertCoin { .. } => {

@@ -16,6 +16,75 @@
 // Default/all-features checks need no generated SDK. The explicit gate selects
 // an absolute current bundle; Cargo tracks this env and every actual include.
 fn main() {
+    println!("cargo::rustc-check-cfg=cfg(compact_unshielded_original_generated)");
+    println!("cargo::rerun-if-env-changed=COMPACT_UNSHIELDED_ORIGINAL_GENERATED");
+    if std::env::var_os("CARGO_FEATURE_UNSHIELDED_ORIGINAL_PROOF").is_some()
+        && let Some(root) = std::env::var_os("COMPACT_UNSHIELDED_ORIGINAL_GENERATED")
+        && !root.is_empty()
+    {
+        let root = std::path::PathBuf::from(root);
+        assert!(
+            root.is_absolute(),
+            "absolute original unshielded root required"
+        );
+        for member in [
+            "contract/lib.rs",
+            "contract/compact-rust-ir.json",
+            "zkir/mintUnshieldedToSelfTest.zkir",
+            "zkir/getUnshieldedBalanceTest.zkir",
+            "zkir/getUnshieldedBalanceGtTest.zkir",
+            "zkir/getUnshieldedBalanceLtTest.zkir",
+            "zkir/sendUnshieldedToContractTest.zkir",
+            "zkir/receiveUnshieldedTest.zkir",
+            "zkir/sendUnshieldedToSelfTest.zkir",
+            "zkir/mintUnshieldedToContractTest.zkir",
+            "zkir/mintUnshieldedToUserTest.zkir",
+            "zkir/sendUnshieldedToUserTest.zkir",
+            "zkir/mintShieldedToSelfTest.zkir",
+            "zkir/mintUnshieldedToSelfTest.bzkir",
+            "zkir/getUnshieldedBalanceTest.bzkir",
+            "zkir/getUnshieldedBalanceGtTest.bzkir",
+            "zkir/getUnshieldedBalanceLtTest.bzkir",
+            "zkir/sendUnshieldedToContractTest.bzkir",
+            "zkir/receiveUnshieldedTest.bzkir",
+            "zkir/sendUnshieldedToSelfTest.bzkir",
+            "zkir/mintUnshieldedToContractTest.bzkir",
+            "zkir/mintUnshieldedToUserTest.bzkir",
+            "zkir/sendUnshieldedToUserTest.bzkir",
+            "zkir/mintShieldedToSelfTest.bzkir",
+            "keys/mintUnshieldedToSelfTest.prover",
+            "keys/mintUnshieldedToSelfTest.verifier",
+            "keys/getUnshieldedBalanceTest.prover",
+            "keys/getUnshieldedBalanceTest.verifier",
+            "keys/getUnshieldedBalanceGtTest.prover",
+            "keys/getUnshieldedBalanceGtTest.verifier",
+            "keys/getUnshieldedBalanceLtTest.prover",
+            "keys/getUnshieldedBalanceLtTest.verifier",
+            "keys/sendUnshieldedToContractTest.prover",
+            "keys/sendUnshieldedToContractTest.verifier",
+            "keys/receiveUnshieldedTest.prover",
+            "keys/receiveUnshieldedTest.verifier",
+            "keys/sendUnshieldedToSelfTest.prover",
+            "keys/sendUnshieldedToSelfTest.verifier",
+            "keys/mintUnshieldedToContractTest.prover",
+            "keys/mintUnshieldedToContractTest.verifier",
+            "keys/mintUnshieldedToUserTest.prover",
+            "keys/mintUnshieldedToUserTest.verifier",
+            "keys/sendUnshieldedToUserTest.prover",
+            "keys/sendUnshieldedToUserTest.verifier",
+            "keys/mintShieldedToSelfTest.prover",
+            "keys/mintShieldedToSelfTest.verifier",
+        ] {
+            let path = root.join(member);
+            assert!(
+                path.is_file(),
+                "original unshielded member missing: {}",
+                path.display()
+            );
+            println!("cargo::rerun-if-changed={}", path.display());
+        }
+        println!("cargo::rustc-cfg=compact_unshielded_original_generated");
+    }
     println!("cargo::rustc-check-cfg=cfg(compact_outer_vector_product_generated)");
     println!("cargo::rerun-if-env-changed=COMPACT_OUTER_VECTOR_PRODUCT_GENERATED");
     if std::env::var_os("CARGO_FEATURE_OUTER_VECTOR_PRODUCT_PROOFS").is_some()

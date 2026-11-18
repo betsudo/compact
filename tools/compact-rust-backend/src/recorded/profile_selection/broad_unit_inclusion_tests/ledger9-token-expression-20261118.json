@@ -1,0 +1,61 @@
+{
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "daf4bff1e1d014700ea78c3b9fb623f92b9b908b007788e0c54096904421d978",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value }\n        | Expr::EmitShieldedBurn { value }\n        | Expr::EmitShieldedMint { value }\n        | Expr::EmitShieldedReceive { value }\n        | Expr::EmitUnshieldedSpend { value }\n        | Expr::EmitUnshieldedReceive { value }\n        | Expr::EmitUnshieldedMint { value }\n        | Expr::EmitUnshieldedBurn { value }\n        | Expr::EmitMisc { value }\n        | Expr::EmitPaused { value }\n        | Expr::EmitUnpaused { value }\n        | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => visit(value),\n"
+        },
+        {
+          "current": "        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } =>\n            visit(key) || recipient.as_deref().is_some_and(visit) || visit(amount),\n        Expr::KernelBalance { token } => visit(token),\n        Expr::KernelBalanceLessThan { token, amount }\n        | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "efaf09814bb3f0fca93ca7d629699f06b236443131ca4772e0ad0b4efe902af5"
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "3061e9b8a7e31da3c241219ada356339b554cc36dbef484e76c1a526df27fc69",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Coerce { value, ty }\n        | Expr::JubjubCast { value, ty }\n        | Expr::Secp256k1BytesCast { value, ty }\n        | Expr::EnumCast { value, ty } => {\n",
+          "previous": "        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }\n            | Expr::EnumCast { value, ty } => {\n"
+        },
+        {
+          "current": "        Expr::EmitShieldedSpend { value }\n        | Expr::EmitShieldedBurn { value }\n        | Expr::EmitShieldedMint { value }\n        | Expr::EmitShieldedReceive { value }\n        | Expr::EmitUnshieldedSpend { value }\n        | Expr::EmitUnshieldedReceive { value }\n        | Expr::EmitUnshieldedMint { value }\n        | Expr::EmitUnshieldedBurn { value }\n        | Expr::EmitMisc { value }\n        | Expr::EmitPaused { value }\n        | Expr::EmitUnpaused { value }\n        | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::EmitUnshieldedBurn { value } | Expr::EmitMisc { value } | Expr::EmitPaused { value } | Expr::EmitUnpaused { value } | Expr::KernelClaim { value, .. } => {\n"
+        },
+        {
+          "current": "            collect_expression_types(amount, structs, enums, origins)?;\n        }\n        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } => {\n            collect_expression_types(key, structs, enums, origins)?;\n            if let Some(recipient) = recipient {\n                collect_expression_types(recipient, structs, enums, origins)?;\n            }\n            collect_expression_types(amount, structs, enums, origins)?;\n        }\n        Expr::KernelBalance { token } => collect_expression_types(token, structs, enums, origins)?,\n        Expr::KernelBalanceLessThan { token, amount }\n        | Expr::KernelBalanceGreaterThan { token, amount } => {\n            collect_expression_types(token, structs, enums, origins)?;\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "4d1ba7a27e749629c022c5c827f6d18818b39571047b162fcc5eb3560755b886"
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "8985301d520af3b671ff882a8480dfc06d74dc74ae0b44fdff626883e63c90e5",
+      "predecessor_reconstruction": [
+        {
+          "current": "\nfn expression_with_calls(\n",
+          "previous": "\n\nfn expression_with_calls(\n"
+        },
+        {
+          "current": "        | Expr::KernelUnshieldedEffect { .. }\n        | Expr::KernelBalance { .. }\n        | Expr::KernelBalanceLessThan { .. }\n        | Expr::KernelBalanceGreaterThan { .. }\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "72f2eeb8226dadd429ebadf48e8cd053445bb516d027735c272e33ee9e327a24"
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "f4cb9e18e5649c600731568c2903024ba333612b6249ad670a31b38d750fb8fc",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::KernelUnshieldedEffect { .. }\n        | Expr::KernelBalance { .. }\n        | Expr::KernelBalanceLessThan { .. }\n        | Expr::KernelBalanceGreaterThan { .. }\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "a3d52fc84c946f62712bf79396fb0e9b50f433c98f0359dca40260ba02791779"
+    }
+  },
+  "scope": "PR #772 original Ledger 9 token expression variants in retired test-only oracle owners; reverse exact current edits before all prior projections"
+}

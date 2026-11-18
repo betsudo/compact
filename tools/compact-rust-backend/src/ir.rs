@@ -669,6 +669,15 @@ pub enum KernelClaimKind {
     CoinReceive,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum KernelUnshieldedEffectKind {
+    Mint,
+    Inputs,
+    Outputs,
+    Claim,
+}
+
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum KeccakEncoding {
@@ -1042,6 +1051,24 @@ pub enum Expr {
     },
     KernelMintShielded {
         domain: Box<Expr>,
+        amount: Box<Expr>,
+    },
+    KernelUnshieldedEffect {
+        effect: KernelUnshieldedEffectKind,
+        key: Box<Expr>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        recipient: Option<Box<Expr>>,
+        amount: Box<Expr>,
+    },
+    KernelBalance {
+        token: Box<Expr>,
+    },
+    KernelBalanceLessThan {
+        token: Box<Expr>,
+        amount: Box<Expr>,
+    },
+    KernelBalanceGreaterThan {
+        token: Box<Expr>,
         amount: Box<Expr>,
     },
     CreateZswapInput {

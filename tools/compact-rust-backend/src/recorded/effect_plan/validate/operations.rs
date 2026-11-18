@@ -65,6 +65,23 @@ pub(super) fn validate(
             *ty == crate::ir::NativeWitnessBuiltin::OwnPublicKey.result_type()
         }
         Operation::KernelSelf => *ty == crate::ir::contract_address_type(),
+        Operation::KernelBalance { token } => {
+            use_value(token)?;
+            crate::coin_shapes::same_either_instantiation(
+                &token.ty,
+                &crate::coin_shapes::token_type(),
+            ) && *ty == uint(&u128::MAX.to_string())
+        }
+        Operation::KernelBalanceLessThan { token, amount }
+        | Operation::KernelBalanceGreaterThan { token, amount } => {
+            use_value(token)?;
+            use_value(amount)?;
+            crate::coin_shapes::same_either_instantiation(
+                &token.ty,
+                &crate::coin_shapes::token_type(),
+            ) && amount.ty == uint(&u128::MAX.to_string())
+                && *ty == Type::Boolean
+        }
         Operation::EmitShieldedSpend(value) | Operation::KernelClaim { value, .. } => {
             use_value(value)?;
             value.ty == (Type::Bytes { length: 32 }) && *ty == Type::Unit
@@ -110,6 +127,35 @@ pub(super) fn validate(
             use_value(amount)?;
             domain.ty == (Type::Bytes { length: 32 })
                 && amount.ty == uint("18446744073709551615")
+                && *ty == Type::Unit
+        }
+        Operation::KernelUnshieldedEffect {
+            kind,
+            key,
+            recipient,
+            amount,
+        } => {
+            use_value(key)?;
+            if let Some(recipient) = recipient {
+                use_value(recipient)?;
+            }
+            use_value(amount)?;
+            let mint = *kind == crate::ir::KernelUnshieldedEffectKind::Mint;
+            let claim = *kind == crate::ir::KernelUnshieldedEffectKind::Claim;
+            (if mint {
+                key.ty == (Type::Bytes { length: 32 })
+            } else {
+                super::super::kernel_shapes::is_token_type(&key.ty)
+            }) && recipient.is_some() == claim
+                && recipient.as_ref().is_none_or(|recipient| {
+                    super::super::kernel_shapes::is_recipient_type(&recipient.ty)
+                })
+                && amount.ty
+                    == (if mint {
+                        uint(&u64::MAX.to_string())
+                    } else {
+                        uint(&u128::MAX.to_string())
+                    })
                 && *ty == Type::Unit
         }
         Operation::PersistentCommit { value, opening } => {

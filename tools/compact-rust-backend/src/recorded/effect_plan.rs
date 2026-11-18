@@ -32,6 +32,7 @@ mod functional_qualified_storage;
 mod functional_render;
 mod functional_sets;
 mod functional_witnesses;
+mod kernel_shapes;
 mod lower;
 mod vector_fold_syntax;
 use crate::source_diagnostics::RefusalObserver;

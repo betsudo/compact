@@ -131,7 +131,7 @@ The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.1
 The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
 path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
 fresh output directory. It compiles the checked-in Counter itself, checks
-compiler 0.31.215, language 0.23.105 and runtime 0.18.0 in both generated
+compiler 0.31.216, language 0.23.105 and runtime 0.18.0 in both generated
 metadata files, verifies the manifest hashes, and checks Onchain Runtime
 4.0.1 module identity. Its capture records the source, supplied compiler,
 generated JavaScript and declaration, runtime and official oracle hashes,

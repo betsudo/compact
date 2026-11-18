@@ -74,6 +74,10 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::EmitPaused { .. }
         | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
+        | Expr::KernelUnshieldedEffect { .. }
+        | Expr::KernelBalance { .. }
+        | Expr::KernelBalanceLessThan { .. }
+        | Expr::KernelBalanceGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }
