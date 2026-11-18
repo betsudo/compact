@@ -24,6 +24,9 @@ const CIRCUIT: &str = "mintUnshieldedToSelfTest";
 const STEM: &str = "unshielded-original-mint-self";
 const BALANCE_CIRCUIT: &str = "getUnshieldedBalanceTest";
 const BALANCE_STEM: &str = "unshielded-original-balance-100";
+const BALANCE_OTHER_STEM: &str = "unshielded-original-balance-other-color-0";
+const BALANCE_GT_CIRCUIT: &str = "getUnshieldedBalanceGtTest";
+const BALANCE_LT_CIRCUIT: &str = "getUnshieldedBalanceLtTest";
 const SEND_CONTRACT_CIRCUIT: &str = "sendUnshieldedToContractTest";
 const SEND_CONTRACT_STEM: &str = "unshielded-original-send-contract-100";
 const RECEIVE_CONTRACT_CIRCUIT: &str = "receiveUnshieldedTest";
@@ -46,6 +49,14 @@ const GENERATED_BALANCE_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/zkir/getUnshieldedBalanceTest.zkir"
 ));
+const GENERATED_BALANCE_GT_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/getUnshieldedBalanceGtTest.zkir"
+));
+const GENERATED_BALANCE_LT_ZKIR: &[u8] = include_bytes!(concat!(
+    env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
+    "/zkir/getUnshieldedBalanceLtTest.zkir"
+));
 const GENERATED_SEND_CONTRACT_ZKIR: &[u8] = include_bytes!(concat!(
     env!("COMPACT_UNSHIELDED_ORIGINAL_GENERATED"),
     "/zkir/sendUnshieldedToContractTest.zkir"
@@ -65,6 +76,14 @@ fn validate_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
         ("contract/compact-rust-ir.json", GENERATED_IR),
         ("zkir/mintUnshieldedToSelfTest.zkir", GENERATED_ZKIR),
         ("zkir/getUnshieldedBalanceTest.zkir", GENERATED_BALANCE_ZKIR),
+        (
+            "zkir/getUnshieldedBalanceGtTest.zkir",
+            GENERATED_BALANCE_GT_ZKIR,
+        ),
+        (
+            "zkir/getUnshieldedBalanceLtTest.zkir",
+            GENERATED_BALANCE_LT_ZKIR,
+        ),
         (
             "zkir/sendUnshieldedToContractTest.zkir",
             GENERATED_SEND_CONTRACT_ZKIR,
@@ -168,6 +187,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     )?;
     println!("{CIRCUIT}: original source fresh proof and funded strict replay gate passed");
     run_balance(root)?;
+    run_balance_comparators(root)?;
     run_send_contract(root)?;
     run_send_self(root)?;
     Ok(())
@@ -272,14 +292,26 @@ fn run_send_self(root: &Path) -> Result<(), Box<dyn Error>> {
 }
 
 fn run_balance(root: &Path) -> Result<(), Box<dyn Error>> {
+    run_balance_case(root, [0x71; 32], 100, BALANCE_STEM, 0x0184_4241)?;
+    run_balance_case(root, [0x74; 32], 0, BALANCE_OTHER_STEM, 0x0184_4242)?;
+    Ok(())
+}
+
+fn run_balance_case(
+    root: &Path,
+    query_color: [u8; 32],
+    expected_result: u128,
+    stem: &str,
+    seed: u64,
+) -> Result<(), Box<dyn Error>> {
     use midnight_compact_runtime::ledger::{HashOutput, TokenType, UnshieldedTokenType};
     use midnight_compact_runtime::transaction::RecordedCall;
 
-    let mut rng = StdRng::seed_from_u64(0x0184_4241);
+    let mut rng = StdRng::seed_from_u64(seed);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
     let (_, verifier, operation) = v3::load_operation(root, BALANCE_CIRCUIT)?;
-    let color = FixedBytes::new([0x71; 32]);
-    let token = TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.into_array())));
+    let color = FixedBytes::new(query_color);
+    let token = TokenType::Unshielded(UnshieldedTokenType(HashOutput([0x71; 32])));
     let mut state = ContractState::new(
         initial.ledger_state.get_ref().clone(),
         HashMap::new().insert(
@@ -304,8 +336,8 @@ fn run_balance(root: &Path) -> Result<(), Box<dyn Error>> {
     let recorded = contract::Contract::default()
         .recording
         .getUnshieldedBalanceTest(context, color)?;
-    if recorded.execution.result.value() != 100 {
-        return Err("original balance read did not return 100".into());
+    if recorded.execution.result.value() != expected_result {
+        return Err("original balance read differs from seeded color lookup".into());
     }
     let prepared = RecordedCall::new(
         &observed,
@@ -317,19 +349,13 @@ fn run_balance(root: &Path) -> Result<(), Box<dyn Error>> {
     if prepared.op != operation {
         return Err("original balance call operation differs from installed v3 IR".into());
     }
-    let proof: Proof = v3::prove_standalone(
-        root,
-        BALANCE_CIRCUIT,
-        BALANCE_STEM,
-        &prepared,
-        &verifier,
-        None,
-    )?;
-    positional_transaction::verify_separately(root, BALANCE_CIRCUIT, BALANCE_STEM)?;
+    let proof: Proof =
+        v3::prove_standalone(root, BALANCE_CIRCUIT, stem, &prepared, &verifier, None)?;
+    positional_transaction::verify_separately(root, BALANCE_CIRCUIT, stem)?;
     v3::apply_with_balance(
         root,
         BALANCE_CIRCUIT,
-        BALANCE_STEM,
+        stem,
         prepared,
         deploy,
         initial.ledger_state.get_ref(),
@@ -338,7 +364,125 @@ fn run_balance(root: &Path) -> Result<(), Box<dyn Error>> {
         &proof,
     )?;
     println!(
-        "{BALANCE_CIRCUIT}: original 100-unit balance proof and funded strict replay gate passed"
+        "{BALANCE_CIRCUIT}: original {expected_result}-unit result, 100-unit seeded balance proof and funded strict replay gate passed"
+    );
+    Ok(())
+}
+
+fn run_balance_comparators(root: &Path) -> Result<(), Box<dyn Error>> {
+    for (name, stem, amount, expected, seed) in [
+        (
+            BALANCE_GT_CIRCUIT,
+            "unshielded-original-balance-gt-50",
+            50,
+            true,
+            0x0184_4750,
+        ),
+        (
+            BALANCE_GT_CIRCUIT,
+            "unshielded-original-balance-gt-150",
+            150,
+            false,
+            0x0184_4751,
+        ),
+        (
+            BALANCE_LT_CIRCUIT,
+            "unshielded-original-balance-lt-50",
+            50,
+            false,
+            0x0184_4c50,
+        ),
+        (
+            BALANCE_LT_CIRCUIT,
+            "unshielded-original-balance-lt-150",
+            150,
+            true,
+            0x0184_4c51,
+        ),
+    ] {
+        run_balance_comparator(root, name, stem, amount, expected, seed)?;
+    }
+    Ok(())
+}
+
+fn run_balance_comparator(
+    root: &Path,
+    name: &'static str,
+    stem: &str,
+    amount: u128,
+    expected: bool,
+    seed: u64,
+) -> Result<(), Box<dyn Error>> {
+    use midnight_compact_runtime::ledger::{HashOutput, TokenType, UnshieldedTokenType};
+    use midnight_compact_runtime::transaction::RecordedCall;
+
+    let mut rng = StdRng::seed_from_u64(seed);
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let (_, verifier, operation) = v3::load_operation(root, name)?;
+    let color = FixedBytes::new([0x71; 32]);
+    let token = TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.into_array())));
+    let mut state = ContractState::new(
+        initial.ledger_state.get_ref().clone(),
+        HashMap::new().insert(EntryPointBuf(name.as_bytes().to_vec()), operation.clone()),
+        ContractMaintenanceAuthority::default(),
+    );
+    state.balance = state.balance.insert(token, 100);
+    let deploy = ContractDeploy::new(&mut rng, state);
+    let observed = ObservedContractState::new(
+        deploy.address(),
+        deploy.initial_state.clone(),
+        Observation {
+            transaction_hash: [0; 32],
+            block_hash: [0; 32],
+            block_height: 0,
+        },
+    );
+    let amount = BoundedUint::<340282366920938463463374607431768211455>::new(amount)?;
+    let mut context = observed.circuit_context(());
+    context.query.call_context.balance = observed.contract().balance.clone();
+    let generated = contract::Contract::default();
+    let recorded = if name == BALANCE_GT_CIRCUIT {
+        generated
+            .recording
+            .getUnshieldedBalanceGtTest(context, color, amount)?
+    } else {
+        generated
+            .recording
+            .getUnshieldedBalanceLtTest(context, color, amount)?
+    };
+    if recorded.execution.result != expected {
+        return Err(format!(
+            "original {name}({}) result differs from {expected}",
+            amount.value()
+        )
+        .into());
+    }
+    let prepared = RecordedCall::new(
+        &observed,
+        recorded,
+        name,
+        AlignedValue::concat(&[AlignedValue::from(color), AlignedValue::from(amount)]),
+    )
+    .prepare(verifier.clone(), Fr::from(0_u64))?;
+    if prepared.op != operation {
+        return Err(format!("original {name} operation differs from installed v3 IR").into());
+    }
+    let proof: Proof = v3::prove_standalone(root, name, stem, &prepared, &verifier, None)?;
+    positional_transaction::verify_separately(root, name, stem)?;
+    v3::apply_with_balance(
+        root,
+        name,
+        stem,
+        prepared,
+        deploy,
+        initial.ledger_state.get_ref(),
+        token,
+        100,
+        &proof,
+    )?;
+    println!(
+        "{name}({}): original {expected} result, funded strict application and replay gate passed",
+        amount.value()
     );
     Ok(())
 }
