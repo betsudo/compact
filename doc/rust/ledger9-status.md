@@ -188,6 +188,20 @@ SHA-256 is `4558cfb52d55623ca1ec099be59f4c790dd4979dac6f5b306dec8e010b9ff7a4`.
 This qualifies local compilation of the physical candidate; original Rust
 execution, public CLI admission, proof, funded application and Linux remain open.
 
+The checked generated Rust Events consumer at signed local `60de2b12d`
+executes `outerEmit` from a verified private copy of the unchanged v4 package.
+The first call returns Field 1 and records two version-1 ShieldedSpend events
+with exact payload and Outer-before-Inner emitting addresses. Two prepared
+call preimages include the expected Outer child-result/randomness transcript;
+four installed/resolved key mismatches refuse. The independently reviewed
+[signed qualification](/Users/ysh/.codex/local-evidence/ledger9-events-rust-execution-20261119/qualification-60d.json)
+SHA-256 is `17cf3cace4f7c71b469bb970a43f9ec42dfee1cc9d22193576221149a7ea8cbd`.
+It binds Cargo arguments, working directory, Rust/Cargo versions, selected
+environment, exact source/template, logs and lockfile. This Darwin arm64
+execution prepares preimages without proving or applying them. The original
+second result after persisted state, applied event order, public admission,
+fresh proofs, funded application/replay and Linux remain open.
+
 ## CI resource and optimization evidence
 
 The complete [#774 run](https://github.com/betsudo/compact/actions/runs/44328366189)
