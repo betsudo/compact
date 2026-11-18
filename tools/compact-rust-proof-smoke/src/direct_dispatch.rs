@@ -798,6 +798,10 @@ pub(super) fn try_run(
             }
             super::shielded_original_immediate_user::run(std::path::Path::new(&root))
         })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
         ("--shielded-original-immediate-contract-proof", _) => Some((|| {
             let root = arguments
                 .next()
