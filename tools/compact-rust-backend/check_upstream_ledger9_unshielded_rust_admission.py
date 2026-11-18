@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-"""Record the exact original unshielded-token Rust admission boundary.
+"""Require both-target emission of the exact original unshielded contract.
 
-The full pinned contract is intentionally compiled unchanged. The current
-backend refuses its incUnshieldedInputs Kernel operation before publication;
-this gate prevents a partial artifact from being mistaken for parity.
+This is a generated artifact gate. Proof, funded application, and execution
+parity are qualified separately.
 """
 
 import argparse
@@ -19,10 +18,6 @@ ORIGINAL = (ROOT / "tools/compact-rust-backend/fixtures/"
             "unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts")
 SOURCE_SHA = "581c2485dad88e71550f612921735a9bbf0b9b00b04b5f6bb680e2651c73e556"
 ORIGINAL_SHA = "6fc3737182878c3a31bcba5eae1dec70377097901791fc681adca294f576c913"
-DIAGNOSTIC = ("Exception: <standard library>:\n"
-              "  Rust backend does not yet support Kernel operation incUnshieldedInputs\n")
-
-
 def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -46,12 +41,18 @@ def main() -> None:
     (output / "compile.stdout").write_bytes(process.stdout)
     (output / "compile.stderr").write_bytes(process.stderr)
     (output / "compile.exit").write_text(f"{process.returncode}\n")
-    if (process.returncode != 255 or process.stdout or
-            process.stderr.decode(errors="replace") != DIAGNOSTIC or
-            (output / "generated").exists()):
-        raise RuntimeError("original source Rust admission changed; inspect retained compile logs")
+    generated = output / "generated"
+    required = [generated / "contract/lib.rs", generated / "contract/index.js",
+                generated / "contract/compact-rust-ir.json",
+                generated / "compiler/contract-manifest.json"]
+    if (process.returncode != 0 or process.stdout or process.stderr or
+            not all(path.is_file() for path in required) or
+            "pub mod recorded" not in required[0].read_text()):
+        raise RuntimeError("original source both-target emission failed; inspect retained compile logs")
+    artifacts = {str(path.relative_to(generated)): sha(path)
+                 for path in sorted(generated.rglob("*")) if path.is_file()}
     result = {
-        "status": "safe-refusal",
+        "status": "both-target-emitted",
         "upstream": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
         "source_sha256": SOURCE_SHA,
         "original_assertions_sha256": ORIGINAL_SHA,
@@ -61,8 +62,9 @@ def main() -> None:
         "exit": process.returncode,
         "stdout_sha256": sha(output / "compile.stdout"),
         "stderr_sha256": sha(output / "compile.stderr"),
-        "diagnostic": DIAGNOSTIC,
-        "output_published": False,
+        "artifacts_sha256": artifacts,
+        "output_published": True,
+        "limits": ["--skip-zk emission only", "no generated Rust/TypeScript execution parity, proof, funded transaction or Linux claim"],
     }
     (output / "result.json").write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
     print(json.dumps(result, sort_keys=True))
