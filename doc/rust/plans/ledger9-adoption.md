@@ -1,28 +1,27 @@
 # Ledger 9 adoption on the Rust AST line
 
-## Publication snapshot, 2026-11-18
+## Publication snapshot, 2026-11-19
 
-The [dated compatibility status](../ledger9-status.md) records the current
-GitHub branch and separate, source-bound local results. Cross-contract
-foundation [#774](https://github.com/betsudo/compact/pull/774) is merged;
-original-token [#775](https://github.com/betsudo/compact/pull/775) is open on
-that base. The complete earlier #775 CI run does not qualify its rebased head.
-The original Basic and Storage suites, one host E2E case, and a signed private
-Events material package have later local Darwin arm64 results. The public
-Events two-contract proof, funded application and native Linux gate remain
-open. The [CI budget](ci-runner-resource-budget.md) records measured hosted
-runner use and the bounded compiler-shell handoff without claiming a
-controlled cost or speed improvement. Entries below retain their historical
-revision boundaries.
+The [dated status digest](../ledger9-status.md) records the merged #774 foundation,
+open rebased #775 and separate local results. The [CI resource budget](ci-runner-resource-budget.md)
+records runner usage without a controlled optimization saving. Historical
+entries retain their source and qualification boundaries.
 
-A further signed stage-only Events companion at `2c7e4eaa3` binds 838
-physical files and passes 17 refusal controls. The separate private
-source-generated TypeScript path passes 13 profile checks and the unchanged
-original `events.ts` cases 2/2; its superseding signed receipt SHA-256 is
-`21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`.
-The original run did not separately capture exact argv/environment/exit-code
-records. Public Outer admission, original Rust execution, proof, funded
-application and native Linux remain open.
+The signed local Events v4 physical candidate at `8ea671f79` binds
+2,460 files and passes 18 refusal controls; unchanged-candidate Cargo checks
+and strict Clippy pass at source `7c86fc29f`. Generated Rust first-call
+execution passes at `60de2b12d`, including ordered address/payload-bound
+events and key refusals. Three fresh V3 proofs at `6e56e0af1` pass separate
+retained-process verification at `0c4ecc1a6`, including proof/input/key
+mutation refusals. These are unfunded transactions with balancing disabled.
+The [status digest](../ledger9-status.md) gives exact receipt hashes and scope.
+A source-pinned private frontend at `217242332` reproduces both original
+TS/IR/metadata/ZKIR sets and passes eight refusals; ordinary Outer still
+refuses. Its signed receipt SHA-256 is
+`2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`;
+a separate signed reference attestation binds the verified v4 package.
+Public CLI admission, funded default-strict application/replay, second
+persisted result, applied event delivery and native Linux remain open.
 
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.

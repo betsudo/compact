@@ -2,23 +2,26 @@
 
 ## Publication snapshot, 2026-11-19
 
-See the [dated status digest](../ledger9-status.md) for the merged #774
-foundation, open rebased #775 checks, current local original-suite coverage,
-and the Events material package boundary. The source-bound local Events work
-has not published a generated Outer or qualified a funded two-contract call.
-The signed local Events stage-only companion at `2c7e4eaa3` binds 838
-physical files with 17 membership/semantic refusals. A separate private
-source-generated TypeScript run passes 13 profile checks and the unchanged
-original `events.ts` cases 2/2. Its superseding signed receipt, issued after
-independent audit, has SHA-256
-`21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`;
-it pins the consumed verifier template and discloses the original command
-capture limit. Public Events Rust/TypeScript Outer admission, proof, funded
-application, applied event delivery and native Linux remain open.
-The [CI resource budget](ci-runner-resource-budget.md) separates measured
-runner minutes from unmeasured optimization claims. The inventory and
-historical candidate details below remain necessary; they do not imply that
-the full pinned corpus or native Linux integration is complete.
+The [dated status digest](../ledger9-status.md) records the merged #774 foundation,
+open rebased #775 and separate local results. The [CI resource budget](ci-runner-resource-budget.md)
+records runner usage without a controlled optimization saving. Historical
+entries retain their source and qualification boundaries.
+
+The signed local Events v4 physical candidate at `8ea671f79` binds
+2,460 files and passes 18 refusal controls; unchanged-candidate Cargo checks
+and strict Clippy pass at source `7c86fc29f`. Generated Rust first-call
+execution passes at `60de2b12d`, including ordered address/payload-bound
+events and key refusals. Three fresh V3 proofs at `6e56e0af1` pass separate
+retained-process verification at `0c4ecc1a6`, including proof/input/key
+mutation refusals. These are unfunded transactions with balancing disabled.
+The [status digest](../ledger9-status.md) gives exact receipt hashes and scope.
+A source-pinned private frontend at `217242332` reproduces both original
+TS/IR/metadata/ZKIR sets and passes eight refusals; ordinary Outer still
+refuses. Its signed receipt SHA-256 is
+`2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`;
+a separate signed reference attestation binds the verified v4 package.
+Public CLI admission, funded default-strict application/replay, second
+persisted result, applied event delivery and native Linux remain open.
 
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
