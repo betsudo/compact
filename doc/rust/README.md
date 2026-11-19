@@ -55,7 +55,10 @@ runtime requires a signed package; the v5 admission continuation is linked
 below. A private generated Caller continuation now executes `viaInner` with the
 observed Outer identity; its reviewed six-key physical candidate now has a
 typechecked identity gate and reviewed private token execution. Caller
-proofs and funded application remain open. The
+A/M/I `viaMiddle` now has reviewed local source-SDK2 qualification with six
+contract proofs, one final Dust proof, strict funded application and unchanged
+replay refusal. Independent fresh artifact verification passes. Released-SDK1
+Caller, public admission, `Some(User)` and Linux remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event

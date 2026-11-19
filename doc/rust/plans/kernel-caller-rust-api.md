@@ -1,5 +1,39 @@
 # Ledger 9 Kernel.caller Rust API qualification
 
+## Latest private three-contract proof qualification
+
+The private original Caller A/M/I `viaMiddle` route now has reviewed local
+qualification at signed `2fd02c6fd93a6546fa51a25cee766a0dd1919522`:
+six genuine V3 contract proofs across unfunded and fresh funded runs, one final
+auxiliary Dust proof, 18 direct proof/input/wrong-key refusals, and four strict
+funded mutation refusals. Default Real balancing and contract-proof checks pass;
+funded application succeeds and replay refuses with `IntentAlreadyExists` and
+exact unchanged ledger bytes. An independent fresh retained-verifier process
+repeats both artifact checks and strict funded application/replay without new
+proving. This is a private synthetic no-owner fixture on Darwin arm64/source
+SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
+other Caller routes and Linux remain open. The earlier failed FAA attempt is
+retained as failed and is excluded from these six qualified proofs.
+
+Signed combined receipt `qualification-combined-2fd02c6fd-v1.json` has SHA-256
+`aef08dd8a83b29f8eb21199865d8d1a4924d233c79d3bf2d8e88d608e65cf778`.
+Independent review SHA-256 is
+`b5913d71caeb48b01548ba43fb07555d7b25dec7465d84f01f2af122a2875236`;
+its fresh replay record is
+`044f2b62c6df1104e6571d12d6789d845b1a97477fdc648e96aff0c47718307a`.
+The funded fee is 1,132,120,000,000,001 raw units. Each successful run makes
+12 material lookups, four at each fixed location; lookups are not proof counts.
+The fee fixture has relaxed setup operations; actual application uses default
+strictness. Exact canonical intent binding, complete call bytes and proof/input
+hashes are checked unchanged across fee balancing in memory; a separate
+prebalance V3 transaction snapshot was not retained. Sixteen final proof,
+transaction, ledger and result artifacts are retained. Owned target and clean
+worktree removal is recorded separately in signed cleanup receipt
+`82a476426f2590824d05d8ac0ae7baee8d5a5506d675389e6230dfe3f694850a`.
+
+## Earlier source-bound API and preparation slices
+
+The following limitations describe their individual historical revisions.
 The independently reviewed local slice is signed source `23af5a8e78a55c3a0d9aa51b672c34989fea8cd4`, based on `7cece56c5`. It adds genuine generated Rust support for the original Caller Inner contract. [#778](https://github.com/betsudo/compact/issues/778) retains the broader Caller and transaction work. This slice remains separate from the accepted Events v4 integration because it changes the signed runtime closure.
 
 ## Implemented behavior

@@ -183,3 +183,32 @@ source-only follow-up awaiting execution. Public schema21 rendering remains
 closed. Same-root ABI55 handshake/physical identity, generated native/recorded
 Rust parity, fresh proofs, funded strict replay and Linux remain unqualified.
 Archived Events/CCC packages and proofs keep their original identities.
+
+
+## Private profile55 source preparation
+
+Reviewed signed `ac129a465858928e233b7999901ca11989ab6535` adds a test-only
+private renderer for the bounded original 285/588 surface. It requires a sealed
+IR21 document, a typed structural whitelist and a validated same-root runtime
+token. The token checks the compiler-owned exact 120-file/15-directory runtime
+and macro closure; selected self-reported compatibility hashes alone are
+insufficient. Runtime identity is checked again after rendering. Ordinary CLI
+and public renderer admission still refuse IR21.
+
+The ignored material driver is source-prepared to invoke the source-built
+frontend afresh and retain TS/info/IR/origins/ZKIR, Rust/capability output and
+runtime bytes. An external execution controller is under review. New backend
+and CLI execution, actual driver output, generated crate typechecking,
+native/recorded/Verify parity and proofs are still pending. The earlier 1,977
+backend library pass belongs to `9ca0e9c87`, before these source changes.
+
+Separately, four new TypeScript behavior controls and three cast refusals pass
+on retained compiler258 output. `foo1/2/3(0)` return and store zero; `attest(7)`
+returns/stores the original struct and hash `7dd1657a...`. Root independently
+reran a sanitized Node process with the complete 416-file SDK graph checked
+before and after. These are supplemental controls, not additional original
+cases: the pinned original zero-bit module contains two compile-only cases.
+Signed behavior receipt SHA-256 is
+`bf6e5e91208aceabe8e7d0ab16635ffb7c4b2fe126d57fb77b2e9fd2c9aee2c5`;
+independent replay review SHA-256 is
+`358c8289e08b68a7b77fe3a9cd5dd88d7b8250255671e7ac137b44f53922d09f`.

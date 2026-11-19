@@ -5,6 +5,24 @@ limits of separate local qualifications. The [adoption plan](plans/ledger9-adopt
 and [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
 retain the detailed, source-bound history.
 
+## Latest private Caller qualification
+
+The private original Caller A/M/I `viaMiddle` route now has reviewed local
+qualification at signed `2fd02c6fd93a6546fa51a25cee766a0dd1919522`:
+six genuine V3 contract proofs across unfunded and fresh funded runs, one final
+auxiliary Dust proof, 18 direct proof/input/wrong-key refusals, and four strict
+funded mutation refusals. Default Real balancing and contract-proof checks pass;
+funded application succeeds and replay refuses with `IntentAlreadyExists` and
+exact unchanged ledger bytes. An independent fresh retained-verifier process
+repeats both artifact checks and strict funded application/replay without new
+proving. This is a private synthetic no-owner fixture on Darwin arm64/source
+SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
+other Caller routes and Linux remain open. The earlier failed FAA attempt is
+retained as failed and is excluded from these six qualified proofs.
+
+See the [Caller qualification record](plans/kernel-caller-rust-api.md#latest-private-three-contract-proof-qualification)
+for full receipt hashes, setup boundaries and retained artifacts.
+
 ## Baseline and publication
 
 The language and test baseline is

@@ -17,15 +17,30 @@ separately passes 474 source cases and its emitted/declaration controls. Backend
 library-only strict Clippy. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
 now integrates the accepted minimum-byte semantics and reproduces original
 285/588 artifacts. Schema21 public admission remains closed; a typed legacy-v3
-refusal and ABI55 generated Rust qualification remain separate next slices.
+refusal and private ABI55 renderer are source-reviewed through `ac129a465`,
+with an execution controller under review. Actual new backend/CLI tests, generated
+Rust native/recorded/Verify calls and proofs remain unrun.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and
-proof execution remain unassigned or unrun. Private Caller A/M/I proof source
-`3bf9e72c2` passed independent source/PREP review after a minimal lock correction;
-its build, genuine proofs and funded replay are a separate ongoing qualification. Finished owned targets and
-worktrees are removed after audit; source publication and hosted CI remain
-separate. The broad milestone is incomplete.
+proof execution remain unassigned or unrun.
+
+The private original Caller A/M/I `viaMiddle` route now has reviewed local
+qualification at signed `2fd02c6fd93a6546fa51a25cee766a0dd1919522`:
+six genuine V3 contract proofs across unfunded and fresh funded runs, one final
+auxiliary Dust proof, 18 direct proof/input/wrong-key refusals, and four strict
+funded mutation refusals. Default Real balancing and contract-proof checks pass;
+funded application succeeds and replay refuses with `IntentAlreadyExists` and
+exact unchanged ledger bytes. An independent fresh retained-verifier process
+repeats both artifact checks and strict funded application/replay without new
+proving. This is a private synthetic no-owner fixture on Darwin arm64/source
+SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
+other Caller routes and Linux remain open. The earlier failed FAA attempt is
+retained as failed and is excluded from these six qualified proofs.
+
+Finished owned Caller targets and clean worktrees are removed after audit;
+replay inputs, libraries, binaries and all qualification artifacts remain.
+Source publication and hosted CI remain separate. The broad milestone is incomplete.
 
 The cross-contract foundation [#774](https://github.com/betsudo/compact/pull/774)
 merged at `eb3b2adbb`. The original-token [#775](https://github.com/betsudo/compact/pull/775)
