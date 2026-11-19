@@ -159,6 +159,14 @@ Exact verification and 16 refusal controls pass. It adds physical packaging,
 with checked token/execution, package Cargo, proof/funded and public/Linux
 qualification still open.
 
+The subsequent checked A/M/I token at reviewed `2c5f11330` now passes package
+Cargo qualification and private VM execution under a new 1,664-file/82-directory
+identity. It consumes the actual root, sealed observations and owned resolved
+material. Five VM tests, 26 dynamic refusals, 23 physical refusals and six
+downstream compiler refusals pass, with independent replay. This source SDK2
+no-owner route still has no external authenticated assembly, proof/transaction,
+funded, SDK1, public or Linux claim. Its target and worktree are cleaned.
+
 [Original runtime resolution coverage](plans/original-runtime-resolution.md)
 at reviewed `127f75a12` passes all 14 original cases on published runtime 0.21.
 Source runtime 0.18 retains its closed export: zero passes and 14 missing-function

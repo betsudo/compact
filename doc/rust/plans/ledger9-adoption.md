@@ -202,14 +202,22 @@ a new physical A/M/I package and checked token are next. Proof/funded,
 releasedSDK1 Caller execution, public admission and Linux remain open.
 
 The new physical A/M/I Caller candidate at reviewed `c1c61e77b` now binds
-1,652 files/77 directories with16 refusal controls. This is physical packaging
+1,652 files/77 directories with 16 refusal controls. This is physical packaging
 only; checked token/execution and proof/funded/public/Linux gates remain open.
 The [original runtime resolution record](original-runtime-resolution.md)
-qualifies14/14published cases while source0.18 records0/14passes and14missing-
-function failures from its intentionally closed export. Source existing-unit
-coverage separately passes465/465 across24modules, with adapted/internal
-cases and overlapping counts. These localarm64results add no Rust/proof or
+qualifies 14/14 published cases while source 0.18 records zero passes and 14 missing-function failures from its intentionally closed export. Source existing-unit
+coverage separately passes 465/465 across 24 modules, with adapted/internal
+cases and overlapping counts. These local arm64 results add no Rust/proof or
 Linux claim. Finished owned Node/build scratch and worktrees are cleaned.
+
+The later checked A/M/I token at reviewed `2c5f11330` passes package Cargo checks
+and private VM execution with five tests, 26 dynamic refusals, 23 physical refusals and
+six downstream compiler refusals, independently replayed. It consumes the actual
+no-owner root, sealed observations and owned resolver material; no replacement
+execution context or expected-caller argument is accepted. This source SDK 9.1.0.2
+route adds no authenticated external assembly, proof, transaction, funded replay,
+SDK 9.1.0.1, public admission or Linux claim. Its 958 MiB target and clean worktree are removed. Closed
+source-specific unfunded prepartition preparation is the next design.
 
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.

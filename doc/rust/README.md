@@ -94,6 +94,10 @@ passes the original 14 cases on published runtime, while source keeps its
 closed-export incompatibility explicit. The source's existing suite also passes
 465/465 across 24 modules; that overlapping adapted/internal count is separate
 from intact original coverage.
+Checked A/M/I token execution is now independently reviewed: five private VM
+tests, 26 dynamic refusals, 23 physical refusals and six compiler refusals pass.
+Closed unfunded prepartition preparation is next; proof/transaction authority,
+funded replay, released SDK1 Caller execution and Linux remain open.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
