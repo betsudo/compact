@@ -57,8 +57,11 @@ observed Outer identity; its reviewed six-key physical candidate now has a
 typechecked identity gate and reviewed private token execution. Caller
 A/M/I `viaMiddle` now has reviewed local source-SDK2 qualification with six
 contract proofs, one final Dust proof, strict funded application and unchanged
-replay refusal. Independent fresh artifact verification passes. Released-SDK1
-Caller, public admission, `Some(User)` and Linux remain open. The
+replay refusal. Independent fresh artifact verification passes. A separate
+released-SDK1 registry-only Caller consumer verifies the same six retained
+proofs and exact strict funded/replay ledger bytes, with independent process
+replay; no additional proofs are counted. Public admission, `Some(User)` and
+native Linux remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event
@@ -251,9 +254,11 @@ now collects all 1,091 original cases on both profiles: current source runtime
 has 1,061 passed/30 failed; released runtime has 1,085 passed/six failed. Both
 remain red, with original assertions retained. Reviewed local backend
 `edf0b88d1` passes 1,987 library tests, 48 CLI tests and library-only strict lint.
-Its private material attempt stopped on a missing hash tool; the material-only
-retry is prepared and held by the disk guard. Schema21 public admission,
-generated-contract execution and full parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+The separately reviewed material-only retry now passes both original-fixture
+private drivers and retains fresh TS/info/IR21/ZKIR/private Rust ABI55 outputs.
+The generated SDK1 execution template has passed source review but remains
+uncompiled. Schema21 public admission, generated-contract execution, new
+proofs for this profile and full parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
 completed build copies and worktrees are removed; source stays local.

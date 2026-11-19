@@ -11,8 +11,12 @@ funded application succeeds and replay refuses with `IntentAlreadyExists` and
 exact unchanged ledger bytes. An independent fresh retained-verifier process
 repeats both artifact checks and strict funded application/replay without new
 proving. This is a private synthetic no-owner fixture on Darwin arm64/source
-SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
-other Caller routes and Linux remain open. The earlier failed FAA attempt is
+SDK 9.1.0.2. A separate released SDK 9.1.0.1 registry-only consumer at
+`8b75577b8` independently verifies the six retained proofs, 18 direct refusals,
+four strict funded mutations, successful default-strict application and exact
+source-SDK2 after/replay ledger bytes. Its fresh independent process replay
+also passes. This consumer creates no additional proofs. Public admission,
+`Some(User)`, other Caller routes and native Linux remain open. The earlier failed FAA attempt is
 retained as failed and is excluded from these six qualified proofs.
 
 Signed combined receipt `qualification-combined-2fd02c6fd-v1.json` has SHA-256
@@ -30,6 +34,29 @@ prebalance V3 transaction snapshot was not retained. Sixteen final proof,
 transaction, ledger and result artifacts are retained. Owned target and clean
 worktree removal is recorded separately in signed cleanup receipt
 `82a476426f2590824d05d8ac0ae7baee8d5a5506d675389e6230dfe3f694850a`.
+
+## Released SDK 9.1.0.1 artifact and strict replay consumer
+
+Signed local consumer `8b75577b8b90fb0b0a53eb9b1aa3f7f5853fdbce` uses
+registry SDK 9.1.0.1/ledger 1.0.1 and no source-SDK2 authority crate. Cargo JSON
+records 314 actual package IDs, 359 artifact lines and all ten required core
+libraries. The 401 lock records and 400 registry archives are different counts.
+The consumer verifies the six existing V3 proofs, all 18 direct negatives,
+four strict funded mutations and default Real/balancing application. Replay
+refuses with `IntentAlreadyExists`; after/replay ledger bytes match the retained
+source-SDK2 bytes exactly. Independent execution of the retained consumer
+binary repeats the same result. No new proof is created or counted.
+
+Execution receipt SHA-256 is
+`690fcfe1664cf01acfec1eed7f68834b778ec83003d3366711e38a263f9ce853`;
+independent fresh replay review SHA-256 is
+`389bcb09af51b894d25930db726d0af652e291382f6cffb9706ae2abaedab5bd`.
+Owned build target and duplicate scratch are removed after review. Cleanup
+receipt SHA-256 is
+`1f5c4a53a82c1f87886f758e21ef3a56fa5fe824572734c5e85b31ac63e36a4a`.
+The sealed stage, explicit proof roots, binary, lock, raw logs and maps remain.
+This private deterministic no-owner Darwin arm64 result does not qualify the
+global SDK1 ABI, public Caller admission, `Some(User)`, live deployment or Linux.
 
 ## Earlier source-bound API and preparation slices
 

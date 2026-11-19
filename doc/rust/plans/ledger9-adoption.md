@@ -15,15 +15,17 @@ The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
 separately passes 474 source cases and its emitted/declaration controls. The
 reviewed local backend checkpoint at `edf0b88d1` passes 1,987 library tests
 (zero failed, eight ignored, zero filtered), 48 CLI tests and library-only
-strict Clippy. The private material driver remains unqualified: its first
-285 attempt lacked a hash tool on the audited PATH; 588 did not run. A separately
-reviewed material-only retry uses the retained binary and pinned hash tool,
-with execution held below the 50 GiB free-space floor. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
+strict Clippy. A separately reviewed material-only retry now passes both
+private ignored drivers using the retained EDF binary and a pinned hash tool:
+fresh #285 and #588 TS/info/IR21/ZKIR/private Rust ABI55 output is retained.
+The initial missing-tool failure remains historical. These are material
+generation checks; generated Rust execution and proofs remain separate. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
 now integrates the accepted minimum-byte semantics and reproduces original
 285/588 artifacts. Schema21 public admission remains closed. The typed legacy-v3 refusal and
 private ABI55 renderer compile in the later EDF backend checkpoint above;
-fresh private material, generated Rust native/recorded/Verify and proofs
-remain unqualified.
+fresh private material is now qualified. The reviewed SDK1 execution template
+at `69dcb88dc` remains uncompiled; generated Rust native/recorded/Verify,
+fresh proofs and funded replay remain unqualified.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and
@@ -38,8 +40,12 @@ funded application succeeds and replay refuses with `IntentAlreadyExists` and
 exact unchanged ledger bytes. An independent fresh retained-verifier process
 repeats both artifact checks and strict funded application/replay without new
 proving. This is a private synthetic no-owner fixture on Darwin arm64/source
-SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
-other Caller routes and Linux remain open. The earlier failed FAA attempt is
+SDK 9.1.0.2. A separate released SDK 9.1.0.1 registry-only consumer at
+`8b75577b8` independently verifies the six retained proofs, 18 direct refusals,
+four strict funded mutations, successful default-strict application and exact
+source-SDK2 after/replay ledger bytes. Its fresh independent process replay
+also passes. This consumer creates no additional proofs. Public admission,
+`Some(User)`, other Caller routes and native Linux remain open. The earlier failed FAA attempt is
 retained as failed and is excluded from these six qualified proofs.
 
 Finished owned Caller targets and clean worktrees are removed after audit;

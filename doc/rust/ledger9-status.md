@@ -16,8 +16,12 @@ funded application succeeds and replay refuses with `IntentAlreadyExists` and
 exact unchanged ledger bytes. An independent fresh retained-verifier process
 repeats both artifact checks and strict funded application/replay without new
 proving. This is a private synthetic no-owner fixture on Darwin arm64/source
-SDK 9.1.0.2. Released SDK 9.1.0.1 Caller execution, public admission, `Some(User)`,
-other Caller routes and Linux remain open. The earlier failed FAA attempt is
+SDK 9.1.0.2. A separate released SDK 9.1.0.1 registry-only consumer at
+`8b75577b8` independently verifies the six retained proofs, 18 direct refusals,
+four strict funded mutations, successful default-strict application and exact
+source-SDK2 after/replay ledger bytes. Its fresh independent process replay
+also passes. This consumer creates no additional proofs. Public admission,
+`Some(User)`, other Caller routes and native Linux remain open. The earlier failed FAA attempt is
 retained as failed and is excluded from these six qualified proofs.
 
 See the [Caller qualification record](plans/kernel-caller-rust-api.md#latest-private-three-contract-proof-qualification)
@@ -606,9 +610,11 @@ now collects all 1,091 original cases on both profiles: current source runtime
 has 1,061 passed/30 failed; released runtime has 1,085 passed/six failed. Both
 remain red, with original assertions retained. Reviewed local backend
 `edf0b88d1` passes 1,987 library tests, 48 CLI tests and library-only strict lint.
-Its private material attempt stopped on a missing hash tool; the material-only
-retry is prepared and held by the disk guard. Schema21 public admission,
-generated-contract execution and full parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+The separately reviewed material-only retry now passes both original-fixture
+private drivers and retains fresh TS/info/IR21/ZKIR/private Rust ABI55 outputs.
+The generated SDK1 execution template has passed source review but remains
+uncompiled. Schema21 public admission, generated-contract execution, new
+proofs for this profile and full parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
 completed build copies and worktrees are removed; source stays local.

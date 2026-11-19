@@ -237,14 +237,40 @@ Full test-target Clippy remains a separate historical limitation.
 
 The observed frontend call needed one explicit `PublicLegacy` admission
 argument; adding it fixes the actual compilation diagnostics without opening
-schema21. The subsequent private 285 material test fails because the audited
-PATH lacks `sha256sum`; 588 is unrun. No generated material, SDK compilation,
-native/recorded/Verify or proof success follows from this backend checkpoint.
+schema21. The first subsequent private 285 material attempt fails because the audited
+PATH lacks `sha256sum`; 588 is unrun in that attempt. That failed phase remains
+historical. It does not establish SDK compilation, native/recorded/Verify or
+proof success.
 
 A separately signed material-only launcher uses the exact retained EDF binary,
 retained source/compiler wrapper and a pinned `sha256sum` added last in PATH.
-It will run only the two ignored material drivers, with fresh disjoint output,
+It ran only the two ignored material drivers, with fresh disjoint output,
 50 GiB continuous free-space floor and 256 MiB output cap. The launcher and
-producer identities remain distinct. Its source/PREP is independently reviewed;
-execution remains held while free space is below the floor. The owned completed
-Cargo target is removed; source fixture, binaries, logs and receipts remain.
+producer identities remain distinct. Both drivers pass: one test each, zero
+failures and 1,994 filtered tests each. #285 retains 133 files/21 directories
+and three raw ZKIR files; #588 retains 131 files/21 directories and one raw
+ZKIR file. Each includes the copied 120-file runtime closure; those duplicated
+runtime files are not additional original cases. Private IR21 uses
+`ledger9_zkir_v3`, and generated Rust asserts ABI55. Execution receipt SHA-256 is
+`2ff8a23668fdbf3c0b924233f6a352b02a2e21789577c0c4877d1dd3a5da7d10`;
+independent review SHA-256 is
+`203a961ce612622cc5ff5b12d1778ce2d53629cb0d79b13cdf4619b1ec55b005`.
+The original upstream tests are compile-only; this adds no original runtime
+callbacks. Owned completed Cargo targets are removed; source fixtures,
+binaries, fresh material, logs and receipts remain.
+
+## Generated SDK1 execution preparation
+
+Signed source `69dcb88dc2684d8530d8ef944f63f093ae96d1f4` adds a finite
+stage plan, manifest-only released SDK1 overlay and uncompiled generated API
+test template. Independent static review SHA-256 is
+`d73337eac46084b557b5956af5c075d2197176ca502fa266f651a8091ad7c4ab`;
+source PREP SHA-256 is
+`05409b11b58fce98a3fb55435d8b8162ec235934ccd0c5e8c6943f4a001aae38`.
+All nonmanifest runtime bytes and fresh generated contracts remain unchanged;
+source-SDK2 compatibility metadata is not relabelled as SDK1. The template
+targets native, recorded, observed and Verify paths, wrong-read/input refusals,
+the v3 `7dd1657a...` hash and the legacy `aae89fc0...` hash in the same binary.
+No Cargo typecheck or generated Rust execution has yet qualified that template.
+Public schema21 admission, fresh profile55 proofs, funded replay and native
+Linux remain separate gates.
