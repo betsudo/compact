@@ -217,6 +217,27 @@ The original signed package remains unchanged. These local arm64 transactions
 are unfunded; default-strict funded application/replay, second persisted
 result, applied event order, public CLI admission and native Linux remain open.
 
+The Events-only CLI trust preflight at signed `053e85eb6` passes 45 unit
+tests and 11 signed-candidate controls with prior-output preservation. Its
+signed receipt SHA-256 is
+`64700f73ba52497f47cc24ad8dd463c4b49a4aeaaf8d94e94514322c28ddb3f0`.
+Independent review passed. This preflight always refuses publication;
+ordinary Outer refusal here is a focused Rust unit test. Clippy excludes
+the existing pay helper's argument-count lint and denies other warnings.
+
+The private source-pinned Scheme route at signed `217242332` freshly
+reproduces both original Inner/Outer TS, IR, compiler metadata and raw ZKIR.
+Source maps differ only in `sourceRoot` and resolve to the copied originals.
+Two positive compilations and eight actual process refusals pass, including
+ordinary Outer and changed original bytes. Signed qualification SHA-256:
+`2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`.
+The runner compares a supplied reference; independent review authenticated
+the frozen v4 reference separately. The [signed reference attestation](/Users/ysh/.codex/local-evidence/ledger9-events-private-frontend-20261119/authenticated-reference.json)
+SHA-256 `0cc6ea48cc5e8f02f81df0084c9c07f6ad4cf546b49dd996618cdfd7a2b68a32`
+binds that package identity/signature/keyring and the original qualification.
+This is a controlled interpreter run with captured Scheme 10.3 executable,
+library environment and exact commands, without packaged public admission.
+
 ## CI resource and optimization evidence
 
 The complete [#774 run](https://github.com/betsudo/compact/actions/runs/44328366189)
