@@ -183,7 +183,7 @@ source, Inner verifier, Outer Rust and Outer TypeScript; a clean positive
 preflight followed by dependency redirection refuses the changed Cargo file.
 The copied package re-verifies before and after, allowing only two captured
 Cargo lockfiles. Independent review checked the source and all 26 command
-logs; the [signed qualification](/Users/ysh/.codex/local-evidence/ledger9-events-v4-cargo-gate-20261119/evidence-7c/qualification.json)
+logs; the signed qualification (`evidence-7c/qualification.json`, retained locally)
 SHA-256 is `4558cfb52d55623ca1ec099be59f4c790dd4979dac6f5b306dec8e010b9ff7a4`.
 This qualifies local compilation of the physical candidate; original Rust
 execution, public CLI admission, proof, funded application and Linux remain open.
@@ -194,7 +194,7 @@ The first call returns Field 1 and records two version-1 ShieldedSpend events
 with exact payload and Outer-before-Inner emitting addresses. Two prepared
 call preimages include the expected Outer child-result/randomness transcript;
 four installed/resolved key mismatches refuse. The independently reviewed
-[signed qualification](/Users/ysh/.codex/local-evidence/ledger9-events-rust-execution-20261119/qualification-60d.json)
+signed qualification (`qualification-60d.json`, retained locally)
 SHA-256 is `17cf3cace4f7c71b469bb970a43f9ec42dfee1cc9d22193576221149a7ea8cbd`.
 It binds Cargo arguments, working directory, Rust/Cargo versions, selected
 environment, exact source/template, logs and lockfile. This Darwin arm64
@@ -211,7 +211,7 @@ proofs, three changed public inputs and three wrong keys refused. Both
 transactions pass Ledger 9 Real verification with balancing disabled.
 Independent source and evidence review found no actionable issue. Producer
 receipt SHA-256 is `38cece7c57352654547c5529513e02641c779206194f046ae9d98030da353a1d`;
-the [signed separate-verifier receipt](/Users/ysh/.codex/local-evidence/ledger9-events-rust-execution-20261119/retained-verification-0c4.json)
+the signed separate-verifier receipt (`retained-verification-0c4.json`, retained locally)
 SHA-256 is `e59fd3eb18296f4e103cef3811114e1f0a7863147787f35b4cd6e5b4d582787d`.
 The original signed package remains unchanged. These local arm64 transactions
 are unfunded; default-strict funded application/replay, second persisted
@@ -232,7 +232,7 @@ Two positive compilations and eight actual process refusals pass, including
 ordinary Outer and changed original bytes. Signed qualification SHA-256:
 `2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`.
 The runner compares a supplied reference; independent review authenticated
-the frozen v4 reference separately. The [signed reference attestation](/Users/ysh/.codex/local-evidence/ledger9-events-private-frontend-20261119/authenticated-reference.json)
+the frozen v4 reference separately. The signed reference attestation (`authenticated-reference.json`, retained locally)
 SHA-256 `0cc6ea48cc5e8f02f81df0084c9c07f6ad4cf546b49dd996618cdfd7a2b68a32`
 binds that package identity/signature/keyring and the original qualification.
 This is a controlled interpreter run with captured Scheme 10.3 executable,
