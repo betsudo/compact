@@ -130,3 +130,52 @@ deferred for the immediate follow-up. The retained 183-archive input mirror
 is separate from disposable outputs. The measured framed Git-only read is
 1.792 seconds for 9,883 paths; it is not a complete host, physical-copy or CI
 speedup measurement. Native Linux and the full 45-module gate remain open.
+
+
+## Qualified original CamelCase and artifact finalization
+
+Executed signed source `27d94b147126e8296ea0bf1600005a60d80839ae` with capture
+`d097eb176` passes both byte-exact original CamelCase tests on each profile:
+released Compact 0.36.0 and the private source99d ZKIR-v3/released0.21 compiler.
+All four compiler calls exit zero with empty raw streams and valid JavaScript;
+both original collectors pass. Full generated file/child modes, the exact
+0700-to-0755 copy-root relation, complete closed original logs, source/material
+binding and process cleanup pass. Original fixtures, including Field and
+JubjubScalar casts, and original assertions remain unchanged.
+
+The restricted source PATH adds only the physically pinned `/sbin/sha256sum`
+last, retaining prior precedence and the released profile's PATH. Its GNU
+binary/zero-terminated `abc` vector is checked before projection. This corrects
+the prior source setup failure; it makes no OS-vendor signature claim.
+
+After both profiles pass, the original runner's final source check raises an
+arity TypeError before receipt creation. Signed local correction `d8daf6372`
+changes only `source(repo, head)` to `source(head)` and is **not executed**.
+A separately signed artifact-only finalizer authenticates the original run's
+full 9,145-file/1,789-directory/81-link tree, nine retained phase records,
+raw outputs, both pure collectors, source/material/logs/modes and absence of
+owned processes. It writes new receipts and transfer maps without rerunning
+Node, either compiler or projection, and preserves the original executed head.
+Independent final review rehashes the complete original tree after finalization.
+
+Signed final qualification SHA-256 is
+`c9dfcfc105ce7908cd850f6374b2827b5fa08c7e308d99410e5d3f48b6fffa42`;
+independent actual review SHA-256 is
+`faa15e5f4e08cb1e276d2e6ab672834267e8815f08bd12a79a7ec77230c5ac1e`.
+The original TypeError and all earlier failed attempts remain retained.
+
+After review and active-use checks, the owned worktree and disposable graph
+copies are removed. The 145-file/6,217,271-byte capture retains raw compiler,
+Node, generated/bridge, log, phase, source and identity data, including both
+134-byte runtime cache reports and their original paths/modes. One authentic
+42,504,224-byte pristine graph (3,000 files/572 directories/27 links) is retained
+as an explicitly needed input for subsequent original host tests; it and the
+183-archive mirror are separate from disposable outputs.
+
+This adds one module/two distinct original cases per profile. With the six-module
+host21 and one-module External gates, the union is eight modules/24 cases per
+profile across three separate qualifications. It does not establish a combined
+24-case gate, the full 45 modules, Runtime SDK execution, generated Rust,
+proof/funding, public defaults or native Linux. The private 183-package graph
+retains its disclosed std-env 4.2-to-4.3 override and platform omissions;
+no exact original installation metadata or controlled CI speedup is claimed.

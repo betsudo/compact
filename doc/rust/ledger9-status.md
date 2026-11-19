@@ -622,11 +622,18 @@ runtime test cases or proofs. A separate private proof harness first fails
 SDK1 compilation on field `+=`; signed correction `5a17e13ea` retains the
 same wrong-input assertions. The reviewed a9b cached retry compiles both the
 ignored proof harness and retained verifier, with 741 Cargo artifact records
-and 325 distinct package IDs; neither executes a proof or application here. The
+and 325 distinct package IDs; neither executes a proof or application here.
+The separate [private SDK1 fresh-proof gate](plans/zero-width-ledger9-encoding.md#private-sdk1-fresh-proofs-and-funded-replay)
+now qualifies four fresh V3 proofs, four default-strict funded applications,
+eight targeted mutations and exact replay refusal, followed by independent
+fresh four-verifier replay (`59d95b55`/`8a7f7de4`/`7d7c92d1`). The
 [CamelCase original-host retries](plans/original-host-metadata-status.md#efficient-retries-and-original-output-transport)
-retain partial released 2/2 test passes with a copy-root mode collector refusal;
-source is unrun and the complete lane remains unqualified. Public schema21 admission, fresh profile55
-proofs/funded replay, full parity and native Linux remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+retain the prior setup failures. Executed 27d runs pass 2/2 on each profile;
+independently accepted artifact-only finalization preserves their original
+source identity (`c9dfcfc1`/`faa15e5f`). The union is eight modules/24 cases per
+profile across three separate gates, without a combined 24-case qualification.
+Public schema21 admission, global SDK1 ABI, full parity and native Linux remain
+open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
 completed build copies and worktrees are removed; source stays local.

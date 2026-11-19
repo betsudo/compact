@@ -29,18 +29,28 @@ two fresh-material passes. The private generated SDK1 consumer `d0655a12f`
 passes all three supplemental API tests and independent retained-binary replay:
 four original circuits exercise native, recorded, observed and Verify paths,
 wrong-read/cast refusals and matching v3/legacy hashes. This adds no original
-runtime cases or proofs. Public schema21 admission, new profile55 proofs,
-funded replay and native Linux remain open.
+runtime cases or proofs. The separate private four-circuit SDK1 proof run now
+adds four fresh V3 contract proofs, four default-strict funded applications,
+eight targeted mutation refusals and exact replay refusal, with independent
+fresh verifier replay. Public schema21 admission, global SDK1 ABI and native
+Linux remain open.
 
 The private four-circuit proof harness has a retained SDK1 compile failure at
 `f007efc56` and an equivalent field-addition correction at `5a17e13ea`.
 The `a9b0993f2` cached retry now compiles both the ignored proof harness and
 retained verifier (741 Cargo records/325 distinct package IDs); it executes
-neither and creates no keys, proofs or funded result.
+neither and creates no keys, proofs or funded result. The separate
+[private fresh-proof run](zero-width-ledger9-encoding.md#private-sdk1-fresh-proofs-and-funded-replay)
+passes signed receipt `59d95b55`, independent review `8a7f7de4` and fresh
+four-verifier replay `7d7c92d1`; the original compile-only cases stay unchanged.
 The [latest CamelCase retries](original-host-metadata-status.md#efficient-retries-and-original-output-transport)
 retain an original-logger guard failure and a copy-root mode collection
-refusal. Released d183 tests pass 2/2, but source is unrun and the complete
-lane remains unqualified. Original assertions and all other mode checks stay
+refusal and a missing source hash utility. With the utility pinned, the
+unchanged tests at executed `27d94b147` pass 2/2 on each compiler profile.
+Separate artifact-only finalization now passes independent review, preserving
+the executed head and recording the unexecuted one-call source correction.
+The host union is eight modules/24 cases per profile across three separate
+gates; a combined 24-case gate and the full 45 modules remain open. Original assertions and all other mode checks stay
 strict; no complete CI saving or native Linux result is inferred.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently

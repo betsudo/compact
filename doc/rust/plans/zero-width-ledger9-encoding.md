@@ -399,6 +399,47 @@ receipt SHA-256 is
 Neither executable has run a proof or application in this gate.
 
 The retained 28-file parameter set matches released SDK1's embedded hashes
-and can be reused without copying or mutation. Fresh keys, four proofs,
-strict funded application/replay and independent retained verification remain
-separate gates. Public schema21, global SDK1 ABI and Linux remain open.
+and is reused without copying or mutation. The separate four-circuit proof
+and funded gate below now passes independent qualification. Public schema21, global SDK1 ABI and Linux remain open.
+
+
+## Private SDK1 fresh proofs and funded replay
+
+The separate run at signed source `a9b0993f2` now qualifies all four unchanged
+#285/#588 circuits against released SDK 9.1.0.1. Four fresh key-generation
+commands produce distinct verifier keys. One supplemental ignored Rust test
+executes the four cases and passes: `foo1`, `foo2` and `foo3` prove the zero
+argument/result writes; `attest(7)` applies the expected v3 `7dd1657a...` hash
+while preserving the legacy `aae89fc0...` result in the same binary.
+
+Each funded transaction passes default Real proof checking and balancing,
+applies successfully, and refuses replay with `IntentAlreadyExists` and exact
+unchanged ledger bytes. Eight targeted strict mutations refuse: the contract
+proof and a positive-fee Dust proof for each case. Corrupt proof, changed
+public input and distinct wrong-key controls also refuse. Full sealed
+prebalance transactions are retained, and their complete call, binding,
+proof and public-input bytes match the funded transactions.
+
+Four separate retained-verifier processes pass. Independent review then
+freshly repeats all four verifier calls with unchanged run, binary, parameter
+and static-input bytes; this generates no additional proof. All nine producer
+commands exit zero. The 68-file/11-directory run retains hashes, sizes and
+modes, raw logs, keys, proofs, preimages, transactions and before/after/replay
+states. The 28 parameter files are reused read-only. The seven test-static
+files also match the authenticated released SDK1 crate archive byte for byte.
+
+Signed qualification SHA-256 is
+`59d95b5572cac9c2abdbdbd0d63e5649a74eb0023edfcb5d66958e9792206db6`;
+independent review SHA-256 is
+`8a7f7de4ad7c04695612fc6dea16959c3b2d65149a5786bfae50ce9c605f6f89`;
+fresh verifier replay SHA-256 is
+`7d7c92d1ae71387d7906a6aafb6862ffac1877d4048c543e40133a9940c1b76b`.
+The earlier missing-environment and compile failures remain failed. Completed
+owned Cargo target and worktree are removed after review; retained inputs and
+all qualification evidence remain.
+
+This adds four actual contract proofs, separate from auxiliary Dust/balancing
+work. It adds no original runtime cases: upstream's two tests remain unchanged
+compile-only cases, while this new proof test has four supplemental cases.
+This private Darwin arm64 gate establishes neither public schema21 admission,
+global SDK1 ABI, live deployment nor native Linux qualification.

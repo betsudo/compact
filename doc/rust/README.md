@@ -182,9 +182,10 @@ replayed calls including separate diagnostics; 38 Curve callbacks remain
 filtered on this Rust path. This is a pure runtime API result, not generated
 contract, proof, full SDK ABI or Linux qualification. A separately reviewed
 [zero-width Rust encoding counterexample](plans/zero-width-ledger9-encoding.md),
-tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
-released v3 attestation hashing. Its next runtime/derive fix must preserve
-legacy Ledger8/v2 behavior; generated profile/API qualification follows.
+tracked in [#784](https://github.com/betsudo/compact/issues/784), records the
+historical difference from released v3 attestation hashing. The subsequent
+private profile/API and proof qualification below reproduces the oracle while
+preserving legacy Ledger8/v2 behavior.
 
 
 The [four original runtime modules](plans/original-runtime-descriptors.md) now have
@@ -209,8 +210,8 @@ The reviewed [zero-width runtime/derive slice](plans/zero-width-ledger9-encoding
 at `3e5625f14` now executes both encoding profiles together: legacy alignment
 and hash remain unchanged, while the explicit v3 attestation matches the released
 oracle. Thirteen runtime tests and 33 macro tests pass, with four downstream
-refusals and strict macro Clippy. This is direct API qualification; IR/profile
-threading, generated original contracts, the ABI55 handshake and proofs remain open.
+refusals and strict macro Clippy. This direct API gate predates the private
+generated/profile55 results below; public ABI55 admission remains open.
 
 
 The [owned Ledger 9 coin amount boundary](plans/original-runtime-descriptors.md#owned-ledger-9-coin-amount-refusal)
@@ -262,8 +263,16 @@ SDK1 consumer at `d0655a12f` now passes all three API tests, including native,
 recorded, observed and Verify paths, wrong-read/cast refusals and both the v3
 and legacy hashes. An independent retained-binary replay repeats the result.
 These supplemental tests cover four original circuits; they add no original
-runtime test cases or proofs. Public schema21 admission, fresh profile55
-proofs/funded replay, full parity and native Linux remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+runtime test cases or proofs. The separate [private SDK1 proof gate](plans/zero-width-ledger9-encoding.md#private-sdk1-fresh-proofs-and-funded-replay)
+now qualifies four fresh V3 proofs, four default-strict funded applications,
+eight targeted mutations and exact replay refusal, with independent fresh
+four-verifier replay. Public schema21 admission, global SDK1 ABI, full parity
+and native Linux remain open. The separately qualified [original CamelCase
+host gate](plans/original-host-metadata-status.md#qualified-original-camelcase-and-artifact-finalization)
+passes 2/2 on released and source profiles. Together with the earlier gates,
+the host union is eight modules/24 cases per profile across three separate
+qualifications, without a combined 24-case or full 45-module result.
+The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
 completed build copies and worktrees are removed; source stays local.
