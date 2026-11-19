@@ -12,14 +12,18 @@ public cross-contract resolution cases. Released failures retain four BOM and
 two wide-coin assertions; original assertions and policies are unchanged.
 
 The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
-separately passes 474 source cases and its emitted/declaration controls. Backend
-`9ca0e9c87` passes 1,977 library tests, zero failures and seven ignored, plus
-library-only strict Clippy. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
+separately passes 474 source cases and its emitted/declaration controls. The
+reviewed local backend checkpoint at `edf0b88d1` passes 1,987 library tests
+(zero failed, eight ignored, zero filtered), 48 CLI tests and library-only
+strict Clippy. The private material driver remains unqualified: its first
+285 attempt lacked a hash tool on the audited PATH; 588 did not run. A separately
+reviewed material-only retry uses the retained binary and pinned hash tool,
+with execution held below the 50 GiB free-space floor. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
 now integrates the accepted minimum-byte semantics and reproduces original
-285/588 artifacts. Schema21 public admission remains closed; a typed legacy-v3
-refusal and private ABI55 renderer are source-reviewed through `ac129a465`,
-with an execution controller under review. Actual new backend/CLI tests, generated
-Rust native/recorded/Verify calls and proofs remain unrun.
+285/588 artifacts. Schema21 public admission remains closed. The typed legacy-v3 refusal and
+private ABI55 renderer compile in the later EDF backend checkpoint above;
+fresh private material, generated Rust native/recorded/Verify and proofs
+remain unqualified.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and

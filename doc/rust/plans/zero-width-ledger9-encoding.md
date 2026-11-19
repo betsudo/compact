@@ -197,10 +197,10 @@ and public renderer admission still refuse IR21.
 
 The ignored material driver is source-prepared to invoke the source-built
 frontend afresh and retain TS/info/IR/origins/ZKIR, Rust/capability output and
-runtime bytes. An external execution controller is under review. New backend
-and CLI execution, actual driver output, generated crate typechecking,
-native/recorded/Verify parity and proofs are still pending. The earlier 1,977
-backend library pass belongs to `9ca0e9c87`, before these source changes.
+runtime bytes. At that source-only revision, backend/CLI execution, actual driver output,
+generated crate typechecking, native/recorded/Verify and proofs were pending.
+The later EDF checkpoint below qualifies backend/CLI/lint only. The earlier
+1,977 library pass belongs to `9ca0e9c87`, before these source changes.
 
 Separately, four new TypeScript behavior controls and three cast refusals pass
 on retained compiler258 output. `foo1/2/3(0)` return and store zero; `attest(7)`
@@ -212,3 +212,39 @@ Signed behavior receipt SHA-256 is
 `bf6e5e91208aceabe8e7d0ab16635ffb7c4b2fe126d57fb77b2e9fd2c9aee2c5`;
 independent replay review SHA-256 is
 `358c8289e08b68a7b77fe3a9cd5dd88d7b8250255671e7ac137b44f53922d09f`.
+
+
+## Reviewed backend and CLI checkpoint
+
+Signed local producer `edf0b88d14c65dfd92894e23a994d537641ad47f` now passes
+all 1,987 backend library tests, with zero failures, eight ignored and zero
+filtered. All 48 CLI tests pass; strict library-only Clippy exits successfully.
+The optimized profile uses Rust1.99, opt2/debug0/incremental0/jobs2/Rayon2 and
+the default test-thread stack. The active workspace lock is `1871651d...`;
+the inactive member lock is distinct. Cargo JSON records 251 actual compiled
+package IDs (250 external), within 524 authenticated metadata candidates.
+These candidate and compiled counts are not interchangeable.
+
+Signed partial qualification SHA-256 is
+`7ce48c3a0407f030a40802effb8477b329f2aa20df072cc13c326fffea9863d9`;
+independent review SHA-256 is
+`e6addc575f6b119578de45b339baf23533ae6f06cb32af4eb6a507788707b94d`.
+The reviewer verifies raw counts, both retained binaries and all source/support
+and dependency bytes. A contemporaneous post-map was not retained after the
+failed material phase; the author and reviewer separately rehash the current
+9,853-file source, six support roots and full cache against the pre-map.
+Full test-target Clippy remains a separate historical limitation.
+
+The observed frontend call needed one explicit `PublicLegacy` admission
+argument; adding it fixes the actual compilation diagnostics without opening
+schema21. The subsequent private 285 material test fails because the audited
+PATH lacks `sha256sum`; 588 is unrun. No generated material, SDK compilation,
+native/recorded/Verify or proof success follows from this backend checkpoint.
+
+A separately signed material-only launcher uses the exact retained EDF binary,
+retained source/compiler wrapper and a pinned `sha256sum` added last in PATH.
+It will run only the two ignored material drivers, with fresh disjoint output,
+50 GiB continuous free-space floor and 256 MiB output cap. The launcher and
+producer identities remain distinct. Its source/PREP is independently reviewed;
+execution remains held while free space is below the floor. The owned completed
+Cargo target is removed; source fixture, binaries, logs and receipts remain.

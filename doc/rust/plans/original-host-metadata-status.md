@@ -21,3 +21,55 @@ Reviewed signed `414a86ae2a1fc9205fc099f7a353bbe90a11a184` ports five original c
 The separate combined branch at reviewed `99d08ec897be6b771fb18232dd614bd4791b0ef5` integrates eight reviewed commits, preserving all helper behaviors and emitter changes. Six unchanged modules pass **21/21 on each of released and private source profiles**: expectedVk 5, version 1, the five cases above and [ECDSA 10](original-ecdsa-parity.md). Eight actual compiler outputs per profile are captured before consumption, including three WPP key pairs. All 13 original test/fixture blobs and 416 SDK files are verified. The original counter hash is used, rather than the adapted default fixture. Signed `qualification-99d-host21.json` SHA-256 is `35f14e82ead10ef4ea01926157d63b5e44b28fb31ec508293c866b1bf15188cb`; independent review SHA-256 is `5e1f3bff344df9f6c7b3626f2e15292800fa2ea47a137e2d059dee4cba451299`.
 
 This is a private-profile local host gate. Compiler metadata changes require new physical Events packages and fresh admission qualification; the frozen v4/v5 identities are not silently reused. The accepted v4 source branch remains distinct. Full root prepare/lint/test, all 45 E2E modules, default fuzzer corpus, remaining editor/formal tooling and native Linux remain open. Owned targets, test dependencies and finished worktrees are cleaned; all final evidence and source refs remain.
+
+
+## Intact original External module
+
+Reviewed signed harness `bee4994cc0fd7b733572ffd695ece6e047b3d005` executes
+the unchanged original External module once per profile: released Compact0.36.0
+1/1 and private source99d 1/1. The original JubjubScalar fixture is retained;
+the accepted adapted Field fixture is not substituted. Both original assertions
+check successful compilation and generated JavaScript syntax. This is host-only
+qualification with no Rust, proof, funded or Linux claim.
+
+Original test SHA-256 is
+`c7bf7fce6112ad286c31068b9d733ca145247fd301e93789410c332c39e92e1c`;
+fixture SHA-256 is
+`d8a44938ea1c1384251d387ad9eec3297886ffeb688bc8715a195b3f2230454c`.
+Signed qualification SHA-256 is
+`fc87aa1fa468fff1464a612037675b4dd87c2c0902200a136d602af5f081b4d2`;
+independent evidence review SHA-256 is
+`e67ff28694173464b98815edbf6dd0c7c3907a859ba7ca5a7f6a696301af4cef`.
+The review checks raw Vitest results, both complete run inventories, exact
+source/tool inputs and six same-run compiler captures per profile; it does not
+claim an independent Vitest rerun.
+
+The offline 183-package tool graph uses direct Vitest4.1.11, with an explicit
+std-env4.2 to4.3 override and other-platform optional packages omitted. It does
+not reproduce the entire upstream installation. Full45-module/root lint/test
+qualification remains open. All owned tool/stage/run copies and the clean
+worktree are removed after review; signed source, raw captures and receipts remain.
+
+
+## Next intact CamelCase source preparation
+
+Signed local source `bd709e9b868bf810e3e63a9478909e66211c8ccc` preserves the
+unchanged two-case CamelCase test and both complete fixtures under
+`examples/camelCase/all`, including original Field and JubjubScalar casts.
+Source-only staging and trust controls pass with independent review; no Node,
+compiler or original-case execution is claimed. PREP SHA-256 is
+`ff8e503786287007b63f197a91f72dc7a334c4a3c854e8105b89c1651680cf6f`;
+root independent review SHA-256 is
+`a5ab4dd05f20f8527bb904e483abac4ded8e7fb2eff9fc45e24f5594130cf1e2`.
+An isolated Git index creates the small local source commit without allocating
+a worktree or changing existing checkouts. Future execution still needs its
+own reviewed tool graph, source/compiler closure, output budget and fresh
+50 GiB disk guard.
+
+The six-module host21 gate and single-module External gate establish a union
+of seven modules/22 cases per profile across two separate qualifications.
+They do not establish one combined22 gate or the full45-module/root lint suite.
+The next tool proposal reconstructs 3,000 package files/27 links from 183
+checksum-pinned archives, measuring about40.54 MiB of file payload. Projection
+and Node execution are unrun. The prior439 MiB whole-tool footprint remains
+historical; payload estimates are not measured CI or runtime savings.
