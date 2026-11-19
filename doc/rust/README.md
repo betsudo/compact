@@ -213,3 +213,15 @@ The four-module original cohort is 898 passed/26 failed, and source regression
 is 469/469 including four new error/state-identity cases. Generic descriptor
 encoding and legacy context behavior are retained. The remaining 26 failures
 are recorded; no Rust/proof/Linux claim follows from this JavaScript API repair.
+
+
+The later [opaque atom and owned byte decoder slice](plans/original-runtime-descriptors.md#opaque-atom-refusal-and-owned-byte-decoding)
+at reviewed local `8da87375b` fixes exactly seven further unchanged originals.
+The same four-module cohort is now 905 passed/19 failed; source tests remain
+469/469, and independent original replay passes 7/7 with 917 filtered. Both
+source builds bind all 6,042 files and 16 links; only compact-types.js/map change.
+Signed final delivery SHA-256 is
+`805cbd11f9bd98892b77ab6960e4f1842a38cb2eb6560cbe09083803e30afc28`.
+Owned build copies and worktree are removed. The 19 original failures remain
+explicit, with accepted extra exports, strict scalar/point policies and unchecked
+encoder APIs preserved. No generated Rust/proof/funded/Linux result is claimed.

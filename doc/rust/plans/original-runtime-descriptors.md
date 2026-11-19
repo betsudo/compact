@@ -108,3 +108,39 @@ Source branches, lock, emitted output, red results and receipts remain. This is
 local arm64 JavaScript/API qualification; generated Rust/proofs/funded/Linux
 are separate. The 26 compact-type alias/inventory/canonical-decoder differences
 and byte-cast signature compatibility remain in #785.
+
+## Opaque atom refusal and owned byte decoding
+
+Signed local source `8da87375b06301d6a47ef9512848e396d76acded` ports the
+pinned-main missing-atom refusals for both opaque descriptors and makes fixed
+Bytes decoding return its own buffer. The existing leading-U+FEFF behavior,
+unchecked encoder APIs, extra exports and canonical scalar/point rules remain.
+All four original modules and their assertions are unchanged.
+
+The actual original cohort improves by exactly seven named failures to
+905 passed / 19 failed out of 924, with no skips. Existing source tests remain
+469/469 in 24 modules; these overlap original coverage. Two fresh source builds
+check the exact 6,042-file/16-link closure; only compact-types.js and its map
+change among 84 emitted files. Three wrong-source/build/emitted inputs refuse
+before a test child. The first negative-control harness incorrectly expected
+no staging directories on artifact refusal; the runner had already refused
+before the test child. Those logs and corrected controls are retained.
+
+Signed qualification SHA-256 is
+`7d6691b158ecc06dd79d0f1cd9b8e204e193e8b35b2383e9b354369750dc60b0`.
+Independent execution review SHA-256 is
+`d56b40e5c6e04e9b1e8ad725afe413a07719eb36388554d8b115e5eabe6468ce`.
+A fresh original replay passes 7/7 with 917 filtered. Its first import-selector
+setup failure remains historical. Signed final delivery SHA-256 is
+`805cbd11f9bd98892b77ab6960e4f1842a38cb2eb6560cbe09083803e30afc28`.
+All owned Node/build/staging copies and the clean worktree are removed; source,
+emitted output, actual lock, raw logs and receipts remain. Signed cleanup
+SHA-256 is `d247335b16f310917425a6a4726df3c59282dbeff1ad41008a569519be47c198`.
+The full original cohort
+remains red: three export-inventory assumptions, six original MAX_FIELD samples
+for the stricter Jubjub scalar, six off-curve Curve25519 samples, and four
+encoder/error API differences. These are failed original cases, not exclusions
+or passes. A separate signed classification has SHA-256
+`57e4b1ace85fe32191f8fd4e5df35aacfc8765ae64da40e7abbb46372febf4eb`.
+This is local arm64 JavaScript/API evidence, without Rust, proofs/funded or
+native Linux qualification.

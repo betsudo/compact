@@ -2,6 +2,19 @@
 
 ## Current publication and coverage snapshot, 2026-11-19
 
+Latest local decoder slice `8da87375b` resolves seven unchanged original runtime
+cases: the same 924-case cohort is now 905 passed / 19 failed, and existing
+source tests remain 469/469. Independent execution review and a fresh seven-case
+original replay pass; all owned build copies and the clean worktree are removed. The [runtime descriptor record](original-runtime-descriptors.md)
+binds the fresh builds, raw red results and remaining cases. Backend profile
+work also found inherited retired-oracle provenance drift after accepted
+cross-contract changes; [#786](https://github.com/betsudo/compact/issues/786)
+tracks additive projections that preserve older signed authorities. The latest
+reviewed four-owner repair clears eleven failures but leaves two later
+typed-plan provenance failures. Full backend qualification and schema21/ABI55
+generated-contract admission remain open. No new hosted CI run or source
+publication is part of these local slices.
+
 The cross-contract foundation [#774](https://github.com/betsudo/compact/pull/774)
 merged at `eb3b2adbb`. The original-token [#775](https://github.com/betsudo/compact/pull/775)
 is open at rebased `297ea0b17`; its three hosted workflows completed
