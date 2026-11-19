@@ -498,7 +498,47 @@ mod public_products;
     feature = "unshielded-original-proof",
     compact_unshielded_original_generated
 ))]
+mod shielded_original_immediate_contract;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_immediate_self;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_immediate_user;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_mint_contract;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
 mod shielded_original_mint_self;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_mint_user;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_send_contract;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_send_self;
+#[cfg(all(
+    feature = "unshielded-original-proof",
+    compact_unshielded_original_generated
+))]
+mod shielded_original_send_user;
 mod tuple_return_wrappers;
 mod unit_composition;
 mod unit_mutation_initializers;

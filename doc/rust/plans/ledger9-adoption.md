@@ -4,6 +4,36 @@ The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.
 The earlier entries record each migration step at its tested revision.
 
+## Current local checkpoint (2026-11-18)
+
+Merged [PR #772](https://github.com/betsudo/compact/pull/772) carries the
+first grouped original-token implementation. Signed local follow-up source
+`447ff2a13c270f9d7fbe0fa7cd287ce7640057d9` qualifies all 20 unique
+original-token Rust circuits on macOS arm64: 30 named proof/input pairs, 22
+byte-identical Ledger replay pairs, 15 named refusal artifacts, and 66
+runtime tests. The 91 generated artifacts retain their signed hashes across
+the follow-up; the complete local proof tree contains 303 files. The 19
+original TypeScript assertions are carried by an unchanged generated
+JavaScript hash, not rerun at this Rust proof head. Supporting receipts and
+proof artifacts remain local and unpublished.
+
+The 20-circuit native Linux gate is prepared as a source-only selector;
+fresh Linux x86_64 proof and funded application remain open under
+[#773](https://github.com/betsudo/compact/issues/773). Live-node
+qualification is also open. Draft
+[PR #774](https://github.com/betsudo/compact/pull/774) stages private
+cross-contract call context, rollback and provenance on the published Rust
+line. Generated public cross-contract `pay` remains refused pending its
+remaining ZKIR, Callee, Caller and transaction groups.
+
+The unchanged 91-file generated bundle and named proof/replay/refusal
+inventory are coverage and binding observations, not a circuit size or speed
+improvement. This checkpoint adds no new `k`, row count, prover latency or
+hosted CI savings claim. The [CI test graph](ci-test-graph.md) and
+[runner resource budget](ci-runner-resource-budget.md) record earlier hosted
+CI and local transfer measurements separately from further unmeasured
+optimization work.
+
 The local `rust-ast-backend-ledger9` branch starts at `09c75e289`, the published Rust AST line after PR #723. The Ledger 8 line and its qualification receipts remain available for historical compatibility and the pending tuple-spread application review.
 
 This first slice pins the published [Ledger 9.1.0.1 package set](https://github.com/midnightntwrk/midnight-ledger/releases/tag/ledger-9.1.0.1) in the runtime and aligns the core consumers' direct Ledger package pins. The runtime uses the Ledger 9 transaction signature enum, accepts Ledger 9 observation metadata, and uses the ledger's global TTL in the existing Zswap test setup. Observed call preparation preserves the complete installed operation after checking the verifier. The direct fixture path still constructs a verifier-only operation. The proof consumer must check its resolver artifacts against the observed operation.
@@ -129,7 +159,8 @@ The workspace and Nix-packaged Rust CLI select Rust 1.99.0. Nix checks the offic
 The pre-metadata Ledger 9 capture baseline used synchronous Compact runtime `0.17.0` and the published `@midnightntwrk/onchain-runtime-v4@4.0.1`. The Nix package consumes the registry artifact from the npm lockfile. Compiler output checks the runtime minor at import. Both cross-version controls refused when swapping generated code and runtime between `0.16.102` and `0.17.0`. Grouped draft PR #738 carries the local runtime source at `0.18.0`; the historical captures and exact version guards remain bound to `0.17.0`, and a separate regeneration path for the new pair remains open. The official asynchronous Compact Runtime 0.21.0 remains the independent oracle.
 
 The local `capture-ledger9-paired-counter-v018.mjs` runner starts that separate
-path. Run it with the current `compactc`, built 0.18.0 runtime directory and a
+path. Run it with the historical 0.31.216 `compactc` from the merged #772
+baseline, a built 0.18.0 runtime directory and a
 fresh output directory. It compiles the checked-in Counter itself, checks
 compiler 0.31.216, language 0.23.105 and runtime 0.18.0 in both generated
 metadata files, verifies the manifest hashes, and checks Onchain Runtime

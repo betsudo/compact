@@ -48,6 +48,8 @@ PINS = {
     "package": "ed541cd8d98153689d05e0c0f57d69bbc372c33ce09124ec1c801524eb7ccc46",
     "lock": "7d39a86b9763cbc91847c236b7aadd5704d76429ce3b0f325dc5eda772e8121a",
 }
+COMPILER_SOURCE_PATHS = ("compiler", "runtime-rs", "tools/compact-rust-backend/src",
+                         "tools/compact-rust-cli", "Cargo.lock", "flake.nix", "flake.lock")
 
 HEADER = """import { expect, test } from 'vitest';
 import * as runtime from '@midnight-ntwrk/compact-runtime';
@@ -89,6 +91,19 @@ def command(argv: list[str], cwd: Path, log: Path) -> None:
         raise RuntimeError(f"{argv[0]} failed ({result.returncode}); see {log}")
 
 
+def require_compiler_source_tree(head: str) -> None:
+    if not re.fullmatch(r"[0-9a-f]{40}", head):
+        raise ValueError("--compiler-source-head must be a full Git commit ID")
+    if subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], cwd=ROOT,
+                      capture_output=True, check=False).returncode:
+        raise ValueError("compiler source head is absent from this checkout")
+    # The adapter itself may be a later commit. Compiler, runtime, lock and
+    # Nix recipe bytes must still be those named by the supplied source head.
+    if subprocess.run(["git", "diff", "--quiet", head, "--", *COMPILER_SOURCE_PATHS],
+                      cwd=ROOT, check=False).returncode:
+        raise ValueError("compiler source files differ from --compiler-source-head")
+
+
 def source_compiler(compiler: Path, head: str, digest: str, scheme_digest: str | None) -> Path:
     compiler = compiler.resolve(strict=True)
     if not compiler.is_file() or not os.access(compiler, os.X_OK):
@@ -101,16 +116,7 @@ def source_compiler(compiler: Path, head: str, digest: str, scheme_digest: str |
         scheme = compiler.with_name("compactc-scheme")
         if not re.fullmatch(r"[0-9a-f]{64}", scheme_digest) or not scheme.is_file() or sha256(scheme) != scheme_digest:
             raise ValueError("source-built Scheme compiler SHA-256 does not match --compiler-scheme-sha256")
-    if subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], cwd=ROOT,
-                      capture_output=True, check=False).returncode:
-        raise ValueError("compiler source head is absent from this checkout")
-    # The adapter itself may be a later commit. Compiler, runtime, lock and
-    # Nix recipe bytes must still be those named by the supplied source head.
-    tracked = ["compiler", "runtime-rs", "tools/compact-rust-backend/src",
-               "tools/compact-rust-cli", "Cargo.lock", "flake.nix", "flake.lock"]
-    if subprocess.run(["git", "diff", "--quiet", head, "--", *tracked],
-                      cwd=ROOT, check=False).returncode:
-        raise ValueError("compiler source files differ from --compiler-source-head")
+    require_compiler_source_tree(head)
     return compiler
 
 
