@@ -19,12 +19,17 @@ publication and CI resource summary.
 The [cross-contract foundation](https://github.com/betsudo/compact/pull/774)
 merged into `codex/rust-backend-ast` at `eb3b2adbb`. The [20-circuit
 original-token follow-up](https://github.com/betsudo/compact/pull/775) was
-rebased onto it and is open at `297ea0b17`. All three hosted workflows passed
-at that head, including existing Rust proof qualification. The earlier green
+merged into the same branch at `b6e7d156e` on 19 November 2026, from
+rebased head `297ea0b17`. All three hosted workflows passed at that source
+head, including existing Rust proof qualification. The earlier green
 `867b25d88` run retains its separate source identity. Signed local macOS arm64 proof
 evidence covers all 20 unique original-token Rust circuits at its recorded
 source revision. Native Linux proof and funded application remain open in
 [#773](https://github.com/betsudo/compact/issues/773).
+The separate [released SDK1 artifact consumer](plans/original-token-sdk1-consumer.md)
+now verifies all 31 retained standalone original-token proofs with 93 refusal
+controls and decodes 23 tagged transactions, with independent process replay.
+This adds no fresh proofs or SDK1 ledger application/replay.
 Ordinary generated public `pay` is not qualified by the merged foundation.
 An independently reviewed local follow-up now qualifies public generated
 `pay` with fresh A/B proofs and funded offline replay at its signed head;

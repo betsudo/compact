@@ -27,6 +27,16 @@ retained as failed and is excluded from these six qualified proofs.
 See the [Caller qualification record](plans/kernel-caller-rust-api.md#latest-private-three-contract-proof-qualification)
 for full receipt hashes, setup boundaries and retained artifacts.
 
+## Original-token artifacts on released SDK1
+
+The independently reviewed [retained-artifact consumer](plans/original-token-sdk1-consumer.md)
+verifies 31 distinct proofs across 20 circuits with 93 refusal controls and
+decodes 23 tagged transactions using the released SDK 9.1.0.1 graph. Fresh
+independent retained-process replay passes. No keys or proofs are generated;
+transaction-level verification, SDK1 ledger application/replay and Linux remain
+separate. Exact source, package and receipt identities are recorded in the
+linked qualification.
+
 ## Baseline and publication
 
 The language and test baseline is
@@ -40,7 +50,7 @@ contract-semantic baseline.
 | Slice | Public state | Qualification boundary |
 | --- | --- | --- |
 | [Cross-contract foundation #774](https://github.com/betsudo/compact/pull/774) | Merged into `codex/rust-backend-ast` at `eb3b2adbb` | Checked call context and refusal foundation; ordinary generated public `pay` execution remains separate. |
-| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Open, rebased on #774 at `297ea0b17`; all three hosted workflows passed, including existing Rust proof qualification | The green `867b25d88` run retains its earlier source identity. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source; the separate full native Linux gate is still required. |
+| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Merged into `codex/rust-backend-ast` at `b6e7d156e` on 19 November 2026, from rebased `297ea0b17`; all three source-head hosted workflows passed, including existing Rust proof qualification | The green `867b25d88` run retains its earlier source identity. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source; the separate full native Linux gate is still required. |
 | Public generated A `pay` / B `transfer` | Signed local source `49ff23d9d`; unpublished | A source-bound offline gate produced fresh A/B V3 proofs, separately verified them, applied a funded default-strict two-contract transaction with positive Dust, and refused replay with unchanged ledger bytes on Darwin arm64. Native Linux, live-node and original decoy-transcript parity remain open. |
 | [Native Linux gate #773](https://github.com/betsudo/compact/issues/773) | Open | Local Darwin arm64 proof and funded results do not qualify the required x86_64 Linux gate. |
 

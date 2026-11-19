@@ -11,6 +11,14 @@ The source failures retain 16 descriptor/policy differences and all 14 closed
 public cross-contract resolution cases. Released failures retain four BOM and
 two wide-coin assertions; original assertions and policies are unchanged.
 
+The [released SDK1 original-token artifact consumer](original-token-sdk1-consumer.md)
+now independently verifies all 31 retained standalone proofs across 20 circuits,
+passes 93 wrong-key, changed-input and corrupt-proof refusal controls, and
+decodes all 23 tagged transactions. A fresh
+retained-consumer replay passes. This adds no keys, proofs, transaction-level
+verification or ledger application/replay; exact before-ledger reconstruction
+is next. Native Linux and general generated-API compatibility remain open.
+
 The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
 separately passes 474 source cases and its emitted/declaration controls. The
 reviewed local backend checkpoint at `09dac33d7` passes 1,987 library tests
@@ -80,7 +88,8 @@ Source publication and hosted CI remain separate. The broad milestone is incompl
 
 The cross-contract foundation [#774](https://github.com/betsudo/compact/pull/774)
 merged at `eb3b2adbb`. The original-token [#775](https://github.com/betsudo/compact/pull/775)
-is open at rebased `297ea0b17`; its three hosted workflows completed
+merged into the same branch at `b6e7d156e` on 19 November 2026,
+from rebased head `297ea0b17`. Its three hosted workflows completed
 successfully, including Rust proof qualification.
 Its earlier green `867b25d88` run remains historical. The local 20-circuit
 proof/funded results are bound to their signed source heads, while native
