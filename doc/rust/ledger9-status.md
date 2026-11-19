@@ -76,8 +76,16 @@ Separately, [generated Rust caller support](plans/kernel-caller-rust-api.md)
 at `23af5a8e7` passes independent review for original Inner's native/recorded
 VM query, constructor/root and sealed child replay. Its signed delivery index
 SHA-256 is `77c4209a33e29d76feafd821e846abb6597eb7d3f35886eede739a9f8fa1d9a8`.
-It changes the runtime closure, so a newly signed package is required before
-current-runtime Events admission. No Caller proof/funded/Linux result is claimed.
+The separate v5 Events package below binds that runtime for current-runtime
+admission. A later private Caller continuation at `34494e61e` passes generated
+`Some(Contract(Outer))` execution and method/receiver/frame refusals, using
+another coordinator extension. Its reviewed physical candidate `ac767d25`
+binds six genuine key pairs and the full runtime/macros closure (841 files,
+43 directories; ten controls). Signed package receipt SHA-256:
+`391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
+The checked installed-key/method/ABI gate and generated token wiring remain
+open, along with packaged Cargo, public Caller admission, fresh Caller
+proofs, funded replay, nested/multiple paths and Linux.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and

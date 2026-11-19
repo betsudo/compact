@@ -52,8 +52,10 @@ original runtime refusal passes 1/1 on each path with stage-correct legacy
 compiler coverage. A separate reviewed [Rust caller API slice](plans/kernel-caller-rust-api.md)
 qualifies original Inner's VM/native/recorded query and constructor; its changed
 runtime requires a signed package; the v5 admission continuation is linked
-below. Caller proofs
-and funded application remain open. The
+below. A private generated Caller continuation now executes `viaInner` with the
+observed Outer identity; its reviewed six-key physical candidate still needs
+a checked installed-key/method/ABI gate and generated token wiring. Caller
+proofs and funded application remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event

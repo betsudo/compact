@@ -139,6 +139,18 @@ profile controls and focused VM/backend tests. Signed receipt SHA-256:
 This is local API/VM qualification; its fresh proof/funded/Linux gates remain
 open and its runtime closure is separate from v4/v5.
 
+
+The separate private Caller continuation at `34494e61e` now passes generated
+`Some(Contract(Outer))` execution and receiver/method/frame refusals. Its
+reviewed physical candidate `ac767d25` binds six genuine key pairs and the
+full runtime/macros closure, with 841 files/43 directories and ten controls.
+Signed package receipt SHA-256:
+`391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
+The [Caller API record](kernel-caller-rust-api.md) distinguishes this material
+from the pending checked installed-key/method/ABI gate, generated token
+wiring, packaged Cargo, public admission and proof/funded/Linux qualification.
+This coordinator runtime differs from both Events v4 and v5.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing
