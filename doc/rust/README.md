@@ -165,3 +165,14 @@ Current 0.3.0 engineering acceptance uses implementation `f9a49666`, private IR2
 Milestone 2 acceptance belongs to implementation revision [`03c03a39`](https://github.com/MediaNoxLabs/compact/commit/03c03a39a2d39c43c91143b9526ca1c2ffae706c): compiler 0.31.133, private IR schema 20 and runtime ABI 49. See the [public closeout](https://github.com/MediaNoxLabs/compact/issues/103#issuecomment-6017383781) for source/behavior/proof/live evidence scopes and distribution limits. Publishing these documents does not rerun implementation validation.
 
 The Rust ADR series records branch implementation decisions. [CoIPs](../../coips/README.md) remain the separate upstream proposal and adoption process, with independent numbering and review. No new milestone is opened by this publication.
+
+
+The reviewed [six-case Rust Curve serialization bridge](plans/original-runtime-curves.md#six-original-serialization-callbacks-through-rust)
+at `df89e5c82` passes six unchanged original callbacks with 37 independently
+replayed calls including separate diagnostics; 38 Curve callbacks remain
+filtered on this Rust path. This is a pure runtime API result, not generated
+contract, proof, full SDK ABI or Linux qualification. A separately reviewed
+[zero-width Rust encoding counterexample](plans/zero-width-ledger9-encoding.md),
+tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
+released v3 attestation hashing. Its next runtime/derive fix must preserve
+legacy Ledger8/v2 behavior; generated profile/API qualification follows.

@@ -23,3 +23,33 @@ Signed source `qualification-38a-source-runtime85-v2.json` SHA-256 is `937bb8443
 Reviewed signed `2ccfcb86c9cf4309adf8913348d3bc8514ae945d` adds the unchanged original secp256k1 30-case module. All 30 pass on each graph, with changed published/emitted-code refusals. Independent review reran both 30-case suites and the source P-256/Curve25519 85-case selector regression. Signed `qualification-2cc-original-k1-30.json` SHA-256 is `f23e722398e8ba8474958fdc83a96786a38f351a05157aad8a64edbeb26dbf36`; independent review SHA-256 is `8be48bfe0b677d3c064152723f039986f669def8309066997bd357dca3e502bd`. Earlier 85-case receipts keep their own source identities.
 
 This is local Darwin arm64 pure JavaScript runtime qualification. It does not qualify generated Rust, ZKIR, proofs, funded transactions, replay, a public compiler, or native Linux. Malformed foreign-field host atoms remain a separate compatibility limitation: both TypeScript profiles accept trailing-zero atoms that Rust currently refuses; these originals do not test that case. Canonical ledger/proof decoding remains unchanged pending a paired boundary decision. [Crypto compatibility #729](https://github.com/betsudo/compact/issues/729) and [coverage #727](https://github.com/betsudo/compact/issues/727) retain the broader work.
+
+## Six original serialization callbacks through Rust
+
+A separate reviewed local slice at signed `df89e5c8282cbd5a3cdd888e3f12c38562451a2b`
+runs six unchanged original Curve25519 serialization callbacks through an actual
+Rust runtime API bridge. The other 38 original callbacks are filtered and remain
+unqualified on this Rust path. Independent review replayed 35 raw Rust calls and
+two additional trailing-zero diagnostic calls against the retained native binary.
+The JavaScript bridge marshals values and errors; it supplies no cryptographic
+fallback or expected constants.
+
+Signed qualification SHA-256 is
+`33d25fefd22d554bba533bbebbdd7b0a6e423164a34b2d735695b4672245f676`;
+independent review SHA-256 is
+`eb4bbf6d3616e6094159b3200b0948900508f3e272875b1654d66d1224fe36cb`.
+The stage binds 780 files/21 directories, 770 unchanged non-manifest runtime/macro
+files from accepted `3eafaf3eb`, a manifest-only released SDK1 pure dependency
+overlay, a 393-package lock and the exact 416-file published Node graph. Optional
+ledger is not compiled. Earlier source-preparation races were corrected with
+immutable Git inputs and staged Node imports before the final build.
+
+This qualifies six direct runtime API callbacks on Darwin arm64. It does not
+qualify generated Rust contracts, all 115 original curve tests through Rust,
+full Ledger SDK ABI, proofs, funded replay or Linux. The trailing-zero diagnostic
+still records TypeScript acceptance and Rust canonical-decoder refusal. Owned
+Cargo, Node, build scratch and the clean worktree were removed; source, binary,
+lock and evidence remain retained.
+
+The newly confirmed [Rust zero-width encoding gap](zero-width-ledger9-encoding.md)
+is a separate profile-specific serialization issue.

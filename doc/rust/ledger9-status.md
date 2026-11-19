@@ -506,3 +506,14 @@ required proof and native job.
 
 This page is a dated status digest. A green check or historical receipt applies
 only to its stated source revision and test scope.
+
+
+The reviewed [six-case Rust Curve serialization bridge](plans/original-runtime-curves.md#six-original-serialization-callbacks-through-rust)
+at `df89e5c82` passes six unchanged original callbacks with 37 independently
+replayed calls including separate diagnostics; 38 Curve callbacks remain
+filtered on this Rust path. This is a pure runtime API result, not generated
+contract, proof, full SDK ABI or Linux qualification. A separately reviewed
+[zero-width Rust encoding counterexample](plans/zero-width-ledger9-encoding.md),
+tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
+released v3 attestation hashing. Its next runtime/derive fix must preserve
+legacy Ledger8/v2 behavior; generated profile/API qualification follows.

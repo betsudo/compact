@@ -219,6 +219,17 @@ route adds no authenticated external assembly, proof, transaction, funded replay
 SDK 9.1.0.1, public admission or Linux claim. Its 958 MiB target and clean worktree are removed. Closed
 source-specific unfunded prepartition preparation is the next design.
 
+
+The reviewed [six-case Rust Curve serialization bridge](original-runtime-curves.md#six-original-serialization-callbacks-through-rust)
+at `df89e5c82` passes six unchanged original callbacks with 37 independently
+replayed calls including separate diagnostics; 38 Curve callbacks remain
+filtered on this Rust path. This is a pure runtime API result, not generated
+contract, proof, full SDK ABI or Linux qualification. A separately reviewed
+[zero-width Rust encoding counterexample](zero-width-ledger9-encoding.md),
+tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
+released v3 attestation hashing. Its next runtime/derive fix must preserve
+legacy Ledger8/v2 behavior; generated profile/API qualification follows.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing
