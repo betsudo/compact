@@ -51,7 +51,32 @@ and `3e0fd4636ccdcd9c1be049c44040cfee8fbf36af79fa700668b5b66c8a563adc`.
 These original `--skip-zk` suites do not qualify generated Rust caller proofs.
 [#777](https://github.com/betsudo/compact/issues/777) and
 [#778](https://github.com/betsudo/compact/issues/778) track integration and
-remaining caller work. Key Agreement and recursion coverage continue.
+remaining caller work. Key Agreement at `1d335e4e2` passes 7/7 on each
+TypeScript path after independent review, with 12 frontend controls and all
+58 artifact hashes checked. Signed delivery-index SHA-256:
+`30d364d96236d1c1ffc4b35629c945871c9c556f97a21070a01425503f02c71d`.
+[#779](https://github.com/betsudo/compact/issues/779) retains its mock-verifier,
+skip-ZK and remaining Rust/proof scope. Recursion [#780](https://github.com/betsudo/compact/issues/780)
+continues with six active cases and five original skips.
+
+The original Basic, Storage and Witness slices are also consolidated at
+reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
+2+2 released/source TypeScript cases respectively (40 total). Source guards
+pass 12/10/12, Key Agreement remains 7+7 and the exact Events artifacts and
+eight refusals remain unchanged. Signed delivery-index SHA-256:
+`ee5b2028531bc79c161fbfd0fd4a840e922d557e587749bc6fbe0ae63393d8f6`.
+This mock-verifier/skip-ZK consolidation adds no Rust proof or funded claim;
+Storage's earlier seven Rust tests retain their original source scope.
+
+The [native Events handoff](plans/original-events-native-linux-handoff.md)
+is independently source-reviewed at local `6f838e075`; signed source-only
+receipt SHA-256 is
+`131ac626321f98439a3bac747da398188a9efefa6b0f23dad0ec7088ae7de0d0`.
+Seven provenance/physical-tree refusals, four retained parser controls and
+zero-new-header checks pass on Darwin arm64. Full mode prepares packaged
+compiler admission and executes the actual admitted Rust crate for fresh
+proofs, independent verification, sequential funded strict application and
+released SDK replay. Full native Linux mode has not run.
 
 All results above are local Darwin arm64, bound to their signed source heads.
 The broad milestone remains incomplete: generic generated Rust cross-contract

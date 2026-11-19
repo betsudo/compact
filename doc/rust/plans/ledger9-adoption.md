@@ -69,8 +69,32 @@ delivery index SHA-256 is
 These unchanged original suites use `--skip-zk`; they do not qualify generated
 Rust caller queries, caller proofs or funded caller application.
 [#778](https://github.com/betsudo/compact/issues/778) retains those follow-ups.
-The next original suite is Key Agreement; recursion suites and their five
-upstream skips remain separately accounted for.
+The original Key Agreement suite at `1d335e4e2` now passes independent review:
+7/7 released and 7/7 source-generated TypeScript cases, 12 frontend controls,
+and all 58 retained artifact hashes. Its signed delivery-index SHA-256 is
+`30d364d96236d1c1ffc4b35629c945871c9c556f97a21070a01425503f02c71d`.
+The mock-verifier/skip-ZK scope remains explicit in
+[#779](https://github.com/betsudo/compact/issues/779). Original recursion
+coverage [#780](https://github.com/betsudo/compact/issues/780) continues with
+six active cases and all five upstream skips retained.
+
+The original Basic, Storage and Witness slices are also consolidated at
+reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
+2+2 released/source TypeScript cases respectively (40 total). Source guards
+pass 12/10/12, Key Agreement remains 7+7 and the exact Events artifacts and
+eight refusals remain unchanged. Signed delivery-index SHA-256:
+`ee5b2028531bc79c161fbfd0fd4a840e922d557e587749bc6fbe0ae63393d8f6`.
+This mock-verifier/skip-ZK consolidation adds no Rust proof or funded claim;
+Storage's earlier seven Rust tests retain their original source scope.
+
+The [native Events handoff](original-events-native-linux-handoff.md) is
+independently reviewed at local source `6f838e075`; signed source-only receipt
+SHA-256 is `131ac626321f98439a3bac747da398188a9efefa6b0f23dad0ec7088ae7de0d0`.
+Seven provenance/physical-tree refusals, four retained parser controls and
+zero-new-header checks pass. Full Linux mode is prepared to execute the
+actual admitted Rust crate with fresh proofs and sequential funded strict
+application/replay across both SDK matrices. It has not run; packaged
+compiler and native Linux qualification remain open.
 
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.

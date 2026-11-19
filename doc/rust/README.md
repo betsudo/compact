@@ -41,7 +41,12 @@ The unchanged original Basic, Storage, Witness, Callee Witness and Caller
 TypeScript suites have separate local qualifications. Callee Witness passes
 3/3 and Caller passes 6/6 on both released and source-generated paths. Their
 `--skip-zk` results do not establish generated Rust caller proofs or funded
-caller transactions. Key Agreement and recursion coverage continue. The
+caller transactions. Key Agreement also passes its unchanged 7/7 cases on each
+TypeScript path after independent review. A source-reviewed native Events
+handoff is prepared to execute admitted output; full Linux mode is unrun.
+A reviewed consolidation additionally passes all 40 paired original Basic,
+Storage and Witness TypeScript cases with unchanged neighboring Events bytes.
+Recursion coverage continues with all upstream skips preserved. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event
