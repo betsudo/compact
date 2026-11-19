@@ -222,8 +222,8 @@ filtered. All 48 CLI tests pass; strict library-only Clippy exits successfully.
 The optimized profile uses Rust1.99, opt2/debug0/incremental0/jobs2/Rayon2 and
 the default test-thread stack. The active workspace lock is `1871651d...`;
 the inactive member lock is distinct. Cargo JSON records 251 actual compiled
-package IDs (250 external), within 524 authenticated metadata candidates.
-These candidate and compiled counts are not interchangeable.
+package IDs (250 external); 524 external metadata candidates are authenticated
+separately. These candidate and compiled counts are not interchangeable.
 
 Signed partial qualification SHA-256 is
 `7ce48c3a0407f030a40802effb8477b329f2aa20df072cc13c326fffea9863d9`;
@@ -271,6 +271,106 @@ All nonmanifest runtime bytes and fresh generated contracts remain unchanged;
 source-SDK2 compatibility metadata is not relabelled as SDK1. The template
 targets native, recorded, observed and Verify paths, wrong-read/input refusals,
 the v3 `7dd1657a...` hash and the legacy `aae89fc0...` hash in the same binary.
-No Cargo typecheck or generated Rust execution has yet qualified that template.
-Public schema21 admission, fresh profile55 proofs, funded replay and native
-Linux remain separate gates.
+That source-only checkpoint was followed by the failed fc74 typecheck and the
+corrected d065 qualification below. Public schema21 admission, fresh profile55
+proofs, funded replay and native Linux remain separate gates.
+
+
+## Four-circuit size inventory before proving
+
+The exact four raw ZKIR inputs from the signed fresh-material closure were
+copied into disjoint local analysis directories and measured with the pinned
+released ZKIR 3.2.0 `mock-compile` tool on Darwin arm64:
+
+| Original fixture | Circuit | k | Rows |
+| --- | --- | ---: | ---: |
+| #285 | `foo1` | 7 | 75 |
+| #285 | `foo2` | 7 | 75 |
+| #285 | `foo3` | 7 | 75 |
+| #588 | `attest` | 13 | 1,972 |
+
+Signed size receipt SHA-256 is
+`87eceee790401ca41e8bf35d06a40ba487dbb36242187de933c7fe8bfaaba9ec`.
+The retained script, exact raw copies, resulting binary IR and raw logs bind
+these measurements. No keys, proofs, Cargo build or original runtime callbacks
+ran in this size analysis. No size reduction, proof latency or CI saving is
+inferred; the numbers bound the next proof work after generated Rust execution.
+
+
+## First actual generated SDK1 typecheck
+
+The sealed SDK1 stage at `fc74c7a91807eee9bbc471b88d488d20df6d92e2`
+reaches real Rust 1.99 compilation and fails on generated #588. The emitter
+places `#[compact_encoding(ledger9_v3)]` before the derive that declares it,
+which Rust rejects as `legacy_derive_helpers` under `future_incompatible`.
+The run is **failed and unqualified**: 367 partial Cargo artifact records and
+322 package IDs establish build activity, not a completed matrix or test pass.
+No selected test binary or three-test native/recorded/Verify result exists.
+The original material and the complete failed command/outer/raw logs remain.
+
+Signed failure receipt SHA-256 is
+`a0412495dbb1db4c9827e67777b2875b5c97aeb9d34e254290a5c1a2ca5b961b`;
+independent failure audit SHA-256 is
+`8f57f4112210beea30c6db5e270c286cebbd8997ef29f5ace8f980da8dac2e29`.
+One structured diagnostic is retained; Cargo's summary of two prior errors is
+not expanded into an invented second diagnosis.
+
+Signed local fix `25a0c14649576d678e326ccf3ea6a90946b23e29` appends the
+helper attribute after the derive. Its conditional Legacy20 path is unchanged.
+A focused emitted-enum AST check protects that ordering; independent static
+review SHA-256 is
+`91f47dedfd5ee0ec74dc9784a4f56a36c0dceb60b42bfa371fedd2186e2675fc`.
+The next reviewed producer recipe at `09dac33d7` reanchors the established
+backend/CLI/library-lint/material pipeline to this source. That producer and
+the subsequent SDK1 retry now pass in the separate qualification below. No
+generated output is hand-edited and no Rust lint or contract assertion is
+weakened.
+
+
+## Corrected producer and generated SDK1 execution
+
+Signed producer `09dac33d7d6cb5cb14f35d547615f584bf2c623e` passes all
+1,987 backend library tests (zero failed, eight ignored, zero filtered), 48 CLI
+tests and strict library-only Clippy. Both ignored original-fixture material
+drivers pass one test each with 1,994 filtered. Fresh maps contain #285
+133 files/21 directories and #588 131 files/21 directories. The #285 Rust
+bytes remain identical; #588 changes only the helper attribute order. Full
+9,859-source/six-support and dependency pre/post checks pass; Cargo records
+251 actual compiled IDs; 524 external candidates are authenticated separately. Signed
+producer receipt SHA-256 is
+`1422204bdeaa3a1ca6231761d30fd8e039767d3d56bd1eaf0e95609500bc8a59`;
+independent execution review SHA-256 is
+`0f9a4d12cd9bd95c73f03381cde3ee103e22c3eefc261de201f8e2dc740a1625`.
+
+The separate private registry-SDK1 consumer at
+`d0655a12f36ddb02a797cc02eb89130b133cfa65` compiles the unchanged freshly
+generated contracts and passes all three supplemental Rust API tests. These
+cover #285's three circuits and #588's attestation: native/recorded result,
+state, effects and gas parity; Verify replay and wrong reads; input-1 cast
+refusals; observed handles; stored attestation/hash; and the legacy carrier and
+`aae89fc0...` hash in the same binary as the v3 `7dd1657a...` hash. Independent
+execution of the retained binary repeats the same three named passes, with
+zero failures, ignored or filtered tests and unchanged input/binary bytes.
+
+Cargo JSON has 370 artifact records and 325 actual compiled package IDs,
+including 26 Midnight registry records and all ten required released core
+libraries. The new lock has 404 registry packages plus five local packages;
+405 authenticated cache candidates comprise the older Caller 400 plus five
+reviewed extensions. These counts are distinct. Each source runtime closure
+has 120 files; the SDK1 stage preserves 119 files byte for byte and substitutes only
+the reviewed runtime Cargo manifest. Source-SDK2 compatibility metadata is not
+renamed to SDK1. The historical fc74 failure remains failed.
+
+Signed generated execution receipt SHA-256 is
+`4b85bdec27376d1ebc2435c57c506e92ad5537d867174c54dcbd7c1c7b3b4e57`;
+independent review SHA-256 is
+`9ad823f96afd0c0e59bad49f706c763bd7b5a72fcba4969059c96de0f144a693`;
+fresh replay SHA-256 is
+`2f3d8bd8a3608bf012487da1b9d8d0d743acbaafb6f00734ae13f6eb0fd6e03f`.
+The completed owned producer and SDK1 build targets are removed after review;
+the exact source fixtures, binaries, stages, lock, material and raw logs remain.
+This qualifies private local arm64 generated APIs against SDK 9.1.0.1. It
+creates no proof or funded application and qualifies no public schema21
+admission, global SDK1 ABI, live deployment or native Linux result. The original
+upstream two-case suite remains compile-only; the new Rust tests are additional
+controls. A separate four-circuit proof/funded source slice is next.

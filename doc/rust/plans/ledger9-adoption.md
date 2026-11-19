@@ -13,7 +13,7 @@ two wide-coin assertions; original assertions and policies are unchanged.
 
 The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
 separately passes 474 source cases and its emitted/declaration controls. The
-reviewed local backend checkpoint at `edf0b88d1` passes 1,987 library tests
+reviewed local backend checkpoint at `09dac33d7` passes 1,987 library tests
 (zero failed, eight ignored, zero filtered), 48 CLI tests and library-only
 strict Clippy. A separately reviewed material-only retry now passes both
 private ignored drivers using the retained EDF binary and a pinned hash tool:
@@ -22,10 +22,15 @@ The initial missing-tool failure remains historical. These are material
 generation checks; generated Rust execution and proofs remain separate. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
 now integrates the accepted minimum-byte semantics and reproduces original
 285/588 artifacts. Schema21 public admission remains closed. The typed legacy-v3 refusal and
-private ABI55 renderer compile in the later EDF backend checkpoint above;
-fresh private material is now qualified. The reviewed SDK1 execution template
-at `69dcb88dc` remains uncompiled; generated Rust native/recorded/Verify,
-fresh proofs and funded replay remain unqualified.
+private ABI55 renderer compile in the source-bound backend checkpoints above;
+fresh private material is now qualified. After fixing emitted enum helper
+ordering, producer `09dac33d7` repeats the 1,987 backend/48 CLI/library lint and
+two fresh-material passes. The private generated SDK1 consumer `d0655a12f`
+passes all three supplemental API tests and independent retained-binary replay:
+four original circuits exercise native, recorded, observed and Verify paths,
+wrong-read/cast refusals and matching v3/legacy hashes. This adds no original
+runtime cases or proofs. Public schema21 admission, new profile55 proofs,
+funded replay and native Linux remain open.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and

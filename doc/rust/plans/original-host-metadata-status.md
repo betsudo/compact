@@ -71,5 +71,27 @@ of seven modules/22 cases per profile across two separate qualifications.
 They do not establish one combined22 gate or the full45-module/root lint suite.
 The next tool proposal reconstructs 3,000 package files/27 links from 183
 checksum-pinned archives, measuring about40.54 MiB of file payload. Projection
-and Node execution are unrun. The prior439 MiB whole-tool footprint remains
+and Node execution were unrun at that source-only proposal. The prior439 MiB
+whole-tool footprint remains
 historical; payload estimates are not measured CI or runtime savings.
+
+
+## CamelCase projection attempt before original host execution
+
+The signed local capture/executor source at `bd6235243` and `24ff2bbfa`
+passes independent source and plan review, including raw compiler streams,
+original relative arguments, generated-tree POSIX modes and bounded process
+cleanup. A real 7ec projector run creates the expected 3,000 regular files,
+572 directories and 27 links from the retained 183 compressed inputs; its
+identity matches and is signed. That projection phase takes 103.5 seconds.
+
+The owner then stops the run before Node starts: the runtime-copy helper
+repeats full worktree/resource scans for every file, producing avoidable
+quadratic work. The partial run remains **aborted and unqualified**, with
+zero original CamelCase cases on either profile. Signed abort receipt SHA-256
+is `932913f4a858912415d6b36e1f936f7caa0514d54c57abd42491169d51f258a2`.
+Raw phases, source inventory, partial-tree map and process cleanup evidence
+remain; no other job is interrupted. A new source revision will batch Git
+object reads and retain continuous resource monitoring with bounded copy
+checks. Its real retry still requires a new reviewed launch plan. No complete
+runtime or CI speedup is measured from this partial attempt.

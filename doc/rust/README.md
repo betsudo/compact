@@ -253,12 +253,17 @@ The [complete twelve-module comparison](plans/original-runtime-resolution.md#all
 now collects all 1,091 original cases on both profiles: current source runtime
 has 1,061 passed/30 failed; released runtime has 1,085 passed/six failed. Both
 remain red, with original assertions retained. Reviewed local backend
-`edf0b88d1` passes 1,987 library tests, 48 CLI tests and library-only strict lint.
+`09dac33d7` passes 1,987 library tests, 48 CLI tests and library-only strict lint.
 The separately reviewed material-only retry now passes both original-fixture
 private drivers and retains fresh TS/info/IR21/ZKIR/private Rust ABI55 outputs.
-The generated SDK1 execution template has passed source review but remains
-uncompiled. Schema21 public admission, generated-contract execution, new
-proofs for this profile and full parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+The corrected producer `09dac33d7` passes 1,987 backend tests, 48 CLI tests,
+library-only strict lint and both fresh-material drivers. Its private generated
+SDK1 consumer at `d0655a12f` now passes all three API tests, including native,
+recorded, observed and Verify paths, wrong-read/cast refusals and both the v3
+and legacy hashes. An independent retained-binary replay repeats the result.
+These supplemental tests cover four original circuits; they add no original
+runtime test cases or proofs. Public schema21 admission, fresh profile55
+proofs/funded replay, full parity and native Linux remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
 completed build copies and worktrees are removed; source stays local.
