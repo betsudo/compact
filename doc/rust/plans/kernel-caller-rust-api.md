@@ -121,3 +121,20 @@ Six genuine contract proofs, separate verification, strict funded application
 and replay are planned later phases and remain unrun. Some(User), released
 SDK1, public admission, live chain and Linux remain outside this private
 source-only qualification. Old product identities and all proof archives remain.
+
+
+A minimal source-only follow-up at
+`3bf9e72c20ee973fe5497488e8ce15917d936254` corrects the initial package's actual
+pre-compilation `--locked` refusal. It removes exactly two root-only dev
+edges from the old870 package when used transitively. All 394 parsed package
+identities and every external version/source/checksum/dependency record remain
+unchanged; numeric SemVer record ordering is normalized. Rust/API/proving
+material bytes are unchanged. The failed acc package/seed/logs remain intact.
+New signed PREP SHA-256 is
+`b7c11da3e989441e1c57ba1d42edbda50da1b3608eb882ceb179c862741b8b45`;
+independent source reviews are
+`cb71ded9c7be6346b7570b000114b0c18d83559919f6726bace6246a5a997b32`
+and `3827ce51e556bf49e9c47dcda0c311f92ea71588fe3c687b16ae48bde1da5453`.
+The same seven source controls, 45 new and 25 inherited physical refusals pass.
+Corrected locked build/API qualification is ongoing; no successful Rust unit,
+compile-probe, genuine proof/funded/replay or Linux result is implied by PREP.

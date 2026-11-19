@@ -145,15 +145,41 @@ and `2fa0a412773e0780df5dc55e81c947066e9d62873da6a8b22651e459d812b294`.
 The owned 781MiB build target is removed. This still does not qualify public
 schema21/ABI55 generated contracts, proofs, funded application or Linux.
 
-A new explicit `--rust-ir-encoding-profile ledger9-zkir-v3` selector preserves
-schema20/ABI54 for prior invocations. Actual original285 material exposed a
-nested Cell.write lowering refusal; a focused generic ordered scalar-widening
-fix is under execution qualification. Original588 emits both IR profiles, but
-the source branch still emits `[0,8]` hash alignment rather than the accepted
-host99d/released `[1,8]`. Equality between those two source profile outputs is
-not mainstream parity. The already-qualified host minimum-byte frontend fix
-must be integrated as a distinct semantic slice, then new artifact identities
-and qualification recorded. Archived Events/CCC packages and proofs remain
-unchanged; neither selector-only captures nor unit-suite results replace that
-gate. Failed Scheme imports/pass loads and partial fixture captures are kept
-as historical execution evidence.
+The first explicit `--rust-ir-encoding-profile ledger9-zkir-v3` material
+preserved schema20/ABI54 for prior invocations. That historical run exposed
+original285's nested Cell.write refusal and original588's source `[0,8]`
+alignment. Selector-only equality did not establish mainstream parity. Those
+failed Scheme imports/pass loads and partial captures remain immutable history;
+the separately qualified integration below supersedes their pending fix status.
+
+## Reviewed original compiler material at 258
+
+Signed `258d29c3bee52b48b570e7b16608fac655ed4f5e` integrates only the reviewed
+v3 minimum-byte frontend hunks and ordered write/read/widen return lowering.
+Twelve actual compiler invocations pass the source-owned gate: six positives
+and six atomic refusals, plus seven direct selector checks. Original285 retains
+all three circuits and original588 retains its attestation. Their v3 generated
+TS/declarations/info and raw ZKIR match the signed host414 source artifacts;
+zero descriptors use `(0n,1)` and attestation alignment is `[1,8]`. Default-v2
+zero descriptors and all three raw ZKIR bodies remain byte-identical to the
+historical baseline. Ten archived Events v4 artifacts and 26 private composable
+artifacts remain exact. Callee14/Caller17 are frontend controls, not original
+runtime-case counts.
+
+Signed material receipt SHA-256 is
+`7d068eecfc7836c3f720c1b175e897412e5eed97df46004d7476301d7c6ede76`;
+independent root review is
+`98e2ae98abae2dbe67a2f75b97d90331f4b9f681f34142a390ee09f2874793ef`.
+It authenticates all 9,848 source blobs, 176 retained outputs, commands/logs and
+signed host/v4 oracle bindings, without an independent Scheme rerun. The owned
+143MiB compiler snapshot is removed; all material artifacts remain.
+
+This qualifies frontend material on Darwin arm64. The pinned zero-bit original
+module has **two compile-only cases**, with no runtime callbacks. Fresh state
+and persistent-hash execution checks are supplemental controls, still pending.
+Ordinary schema20 with v3 now has one-byte TS/ZKIR widths while legacy ABI54
+Rust carriers can be zero-byte; a generic typed refusal is a separate reviewed
+source-only follow-up awaiting execution. Public schema21 rendering remains
+closed. Same-root ABI55 handshake/physical identity, generated native/recorded
+Rust parity, fresh proofs, funded strict replay and Linux remain unqualified.
+Archived Events/CCC packages and proofs keep their original identities.

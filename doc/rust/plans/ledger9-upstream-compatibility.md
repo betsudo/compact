@@ -14,15 +14,16 @@ two wide-coin assertions; original assertions and policies are unchanged.
 The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
 separately passes 474 source cases and its emitted/declaration controls. Backend
 `9ca0e9c87` passes 1,977 library tests, zero failures and seven ignored, plus
-library-only strict Clippy. Schema21 public admission remains closed; original
-285/588 compiler material is under qualification, with the accepted host
-minimum-byte semantic fix still requiring integration into this compiler branch.
+library-only strict Clippy. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
+now integrates the accepted minimum-byte semantics and reproduces original
+285/588 artifacts. Schema21 public admission remains closed; a typed legacy-v3
+refusal and ABI55 generated Rust qualification remain separate next slices.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and
 proof execution remain unassigned or unrun. Private Caller A/M/I proof source
-`acc587d5b` passed independent source/PREP review; its build, genuine proofs and
-funded replay are a separate ongoing qualification. Finished owned targets and
+`3bf9e72c2` passed independent source/PREP review after a minimal lock correction;
+its build, genuine proofs and funded replay are a separate ongoing qualification. Finished owned targets and
 worktrees are removed after audit; source publication and hosted CI remain
 separate. The broad milestone is incomplete.
 
