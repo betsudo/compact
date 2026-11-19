@@ -62,7 +62,10 @@ to their original revisions. General cross-contract parity, post-child event
 ordering, packaged compiler, native Linux and live-node qualification remain open.
 The [v5 runtime/CLI continuation](plans/original-events-v5-status.md) now
 passes independent physical and actual admission review, preserving archived
-v4 admission. Fresh v5 proof/funded/native Linux qualification remains open.
+v4 admission. Reviewed local `bffd8d788` now qualifies seven fresh source-SDK v5
+proofs and two sequential strict funded applications/replay refusals. Reviewed
+`4715d0648` verifies all seven proofs and both exact funded state/replay sequences
+on released SDK1. Packaged compiler and native Linux qualification remain open.
 The [original block-time case](plans/original-block-time-testchain.md) also
 passes all twelve TypeScript assertions per path. A reviewed separate Rust
 slice also passes twelve native and twelve recorded observations; its proof,
@@ -202,3 +205,11 @@ and hash remain unchanged, while the explicit v3 attestation matches the release
 oracle. Thirteen runtime tests and 33 macro tests pass, with four downstream
 refusals and strict macro Clippy. This is direct API qualification; IR/profile
 threading, generated original contracts, the ABI55 handshake and proofs remain open.
+
+
+The [owned Ledger 9 coin amount boundary](plans/original-runtime-descriptors.md#owned-ledger-9-coin-amount-refusal)
+now passes the unchanged original stdlib suite 31/31 at reviewed `5a7fc67db`.
+The four-module original cohort is 898 passed/26 failed, and source regression
+is 469/469 including four new error/state-identity cases. Generic descriptor
+encoding and legacy context behavior are retained. The remaining 26 failures
+are recorded; no Rust/proof/Linux claim follows from this JavaScript API repair.

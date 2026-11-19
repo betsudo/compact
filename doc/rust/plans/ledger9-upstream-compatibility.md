@@ -124,8 +124,10 @@ binds the reviewed caller runtime; source `73fb2ab80` admits v5 with 18
 controls and strict Clippy and preserves actual v4 admission with 13 controls.
 Signed CLI receipt SHA-256:
 `dec02cb4c96ec6677749a7ffd6ac49ca6d69586a4e7306ed1246a7fd1c9af2fd`.
-Fresh v5 execution/proofs/funded replay, packaged compiler and native Linux
-remain open; v4 evidence retains its original identity.
+Fresh v5 source-SDK native proofs and sequential strict funded replay now pass
+at reviewed `bffd8d788`; released SDK1 at reviewed `4715d0648` verifies all seven
+proofs and both strict funded/replay state boundaries byte-for-byte. Packaged
+compiler and native Linux remain open. V4 keeps its original identity.
 
 The [original block-time runtime case](original-block-time-testchain.md) at
 `2d2132f0b` passes its unchanged twelve assertions on each TypeScript path
@@ -255,6 +257,14 @@ and hash remain unchanged, while the explicit v3 attestation matches the release
 oracle. Thirteen runtime tests and 33 macro tests pass, with four downstream
 refusals and strict macro Clippy. This is direct API qualification; IR/profile
 threading, generated original contracts, the ABI55 handshake and proofs remain open.
+
+
+The [owned Ledger 9 coin amount boundary](original-runtime-descriptors.md#owned-ledger-9-coin-amount-refusal)
+now passes the unchanged original stdlib suite 31/31 at reviewed `5a7fc67db`.
+The four-module original cohort is 898 passed/26 failed, and source regression
+is 469/469 including four new error/state-identity cases. Generic descriptor
+encoding and legacy context behavior are retained. The remaining 26 failures
+are recorded; no Rust/proof/Linux claim follows from this JavaScript API repair.
 
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in

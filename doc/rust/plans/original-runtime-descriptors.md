@@ -69,3 +69,42 @@ Uint signature migration and coin/error policies remain separate. Finished owned
 Node/build/staging copies and the clean worktree are removed; source branches,
 lock, generated version, emitted output, red diagnostics and signed receipts remain.
 Implementation stays local; docs-only publication does not publish these source slices.
+
+
+## Owned Ledger 9 coin amount refusal
+
+Reviewed local `5a7fc67db7fc9c3fb5b3c9e128bf503329f845d9` closes the remaining
+original standard-library coin range/error-class case. The private Ledger 9
+coin snapshot reads nonce, color and value once as own data, then validates a
+BigInt in Uint128 before effects. Generic unchecked descriptor encoding and the
+legacy four-argument context route remain unchanged; the existing generic
+encoding assertion is retained verbatim. A global encoder change would have
+broken that accepted contract.
+
+The unchanged original stdlib module now passes 31/31. Across all four originals,
+results are 898 passed / 26 failed out of 924, with no skips. Only the named
+out-of-Uint128 case changes status from the bigint-helper parent. Existing 465
+source assertions plus four new Ledger 9 recipient/range/state-identity cases
+pass 469/469 in 24 modules; these overlap originals and are not additional
+pinned-original coverage. Independent replay passes the one original target
+with 923 filtered and all four new cases with 21 filtered.
+
+Signed qualification SHA-256 is
+`5f8114e3082b0a9a5cb0ec35d1ba5d84191769801429eb3bcbb3173cce65edb0`;
+independent review SHA-256 is
+`b4402942081732c4afe4436d3d893f5e27af787d957887c92cb9b759b03f1080`.
+The signed build attestation is
+`81d55c5105fc1da89501575629f8420aad942bbc9264b6fa9bb776685c3dd847`.
+Fresh compilation checks exact 6,042-file/16-link source/build/tool membership
+before and after; ignored source/config additions are absent. Of 84 emitted
+files, only zswap.js and its map change from the helper parent. Wrong source,
+build digest and emitted-code inputs refuse before a test child starts. All 159
+evidence hashes are reviewed. Earlier v2 build evidence remains historical;
+the v3 strict-closure run has fresh 469/924 results.
+
+Owned Node, build, staging copies and clean worktree are removed; signed cleanup
+SHA-256 is `41fc86afb2ec3c112446fb811c4cf58cd32bbc3e0d6634f85841894e752541af`.
+Source branches, lock, emitted output, red results and receipts remain. This is
+local arm64 JavaScript/API qualification; generated Rust/proofs/funded/Linux
+are separate. The 26 compact-type alias/inventory/canonical-decoder differences
+and byte-cast signature compatibility remain in #785.
