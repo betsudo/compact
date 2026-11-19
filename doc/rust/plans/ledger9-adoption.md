@@ -2,18 +2,19 @@
 
 ## Current publication and qualification snapshot, 2026-11-19
 
-Latest local decoder slice `8da87375b` resolves seven unchanged original runtime
-cases: the same 924-case cohort is now 905 passed / 19 failed, and existing
-source tests remain 469/469. Independent execution review and a fresh seven-case
-original replay pass; all owned build copies and the clean worktree are removed. The [runtime descriptor record](original-runtime-descriptors.md)
-binds the fresh builds, raw red results and remaining cases. Backend profile
-work also found inherited retired-oracle provenance drift after accepted
-cross-contract changes; [#786](https://github.com/betsudo/compact/issues/786)
-tracks additive projections that preserve older signed authorities. The latest
-reviewed four-owner repair clears eleven failures but leaves two later
-typed-plan provenance failures. Full backend qualification and schema21/ABI55
-generated-contract admission remain open. No new hosted CI run or source
-publication is part of these local slices.
+Latest local runtime slice `035e85a11` fixes three more unchanged original
+Enum/Bytes cases after the seven decoder repairs. The same 924-case cohort is
+now 908 passed / 16 failed, with existing source tests 469/469. Independent
+original replay passes 3/3 with 921 filtered; owned build copies and worktree
+are removed. The [runtime descriptor record](original-runtime-descriptors.md)
+binds the fresh builds, raw red results and remaining policy/API differences.
+The [backend provenance repair](https://github.com/betsudo/compact/issues/786)
+at `8b5e9619e` now passes the full unfiltered optimized library suite: 1,970
+passed, zero failed and seven ignored. Separate `beeb21995` passes strict
+library-only Clippy; full test-target lint remains historical red in frozen
+contract_calls.rs. Schema21/ABI55 generated-contract admission remains closed
+pending complete profile propagation and qualification. No new hosted CI or
+source publication is part of these local slices.
 
 [PR #774](https://github.com/betsudo/compact/pull/774) merged at
 `eb3b2adbb` into `codex/rust-backend-ast`. [PR #775](https://github.com/betsudo/compact/pull/775)

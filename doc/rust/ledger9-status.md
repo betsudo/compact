@@ -565,3 +565,15 @@ Signed final delivery SHA-256 is
 Owned build copies and worktree are removed. The 19 original failures remain
 explicit, with accepted extra exports, strict scalar/point policies and unchecked
 encoder APIs preserved. No generated Rust/proof/funded/Linux result is claimed.
+
+
+The follow-up [Enum/Bytes refusal slice](plans/original-runtime-descriptors.md#enum-and-bytes-encoding-refusals)
+at independently reviewed `035e85a11` fixes exactly three more original cases.
+The four-module cohort is now 908 passed/16 failed, while source regression
+remains 469/469; independent original replay passes 3/3 with 921 filtered.
+Signed final delivery SHA-256 is
+`661bd8f8a4b8c6b8de8e7da63e7aab2e49305228181f38422aabc2138e17cd65`.
+Owned build copies and clean worktree are removed. The optimized backend
+checkpoint at `8b5e9619e` separately passes 1,970 library tests with seven
+ignored. `beeb21995` passes library-only strict lint; schema21 admission,
+generated profiles, full test-target lint and Linux remain separate/open.

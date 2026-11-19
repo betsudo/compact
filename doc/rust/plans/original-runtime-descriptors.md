@@ -144,3 +144,31 @@ or passes. A separate signed classification has SHA-256
 `57e4b1ace85fe32191f8fd4e5df35aacfc8765ae64da40e7abbb46372febf4eb`.
 This is local arm64 JavaScript/API evidence, without Rust, proofs/funded or
 native Linux qualification.
+
+## Enum and Bytes encoding refusals
+
+The next independently reviewed local slice `035e85a11b44be8f12ab9e4d0ed032572beab853`
+ports the pinned Enum decode diagnostic, Enum integer/range encoding guard and
+fixed Bytes width encoding guard. Exactly three further unchanged original
+cases change failed to passed: the same cohort is now 908 passed / 16 failed
+out of 924, with no skips. Existing source tests remain 469/469; independent
+original replay passes 3/3 with 921 filtered. Two builds retain the exact
+6,042-file/16-link closure, with only compact-types.js and its map changed.
+
+Signed qualification SHA-256 is
+`b37eccb320f57f6c43d47246acc45cc78021fee46a44ba6d2a8bd9a815ead885`;
+independent review is
+`d8e2a5d75efed6d644d1dace823d82e7ff1820a61111c0c0387128887a0f3258`.
+Signed final delivery SHA-256 is
+`661bd8f8a4b8c6b8de8e7da63e7aab2e49305228181f38422aabc2138e17cd65`.
+All owned build/tool/stage copies and the clean worktree are removed; actual
+lock, emitted output, original red results and signatures remain. Cleanup
+SHA-256 is `48bafdcf821864ee9cca73b13b782583988c3655d4d2a488f30e5533b73a7c2d`.
+
+The remaining 16 original failures comprise three inventory assumptions,
+six strict scalar and six strict point sample differences, and one generic
+unsigned encoder expectation. The latter conflicts with the explicitly retained
+accepted generic-encoding assertion and remains unchanged. No original failure
+is relabeled as a pass or removed. Cast-helper signature/semantics work remains
+separate: passing the original stdlib assertions does not establish its full
+named diagnostic API. This slice is local arm64 JavaScript/API evidence only.

@@ -72,3 +72,34 @@ arithmetic/stateful lowering, compatibility metadata and original-host gates.
 Retain the original issue-285 and issue-588 fixtures and assertions. Complete
 generated Rust/TypeScript behavior, source-bound fresh proofs with independent
 verification, funded strict application/replay and native Linux remain open.
+
+
+## Optimized backend regression checkpoint
+
+Signed local `8b5e9619e90fffa7d5dc6554c576136c8c0052c1` passes the unfiltered,
+locked offline optimized library suite under Rust1.99/default worker stack:
+1,970 passed, zero failed, seven ignored. Independent receipt review verifies
+44 changed source blobs, four authority manifests, lock, retained test binary
+and log. Qualification SHA-256 is
+`ca93d39d0347af6a82f1c67df79cf115cecf150f6dacd873076e1c31b9e08e42`;
+review SHA-256 is
+`04ca0838f1a441c2eecd4e15d2a701d82831a51d95994976a340072551ecef19`.
+
+The run exposed inherited authority drift from accepted cross-contract edits.
+[Issue786](https://github.com/betsudo/compact/issues/786) adds digest-pinned
+current-to-predecessor projections, preserving old manifests and owner bodies.
+Earlier red runs and the test-only borrow compile failure remain historical.
+Unoptimized default-stack baseline aborts are not relabeled as passing runs.
+
+A separate narrow lint cleanup at signed
+`beeb2199597a088c1b0ae4b459425b4119f3155e` passes strict library-only Clippy.
+Signed lint receipt SHA-256 is
+`be01e8676da0f4c6347f1b8a23499a3c074dfc034ad26b6d0ecd8fdeaa3359cb`;
+independent review SHA-256 is
+`f6078126d2cdb1ea131bfcb4c7fe69249178b735e5a67578da1e2066c10fec49`.
+This is not a fresh full library-test run at beeb, nor passing test-target lint:
+frozen contract_calls.rs test diagnostics remain unchanged. The owned 775MiB
+Cargo target and clean comparison worktree are removed; signed sources, locks,
+binary and logs remain. Recorded/profile propagation continues as source-only
+work. Public schema21 still refuses; compiler emission remains20. Generated
+original285/588, physical ABI55 compatibility, proofs and Linux remain open.
