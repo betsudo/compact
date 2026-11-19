@@ -112,7 +112,14 @@ Both v5 SDK results are local Darwin arm64. Packaged source-built compiler and
 native Linux remain open; no generated EntryPoint invocation, live/public network
 or broad generic cross-contract parity is implied. The frontend remains the source
 Scheme wrapper. The archived v4 native/Linux handoff and all old source/proof
-identities stay intact; a v5 dual-SDK Linux handoff is the next preparation task.
+identities stay intact. The additive v5 dual-SDK Linux handoff at signed
+`13d5fffbc7716172382aa47bc1f9fb45d36254cc` now has independent source-only
+PREP review, 11 controls and 72 refusal cases; see the
+[handoff record](original-events-native-linux-handoff.md#later-v5-dual-sdk-source-preparation).
+No packet, Cargo/Nix build or native execution ran; owner/context/budget remain open. A separate reviewed follow-up `b3e677de6` hardens Git object
+binding and transitive reads, with an independent rerun of 12 source-only
+tests/77 refusals. [#787](https://github.com/betsudo/compact/issues/787) retains
+integration/publication; no native result is implied.
 
 Caller viaInner and closed A/M/I preparation have separate coordinator/material
 identities; their broader proofs are not covered by these original Events results.

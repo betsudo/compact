@@ -2,19 +2,29 @@
 
 ## Current publication and coverage snapshot, 2026-11-19
 
-Latest local runtime slice `035e85a11` fixes three more unchanged original
-Enum/Bytes cases after the seven decoder repairs. The same 924-case cohort is
-now 908 passed / 16 failed, with existing source tests 469/469. Independent
-original replay passes 3/3 with 921 filtered; owned build copies and worktree
-are removed. The [runtime descriptor record](original-runtime-descriptors.md)
-binds the fresh builds, raw red results and remaining policy/API differences.
-The [backend provenance repair](https://github.com/betsudo/compact/issues/786)
-at `8b5e9619e` now passes the full unfiltered optimized library suite: 1,970
-passed, zero failed and seven ignored. Separate `beeb21995` passes strict
-library-only Clippy; full test-target lint remains historical red in frozen
-contract_calls.rs. Schema21/ABI55 generated-contract admission remains closed
-pending complete profile propagation and qualification. No new hosted CI or
-source publication is part of these local slices.
+The complete current-runtime comparison now runs all twelve byte-identical
+original modules: 1,091 collected cases per profile, with no skips, todos or
+load gaps. Source runtime `96b4ce803` has **1,061 passed / 30 failed**; released
+runtime 0.21.0 has **1,085 passed / six failed**. Both original suites remain
+red. See the [complete runtime census](original-runtime-resolution.md#all-twelve-original-modules-on-one-current-source-graph).
+The source failures retain 16 descriptor/policy differences and all 14 closed
+public cross-contract resolution cases. Released failures retain four BOM and
+two wide-coin assertions; original assertions and policies are unchanged.
+
+The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
+separately passes 474 source cases and its emitted/declaration controls. Backend
+`9ca0e9c87` passes 1,977 library tests, zero failures and seven ignored, plus
+library-only strict Clippy. Schema21 public admission remains closed; original
+285/588 compiler material is under qualification, with the accepted host
+minimum-byte semantic fix still requiring integration into this compiler branch.
+The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
+has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
+rerun with 12 source-only tests and 77 refusals. Native owner/context/build and
+proof execution remain unassigned or unrun. Private Caller A/M/I proof source
+`acc587d5b` passed independent source/PREP review; its build, genuine proofs and
+funded replay are a separate ongoing qualification. Finished owned targets and
+worktrees are removed after audit; source publication and hosted CI remain
+separate. The broad milestone is incomplete.
 
 The cross-contract foundation [#774](https://github.com/betsudo/compact/pull/774)
 merged at `eb3b2adbb`. The original-token [#775](https://github.com/betsudo/compact/pull/775)

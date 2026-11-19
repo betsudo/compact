@@ -103,3 +103,21 @@ Transaction, proofs, funding, public admission, SDK 9.1.0.1 or Linux qualificati
 No-owner root is the scoped route; Some(User) remains refused, and local time
 observations do not authenticate chain finality. Existing v4/v5 packages keep
 their exact identities; no source publication or services were started.
+
+
+## Private A/M/I proof source preparation
+
+Signed local `acc587d5b3138efeca945b6bd2dd4a5b24c2e0da` adds a private consuming
+SDK preimage product and source-owned proof/funding fixture atop the reviewed
+870 prepared-call authority. Independent source/PREP review passes seven
+source controls, 45 new physical refusals and 25 inherited physical refusals;
+no Cargo, Rust probe, proof, funded or replay execution is implied by PREP.
+Signed PREP SHA-256 is
+`f22c1351a67fe9b9c56dcbc97c2c2e4f36ee545b49f5a123d0dac5ad1e05d5c9`;
+independent review is
+`c73ab24b92bf972cc90b06419e7209064d3ff0693473b73ef956a45fb0e7a688`.
+The bounded source-SDK build/API qualification is the next execution phase.
+Six genuine contract proofs, separate verification, strict funded application
+and replay are planned later phases and remain unrun. Some(User), released
+SDK1, public admission, live chain and Linux remain outside this private
+source-only qualification. Old product identities and all proof archives remain.

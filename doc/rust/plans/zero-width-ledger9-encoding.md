@@ -103,3 +103,57 @@ Cargo target and clean comparison worktree are removed; signed sources, locks,
 binary and logs remain. Recorded/profile propagation continues as source-only
 work. Public schema21 still refuses; compiler emission remains20. Generated
 original285/588, physical ABI55 compatibility, proofs and Linux remain open.
+
+
+## Recorded checkpoint and Cargo graph correction
+
+Signed `167de8b701178c3343bd2bd848cde0b704fedb93` passes a fresh full optimized
+library run (1,972 passed, zero failed, seven ignored) and strict library-only
+Clippy. Receipt SHA-256 is
+`867e9aa96e0d3496c547c7344e78668750d5145c965061fb8a1ae6382aed1b6f`;
+independent review is
+`b4cefcb637f04157ae4a4171fcacb9c153a1d84d77e95c877c5f467d8101d225`.
+This qualifies the bounded recorded renderer preparation; schema21 public
+admission and generated original contracts remain closed/unqualified. The
+owned build target is removed. Functional preparation is a separate source-only
+slice, explicitly refusing v3 through the archived Ledger8 adapter.
+
+The earlier 8b5 test and beeb lint receipts labeled the inactive member lock as
+the Cargo lock. Actual workspace builds use root Cargo.lock, SHA-256
+`1871651dc10800a3bc94c81f9427293abcbcb73309c21093ec4a255f0626513e`.
+New immutable signed addenda bind that lock, both manifests and the inactive
+child lock. 8b5 addendum-v2 SHA-256 is
+`4a71d4b383b2a5940fcd87a481d73aade43462d90c2de69da867b752765d4556`;
+beeb addendum-v1 is
+`9e25d99c9891b9602e00e05f211d14f206b8a80d874b9bcd47d0497934a96048`.
+The original signed receipts/logs are unchanged. This corrects graph labels,
+not execution results; no rerun is claimed for the addenda. Fresh a383/167
+receipts identify both lock roles directly. Full test-target lint remains a
+separate historical red scope in frozen contract_calls.rs.
+
+
+## Functional checkpoint and original compiler material
+
+Signed `9ca0e9c8791914d8508578edd212823e62058ce7` passes the full optimized
+library suite: 1,977 passed, zero failed, seven ignored, zero filtered. Strict
+library-only Clippy also passes. Functional schema21 is explicitly refused by
+the archived Ledger8 adapter. Signed qualification SHA-256 is
+`847fcd3034db611f4f0fff980b1ee7ed566d6e57bdbec145957fbc287c2efcfc`;
+independent reviews are
+`17e062971717fb57381aa087bb2aa5257ab3add68bb8393cdd9be6f116d76cb5`
+and `2fa0a412773e0780df5dc55e81c947066e9d62873da6a8b22651e459d812b294`.
+The owned 781MiB build target is removed. This still does not qualify public
+schema21/ABI55 generated contracts, proofs, funded application or Linux.
+
+A new explicit `--rust-ir-encoding-profile ledger9-zkir-v3` selector preserves
+schema20/ABI54 for prior invocations. Actual original285 material exposed a
+nested Cell.write lowering refusal; a focused generic ordered scalar-widening
+fix is under execution qualification. Original588 emits both IR profiles, but
+the source branch still emits `[0,8]` hash alignment rather than the accepted
+host99d/released `[1,8]`. Equality between those two source profile outputs is
+not mainstream parity. The already-qualified host minimum-byte frontend fix
+must be integrated as a distinct semantic slice, then new artifact identities
+and qualification recorded. Archived Events/CCC packages and proofs remain
+unchanged; neither selector-only captures nor unit-suite results replace that
+gate. Failed Scheme imports/pass loads and partial fixture captures are kept
+as historical execution evidence.

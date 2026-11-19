@@ -237,3 +237,18 @@ Owned build copies and clean worktree are removed. The optimized backend
 checkpoint at `8b5e9619e` separately passes 1,970 library tests with seven
 ignored. `beeb21995` passes library-only strict lint; schema21 admission,
 generated profiles, full test-target lint and Linux remain separate/open.
+
+
+The [byte-cast API overloads](plans/original-runtime-descriptors.md#byte-cast-helper-overloads)
+at reviewed `96b4ce803` preserve legacy calls and qualify mainstream explicit
+forms: source 474/474, emitted API 5/5 and declaration shapes 4 accepted/4
+rejected. Original 924 remains 908/16; new controls overlap these other gates.
+The [complete twelve-module comparison](plans/original-runtime-resolution.md#all-twelve-original-modules-on-one-current-source-graph)
+now collects all 1,091 original cases on both profiles: current source runtime
+has 1,061 passed/30 failed; released runtime has 1,085 passed/six failed. Both
+remain red, with original assertions retained. Backend `9ca0e9c87` passes
+1,977 library tests and library-only strict lint; schema21 public admission and
+full generated parity remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
+at `b3e677de6` passes independent source review and an independent rerun of
+12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned
+completed build copies and worktrees are removed; source stays local.

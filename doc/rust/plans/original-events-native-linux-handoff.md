@@ -1,5 +1,56 @@
 # Original Events native Linux integration handoff
 
+## Git object binding hardening
+
+Reviewed local `b3e677de6c559076e3dd7bf0f8ea4a21f0fa7c14` follows the source-only
+13d handoff below. It refuses ambient Git authority overrides, disables Git
+replacement objects in bootstrap and transitive source/SDK reads, and hashes
+the raw framed commit object to independently supplied H before accepting its
+F885 signature. The isolated replacement-ref control does not mutate shared
+Git refs. This addresses [#787](https://github.com/betsudo/compact/issues/787)
+locally; source integration/publication and native use remain separate.
+
+The author and independent reviewer each run all twelve source-only tests and
+77 refusal cases successfully. Signed qualification SHA-256 is
+`c72c2494c02ccdac8c7c867760026cb8cd2e01b5c3ca6e5e5a2035fade3b39cd`;
+independent review is
+`c737142a4373b539166f37122c2d7464342543b53eeb716a663ba6b00dea298e`.
+The externally authenticated bootstrap SHA-256 is
+`f28144c41234352b2e4c579ede9a99785d142d8ee492b34f96152590811491e7`.
+No packet, Cargo/Nix, fresh proof, funded application or Linux execution ran.
+Use this reviewed follow-up for future v5 owner preparation; retain the old
+13d signed delivery and v4 packet as immutable history.
+
+## Later v5 dual-SDK source preparation
+
+The additive local handoff at signed
+`13d5fffbc7716172382aa47bc1f9fb45d36254cc` is independently reviewed in
+source-only mode: 19 added files, 3,217 exact tool-source pins, 11 controls and
+72 refusal cases. It uses the qualified bffd source-SDK and 4715 released-SDK
+consumers, closed complete admission inventory and actual compiled-library
+matrix checks. Entry requires an externally verified signed Git-blob bootstrap;
+executing a live script does not authenticate its own earlier execution.
+The original v4 handoff below and its transfer packet remain unchanged.
+
+Signed PREP SHA-256 is
+`83c5797d6687a3106edc864a93fed8f8106cb5056274e5b9dfd18b8d548fea2f`;
+source delivery is
+`98ebb800cce5c645593d3eff26e99dbcd30f4ce89a529cb520ed39233e5c2a23`;
+independent review is
+`753c5606f0d3728785a9de569c2993bf103a422d28445b505daa4e19f5b57cbb`.
+The externally verified bootstrap SHA-256 is
+`672b4a8d6851e164a318c979b4386e61faf4778c23523fd4ab5002a8f4ce774e`.
+
+This is Darwin source-only preparation. No v5 packet, Cargo/Nix build, Linux
+proof or application ran. Native owner, result signer, compiler budget and
+signed execution context remain unassigned. A future native run must build a
+genuine Rust/Scheme compiler pair, compute fresh proofs, apply both original
+funded calls strictly, refuse replay, and independently verify with the released
+SDK. The clean owned worktree is removed; branch, bootstrap, input snapshots and
+receipts remain. The first empty-directory preflight refusal is retained.
+
+## Historical v4 handoff
+
 Owner: [#773](https://github.com/betsudo/compact/issues/773). This gate is source-owned and has only been exercised in `--source-only` mode on macOS arm64. Native Linux qualification remains open until a Linux x86_64 owner runs the full gate and reviews its retained logs and artifacts.
 
 The input is the frozen signed Events v4 physical package at identity SHA-256 `605312a3bc2dfbe82212921e402f2cc1705a015e0dc12e59ca6432af46facf8b`. Transfer the complete package, its detached `identity.json.asc`, and the public trusted GPG keyring over a trusted channel. Pin the keyring SHA-256 and signer fingerprint `F8851C118C66BF98DB9B1B5DB75A9FB8C6327844` against the prior owner handoff. No private signing key is needed or should be transferred. The gate calls the frozen v4 verifier, which checks exact physical membership, signature, recursive v3 parent, source/IR/artifact identity, Rust renderer and generated TypeScript binding. It also compares both Rust consumer templates and SDK2 proving static files to exact tracked Git bytes and membership. It does not regenerate or modify the signed package.

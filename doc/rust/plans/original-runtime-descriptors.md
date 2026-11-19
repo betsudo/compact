@@ -172,3 +172,40 @@ accepted generic-encoding assertion and remains unchanged. No original failure
 is relabeled as a pass or removed. Cast-helper signature/semantics work remains
 separate: passing the original stdlib assertions does not establish its full
 named diagnostic API. This slice is local arm64 JavaScript/API evidence only.
+
+## Byte cast helper overloads
+
+Reviewed local `96b4ce8035654025076477a6ad1f52251e6b16d2` preserves the exact
+legacy checked three-argument Field and four-argument Uint helper bodies. It
+adds the pinned explicit five-argument Field modulo helper and five-argument
+Uint helper with the requested type name and source in its error. Compiler
+emitter integration and descriptor policy remain separate.
+
+The accepted 469 source cases plus five new paired API controls pass 474/474
+in 25 modules. Those same five controls also pass on emitted JavaScript;
+they are not five more original cases. Actual emitted declarations compile
+four valid legacy/new calls and reject four invalid shapes with the expected
+TypeScript diagnostics. The original 924-case report remains 908 passed /
+16 failed, with its entire case/status multiset unchanged from 035. Two fresh
+builds check 6,044 files and 16 links; only casts.js, casts.d.ts and its source
+map change among 84 emitted files. Three altered source/build/emitted inputs
+refuse before a test child.
+
+Signed qualification SHA-256 is
+`0035c72fe809653af0e2bb97501b7e691994a037a540b6e15ff085dc2dfe15a4`;
+independent source/log/hash review is
+`4a41f4541a8b871215a8e3982e59f3320f60f252019a1ec395ddeb43d88a2e33`.
+The reviewer did not rerun Node. Signed final delivery is
+`252f28e96f57799dac176366832ea0972a8939879219c6cffc367fd30150c277`.
+All owned build/tool/original-stage/API-stage copies and the clean worktree
+are removed; actual lock, dist, type probes and raw results remain. Cleanup
+SHA-256 is `6e2d87c5b12c5999278e02ed7d36fb10f478c25e1eaf10b8a762c563b1ff3349`.
+This is local arm64 API evidence, without generated Rust, proofs/funded or
+native Linux qualification.
+
+
+The later [complete twelve-module comparison](original-runtime-resolution.md#all-twelve-original-modules-on-one-current-source-graph)
+runs this exact `96b4ce803` emitted runtime across all 1,091 original cases.
+It retains the same sixteen descriptor failures and separately accounts for
+fourteen closed public cross-contract resolution cases. This supersedes the
+924-case subset as the current full-runtime census; both histories remain.
