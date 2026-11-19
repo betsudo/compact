@@ -202,6 +202,21 @@ execution prepares preimages without proving or applying them. The original
 second result after persisted state, applied event order, public admission,
 fresh proofs, funded application/replay and Linux remain open.
 
+At signed local proof source `6e56e0af1`, generated standalone Inner and
+joint Outer/Inner calls produced one and two fresh V3 proofs. A separate
+process at signed `0c4ecc1a6` authenticated the producer receipt and retained
+artifacts, deserialized both transactions, and checked all three proofs
+against physical verifier keys and transaction public inputs. Three changed
+proofs, three changed public inputs and three wrong keys refused. Both
+transactions pass Ledger 9 Real verification with balancing disabled.
+Independent source and evidence review found no actionable issue. Producer
+receipt SHA-256 is `38cece7c57352654547c5529513e02641c779206194f046ae9d98030da353a1d`;
+the [signed separate-verifier receipt](/Users/ysh/.codex/local-evidence/ledger9-events-rust-execution-20261119/retained-verification-0c4.json)
+SHA-256 is `e59fd3eb18296f4e103cef3811114e1f0a7863147787f35b4cd6e5b4d582787d`.
+The original signed package remains unchanged. These local arm64 transactions
+are unfunded; default-strict funded application/replay, second persisted
+result, applied event order, public CLI admission and native Linux remain open.
+
 ## CI resource and optimization evidence
 
 The complete [#774 run](https://github.com/betsudo/compact/actions/runs/44328366189)
