@@ -29,13 +29,16 @@ for full receipt hashes, setup boundaries and retained artifacts.
 
 ## Original-token artifacts on released SDK1
 
-The independently reviewed [retained-artifact consumer](plans/original-token-sdk1-consumer.md)
-verifies 31 distinct proofs across 20 circuits with 93 refusal controls and
-decodes 23 tagged transactions using the released SDK 9.1.0.1 graph. Fresh
-independent retained-process replay passes. No keys or proofs are generated;
-transaction-level verification, SDK1 ledger application/replay and Linux remain
-separate. Exact source, package and receipt identities are recorded in the
-linked qualification.
+The independently reviewed [retained-artifact consumers](plans/original-token-sdk1-consumer.md)
+verify 31 distinct standalone proofs across 20 circuits with 93 refusal
+controls and decode 23 tagged transactions using released SDK 9.1.0.1.
+A separate consumer applies three retained shielded-mint transactions with
+default Real strictness, including the two-contract mint. Four embedded
+contract-proof and three positive-fee Dust-proof mutations refuse; successful
+application and replay refusal match the original after/replay bytes exactly.
+Both consumers pass fresh independent retained-process replay. They generate
+no new keys or proofs. Exact before states for the other 19 successful
+transactions, native generated-API compatibility and Linux remain open.
 
 ## Baseline and publication
 

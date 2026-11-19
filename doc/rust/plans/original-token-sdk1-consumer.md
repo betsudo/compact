@@ -41,10 +41,67 @@ Fresh retained-consumer replay SHA-256: `254054aa7036bde8d860e60319a4ac3fa5f4890
 Retained binary SHA-256:
 `e25f79def1ffcdf01463766d9a961750bb5d2b1b27f91a48ee3916a937a880c5`.
 
-This is local Darwin arm64 proof and serialization interoperability. The
-consumer creates no keys or proofs, does not verify transaction-level proof
-composition, and does not apply or replay transactions. Authenticated exact
-before-ledger reconstruction and SDK1 default-strict application/replay remain
-a separate gate. This does not qualify all generated Rust APIs, public compiler
+This first consumer qualifies local Darwin arm64 standalone proof and
+serialization interoperability. It creates no keys or proofs and does not
+verify transaction-level proof composition or apply/replay transactions.
+The separate three-mint application gate below has its own source and receipt.
+This does not qualify all generated Rust APIs, public compiler
 admission, native Linux or the broad migration milestone. Historical source-SDK2
 proof/funded qualifications retain their original source identities.
+
+
+## Three retained shielded-mint applications
+
+Signed consumer source `734031744634f2f3c4929c5d2aa5852051cc5a7c`, staged at
+`8cd4aef1702ff1734d6e5a08c187ce9655f86667`, now qualifies three existing
+funded transactions on the released SDK1 graph. The old signed deployment
+snapshots are authenticated exact before states for these cases: source
+inspection proves no intervening ledger assignment before the calls.
+Every transaction and before/after/replay byte remains bound to the original
+All20 source and receipt.
+
+| Original case | V3 contract calls | Post-application block step |
+| --- | ---: | ---: |
+| mintShieldedToSelfTest | 1 | None |
+| mintShieldedToUserTest | 1 | None |
+| mintShieldedToContractTest with receiveShieldedTest | 2 distinct contracts | 10 seconds |
+
+Default strictness explicitly requires Real verification, contract proofs
+and balancing. All three transactions apply successfully, and replay refuses
+with `IntentAlreadyExists` and unchanged serialized ledger bytes. Every
+after/replay state is byte-identical to the old source-SDK2 result. The two
+contract addresses are distinct and both installed contract states remain
+unchanged, preserving the original mint/receive assertions.
+
+Four targeted embedded contract-proof corruptions and three positive-fee
+Dust-proof corruptions produce their specific strict verification refusals.
+Wrong before state, late fee-intent time and corrupt transaction tag also
+refuse for each case. Source time and block-context differences are preserved:
+self/user use contract expiry minus 3600 seconds and direct time/time context;
+contract mint uses expiry minus ledger global TTL and the original TestState
+context, followed by its exact ten-second post-block update. Replay uses the
+original time/time context. The block update is part of the signed after-state.
+
+The offline locked build again reports 370 Cargo artifact records/325 distinct
+IDs and all ten released SDK1 core versions. The metadata, build and consumer
+commands exit zero. Fresh independent retained-binary replay repeats all
+three cases and produces a byte-identical report without Cargo or proving;
+source, proof, parameter, static and binary input maps stay unchanged.
+
+Signed actual qualification SHA-256:
+`76c0eaaf33afe0887d87c2c4a49fc51f571f8d15a1bbf061f5901602eaf6f589`.
+Independent actual review SHA-256:
+`0e43315f4181c48ae640e4a5dc7aff383f952e65f5eb1c28879bfddd07cc7e00`.
+Fresh retained-binary replay SHA-256:
+`37c184e1cdab8a95dcf05797e5fa12f5d16e21d6586c808c2340ac1c755871e5`.
+Retained binary SHA-256:
+`8dca43fb1df8f859f0be75f10563435b4f0604663df56af5f7ad21d6489d40b2`.
+
+The owned rebuildable Cargo target is removed after independent review and
+active-use audit. Signed source stages, binaries, full maps, logs, proof
+artifacts and replay evidence remain. This adds no fresh keys or proofs and
+does not rerun original TypeScript tests. The other 19 historical successful
+transactions lack authenticated exact before states in this gate. Their
+capture owners are mapped, but no application qualification is inferred.
+Native All20 generated APIs, public admission, live chain and native Linux
+remain separate requirements; the broad migration remains incomplete.

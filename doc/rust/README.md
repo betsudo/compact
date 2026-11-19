@@ -29,7 +29,11 @@ source revision. Native Linux proof and funded application remain open in
 The separate [released SDK1 artifact consumer](plans/original-token-sdk1-consumer.md)
 now verifies all 31 retained standalone original-token proofs with 93 refusal
 controls and decodes 23 tagged transactions, with independent process replay.
-This adds no fresh proofs or SDK1 ledger application/replay.
+A separate reviewed consumer also applies three retained shielded-mint
+transactions with default Real strictness, including a two-contract mint,
+and refuses replay with exact ledger bytes. Seven targeted contract/Dust
+proof mutations refuse. These consumers generate no new proofs; the other
+19 successful transaction applications and native Linux remain open.
 Ordinary generated public `pay` is not qualified by the merged foundation.
 An independently reviewed local follow-up now qualifies public generated
 `pay` with fresh A/B proofs and funded offline replay at its signed head;

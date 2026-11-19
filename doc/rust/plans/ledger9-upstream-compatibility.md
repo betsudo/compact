@@ -11,13 +11,16 @@ The source failures retain 16 descriptor/policy differences and all 14 closed
 public cross-contract resolution cases. Released failures retain four BOM and
 two wide-coin assertions; original assertions and policies are unchanged.
 
-The [released SDK1 original-token artifact consumer](original-token-sdk1-consumer.md)
-now independently verifies all 31 retained standalone proofs across 20 circuits,
-passes 93 wrong-key, changed-input and corrupt-proof refusal controls, and
-decodes all 23 tagged transactions. A fresh
-retained-consumer replay passes. This adds no keys, proofs, transaction-level
-verification or ledger application/replay; exact before-ledger reconstruction
-is next. Native Linux and general generated-API compatibility remain open.
+The [released SDK1 original-token artifact consumers](original-token-sdk1-consumer.md)
+independently verify all 31 retained standalone proofs across 20 circuits,
+pass 93 wrong-key, changed-input and corrupt-proof refusal controls, and
+decode all 23 tagged transactions. A separate reviewed consumer now applies
+three retained shielded-mint transactions with default Real strictness,
+including the two-contract mint. It rejects seven targeted contract/Dust
+proof mutations and matches exact after/replay ledger bytes. Both retained
+consumers pass fresh independent process replay; neither generates proofs.
+The other 19 successful transactions need authenticated exact before states.
+Native generated-API compatibility and Linux remain open.
 
 The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
 separately passes 474 source cases and its emitted/declaration controls. The
