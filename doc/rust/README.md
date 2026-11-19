@@ -70,22 +70,24 @@ funded and Linux gates remain open.
 The [original host metadata gate](plans/original-host-metadata-status.md)
 passes five unchanged expectedVk cases and 31 guards at a separate reviewed
 source profile. Caller physical identity checking now passes Cargo checking;
-private token execution is reviewed, while full Outer multi-hop execution remains open. These results
+private token execution is reviewed, while full Outer/public multi-hop admission remains open. These results
 do not qualify public defaults, fresh new-runtime proofs or native Linux.
 The reviewed combined host branch now passes 21/21 unchanged original cases
 on released and private source profiles. [ECDSA generated Rust parity](plans/original-ecdsa-parity.md)
 also runs the original suite through a private adapter, with nine Rust calls
 and one host-only case. Caller token execution and a bounded unfunded VM tree
-are reviewed locally; full Outer multi-hop execution and proof/funded gates remain
+are reviewed locally; full Outer/public multi-hop admission and proof/funded gates remain
 open. These source/runtime identities remain distinct from archived packages.
 The released-matrix pure ECDSA Rust consumer is independently reviewed with
 the same nine Rust calls and one host case; optional ledger 1.0.1 is not
 compiled. [Original curve runtime tests](plans/original-runtime-curves.md)
 also pass 41 P-256 and 44 Curve25519 cases against published runtime 0.21.
-These local arm64 results keep source-runtime, proof and Linux gates separate.
-Private generated Middle now passes actual Inner caller/key/receiver checks;
-its wrapper still uses a manual root Outer, so full three-call qualification
-remains open.
+The accepted source runtime also passes those 85, and original secp256k1 adds
+30 on each profile: 115 unique original curve cases per profile, across
+separately bound slices. These are pure local arm64 JavaScript results.
+Private generated Outer/Middle/Inner now record the actual nested caller
+chain with persisted receiver checks. A joint signed package, authenticated
+assembly, proofs/funding and Linux remain open.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner

@@ -190,6 +190,17 @@ generated Outer.viaMiddle, a new three-call identity, proofs/funding, public
 admission, releasedSDK1 execution and Linux remain open. See the
 [Caller API record](kernel-caller-rust-api.md) for exact evidence.
 
+The accepted source runtime85 gate is now reviewed at `38a554df3`, using
+exact3eaf runtime0.18 and its own lock, with signed84-file emitted output
+and275-file runtime dependency authentication. Reviewed `2ccfcb86c` adds
+the intact original secp256k1 30-case module on each runtime profile:
+115 unique original curve cases per profile across distinct signed slices.
+Generated private Outer/Middle/Inner at reviewed `89bf52445` now replace
+the manual root and record the actual nested caller chain with both
+persisted receiver checks. Typed records/handles are not package authority;
+a new physical A/M/I package and checked token are next. Proof/funded,
+releasedSDK1 Caller execution, public admission and Linux remain open.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing

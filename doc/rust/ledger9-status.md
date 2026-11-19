@@ -123,6 +123,14 @@ fix makes failed or incomplete Vitest runs fail the gate while retaining logs.
 This adds pure published JavaScript coverage, with source-runtime and generated
 Rust qualification kept separate.
 
+The accepted source runtime now passes the same 85 cases at reviewed `38a554df3`,
+using actual emitted runtime 0.18 and its own lock. A signed build attestation
+authenticates all 84 emitted files and 275 runtime dependency files before use.
+Reviewed `2ccfcb86c` adds the intact original secp256k1 30-case module on each
+profile. This gives 115 unique original curve runtime cases per profile in
+separately bound slices. Independent replays pass; generated Rust curve coverage,
+malformed host-atom compatibility and Linux remain separate.
+
 The private Caller token is now wired at reviewed `d2464cc84`, with actual
 physical-key execution and binding refusals. Reviewed `a41abb36d` passes ten
 private unfunded VM tree tests; it does not execute generated multi-hop
@@ -135,6 +143,14 @@ Wrong key and persisted receiver refuse. Independent retained-binary replay
 passes backend 2/2, generated Middle 1/1 and all 11 runtime tree tests. The
 wrapper's root Outer recording remains manual; generated `Outer.viaMiddle`,
 a new signed three-call package, proofs/funding and Linux remain open.
+
+The subsequent reviewed `89bf52445` executes generated private Outer, Middle
+and Inner, replacing that manual root. Caller observations are root `None`,
+Middle seeing Outer, and Inner seeing Middle; both persisted receivers are
+checked before child execution. It returns typed records and sealed handles,
+without an authenticated A/M/I package or external preimage assembly. A new
+physical package and source-specific checked token are next; proof/funded,
+released SDK1 execution and public/Linux gates remain open.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
