@@ -54,7 +54,7 @@ qualifies original Inner's VM/native/recorded query and constructor; its changed
 runtime requires a signed package; the v5 admission continuation is linked
 below. A private generated Caller continuation now executes `viaInner` with the
 observed Outer identity; its reviewed six-key physical candidate now has a
-typechecked identity gate, with generated token wiring still open. Caller
+typechecked identity gate and reviewed private token execution. Caller
 proofs and funded application remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
@@ -70,8 +70,14 @@ funded and Linux gates remain open.
 The [original host metadata gate](plans/original-host-metadata-status.md)
 passes five unchanged expectedVk cases and 31 guards at a separate reviewed
 source profile. Caller physical identity checking now passes Cargo checking;
-generated token wiring and dynamic binding cases remain open. These results
+private token execution is reviewed, while multi-hop adapters remain open. These results
 do not qualify public defaults, fresh new-runtime proofs or native Linux.
+The reviewed combined host branch now passes 21/21 unchanged original cases
+on released and private source profiles. [ECDSA generated Rust parity](plans/original-ecdsa-parity.md)
+also runs the original suite through a private adapter, with nine Rust calls
+and one host-only case. Caller token execution and a bounded unfunded VM tree
+are reviewed locally; actual multi-hop adapters and proof/funded gates remain
+open. These source/runtime identities remain distinct from archived packages.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner

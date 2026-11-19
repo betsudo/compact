@@ -147,8 +147,8 @@ full runtime/macros closure, with 841 files/43 directories and ten controls.
 Signed package receipt SHA-256:
 `391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
 The [Caller API record](kernel-caller-rust-api.md) distinguishes this material
-from the pending checked installed-key/method/ABI gate, generated token
-wiring, packaged Cargo, public admission and proof/funded/Linux qualification.
+from its later checked identity/private token execution and the remaining
+public admission and proof/funded/Linux qualification.
 This coordinator runtime differs from both Events v4 and v5.
 
 
@@ -158,9 +158,20 @@ at reviewed `94b97c691` passes the unchanged expectedVk five-case body and
 `__proto__`/null-prototype behavior and the public default omission. This
 private arm64 profile is separate from accepted v4/v5/Caller package identities.
 A reviewed Caller identity candidate `1cff17c1b` now passes exact physical
-checks and offline all-features Cargo checking; token wiring and dynamic
-binding cases remain open, as do proof/funded/Linux gates. Its signed receipt
+checks and offline all-features Cargo checking. Later private token execution
+and binding cases pass at d246; public/proof/funded/Linux gates remain open. Its signed receipt
 SHA-256 is `3caa6958d65b4e9f746b2a70cdaf24216305ab7c36c9e99826997405d5486242`.
+
+
+The reviewed [combined original host gate](original-host-metadata-status.md)
+at `99d08ec89` passes 21/21 unchanged cases on released and private source
+profiles, retaining actual compiler outputs and the SDK graph. The
+[original ECDSA Rust gate](original-ecdsa-parity.md) at `50df7ede8` runs the
+same ten-case body through an explicit adapter: nine generated Rust calls
+and one host-only recovery case. These local pure results add no proof or
+Linux claim. Reviewed Caller `d2464cc84` wires the private token, and
+`a41abb36d` prepares only unfunded VM call-tree preimages; generated multi-hop
+adapters, physical admission and proof/funded qualification remain open.
 
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in

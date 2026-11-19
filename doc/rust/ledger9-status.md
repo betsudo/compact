@@ -84,13 +84,13 @@ binds six genuine key pairs and the full runtime/macros closure (841 files,
 43 directories; ten controls). Signed package receipt SHA-256:
 `391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
 Its later checked installed-key/method/ABI candidate is recorded below.
-Generated token wiring, dynamic binding cases, public Caller admission, fresh
-Caller proofs, funded replay, nested/multiple paths and Linux remain open.
+Public Caller admission, fresh Caller proofs, funded replay, nested/multiple
+paths and Linux remain open; later private token execution is recorded below.
 
 The checked Caller identity layer at reviewed `1cff17c1b` now passes exact
 850-file/47-directory verification, eight physical checks and offline
-all-features Cargo checking. Its token remains unwired and dynamic binding
-refusals are unrun; its signed receipt SHA-256 is
+all-features Cargo checking. This earlier head predates private token wiring
+and executed binding refusals; its signed receipt SHA-256 is
 `3caa6958d65b4e9f746b2a70cdaf24216305ab7c36c9e99826997405d5486242`.
 
 The [original host metadata record](plans/original-host-metadata-status.md)
@@ -99,7 +99,25 @@ reviewed `94b97c691`, with three retained real key sets. It preserves safe
 `__proto__`/null-prototype behavior and unchanged public default omission.
 This is a private arm64 source profile, separate from archived package
 identities, Rust descriptors, proofs and Linux. The original compiler-version
-commit assertion is the next bounded host gap; full host packages remain open.
+commit assertion subsequently passes at `72b54c227`; full host packages remain open.
+
+The later [combined host gate](plans/original-host-metadata-status.md) at
+`99d08ec89` passes 21/21 unchanged original cases on both released and private
+source profiles, with actual compiler outputs captured before consumption.
+Signed receipt SHA-256:
+`35f14e82ead10ef4ea01926157d63b5e44b28fb31ec508293c866b1bf15188cb`.
+[Original ECDSA Rust parity](plans/original-ecdsa-parity.md) at `50df7ede8`
+passes the ten-case body through a private adapter: nine generated Rust
+calls and one host-only case, independently replayed. Signed receipt SHA-256:
+`51b09911a6a96be08a090f04629e424d31b26cfd59b2232bb2bf4ba580a23608`.
+The fixture is pure; no ZKIR/key/proof/funded obligation is implied. These
+results retain their distinct source heads and local arm64 scope.
+
+The private Caller token is now wired at reviewed `d2464cc84`, with actual
+physical-key execution and binding refusals. Reviewed `a41abb36d` passes ten
+private unfunded VM tree tests; it does not execute generated multi-hop
+adapters or authorize a transaction. The Caller API record gives exact
+receipts and restrictions. Full Linux and new-runtime proof gates stay open.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
