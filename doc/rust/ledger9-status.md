@@ -152,6 +152,21 @@ without an authenticated A/M/I package or external preimage assembly. A new
 physical package and source-specific checked token are next; proof/funded,
 released SDK1 execution and public/Linux gates remain open.
 
+The new physical A/M/I candidate at reviewed `c1c61e77b` now binds 1,652
+files/77 directories under identity
+`999d62b1c764f13b6aa9de60c09cb7f4b4ae089ac2b51d1c9f9d39e024e795ed`.
+Exact verification and 16 refusal controls pass. It adds physical packaging,
+with checked token/execution, package Cargo, proof/funded and public/Linux
+qualification still open.
+
+[Original runtime resolution coverage](plans/original-runtime-resolution.md)
+at reviewed `127f75a12` passes all 14 original cases on published runtime 0.21.
+Source runtime 0.18 retains its closed export: zero passes and 14 missing-function
+failures, recorded as incompatibility rather than success. The accepted source's
+existing 24-module suite separately passes 465/465 with no skips. These are
+source TypeScript tests, including adapted/internal cases; their counts overlap
+the original curve suites. Finished owned Node scratch and worktree are cleaned.
+
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
 2+2 released/source TypeScript cases respectively (40 total). Source guards

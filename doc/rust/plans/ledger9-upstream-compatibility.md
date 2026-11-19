@@ -201,6 +201,16 @@ persisted receiver checks. Typed records/handles are not package authority;
 a new physical A/M/I package and checked token are next. Proof/funded,
 releasedSDK1 Caller execution, public admission and Linux remain open.
 
+The new physical A/M/I Caller candidate at reviewed `c1c61e77b` now binds
+1,652 files/77 directories with16 refusal controls. This is physical packaging
+only; checked token/execution and proof/funded/public/Linux gates remain open.
+The [original runtime resolution record](original-runtime-resolution.md)
+qualifies14/14published cases while source0.18 records0/14passes and14missing-
+function failures from its intentionally closed export. Source existing-unit
+coverage separately passes465/465 across24modules, with adapted/internal
+cases and overlapping counts. These localarm64results add no Rust/proof or
+Linux claim. Finished owned Node/build scratch and worktrees are cleaned.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing

@@ -88,6 +88,12 @@ separately bound slices. These are pure local arm64 JavaScript results.
 Private generated Outer/Middle/Inner now record the actual nested caller
 chain with persisted receiver checks. A joint signed package, authenticated
 assembly, proofs/funding and Linux remain open.
+The new A/M/I physical candidate is reviewed, with 1,652 files/77 directories
+and 16 refusal controls; checked execution is next. [Runtime resolution](plans/original-runtime-resolution.md)
+passes the original 14 cases on published runtime, while source keeps its
+closed-export incompatibility explicit. The source's existing suite also passes
+465/465 across 24 modules; that overlapping adapted/internal count is separate
+from intact original coverage.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
