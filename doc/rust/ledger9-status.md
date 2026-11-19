@@ -83,9 +83,23 @@ another coordinator extension. Its reviewed physical candidate `ac767d25`
 binds six genuine key pairs and the full runtime/macros closure (841 files,
 43 directories; ten controls). Signed package receipt SHA-256:
 `391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
-The checked installed-key/method/ABI gate and generated token wiring remain
-open, along with packaged Cargo, public Caller admission, fresh Caller
-proofs, funded replay, nested/multiple paths and Linux.
+Its later checked installed-key/method/ABI candidate is recorded below.
+Generated token wiring, dynamic binding cases, public Caller admission, fresh
+Caller proofs, funded replay, nested/multiple paths and Linux remain open.
+
+The checked Caller identity layer at reviewed `1cff17c1b` now passes exact
+850-file/47-directory verification, eight physical checks and offline
+all-features Cargo checking. Its token remains unwired and dynamic binding
+refusals are unrun; its signed receipt SHA-256 is
+`3caa6958d65b4e9f746b2a70cdaf24216305ab7c36c9e99826997405d5486242`.
+
+The [original host metadata record](plans/original-host-metadata-status.md)
+qualifies the unchanged expectedVk five-case body and 31 source guards at
+reviewed `94b97c691`, with three retained real key sets. It preserves safe
+`__proto__`/null-prototype behavior and unchanged public default omission.
+This is a private arm64 source profile, separate from archived package
+identities, Rust descriptors, proofs and Linux. The original compiler-version
+commit assertion is the next bounded host gap; full host packages remain open.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and

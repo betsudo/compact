@@ -151,6 +151,17 @@ from the pending checked installed-key/method/ABI gate, generated token
 wiring, packaged Cargo, public admission and proof/funded/Linux qualification.
 This coordinator runtime differs from both Events v4 and v5.
 
+
+The separate [original host metadata gate](original-host-metadata-status.md)
+at reviewed `94b97c691` passes the unchanged expectedVk five-case body and
+31 metadata guards with three retained real key sets. It preserves safe
+`__proto__`/null-prototype behavior and the public default omission. This
+private arm64 profile is separate from accepted v4/v5/Caller package identities.
+A reviewed Caller identity candidate `1cff17c1b` now passes exact physical
+checks and offline all-features Cargo checking; token wiring and dynamic
+binding cases remain open, as do proof/funded/Linux gates. Its signed receipt
+SHA-256 is `3caa6958d65b4e9f746b2a70cdaf24216305ab7c36c9e99826997405d5486242`.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing

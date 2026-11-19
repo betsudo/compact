@@ -53,8 +53,8 @@ compiler coverage. A separate reviewed [Rust caller API slice](plans/kernel-call
 qualifies original Inner's VM/native/recorded query and constructor; its changed
 runtime requires a signed package; the v5 admission continuation is linked
 below. A private generated Caller continuation now executes `viaInner` with the
-observed Outer identity; its reviewed six-key physical candidate still needs
-a checked installed-key/method/ABI gate and generated token wiring. Caller
+observed Outer identity; its reviewed six-key physical candidate now has a
+typechecked identity gate, with generated token wiring still open. Caller
 proofs and funded application remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
@@ -67,6 +67,11 @@ The [original block-time case](plans/original-block-time-testchain.md) also
 passes all twelve TypeScript assertions per path. A reviewed separate Rust
 slice also passes twelve native and twelve recorded observations; its proof,
 funded and Linux gates remain open.
+The [original host metadata gate](plans/original-host-metadata-status.md)
+passes five unchanged expectedVk cases and 31 guards at a separate reviewed
+source profile. Caller physical identity checking now passes Cargo checking;
+generated token wiring and dynamic binding cases remain open. These results
+do not qualify public defaults, fresh new-runtime proofs or native Linux.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
