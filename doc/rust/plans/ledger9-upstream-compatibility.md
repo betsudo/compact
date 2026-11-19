@@ -96,8 +96,8 @@ EntryPoint invocation remains held.
 The separate [Rust caller API qualification](kernel-caller-rust-api.md) at
 `23af5a8e7` passes independent review: typed native/recorded slot-6 queries,
 constructor/root tests, sealed child caller/replay, generated original Inner
-and exact Events regression. A new signed runtime package is required before
-current-runtime Events admission; Caller proofs/funded application remain open.
+and exact Events regression. The v5 continuation below meets the signed-package/CLI prerequisite;
+Caller proofs and funded application remain open.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
@@ -116,6 +116,28 @@ zero-new-header checks pass. Full Linux mode is prepared to execute the
 actual admitted Rust crate with fresh proofs and sequential funded strict
 application/replay across both SDK matrices. It has not run; packaged
 compiler and native Linux qualification remain open.
+
+A later [v5 runtime/CLI continuation](original-events-v5-status.md) is
+independently reviewed. The signed physical identity
+`635a6303044c59a1b38370fe5211b6117c24f03b4f1c12c0a7e81fec49eccb9d`
+binds the reviewed caller runtime; source `73fb2ab80` admits v5 with 18
+controls and strict Clippy and preserves actual v4 admission with 13 controls.
+Signed CLI receipt SHA-256:
+`dec02cb4c96ec6677749a7ffd6ac49ca6d69586a4e7306ed1246a7fd1c9af2fd`.
+Fresh v5 execution/proofs/funded replay, packaged compiler and native Linux
+remain open; v4 evidence retains its original identity.
+
+The [original block-time runtime case](original-block-time-testchain.md) at
+`2d2132f0b` passes its unchanged twelve assertions on each TypeScript path
+while preserving the older synchronous Ledger 8 adapter. Rust IR refuses
+the first time operation at that source; [#783](https://github.com/betsudo/compact/issues/783)
+tracks the separate implementation. Its VM comparisons use slot 2 `tblock`.
+The subsequent reviewed Rust slice `b577d8d84` passes the original twelve
+values in native and recorded generated Rust (24 observations), source
+profile controls and focused VM/backend tests. Signed receipt SHA-256:
+`ba0629197aa9b5cab6dda1d6bfe5ceaa62258fc766e2c4882b1e3581fa516bea`.
+This is local API/VM qualification; its fresh proof/funded/Linux gates remain
+open and its runtime closure is separate from v4/v5.
 
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in

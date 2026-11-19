@@ -98,6 +98,28 @@ compiler admission and executes the actual admitted Rust crate for fresh
 proofs, independent verification, sequential funded strict application and
 released SDK replay. Full native Linux mode has not run.
 
+A later [v5 runtime/CLI continuation](plans/original-events-v5-status.md) is
+independently reviewed. The signed physical identity
+`635a6303044c59a1b38370fe5211b6117c24f03b4f1c12c0a7e81fec49eccb9d`
+binds the reviewed caller runtime; source `73fb2ab80` admits v5 with 18
+controls and strict Clippy and preserves actual v4 admission with 13 controls.
+Signed CLI receipt SHA-256:
+`dec02cb4c96ec6677749a7ffd6ac49ca6d69586a4e7306ed1246a7fd1c9af2fd`.
+Fresh v5 execution/proofs/funded replay, packaged compiler and native Linux
+remain open; v4 evidence retains its original identity.
+
+The [original block-time runtime case](plans/original-block-time-testchain.md) at
+`2d2132f0b` passes its unchanged twelve assertions on each TypeScript path
+while preserving the older synchronous Ledger 8 adapter. Rust IR refuses
+the first time operation at that source; [#783](https://github.com/betsudo/compact/issues/783)
+tracks the separate implementation. Its VM comparisons use slot 2 `tblock`.
+The subsequent reviewed Rust slice `b577d8d84` passes the original twelve
+values in native and recorded generated Rust (24 observations), source
+profile controls and focused VM/backend tests. Signed receipt SHA-256:
+`ba0629197aa9b5cab6dda1d6bfe5ceaa62258fc766e2c4882b1e3581fa516bea`.
+This is local API/VM qualification; its fresh proof/funded/Linux gates remain
+open and its runtime closure is separate from v4/v5.
+
 All results above are local Darwin arm64, bound to their signed source heads.
 The broad milestone remains incomplete: generic generated Rust cross-contract
 calls, nested/multiple caller paths, post-child event ordering

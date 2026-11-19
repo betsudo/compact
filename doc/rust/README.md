@@ -51,12 +51,20 @@ retained; its metadata-cycle fix preserves public and legacy refusals. Purity's
 original runtime refusal passes 1/1 on each path with stage-correct legacy
 compiler coverage. A separate reviewed [Rust caller API slice](plans/kernel-caller-rust-api.md)
 qualifies original Inner's VM/native/recorded query and constructor; its changed
-runtime requires a newly signed package before Events admission. Caller proofs
+runtime requires a signed package; the v5 admission continuation is linked
+below. Caller proofs
 and funded application remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event
 ordering, packaged compiler, native Linux and live-node qualification remain open.
+The [v5 runtime/CLI continuation](plans/original-events-v5-status.md) now
+passes independent physical and actual admission review, preserving archived
+v4 admission. Fresh v5 proof/funded/native Linux qualification remains open.
+The [original block-time case](plans/original-block-time-testchain.md) also
+passes all twelve TypeScript assertions per path. A reviewed separate Rust
+slice also passes twelve native and twelve recorded observations; its proof,
+funded and Linux gates remain open.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
