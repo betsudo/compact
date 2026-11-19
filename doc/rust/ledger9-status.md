@@ -618,7 +618,14 @@ SDK1 consumer at `d0655a12f` now passes all three API tests, including native,
 recorded, observed and Verify paths, wrong-read/cast refusals and both the v3
 and legacy hashes. An independent retained-binary replay repeats the result.
 These supplemental tests cover four original circuits; they add no original
-runtime test cases or proofs. Public schema21 admission, fresh profile55
+runtime test cases or proofs. A separate private proof harness first fails
+SDK1 compilation on field `+=`; signed correction `5a17e13ea` retains the
+same wrong-input assertions. The reviewed a9b cached retry compiles both the
+ignored proof harness and retained verifier, with 741 Cargo artifact records
+and 325 distinct package IDs; neither executes a proof or application here. The
+[CamelCase original-host retries](plans/original-host-metadata-status.md#efficient-retries-and-original-output-transport)
+retain partial released 2/2 test passes with a copy-root mode collector refusal;
+source is unrun and the complete lane remains unqualified. Public schema21 admission, fresh profile55
 proofs/funded replay, full parity and native Linux remain open. The [hardened v5 Linux source handoff](plans/original-events-native-linux-handoff.md#git-object-binding-hardening)
 at `b3e677de6` passes independent source review and an independent rerun of
 12 tests/77 refusals. Actual Linux compilation/proofs remain unrun. Owned

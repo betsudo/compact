@@ -31,6 +31,17 @@ four original circuits exercise native, recorded, observed and Verify paths,
 wrong-read/cast refusals and matching v3/legacy hashes. This adds no original
 runtime cases or proofs. Public schema21 admission, new profile55 proofs,
 funded replay and native Linux remain open.
+
+The private four-circuit proof harness has a retained SDK1 compile failure at
+`f007efc56` and an equivalent field-addition correction at `5a17e13ea`.
+The `a9b0993f2` cached retry now compiles both the ignored proof harness and
+retained verifier (741 Cargo records/325 distinct package IDs); it executes
+neither and creates no keys, proofs or funded result.
+The [latest CamelCase retries](original-host-metadata-status.md#efficient-retries-and-original-output-transport)
+retain an original-logger guard failure and a copy-root mode collection
+refusal. Released d183 tests pass 2/2, but source is unrun and the complete
+lane remains unqualified. Original assertions and all other mode checks stay
+strict; no complete CI saving or native Linux result is inferred.
 The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
 has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
 rerun with 12 source-only tests and 77 refusals. Native owner/context/build and

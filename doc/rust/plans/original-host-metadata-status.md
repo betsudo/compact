@@ -95,3 +95,38 @@ remain; no other job is interrupted. A new source revision will batch Git
 object reads and retain continuous resource monitoring with bounded copy
 checks. Its real retry still requires a new reviewed launch plan. No complete
 runtime or CI speedup is measured from this partial attempt.
+
+## Efficient retries and original output transport
+
+The efficient executor `833bc7fa5` batches framed Git object reads and checks
+whole-copy boundaries while retaining continuous disk and process guards.
+Its real projection passes in 96.24 seconds, and copying reaches Vitest
+without the earlier per-file full-worktree scans. The released original two
+cases then fail before either compiler runs: the input guard rejects the
+original logger's data file. This is an instrumentation failure, with zero
+host qualification credit. Signed failure receipt SHA-256 is
+`0f1d2792aac027676d32f27dff5a79636939b4fb99479be9c9e215dbf32cc179`.
+
+The next exact retry at `d183d86df` preserves the original logger and permits
+only its bounded data file and two directories. Released Vitest passes both
+unchanged original tests, with two successful compiler calls, empty raw
+compiler streams and valid JavaScript. Collection then refuses a transport
+mismatch: unchanged Node `fs.cpSync` gives its captured tree a `0755` root,
+while the wrapper's original tree has a `0700` root. All five generated files,
+their bytes and modes, and both child-directory modes match in each call.
+The source profile is unrun, and this partial result does not qualify the
+complete host lane. Signed failure receipt SHA-256 is
+`eb7343cd128410d8bbcf6cc107621c9f4d72eace6caf60662402cb12b2fa63d4`;
+independent failure review SHA-256 is
+`51bb4a2fad8ee33e4cf4ed711f5542f082193fa286ec38132c70e6d570681a78`.
+A focused capture correction will retain both root modes and validate only
+that exact copy-root transformation; other root pairs, child modes, file
+bytes and membership remain strict. Original tests, fixtures, assertions,
+logging and the bridge remain unchanged.
+
+Both failed attempts retain raw streams and source inventories. Only d183
+retains complete generated call and bridge trees; 833 invokes no compiler. Finished owned resources are cleaned after review or explicitly
+deferred for the immediate follow-up. The retained 183-archive input mirror
+is separate from disposable outputs. The measured framed Git-only read is
+1.792 seconds for 9,883 paths; it is not a complete host, physical-copy or CI
+speedup measurement. Native Linux and the full 45-module gate remain open.

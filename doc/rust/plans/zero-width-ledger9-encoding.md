@@ -374,3 +374,31 @@ creates no proof or funded application and qualifies no public schema21
 admission, global SDK1 ABI, live deployment or native Linux result. The original
 upstream two-case suite remains compile-only; the new Rust tests are additional
 controls. A separate four-circuit proof/funded source slice is next.
+
+## Private proof harness: SDK1 compile correction
+
+The first compilation attempt for the separate four-circuit proof fixture at
+signed `f007efc56` fails before any test or proof execution. SDK1's field type implements
+addition but not `AddAssign`, so both supplemental wrong-input mutations using
+`+=` fail with E0368. Cargo retains 369 partial artifact records and 324
+package IDs; these are not a completed typecheck. The separate verifier build
+is unrun. Signed failure receipt SHA-256 is
+`3da93a0fedd771e5e970d0cdc2ef8184a16d05a42112d2449fef7b9afa994300`.
+
+Signed correction `5a17e13ea` uses equivalent `x = x + Fr::from(1u64)` mutations
+and removes one unused import, preserving the negative assertions. The `a9b0993f2`
+stage binds the corrected harness and verifier, full prebalance transaction
+snapshot and unchanged d065 generated crates. Its offline lock still has
+404 registry and five local packages. The reviewed cached compile-only retry
+now passes both `cargo test --no-run` and the separate verifier binary build.
+Cargo reports 741 artifact records across the two commands and 325 distinct
+package IDs, including 26 Midnight registry records and all ten required core
+libraries. Both executables and the exact lock are retained. Signed compile
+receipt SHA-256 is
+`a52d156225056e34e92782d60c41a1c219b97806aea2965a9a9ec087d3488cbc`.
+Neither executable has run a proof or application in this gate.
+
+The retained 28-file parameter set matches released SDK1's embedded hashes
+and can be reused without copying or mutation. Fresh keys, four proofs,
+strict funded application/replay and independent retained verification remain
+separate gates. Public schema21, global SDK1 ABI and Linux remain open.
