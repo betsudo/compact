@@ -230,6 +230,32 @@ tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
 released v3 attestation hashing. Its next runtime/derive fix must preserve
 legacy Ledger8/v2 behavior; generated profile/API qualification follows.
 
+
+The [four original runtime modules](original-runtime-descriptors.md) now have
+faithful reviewed red evidence: 924 parameterized cases per profile, published
+918 passed/6 failed and accepted source3eaf 894 passed/30 failed. A separate
+reviewed local bigint-helper repair at `d79f397fe`/runner `b1041130f` fixes three
+unchanged original cases, giving 897 passed/27 failed while existing source
+24-module/465-test regression stays green. Preserve the remaining diagnostics
+and accepted additional APIs; [#785](https://github.com/betsudo/compact/issues/785)
+tracks the gaps. These are JavaScript/API results, with no proof or Linux claim.
+
+Closed Caller preparation at reviewed `8707e3a82` now produces only three private
+unfunded SDK prepartition calls. Thirteen test groups cover 80 refusal cases;
+17 downstream compiler refusals and an ordinary SDK-clone positive pass, with
+independent replay. Product provenance stays opaque; SDK clones remain mutable
+ordinary data. No actual proof preimage, transaction, funded, SDK1 or Linux claim.
+Finished owned build targets and clean worktrees are removed; exact replay
+fixtures and qualification evidence are retained.
+
+
+The reviewed [zero-width runtime/derive slice](zero-width-ledger9-encoding.md)
+at `3e5625f14` now executes both encoding profiles together: legacy alignment
+and hash remain unchanged, while the explicit v3 attestation matches the released
+oracle. Thirteen runtime tests and 33 macro tests pass, with four downstream
+refusals and strict macro Clippy. This is direct API qualification; IR/profile
+threading, generated original contracts, the ABI55 handshake and proofs remain open.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing

@@ -75,3 +75,31 @@ Reviewed signed `2c5f11330b071015b8d896ead0945a0da64b55ff` now implements that c
 Five VM tests cover actual nested caller recording and 26 dynamic refusals; 23 physical refusals and six downstream compile refusals also pass. Independent review replays the binary and all six compiler probes with their intended diagnostics. Signed `qualification-2c5f11330.json` SHA-256 is `0f7f65e2f324e323ef594b995eac18244563a16328257afcbe2d234f30e17b1c`; independent review SHA-256 is `b085167f595f211845b1192a00603931dbced74dd0fc8da7a6fc9f1b8c8d3af2`. Nine source blobs and 20 evidence files are bound. Expected build inputs now come from immutable validated Git objects with a final source/head/clean check, closing an observed concurrent source-read race before the final Cargo batch.
 
 This qualifies private checked typed VM records on the source SDK 9.1.0.2 graph. It does not expose authenticated cross-crate assembly, proof preimages, a transaction, public admission, fresh proofs, funded replay, SDK 9.1.0.1 or Linux. `Some(User)` is refused unchanged in this first route; observed times remain local inputs. The next design makes checked execution produce an opaque outcome for closed source-specific unfunded prepartition preparation. Generic runtime assembly stays private. The owned 958 MiB target and clean worktree are removed; the retained execution fixture, binary, lock and evidence remain for replay.
+
+
+## Closed unfunded preparation
+
+Reviewed local `8707e3a8247261bcb4355c21c4d21101fa897cc2` extends the checked
+A/M/I product to three SDK prepartition calls through its closed assembly path.
+It retains opaque execution/provenance authority and validates source/material,
+VM order/state/private output, installed keys, whole call-key uniqueness, SDK
+forest structure, claims and batched gas. The generic runtime assembler remains
+crate-private. SDK calls are mutable cloneable ordinary data; future product
+proof/transaction constructors must consume the opaque prepared wrapper.
+
+Thirteen test groups cover 80 refusal cases; 17 product compiler refusals and
+one ordinary SDK-clone positive pass. Physical checks pass 1 positive/25 refusals
+for 1,679 files/87 directories. Independent review replays all unit groups and
+compiler probes under Rust 1.99. Signed qualification SHA-256 is
+`4c5383bdccb6a7c5a761cfb58dd93e81de15358ea7e533270a0d6c1581fdcdba`;
+review SHA-256 is `c2ab089306ed200b3539c6d3d4fe6ecf7b8f00428081a6ea939d7db6853b973f`.
+The package identity is `7e16daa362524dddb9d42cb96d9f0f2ef38335147d85c9543e81e5447e4937a8`.
+Initial 225 compile failures remain historical; corrected 870 was frozen and
+reviewed before execution. Owned 936 MiB target and clean worktree are removed;
+replay fixture source remains because the binary embeds its location.
+
+This is private source-SDK 9.1.0.2 unfunded preparation, not actual ProofPreimage,
+Transaction, proofs, funding, public admission, SDK 9.1.0.1 or Linux qualification.
+No-owner root is the scoped route; Some(User) remains refused, and local time
+observations do not authenticate chain finality. Existing v4/v5 packages keep
+their exact identities; no source publication or services were started.

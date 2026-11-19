@@ -31,13 +31,40 @@ SDK ABI, generated-contract, proof, funded transaction or Linux result is claime
 Owned Cargo and Node copies are removed; source, binary, lock, original ZKIR,
 oracle and logs remain retained.
 
-The next bounded implementation is explicit runtime and derive encoding
-selection: legacy/default zero-byte behavior must coexist with an opt-in
-minimum-one-byte carrier and enum representation in the same binary. A global
-width change or Cargo feature would risk altering legacy callers through
-feature unification. The compiler IR profile, generated carriers and runtime
-compatibility handshake require a later separately qualified slice. Existing
-ABI54 packages and Ledger8/ABI53/Forge evidence keep their exact identities.
+## Runtime and derive API qualification
+
+The reviewed first runtime slice is signed local
+`3e5625f148e269ce067ae84591803a991cbc8735`. It introduces explicit
+`BoundedUint<MAX, ONE_BYTE_MIN = false>` encoding selection and the scoped
+`#[compact_encoding(ledger9_v3)]` enum derive attribute. Legacy/default types
+retain zero-byte behavior; selected types use at least one byte. Both profiles
+coexist in one binary without a Cargo feature. The global ABI54 marker remains
+unchanged; an additive ABI55 marker reserves a future generated-profile handshake.
+
+Actual final-head execution passes 7 existing bounded-unsigned tests, 3 existing
+enum tests, 3 new mixed-profile/hash tests and 33 macro unit tests. Macro strict
+Clippy passes. A downstream valid control and four compiler refusal controls pass.
+Independent review replays the retained test binaries and checks those controls.
+The explicit v3 attestation hash now equals the published oracle `7dd1657a...`;
+the legacy hash remains `aae89fc0...` in the same consumer.
+
+Signed final qualification SHA-256 is
+`f7f0c41e317e4726a0334d101f5ca978b0a62cfbd4e01e992587cbde033c7bea`;
+independent review SHA-256 is
+`132ac73e54caa591e006019145ba6eef8d667177f05e4ff7f5e7a71e0513e354`.
+The stage contains 776 files/20 directories. Its manifest-only pure registry SDK1
+overlay resolves 24 Midnight packages matching the signed baseline; optional ledger
+is absent from the compiled tree. Source compatibility metadata retains its SDK2
+labels. This is not a full SDK1 ledger ABI result. Earlier compile failures at 4df,
+6ee and 470 remain historical; each fix was signed and reviewed before rerunning.
+Owned 845 MiB Cargo target and clean source worktree are removed; source, locks,
+binaries, stage and evidence are retained.
+
+The next slice must carry the encoding profile explicitly through compiler IR,
+carrier/literal/coercion/arithmetic/stateful lowering and runtime compatibility.
+Generated issue-285/588 contracts, the actual ABI55 handshake, new physical proof
+packages, fresh proofs/funded replay and Linux remain unqualified. Existing ABI54
+packages and Ledger8/ABI53/Forge evidence keep their exact identities.
 
 Owners are runtime primitive alignment/binary hash representations, enum
 and cell derives, IR extraction/schema, generated carrier/literal/coercion/
