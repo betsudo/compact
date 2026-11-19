@@ -1,11 +1,16 @@
 # Ledger 9 adoption on the Rust AST line
 
-## Publication snapshot, 2026-11-19
+## Current publication and qualification snapshot, 2026-11-19
 
-The [dated status digest](../ledger9-status.md) records the merged #774 foundation,
-open rebased #775 and separate local results. The [CI resource budget](ci-runner-resource-budget.md)
-records runner usage without a controlled optimization saving. Historical
-entries retain their source and qualification boundaries.
+[PR #774](https://github.com/betsudo/compact/pull/774) merged at
+`eb3b2adbb` into `codex/rust-backend-ast`. [PR #775](https://github.com/betsudo/compact/pull/775)
+is open at rebased head `297ea0b17`; its three hosted workflows completed
+successfully, including Rust proof qualification.
+The complete green #775 result described later belongs to pre-rebase
+`867b25d88`. Local 20-circuit macOS arm64 proof and funded receipts remain
+bound to their original signed source heads; native Linux [#773](https://github.com/betsudo/compact/issues/773)
+is still open. The [runner budget](ci-runner-resource-budget.md) separates
+historical assigned runner minutes from unmeasured CI savings.
 
 The signed local Events v4 physical candidate at `8ea671f79` binds
 2,460 files and passes 18 refusal controls; unchanged-candidate Cargo checks
@@ -20,8 +25,52 @@ TS/IR/metadata/ZKIR sets and passes eight refusals; ordinary Outer still
 refuses. Its signed receipt SHA-256 is
 `2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`;
 a separate signed reference attestation binds the verified v4 package.
-Public CLI admission, funded default-strict application/replay, second
-persisted result, applied event delivery and native Linux remain open.
+The first funded Events transaction at signed source `0148c881e` now passes
+Ledger 9.1.0.2 default-strict Real application and identical-byte replay
+refusal, with actual applied Outer-before-Inner logs and persisted Inner v=1.
+This first-call receipt has no second-call proof/application claim.
+Signed receipt SHA-256:
+`b737d65f4efb4584f3b452a3ff58b4f1a63ef371f6ce281c1ad1d3cf1eda4d8f`.
+A released Ledger 9.1.0.1 registry-only consumer at `d68883f82` independently
+verifies/applies that exact funded transaction, checks both applied log
+payloads and matches the source SDK ledger bytes; replay refuses unchanged.
+Its reviewed signed receipt SHA-256 is
+`33899b39366efd79bc4220704f65856205ae90cd19a44053028b8dc4c2c1786e`.
+Local trusted CLI admission is reviewed at `ecf3b0338`; the source interpreter
+wrapper qualification remains separate from a packaged Scheme sibling.
+Both original Events calls now have fresh funded default-strict application
+and replay refusal on the source SDK, with persisted Inner values 1 then 2
+and actual Outer-before-Inner payloads `0x42` then `0x07`. The second-call
+source receipt at `9f42c8552` has SHA-256
+`8122ae04a23cc6f8ba2ae09bc9c32e27eed1faf2377db5a76c5ef499b6ad858d`.
+The released Ledger 9.1.0.1 consumer at `656fceed5` applies both byte-exact
+transactions and matches the second prestate and final ledger bytes. Its
+reviewed signed receipt SHA-256 is
+`9b0d591e6b15f07b4b828bae4a1d2f70a4f50ac34363cd1b44391d677cc88b85`.
+The earlier second-call refusal omitted the ledger post-block transition;
+the signed supersession records this harness correction, not an SDK mismatch.
+These are local Darwin arm64 results for the exact original pair. Packaged
+compiler, native Linux, live-node and post-child ordering [#776](https://github.com/betsudo/compact/issues/776)
+remain open.
+
+The original Callee Witness suite at `238b6f168` passes 3/3 on each of the
+released and source-generated TypeScript paths. Declaration conformance uses
+runtime implementation metadata in the explicit Ledger 9 profile without
+inventing an implementation for a declared interface; legacy profile guards
+and the exact Events artifact regression pass. The signed delivery index
+SHA-256 is `62ddba5a0121c2bdd1bbd8942d2020a1b0e8ff8ba6a42e8a4015f62a63a2cf73`;
+[#777](https://github.com/betsudo/compact/issues/777) tracks integration.
+The original Caller suite at `d2ba7669d` passes 6/6 on each TypeScript path,
+including genuine `Kernel.caller` semantics in the TestChain. Ordinary
+standalone Inner admits the released Ledger 9 primitive without a CCC flag;
+17 guards and neighboring Events/Callee Witness regressions pass. Its signed
+delivery index SHA-256 is
+`3e0fd4636ccdcd9c1be049c44040cfee8fbf36af79fa700668b5b66c8a563adc`.
+These unchanged original suites use `--skip-zk`; they do not qualify generated
+Rust caller queries, caller proofs or funded caller application.
+[#778](https://github.com/betsudo/compact/issues/778) retains those follow-ups.
+The next original suite is Key Agreement; recursion suites and their five
+upstream skips remain separately accounted for.
 
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.

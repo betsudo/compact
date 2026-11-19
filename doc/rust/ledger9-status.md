@@ -18,29 +18,52 @@ contract-semantic baseline.
 | Slice | Public state | Qualification boundary |
 | --- | --- | --- |
 | [Cross-contract foundation #774](https://github.com/betsudo/compact/pull/774) | Merged into `codex/rust-backend-ast` at `eb3b2adbb` | Checked call context and refusal foundation; ordinary generated public `pay` execution remains separate. |
-| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Open, rebased on #774 at `297ea0b17`; Rust proof qualification was still running at the last check | The complete green `867b25d88` run belongs to the earlier source head. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source, not the rebased head. |
+| [Original-token Rust circuits #775](https://github.com/betsudo/compact/pull/775) | Open, rebased on #774 at `297ea0b17`; all three hosted workflows passed, including existing Rust proof qualification | The green `867b25d88` run retains its earlier source identity. Local proof/funded evidence for 20 unique circuits remains bound to its recorded source; the separate full native Linux gate is still required. |
 | Public generated A `pay` / B `transfer` | Signed local source `49ff23d9d`; unpublished | A source-bound offline gate produced fresh A/B V3 proofs, separately verified them, applied a funded default-strict two-contract transaction with positive Dust, and refused replay with unchanged ledger bytes on Darwin arm64. Native Linux, live-node and original decoy-transcript parity remain open. |
 | [Native Linux gate #773](https://github.com/betsudo/compact/issues/773) | Open | Local Darwin arm64 proof and funded results do not qualify the required x86_64 Linux gate. |
 
-Local bounded slices also include released-compiler host E2E cases and the
-byte-exact original composable Events sources. The signed Events Rust source
-gate emits Inner Rust and TypeScript and confirms that ordinary Outer Rust
-refuses at the live-coordinator boundary without publishing output. A later
-signed private check binds the generated Outer IR's pre-child emit and direct
-call to the separately generated Inner IR, with changed event, receiver,
-argument, method and child effects refused. The exact-head local gate passed
-with 12 Inner and five private Outer manifest files; 13 focused contract-call
-tests and library Clippy with warnings denied passed on Darwin arm64. This
-private check does not publish an executable Outer. The
-separately qualified public `pay` route does not execute this original Events
-pair. Public original-suite parity, generated Events A/B Rust execution,
-applied event ordering, the host-tool census, native Linux integration and live-node
-qualification remain open. [Compatibility tracking #726](https://github.com/betsudo/compact/issues/726),
+The reviewed local Events continuation admits the exact original Inner/Outer
+pair through a trusted CLI path at `ecf3b0338`. Signed receipt SHA-256:
+`17926e1a576c3d1ff21aee29f39944ccb6d15c7773931cb2e57762fad4aca2d6`.
+It authenticates the source/artifact/key closure and retains ordinary Outer's
+live-coordinator refusal. Its frontend uses a source interpreter wrapper;
+a packaged Scheme sibling is a separate required qualification.
+
+Both original calls have fresh two-contract proofs, separate verification,
+positive-Dust default-strict application and identical-byte replay refusal.
+Actual logs carry Outer-before-Inner payloads `0x42` then `0x07`, and Inner
+persists 1 then 2. The corrected source SDK second-call receipt at `9f42c8552`
+has SHA-256 `8122ae04a23cc6f8ba2ae09bc9c32e27eed1faf2377db5a76c5ef499b6ad858d`.
+The released Ledger 9.1.0.1 consumer at `656fceed5` applies both retained
+transactions, matches exact prestates/final bytes, verifies proofs, and checks
+mutations and replay. Its signed receipt SHA-256 is
+`9b0d591e6b15f07b4b828bae4a1d2f70a4f50ac34363cd1b44391d677cc88b85`.
+An earlier refusal omitted the post-block transition; signed supersession
+`dbf9c387268a124b1d9ee9cc60cb43da245d041bf73715c048450448700d8842`
+records the correction. This is not evidence of an SDK compatibility defect.
+
+Original Callee Witness at `238b6f168` passes 3/3 on each TypeScript path;
+original Caller at `d2ba7669d` passes 6/6 on each. Independent review also
+verified profile refusals and neighboring exact Events artifact regression.
+Signed delivery index SHA-256 values are respectively
+`62ddba5a0121c2bdd1bbd8942d2020a1b0e8ff8ba6a42e8a4015f62a63a2cf73`
+and `3e0fd4636ccdcd9c1be049c44040cfee8fbf36af79fa700668b5b66c8a563adc`.
+These original `--skip-zk` suites do not qualify generated Rust caller proofs.
+[#777](https://github.com/betsudo/compact/issues/777) and
+[#778](https://github.com/betsudo/compact/issues/778) track integration and
+remaining caller work. Key Agreement and recursion coverage continue.
+
+All results above are local Darwin arm64, bound to their signed source heads.
+The broad milestone remains incomplete: generic generated Rust cross-contract
+calls, nested/multiple caller paths, post-child event ordering
+[#776](https://github.com/betsudo/compact/issues/776), packaged compiler,
+native Linux [#773](https://github.com/betsudo/compact/issues/773), live-node
+qualification and the complete original-suite census remain open. The later
+sections retain historical slice scopes; they do not override this current
+snapshot. [Compatibility #726](https://github.com/betsudo/compact/issues/726),
 [coverage #727](https://github.com/betsudo/compact/issues/727),
-[cross-contract calls #730](https://github.com/betsudo/compact/issues/730),
-[event ordering #776](https://github.com/betsudo/compact/issues/776), and
-[integration #732](https://github.com/betsudo/compact/issues/732) retain their
-owners and follow-ups.
+[cross-contract calls #730](https://github.com/betsudo/compact/issues/730), and
+[integration #732](https://github.com/betsudo/compact/issues/732) retain owners.
 
 The pinned PM-15797 host E2E case also passed its original 1/1 assertion on
 released Compact 0.36.0, with six physical manifest artifacts and drift
@@ -98,20 +121,28 @@ The ZKIR tool binary hash is a signer attestation; its bytes are not bundled.
 The material package does not publish Outer or establish a proof, funded
 transaction, applied event order, live-node or native Linux result.
 
-The signed local Events stage-only companion at `2c7e4eaa3`, stacked on the
-checked-entry head `b465dcce6`, binds 838 physical files: the exact prior
-package, generated Inner and private Outer material, fresh keys, and the
-tracked runtime source closure. Its stage identity SHA-256 is
-`859d8cabae8a1391a82555a78ceb29a662ad089bb77e4d8f35064603656a4413`;
-17 semantic and membership refusals pass. Independent review confirmed the
-final exact-membership repair. Its detached-GPG qualification receipt SHA-256
-is `0a813df62474c3527c7f7107a1930501ffa2325fb9670cf540710e211a24ea90`.
-This package has no public Outer TypeScript or compiler manifest, Events
-identity crate, or public `outerEmit` admission. The prerequisite checked-entry
-source at `b465dcce6` passed 15 focused contract-call tests and library
-Clippy with warnings denied; its signed receipt SHA-256 is
+At signed local `b465dcce6`, the source-owned Events generator gains a staged
+checked `outerEmit` entry. It places identity binding before the generated
+Inner child effect and compares native replay against the sealed pair. All
+15 focused contract-call tests and library Clippy with warnings denied pass
+on Darwin arm64. Independent read-only review found no confirmed defect.
+Detached-GPG receipt SHA-256:
 `e2d62179b2aa37eaf3cdf08b4f5db39d6b0dd9844eed901a209f84c595ec9f46`.
-The generated entry is a source-order check, not a Cargo type-checked crate.
+The test checks generated source order only: the emitted crate has no Events
+identity dependency, Cargo type-check or public compiler admission. The
+public Events companion, original generated A/B execution, proofs, funded
+application, applied event order and native Linux remain open.
+
+The signed local Events stage-only companion at `2c7e4eaa3`, stacked on the
+checked-entry head, binds 838 physical files: the exact prior package,
+generated Inner and private Outer material, fresh keys, and the tracked
+runtime source closure. Its stage identity SHA-256 is
+`859d8cabae8a1391a82555a78ceb29a662ad089bb77e4d8f35064603656a4413`.
+Seventeen semantic and membership refusals pass; independent review
+confirmed the final exact-membership repair. Detached-GPG receipt SHA-256:
+`0a813df62474c3527c7f7107a1930501ffa2325fb9670cf540710e211a24ea90`.
+The package has no public Outer TypeScript or compiler manifest, Events
+identity crate, or public `outerEmit` admission.
 
 Separately, source-built private TypeScript generation passed 13 profile
 checks, then the unchanged original composable `events.ts` body passed 2/2
@@ -119,12 +150,11 @@ TestChain cases using generated Inner and Outer TypeScript on Darwin arm64.
 The superseding signed receipt, issued after independent audit, has SHA-256
 `21892f815688f2b84817e21485dbe6857769c1d286e0c4d3d25694fb50383e3a`.
 It pins all 35 retained artifacts, including the upstream verifier template
-consumed by the test harness. The original run did not separately capture
-exact command arguments, environment, and exit codes; the receipt discloses
-reconstructed reproduction commands. This private result does not qualify
-public generated Rust/TypeScript Outer, genuine proof, independent proof
-verification, funded strict application/replay, applied event delivery,
-live-node execution, or native Linux.
+consumed by the harness. The original run did not separately capture exact
+argv, environment, and exit codes; the receipt discloses reconstructed
+reproduction commands. This private result does not qualify public generated
+Rust/TypeScript Outer, genuine proof, independent verification, funded strict
+application/replay, applied event delivery, live-node execution, or native Linux.
 
 The signed v3 private Events companion at local `e6f94deda` adds exact
 generated Outer TypeScript and its physical compiler manifest to the prior
@@ -133,7 +163,7 @@ is `dd6c75875e40461713da289aae49f1f3c6f780433bb6de2f74b1030db5c90072`.
 The exact-head verifier checks a separate GPG trust anchor and all local
 checker dependencies before accepting the package; 18 negative controls
 pass. Independent review found no remaining actionable issue. The
-detached-signed receipt (`qualification-receipt-e6f94deda.json`, retained locally)
+detached-signed receipt (local receipt `qualification-receipt-e6f94deda.json`)
 has SHA-256 `984f9cc7b6c645c4e618491e2fb7b29ff3adf5415873e1f2be346f0ea00e8d33`.
 This remains private and has no public Outer admission.
 
@@ -143,7 +173,7 @@ verifier keys and resolver key bytes. An explicit-keyring gate verifies the
 v3 package before and after copying it, then Cargo checks the identity crate
 and generated Outer, runs identity Clippy with warnings denied, and refuses
 three physical tamper probes. The independently reviewed
-detached-signed receipt (`qualification-receipt-830.json`, retained locally)
+detached-signed receipt (local receipt `qualification-receipt-830.json`)
 has SHA-256 `27d7efd26f33395655c61e443e78b7d9d60839e7bd240a420cdb1e3bac1c5717`.
 The generated Outer Cargo check passes; its nine strict Clippy diagnostics
 are retained separately in that receipt's evidence.
@@ -151,7 +181,7 @@ are retained separately in that receipt's evidence.
 A follow-up source fix at signed local `17bf098f8` exposes the generated
 checked Events error types and removes unnecessary Field clones. Focused
 source tests, fresh scratch generated Outer Cargo check and Clippy with
-warnings denied pass on Darwin arm64. The local qualification (`qualification.json`, retained locally)
+warnings denied pass on Darwin arm64. The local qualification (local receipt `qualification.json`)
 has SHA-256 `97a9831a396465d0ea6b8bf9e6d8a4b743c2d25c3f5ce454f1e4e29a50f114cd`;
 its scratch identity pin substitution was unsigned. The reviewed source fix,
 checked identity and v3 checker chain are integrated locally at
@@ -169,7 +199,7 @@ Its identity SHA-256 is
 2,460 files and 119 directories are bound, including the unchanged signed v3
 parent and its receipt. Eighteen refusal controls pass. Independent review
 ran the explicit-keyring exact-digest verifier and found no actionable issue.
-Its detached-signed receipt (`qualification-receipt-8ea671f79.json`, retained locally)
+Its detached-signed receipt (local receipt `qualification-receipt-8ea671f79.json`)
 has SHA-256 `84b2e7532177e2adeb7cb2b8f345e31a02f095b45dac65c9b0958007ba7874e4`.
 Status remains `candidate-no-cli-admission`. Cargo qualification of the
 unchanged complete candidate, public admission, original generated Rust
@@ -183,7 +213,7 @@ source, Inner verifier, Outer Rust and Outer TypeScript; a clean positive
 preflight followed by dependency redirection refuses the changed Cargo file.
 The copied package re-verifies before and after, allowing only two captured
 Cargo lockfiles. Independent review checked the source and all 26 command
-logs; the signed qualification (`evidence-7c/qualification.json`, retained locally)
+logs; the signed qualification (local receipt `qualification.json`)
 SHA-256 is `4558cfb52d55623ca1ec099be59f4c790dd4979dac6f5b306dec8e010b9ff7a4`.
 This qualifies local compilation of the physical candidate; original Rust
 execution, public CLI admission, proof, funded application and Linux remain open.
@@ -194,7 +224,7 @@ The first call returns Field 1 and records two version-1 ShieldedSpend events
 with exact payload and Outer-before-Inner emitting addresses. Two prepared
 call preimages include the expected Outer child-result/randomness transcript;
 four installed/resolved key mismatches refuse. The independently reviewed
-signed qualification (`qualification-60d.json`, retained locally)
+signed qualification (local receipt `qualification-60d.json`)
 SHA-256 is `17cf3cace4f7c71b469bb970a43f9ec42dfee1cc9d22193576221149a7ea8cbd`.
 It binds Cargo arguments, working directory, Rust/Cargo versions, selected
 environment, exact source/template, logs and lockfile. This Darwin arm64
@@ -211,7 +241,7 @@ proofs, three changed public inputs and three wrong keys refused. Both
 transactions pass Ledger 9 Real verification with balancing disabled.
 Independent source and evidence review found no actionable issue. Producer
 receipt SHA-256 is `38cece7c57352654547c5529513e02641c779206194f046ae9d98030da353a1d`;
-the signed separate-verifier receipt (`retained-verification-0c4.json`, retained locally)
+the signed separate-verifier receipt (local receipt `retained-verification-0c4.json`)
 SHA-256 is `e59fd3eb18296f4e103cef3811114e1f0a7863147787f35b4cd6e5b4d582787d`.
 The original signed package remains unchanged. These local arm64 transactions
 are unfunded; default-strict funded application/replay, second persisted
@@ -232,11 +262,63 @@ Two positive compilations and eight actual process refusals pass, including
 ordinary Outer and changed original bytes. Signed qualification SHA-256:
 `2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`.
 The runner compares a supplied reference; independent review authenticated
-the frozen v4 reference separately. The signed reference attestation (`authenticated-reference.json`, retained locally)
+the frozen v4 reference separately. The signed reference attestation (local receipt `authenticated-reference.json`)
 SHA-256 `0cc6ea48cc5e8f02f81df0084c9c07f6ad4cf546b49dd996618cdfd7a2b68a32`
 binds that package identity/signature/keyring and the original qualification.
 This is a controlled interpreter run with captured Scheme 10.3 executable,
 library environment and exact commands, without packaged public admission.
+
+The funded Events gate at signed local `0148c881e` proves a fresh two-call
+transaction, balances a positive Dust fee, and accepts default-strict Real
+verification and application on the Ledger 9.1.0.2 source graph. Replay refuses
+with `IntentAlreadyExists` and identical ledger bytes. Actual applied
+ContractLogs contain exactly Outer `outerEmit` then Inner `innerEmit`, with
+version, ShieldedSpend type, address and payload checked. Inner v becomes 1;
+a second checked call returns 2 from that persisted state. Its second proof
+and application are not claimed. Independent source and receipt review passed.
+Signed receipt SHA-256:
+`b737d65f4efb4584f3b452a3ff58b4f1a63ef371f6ce281c1ad1d3cf1eda4d8f`.
+Released Ledger 9.1.0.1 cross-matrix acceptance remains required, together
+with final public CLI admission and native Linux. This qualifies the original
+pre-child event case; [#776](https://github.com/betsudo/compact/issues/776)
+remains open for broader post-child applied event ordering.
+
+Local trusted CLI admission now passes at signed `ecf3b0338`. The exact
+signed original Events pair is freshly compiled through the private Scheme
+route, compared with authenticated TS/IR/ZKIR and the source-owned Rust
+renderer, Cargo checked offline, rechecked after Cargo, and atomically
+published. The final output binds 2,475 files, preserves the signed v4 subtree,
+and has a confined five-package local Cargo graph. Independent review passed.
+Signed receipt SHA-256:
+`17926e1a576c3d1ff21aee29f39944ccb6d15c7773931cb2e57762fad4aca2d6`.
+Its direct positive compilation returned zero; a separate 13-control run
+validated retained output and refusals without claiming another compile.
+Ordinary Rust Outer still refuses at the live coordinator boundary and keeps
+the admitted output intact. Qualification uses a controlled source interpreter
+wrapper on Darwin arm64. A packaged source-built Scheme sibling, broader
+generic calls, released-baseline completion and native Linux remain separate.
+
+The released Ledger 9.1.0.1 consumer at signed `d68883f82` independently
+verifies and applies the same funded transaction using ten crates.io SDK
+pins and no Git dependency substitutions. It checks physical V3 keys and
+transaction public inputs, refuses changed proof/input/key and strict
+Outer/Inner/Dust proof mutations, and uses default Real strictness. Applied
+ledger bytes match the source SDK exactly; actual ordered logs include both
+original payloads with bytes32 FAB alignment. Replay refuses with unchanged
+ledger bytes. Independent source and evidence review passed. Signed receipt
+SHA-256:
+`33899b39366efd79bc4220704f65856205ae90cd19a44053028b8dc4c2c1786e`.
+This establishes the released SDK baseline for the first retained transaction.
+The second checked result still has no second proof/application qualification;
+packaged compiler and native Linux gates remain open.
+
+The next original suite is tracked in [#777](https://github.com/betsudo/compact/issues/777).
+Released Compact passes all three original Callee Witness assertions. The
+local frontend initially failed to resolve the separately named `Peeker`
+interface; its bounded Ledger 9 policy fix now reaches runtime witness and
+provability conformance. Source qualification, neighboring Events artifact
+regression and independent review are being finalized. This TypeScript work
+has no generated Rust or proof claim.
 
 ## CI resource and optimization evidence
 

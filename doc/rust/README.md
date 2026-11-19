@@ -19,10 +19,9 @@ publication and CI resource summary.
 The [cross-contract foundation](https://github.com/betsudo/compact/pull/774)
 merged into `codex/rust-backend-ast` at `eb3b2adbb`. The [20-circuit
 original-token follow-up](https://github.com/betsudo/compact/pull/775) was
-rebased onto it and is open at `297ea0b17`; Rust proof qualification was
-still running at the last check. The earlier complete #775 run passed at
-`867b25d88`, but
-that result does not qualify the rebased head. Signed local macOS arm64 proof
+rebased onto it and is open at `297ea0b17`. All three hosted workflows passed
+at that head, including existing Rust proof qualification. The earlier green
+`867b25d88` run retains its separate source identity. Signed local macOS arm64 proof
 evidence covers all 20 unique original-token Rust circuits at its recorded
 source revision. Native Linux proof and funded application remain open in
 [#773](https://github.com/betsudo/compact/issues/773).
@@ -31,36 +30,22 @@ An independently reviewed local follow-up now qualifies public generated
 `pay` with fresh A/B proofs and funded offline replay at its signed head;
 the [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
 records its exact scope and remaining gates.
-An earlier exact-head local gate for the pinned original composable Events sources
-emits Inner Rust and TypeScript and confirms that ordinary Outer Rust refuses
-at the live-coordinator boundary. It does not execute the original two-contract
-call or establish proof and funded application parity.
-Later signed local slices execute the original Basic suite (12/12 on released
-Compact and 12/12 on the private source path), the original Storage suite
-(6/6 on each TypeScript path and 7/7 generated Rust consumer tests), and the
-PM-19252 host case (18/18 on released Compact). A private generated Events
-Outer continuation executes its pre-child event and Inner call in a bounded
-in-memory runtime test. These results are tied to their separate local heads;
-the public Events Outer, full two-contract proof and funded application, and
-native Linux qualification remain open. See the [status digest](ledger9-status.md)
-for exact scope and receipts.
-A later signed local Events material package binds the exact original sources,
-both generated circuit artifacts and fresh k=8 A/B keys through a separate
-GPG trust anchor. It remains a prerequisite for checked public Outer admission,
-not a proof or transaction result.
-A signed stage-only companion now binds the Events physical material and
-runtime closure. In a separate private source-generated TypeScript run, the
-unchanged original Events suite passed 2/2 cases. Neither result admits a
-public Outer or qualifies the original two-contract Rust proof and funded
-transaction; the [status digest](ledger9-status.md) binds the exact receipts.
-The signed v4 private Events candidate binds 2,460 files. Its checked identity
-and generated Outer pass Cargo and strict Clippy; generated Rust executes the
-first original call, and three fresh V3 proofs pass separate-process verification.
-These local Darwin arm64 proof transactions are unfunded with balancing disabled.
-The private source-pinned frontend also reproduces both original artifact sets.
-Public CLI admission, funded default-strict application/replay, the persisted
-second result and native Linux remain open. The [status digest](ledger9-status.md)
-records exact source heads, receipts and limits.
+The exact original Events pair now has reviewed local trusted CLI admission,
+fresh proofs, separate verification, and two sequential funded default-strict
+applications with replay refusal on source SDK 9.1.0.2 and released SDK 9.1.0.1.
+Actual applied Outer-before-Inner logs and persisted Inner values 1 then 2
+match. The qualified frontend uses a source interpreter wrapper; packaged
+compiler and native Linux execution remain open.
+
+The unchanged original Basic, Storage, Witness, Callee Witness and Caller
+TypeScript suites have separate local qualifications. Callee Witness passes
+3/3 and Caller passes 6/6 on both released and source-generated paths. Their
+`--skip-zk` results do not establish generated Rust caller proofs or funded
+caller transactions. Key Agreement and recursion coverage continue. The
+[status digest](ledger9-status.md) and both plans record exact source heads,
+receipt hashes and remaining gates; historical slice limitations remain bound
+to their original revisions. General cross-contract parity, post-child event
+ordering, packaged compiler, native Linux and live-node qualification remain open.
 The [CI test graph](plans/ci-test-graph.md) and [runner resource budget](plans/ci-runner-resource-budget.md)
 record measured hosted runs and local transfer observations. The grouped #774
 and earlier #775 runs consumed 468.67 and 439.60 summed assigned runner
