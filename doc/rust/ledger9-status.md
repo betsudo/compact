@@ -57,7 +57,27 @@ TypeScript path after independent review, with 12 frontend controls and all
 `30d364d96236d1c1ffc4b35629c945871c9c556f97a21070a01425503f02c71d`.
 [#779](https://github.com/betsudo/compact/issues/779) retains its mock-verifier,
 skip-ZK and remaining Rust/proof scope. Recursion [#780](https://github.com/betsudo/compact/issues/780)
-continues with six active cases and five original skips.
+passes six active cases and retains five original skips on each path. The
+reviewed metadata-cycle fix `5f124a6d6` passes 22 source controls and preserves
+public/legacy/invalid-metadata refusals; signed receipt SHA-256 is
+`3216b990e8520047f890929a5172708d284b27c5b4c2c2895e9db431fe971142`.
+Stage-correct Purity `d5bafa5cd` passes the original 1/1 runtime refusal on
+each path plus eleven frontend controls. The synthetic compile-time refusal
+now explicitly targets the legacy source profile; released 0.21 checks actual
+runtime Provability. Signed receipt SHA-256:
+`4a5851e42ca424ec50b56176331156d64f7e19c2907cc6cc5957e6a209c25505`.
+[#781](https://github.com/betsudo/compact/issues/781) and
+[#782](https://github.com/betsudo/compact/issues/782) retain grouped publication.
+All eleven original composable bodies are byte-identical in local integration;
+that is a source inventory, not completed execution/proof coverage. EntryPoint
+invocation remains held.
+
+Separately, [generated Rust caller support](plans/kernel-caller-rust-api.md)
+at `23af5a8e7` passes independent review for original Inner's native/recorded
+VM query, constructor/root and sealed child replay. Its signed delivery index
+SHA-256 is `77c4209a33e29d76feafd821e846abb6597eb7d3f35886eede739a9f8fa1d9a8`.
+It changes the runtime closure, so a newly signed package is required before
+current-runtime Events admission. No Caller proof/funded/Linux result is claimed.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and

@@ -46,7 +46,13 @@ TypeScript path after independent review. A source-reviewed native Events
 handoff is prepared to execute admitted output; full Linux mode is unrun.
 A reviewed consolidation additionally passes all 40 paired original Basic,
 Storage and Witness TypeScript cases with unchanged neighboring Events bytes.
-Recursion coverage continues with all upstream skips preserved. The
+Original recursion passes six active cases per path with five original skips
+retained; its metadata-cycle fix preserves public and legacy refusals. Purity's
+original runtime refusal passes 1/1 on each path with stage-correct legacy
+compiler coverage. A separate reviewed [Rust caller API slice](plans/kernel-caller-rust-api.md)
+qualifies original Inner's VM/native/recorded query and constructor; its changed
+runtime requires a newly signed package before Events admission. Caller proofs
+and funded application remain open. The
 [status digest](ledger9-status.md) and both plans record exact source heads,
 receipt hashes and remaining gates; historical slice limitations remain bound
 to their original revisions. General cross-contract parity, post-child event
