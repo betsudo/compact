@@ -113,11 +113,28 @@ calls and one host-only case, independently replayed. Signed receipt SHA-256:
 The fixture is pure; no ZKIR/key/proof/funded obligation is implied. These
 results retain their distinct source heads and local arm64 scope.
 
+The separately reviewed registry-only pure Rust ECDSA consumer at `180e68be5`
+passes the same ten original cases and nine cross-SDK raw replays. Only the
+pure resolved SDK subset is qualified; optional ledger 1.0.1 is pinned but
+not compiled. [Original curve runtime interoperability](plans/original-runtime-curves.md)
+at `3f1069833` also passes all 41 P-256 and 44 Curve25519 original cases on
+published runtime 0.21/onchain 4.0.1. Independent re-execution passes. A review
+fix makes failed or incomplete Vitest runs fail the gate while retaining logs.
+This adds pure published JavaScript coverage, with source-runtime and generated
+Rust qualification kept separate.
+
 The private Caller token is now wired at reviewed `d2464cc84`, with actual
 physical-key execution and binding refusals. Reviewed `a41abb36d` passes ten
 private unfunded VM tree tests; it does not execute generated multi-hop
 adapters or authorize a transaction. The Caller API record gives exact
 receipts and restrictions. Full Linux and new-runtime proof gates stay open.
+
+Reviewed private `Middle.forward` at `b39adeec1` now executes the actual Inner
+adapter with its installed physical key and observes `Some(Contract(Middle))`.
+Wrong key and persisted receiver refuse. Independent retained-binary replay
+passes backend 2/2, generated Middle 1/1 and all 11 runtime tree tests. The
+wrapper's root Outer recording remains manual; generated `Outer.viaMiddle`,
+a new signed three-call package, proofs/funding and Linux remain open.
 
 The original Basic, Storage and Witness slices are also consolidated at
 reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and

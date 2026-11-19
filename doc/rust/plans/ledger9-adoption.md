@@ -173,6 +173,23 @@ Linux claim. Reviewed Caller `d2464cc84` wires the private token, and
 `a41abb36d` prepares only unfunded VM call-tree preimages; generated multi-hop
 adapters, physical admission and proof/funded qualification remain open.
 
+The separately reviewed released-matrix pure Rust ECDSA consumer at
+`180e68be5` passes the same ten original cases and nine cross-SDK raw replays;
+optional ledger1.0.1 is pinned but not compiled. The [original curve runtime
+gate](original-runtime-curves.md) at `3f1069833` passes all41 P-256 and44
+Curve25519 cases on published runtime0.21/onchain4.0.1, independently rerun.
+The final runner rejects failed/incomplete children and preserves diagnostics.
+These are local arm64 pure API/runtime results, with current-source runtime,
+generated Rust curve coverage, proofs and Linux kept separate.
+
+Reviewed private Middle.forward at `b39adeec1` now executes the actual Inner
+adapter with its physical installed verifier, derives Some(Contract(Middle)),
+and refuses wrong key/persisted receiver. Independent backend2/generated1/
+runtime-tree11 replays pass. The root Outer wrapper record remains manual;
+generated Outer.viaMiddle, a new three-call identity, proofs/funding, public
+admission, releasedSDK1 execution and Linux remain open. See the
+[Caller API record](kernel-caller-rust-api.md) for exact evidence.
+
 The [integrated local qualification](#integrated-local-qualification-passed)
 records the passing macOS arm64 run and the remaining integration gates.
 The earlier entries record each migration step at its tested revision.
