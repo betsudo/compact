@@ -1,0 +1,56 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+witness supplied(value: Field): Field;
+
+export circuit direct(value: Field): Bytes<32> {
+  return persistentHash<Field>(transientHash<Field>(value));
+}
+
+export circuit committed(value: Field, opening: Bytes<32>): Bytes<32> {
+  const digest = transientCommit<Field>(value, value);
+  return persistentCommit<Field>(digest, opening);
+}
+
+export circuit mixed(value: Field, other: Field): Bytes<32> {
+  const digest = transientHash<Field>(value);
+  const combined = digest + other;
+  return persistentHash<Field>(combined);
+}
+
+export circuit converted(value: Field): Bytes<32> {
+  const digest = transientHash<Field>(value);
+  const bytes = upgradeFromTransient(digest);
+  return persistentHash<Bytes<32>>(bytes);
+}
+
+export circuit opening(value: Field): Bytes<32> {
+  const bytes = upgradeFromTransient(transientHash<Field>(value));
+  return persistentCommit<Field>(value, bytes);
+}
+
+export circuit ordinary(value: Field): Bytes<32> {
+  return persistentHash<Field>(value);
+}
+
+export circuit ordinary_witness(value: Field): Bytes<32> {
+  return persistentHash<Field>(disclose(supplied(value)));
+}
+
+export circuit transient_only(value: Field): Field {
+  return transientHash<Field>(value);
+}
