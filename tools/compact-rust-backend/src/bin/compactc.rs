@@ -801,6 +801,35 @@ mod tests {
             assert!(parse(&invalid).is_err(), "accepted {invalid:?}");
         }
     }
+    #[test]
+    fn transient_advisory_combines_with_ledger9_without_changing_default_selection() {
+        let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
+        let (targets, forwarded) = parse(&[
+            "--target=rust",
+            "--rust-functional-ledger9",
+            "--rust-transient-provenance=warn",
+            "input.compact",
+            "output",
+        ])
+        .unwrap();
+        assert!(targets.functional_ledger9 && targets.provenance_warn);
+        assert_eq!(
+            forwarded,
+            vec![OsString::from("input.compact"), OsString::from("output")]
+        );
+        let (default, _) = parse(&["--target=rust", "--rust-functional-ledger9"]).unwrap();
+        assert!(default.functional_ledger9);
+        assert!(!default.provenance_warn && default.provenance_acknowledgements.is_none());
+        assert!(
+            parse(&[
+                "--target=rust",
+                "--rust-functional-ledger8",
+                "--rust-transient-provenance=warn"
+            ])
+            .is_err()
+        );
+    }
+
     use std::path::Path;
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};

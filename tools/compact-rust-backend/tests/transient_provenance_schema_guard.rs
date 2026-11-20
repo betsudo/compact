@@ -44,3 +44,85 @@ fn direct_analysis_rejects_other_schema_versions_without_findings() {
         assert_eq!(advisory.unavailable, report.unavailable);
     }
 }
+
+// These are valid Ledger 9 IR forms. This bounded advisory does not claim
+// provenance through them; callers must receive explicit unavailable evidence.
+#[test]
+fn ledger9_expression_forms_remain_explicitly_unavailable() {
+    use compact_rust_backend::ir::{Expr, Type};
+    let operand = || {
+        Box::new(Expr::Parameter {
+            name: "value".into(),
+        })
+    };
+    for expression in [
+        Expr::BytesToField { value: operand() },
+        Expr::Secp256k1BytesCast {
+            value: operand(),
+            ty: Type::Secp256k1Base,
+        },
+        Expr::NestedMapLookup {
+            field: "nested".into(),
+            index: 0,
+            outer: operand(),
+            inner: operand(),
+        },
+    ] {
+        let mut contract = source_contract();
+        contract.circuits[0].body = expression;
+        let report = analyze(&contract, Limits::default());
+        assert!(
+            report
+                .unavailable
+                .iter()
+                .any(|note| note.circuit == contract.circuits[0].name
+                    && note.reason == "unsupported expression form")
+        );
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|finding| finding.circuit == "committed"),
+            "unrelated known routes must remain visible"
+        );
+    }
+}
+
+#[test]
+fn ledger9_nested_state_actions_remain_explicitly_unavailable() {
+    use compact_rust_backend::ir::{Expr, StateAction};
+    let operand = || Expr::Parameter {
+        name: "value".into(),
+    };
+    for action in [
+        StateAction::NestedMapInsert {
+            field: "nested".into(),
+            index: 0,
+            outer: operand(),
+            inner: operand(),
+            value: operand(),
+        },
+        StateAction::MapInitChild {
+            field: "nested".into(),
+            index: 0,
+            key: operand(),
+        },
+    ] {
+        let mut contract = source_contract();
+        contract.stateful_circuits[0].actions = vec![action];
+        let report = analyze(&contract, Limits::default());
+        assert!(
+            report
+                .unavailable
+                .iter()
+                .any(|note| note.circuit == contract.stateful_circuits[0].name
+                    && note.reason == "unsupported state action")
+        );
+        assert!(
+            report
+                .findings
+                .iter()
+                .any(|finding| finding.circuit == "direct")
+        );
+    }
+}
