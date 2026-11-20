@@ -1,5 +1,367 @@
 # Ledger 9 upstream compatibility
 
+## Current publication and coverage snapshot, 2026-11-20
+
+The complete current-runtime comparison now runs all twelve byte-identical
+original modules: 1,091 collected cases per profile, with no skips, todos or
+load gaps. Source runtime `96b4ce803` has **1,061 passed / 30 failed**; released
+runtime 0.21.0 has **1,085 passed / six failed**. Both original suites remain
+red. See the [complete runtime census](original-runtime-resolution.md#all-twelve-original-modules-on-one-current-source-graph).
+The source failures retain 16 descriptor/policy differences and all 14 closed
+public cross-contract resolution cases. Released failures retain four BOM and
+two wide-coin assertions; original assertions and policies are unchanged.
+
+The [released SDK1 original-token artifact consumers](original-token-sdk1-consumer.md)
+independently verify all 31 retained standalone proofs across 20 circuits,
+pass 93 wrong-key, changed-input and corrupt-proof refusal controls, and
+decode all 23 tagged transactions. A separate reviewed consumer now applies
+three retained shielded-mint transactions with default Real strictness,
+including the two-contract mint. It rejects seven targeted contract/Dust
+proof mutations and matches exact after/replay ledger bytes. Both retained
+consumers pass fresh independent process replay; neither generates proofs.
+The other 19 successful transactions need authenticated exact before states.
+Native generated-API compatibility and Linux remain open.
+
+Native All20 SDK1 now passes default and `ledger-transaction` compile
+checks at signed `d14b07869`; [the compile record](original-token-sdk1-consumer.md#native-all20-sdk1-compile-qualification-20-november-2026)
+keeps the ABI54/ZKIR2.2 graph separate from the proof consumers. No generated
+method execution or TypeScript parity is inferred. The latest original
+[ADT/exports host attempt](original-host-metadata-status.md#original-adt-and-exports-attempt-20-november-2026)
+is red: released 27+7 pass, source ADT 3/27 pass and source exports is
+unrun. This adds no accepted host coverage.
+
+The [byte-cast API](original-runtime-descriptors.md#byte-cast-helper-overloads)
+separately passes 474 source cases and its emitted/declaration controls. The
+reviewed local backend checkpoint at `09dac33d7` passes 1,987 library tests
+(zero failed, eight ignored, zero filtered), 48 CLI tests and library-only
+strict Clippy. A separately reviewed material-only retry now passes both
+private ignored drivers using the retained EDF binary and a pinned hash tool:
+fresh #285 and #588 TS/info/IR21/ZKIR/private Rust ABI55 output is retained.
+The initial missing-tool failure remains historical. These are material
+generation checks; generated Rust execution and proofs remain separate. The [reviewed compiler material at `258d29c3b`](zero-width-ledger9-encoding.md#reviewed-original-compiler-material-at-258)
+now integrates the accepted minimum-byte semantics and reproduces original
+285/588 artifacts. Schema21 public admission remains closed. The typed legacy-v3 refusal and
+private ABI55 renderer compile in the source-bound backend checkpoints above;
+fresh private material is now qualified. After fixing emitted enum helper
+ordering, producer `09dac33d7` repeats the 1,987 backend/48 CLI/library lint and
+two fresh-material passes. The private generated SDK1 consumer `d0655a12f`
+passes all three supplemental API tests and independent retained-binary replay:
+four original circuits exercise native, recorded, observed and Verify paths,
+wrong-read/cast refusals and matching v3/legacy hashes. This adds no original
+runtime cases or proofs. The separate private four-circuit SDK1 proof run now
+adds four fresh V3 contract proofs, four default-strict funded applications,
+eight targeted mutation refusals and exact replay refusal, with independent
+fresh verifier replay. Public schema21 admission, global SDK1 ABI and native
+Linux remain open.
+
+The private four-circuit proof harness has a retained SDK1 compile failure at
+`f007efc56` and an equivalent field-addition correction at `5a17e13ea`.
+The `a9b0993f2` cached retry now compiles both the ignored proof harness and
+retained verifier (741 Cargo records/325 distinct package IDs); it executes
+neither and creates no keys, proofs or funded result. The separate
+[private fresh-proof run](zero-width-ledger9-encoding.md#private-sdk1-fresh-proofs-and-funded-replay)
+passes signed receipt `59d95b55`, independent review `8a7f7de4` and fresh
+four-verifier replay `7d7c92d1`; the original compile-only cases stay unchanged.
+The [latest CamelCase retries](original-host-metadata-status.md#efficient-retries-and-original-output-transport)
+retain an original-logger guard failure and a copy-root mode collection
+refusal and a missing source hash utility. With the utility pinned, the
+unchanged tests at executed `27d94b147` pass 2/2 on each compiler profile.
+Separate artifact-only finalization now passes independent review, preserving
+the executed head and recording the unexecuted one-call source correction.
+The host union is eight modules/24 cases per profile across three separate
+gates; a combined 24-case gate and the full 45 modules remain open. Original assertions and all other mode checks stay
+strict; no complete CI saving or native Linux result is inferred.
+The [v5 Linux handoff](original-events-native-linux-handoff.md#git-object-binding-hardening)
+has a reviewed local Git-object hardening follow-up at `b3e677de6`, independently
+rerun with 12 source-only tests and 77 refusals. Native owner/context/build and
+proof execution remain unassigned or unrun.
+
+The private original Caller A/M/I `viaMiddle` route now has reviewed local
+qualification at signed `2fd02c6fd93a6546fa51a25cee766a0dd1919522`:
+six genuine V3 contract proofs across unfunded and fresh funded runs, one final
+auxiliary Dust proof, 18 direct proof/input/wrong-key refusals, and four strict
+funded mutation refusals. Default Real balancing and contract-proof checks pass;
+funded application succeeds and replay refuses with `IntentAlreadyExists` and
+exact unchanged ledger bytes. An independent fresh retained-verifier process
+repeats both artifact checks and strict funded application/replay without new
+proving. This is a private synthetic no-owner fixture on Darwin arm64/source
+SDK 9.1.0.2. A separate released SDK 9.1.0.1 registry-only consumer at
+`8b75577b8` independently verifies the six retained proofs, 18 direct refusals,
+four strict funded mutations, successful default-strict application and exact
+source-SDK2 after/replay ledger bytes. Its fresh independent process replay
+also passes. This consumer creates no additional proofs. Public admission,
+`Some(User)`, other Caller routes and native Linux remain open. The earlier failed FAA attempt is
+retained as failed and is excluded from these six qualified proofs.
+
+Finished owned Caller targets and clean worktrees are removed after audit;
+replay inputs, libraries, binaries and all qualification artifacts remain.
+Source publication and hosted CI remain separate. The broad milestone is incomplete.
+
+The cross-contract foundation [#774](https://github.com/betsudo/compact/pull/774)
+merged at `eb3b2adbb`. The original-token [#775](https://github.com/betsudo/compact/pull/775)
+merged into the same branch at `b6e7d156e` on 19 November 2026,
+from rebased head `297ea0b17`. Its three hosted workflows completed
+successfully, including Rust proof qualification.
+Its earlier green `867b25d88` run remains historical. The local 20-circuit
+proof/funded results are bound to their signed source heads, while native
+Linux [#773](https://github.com/betsudo/compact/issues/773) is still open.
+No controlled CI cost, circuit-size or prover-speed gain is claimed; see the
+[runner budget](ci-runner-resource-budget.md).
+
+The signed local Events v4 physical candidate at `8ea671f79` binds
+2,460 files and passes 18 refusal controls; unchanged-candidate Cargo checks
+and strict Clippy pass at source `7c86fc29f`. Generated Rust first-call
+execution passes at `60de2b12d`, including ordered address/payload-bound
+events and key refusals. Three fresh V3 proofs at `6e56e0af1` pass separate
+retained-process verification at `0c4ecc1a6`, including proof/input/key
+mutation refusals. These are unfunded transactions with balancing disabled.
+The [status digest](../ledger9-status.md) gives exact receipt hashes and scope.
+A source-pinned private frontend at `217242332` reproduces both original
+TS/IR/metadata/ZKIR sets and passes eight refusals; ordinary Outer still
+refuses. Its signed receipt SHA-256 is
+`2404e0cdb877171baa3b3820d4034fd5fd68dc3088d0306a211b3f05ade80923`;
+a separate signed reference attestation binds the verified v4 package.
+The first funded Events transaction at signed source `0148c881e` now passes
+Ledger 9.1.0.2 default-strict Real application and identical-byte replay
+refusal, with actual applied Outer-before-Inner logs and persisted Inner v=1.
+This first-call receipt has no second-call proof/application claim.
+Signed receipt SHA-256:
+`b737d65f4efb4584f3b452a3ff58b4f1a63ef371f6ce281c1ad1d3cf1eda4d8f`.
+A released Ledger 9.1.0.1 registry-only consumer at `d68883f82` independently
+verifies/applies that exact funded transaction, checks both applied log
+payloads and matches the source SDK ledger bytes; replay refuses unchanged.
+Its reviewed signed receipt SHA-256 is
+`33899b39366efd79bc4220704f65856205ae90cd19a44053028b8dc4c2c1786e`.
+Local trusted CLI admission is reviewed at `ecf3b0338`; the source interpreter
+wrapper qualification remains separate from a packaged Scheme sibling.
+Both original Events calls now have fresh funded default-strict application
+and replay refusal on the source SDK, with persisted Inner values 1 then 2
+and actual Outer-before-Inner payloads `0x42` then `0x07`. The second-call
+source receipt at `9f42c8552` has SHA-256
+`8122ae04a23cc6f8ba2ae09bc9c32e27eed1faf2377db5a76c5ef499b6ad858d`.
+The released Ledger 9.1.0.1 consumer at `656fceed5` applies both byte-exact
+transactions and matches the second prestate and final ledger bytes. Its
+reviewed signed receipt SHA-256 is
+`9b0d591e6b15f07b4b828bae4a1d2f70a4f50ac34363cd1b44391d677cc88b85`.
+The earlier second-call refusal omitted the ledger post-block transition;
+the signed supersession records this harness correction, not an SDK mismatch.
+These are local Darwin arm64 results for the exact original pair. Packaged
+compiler, native Linux, live-node and post-child ordering [#776](https://github.com/betsudo/compact/issues/776)
+remain open.
+
+The original Callee Witness suite at `238b6f168` passes 3/3 on each of the
+released and source-generated TypeScript paths. Declaration conformance uses
+runtime implementation metadata in the explicit Ledger 9 profile without
+inventing an implementation for a declared interface; legacy profile guards
+and the exact Events artifact regression pass. The signed delivery index
+SHA-256 is `62ddba5a0121c2bdd1bbd8942d2020a1b0e8ff8ba6a42e8a4015f62a63a2cf73`;
+[#777](https://github.com/betsudo/compact/issues/777) tracks integration.
+The original Caller suite at `d2ba7669d` passes 6/6 on each TypeScript path,
+including genuine `Kernel.caller` semantics in the TestChain. Ordinary
+standalone Inner admits the released Ledger 9 primitive without a CCC flag;
+17 guards and neighboring Events/Callee Witness regressions pass. Its signed
+delivery index SHA-256 is
+`3e0fd4636ccdcd9c1be049c44040cfee8fbf36af79fa700668b5b66c8a563adc`.
+These unchanged original suites use `--skip-zk`; they do not qualify generated
+Rust caller queries, caller proofs or funded caller application.
+[#778](https://github.com/betsudo/compact/issues/778) retains those follow-ups.
+The original Key Agreement suite at `1d335e4e2` now passes independent review:
+7/7 released and 7/7 source-generated TypeScript cases, 12 frontend controls,
+and all 58 retained artifact hashes. Its signed delivery-index SHA-256 is
+`30d364d96236d1c1ffc4b35629c945871c9c556f97a21070a01425503f02c71d`.
+The mock-verifier/skip-ZK scope remains explicit in
+[#779](https://github.com/betsudo/compact/issues/779). Original recursion
+coverage [#780](https://github.com/betsudo/compact/issues/780) now passes six
+active cases and retains five upstream skips on each TypeScript path. The
+reviewed metadata-cycle fix at `5f124a6d6` traverses cached dependencies once,
+passes 22 source controls and preserves public, Ledger 8 and malformed/missing
+metadata refusals. Signed receipt SHA-256:
+`3216b990e8520047f890929a5172708d284b27c5b4c2c2895e9db431fe971142`.
+[#781](https://github.com/betsudo/compact/issues/781) retains publication.
+The stage-correct Purity continuation at `d5bafa5cd` passes the unchanged
+original runtime refusal 1/1 on each path and eleven frontend controls. The
+synthetic static refusal is explicitly tested in the legacy source profile;
+released 0.21 checks actual runtime Provability. Signed receipt SHA-256:
+`4a5851e42ca424ec50b56176331156d64f7e19c2907cc6cc5957e6a209c25505`.
+[#782](https://github.com/betsudo/compact/issues/782) supersedes the older
+unqualified static-refusal wording without changing the original assertion.
+All eleven original composable test bodies are byte-identical in local
+integration; source presence does not close execution/proof coverage, and
+EntryPoint invocation remains held.
+
+The separate [Rust caller API qualification](kernel-caller-rust-api.md) at
+`23af5a8e7` passes independent review: typed native/recorded slot-6 queries,
+constructor/root tests, sealed child caller/replay, generated original Inner
+and exact Events regression. The v5 continuation below meets the signed-package/CLI prerequisite;
+Caller proofs and funded application remain open.
+
+The original Basic, Storage and Witness slices are also consolidated at
+reviewed local `108ff4473`: unchanged original bodies pass 12+12, 6+6 and
+2+2 released/source TypeScript cases respectively (40 total). Source guards
+pass 12/10/12, Key Agreement remains 7+7 and the exact Events artifacts and
+eight refusals remain unchanged. Signed delivery-index SHA-256:
+`ee5b2028531bc79c161fbfd0fd4a840e922d557e587749bc6fbe0ae63393d8f6`.
+This mock-verifier/skip-ZK consolidation adds no Rust proof or funded claim;
+Storage's earlier seven Rust tests retain their original source scope.
+
+The [native Events handoff](original-events-native-linux-handoff.md) is
+independently reviewed at local source `6f838e075`; signed source-only receipt
+SHA-256 is `131ac626321f98439a3bac747da398188a9efefa6b0f23dad0ec7088ae7de0d0`.
+Seven provenance/physical-tree refusals, four retained parser controls and
+zero-new-header checks pass. Full Linux mode is prepared to execute the
+actual admitted Rust crate with fresh proofs and sequential funded strict
+application/replay across both SDK matrices. It has not run; packaged
+compiler and native Linux qualification remain open.
+
+A later [v5 runtime/CLI continuation](original-events-v5-status.md) is
+independently reviewed. The signed physical identity
+`635a6303044c59a1b38370fe5211b6117c24f03b4f1c12c0a7e81fec49eccb9d`
+binds the reviewed caller runtime; source `73fb2ab80` admits v5 with 18
+controls and strict Clippy and preserves actual v4 admission with 13 controls.
+Signed CLI receipt SHA-256:
+`dec02cb4c96ec6677749a7ffd6ac49ca6d69586a4e7306ed1246a7fd1c9af2fd`.
+Fresh v5 source-SDK native proofs and sequential strict funded replay now pass
+at reviewed `bffd8d788`; released SDK1 at reviewed `4715d0648` verifies all seven
+proofs and both strict funded/replay state boundaries byte-for-byte. Packaged
+compiler and native Linux remain open. V4 keeps its original identity.
+
+The [original block-time runtime case](original-block-time-testchain.md) at
+`2d2132f0b` passes its unchanged twelve assertions on each TypeScript path
+while preserving the older synchronous Ledger 8 adapter. Rust IR refuses
+the first time operation at that source; [#783](https://github.com/betsudo/compact/issues/783)
+tracks the separate implementation. Its VM comparisons use slot 2 `tblock`.
+The subsequent reviewed Rust slice `b577d8d84` passes the original twelve
+values in native and recorded generated Rust (24 observations), source
+profile controls and focused VM/backend tests. Signed receipt SHA-256:
+`ba0629197aa9b5cab6dda1d6bfe5ceaa62258fc766e2c4882b1e3581fa516bea`.
+This is local API/VM qualification; its fresh proof/funded/Linux gates remain
+open and its runtime closure is separate from v4/v5.
+
+
+The separate private Caller continuation at `34494e61e` now passes generated
+`Some(Contract(Outer))` execution and receiver/method/frame refusals. Its
+reviewed physical candidate `ac767d25` binds six genuine key pairs and the
+full runtime/macros closure, with 841 files/43 directories and ten controls.
+Signed package receipt SHA-256:
+`391102c51c800623260c35d7cf0cbbde17b410dab6c82a9e27d7c6b3ade53f3a`.
+The [Caller API record](kernel-caller-rust-api.md) distinguishes this material
+from its later checked identity/private token execution and the remaining
+public admission and proof/funded/Linux qualification.
+This coordinator runtime differs from both Events v4 and v5.
+
+
+The separate [original host metadata gate](original-host-metadata-status.md)
+at reviewed `94b97c691` passes the unchanged expectedVk five-case body and
+31 metadata guards with three retained real key sets. It preserves safe
+`__proto__`/null-prototype behavior and the public default omission. This
+private arm64 profile is separate from accepted v4/v5/Caller package identities.
+A reviewed Caller identity candidate `1cff17c1b` now passes exact physical
+checks and offline all-features Cargo checking. Later private token execution
+and binding cases pass at d246; public/proof/funded/Linux gates remain open. Its signed receipt
+SHA-256 is `3caa6958d65b4e9f746b2a70cdaf24216305ab7c36c9e99826997405d5486242`.
+
+
+The reviewed [combined original host gate](original-host-metadata-status.md)
+at `99d08ec89` passes 21/21 unchanged cases on released and private source
+profiles, retaining actual compiler outputs and the SDK graph. The
+[original ECDSA Rust gate](original-ecdsa-parity.md) at `50df7ede8` runs the
+same ten-case body through an explicit adapter: nine generated Rust calls
+and one host-only recovery case. These local pure results add no proof or
+Linux claim. Reviewed Caller `d2464cc84` wires the private token, and
+`a41abb36d` prepares only unfunded VM call-tree preimages; generated multi-hop
+adapters, physical admission and proof/funded qualification remain open.
+
+The separately reviewed released-matrix pure Rust ECDSA consumer at
+`180e68be5` passes the same ten original cases and nine cross-SDK raw replays;
+optional ledger1.0.1 is pinned but not compiled. The [original curve runtime
+gate](original-runtime-curves.md) at `3f1069833` passes all41 P-256 and44
+Curve25519 cases on published runtime0.21/onchain4.0.1, independently rerun.
+The final runner rejects failed/incomplete children and preserves diagnostics.
+These are local arm64 pure API/runtime results, with current-source runtime,
+generated Rust curve coverage, proofs and Linux kept separate.
+
+Reviewed private Middle.forward at `b39adeec1` now executes the actual Inner
+adapter with its physical installed verifier, derives Some(Contract(Middle)),
+and refuses wrong key/persisted receiver. Independent backend2/generated1/
+runtime-tree11 replays pass. The root Outer wrapper record remains manual;
+generated Outer.viaMiddle, a new three-call identity, proofs/funding, public
+admission, releasedSDK1 execution and Linux remain open. See the
+[Caller API record](kernel-caller-rust-api.md) for exact evidence.
+
+The accepted source runtime85 gate is now reviewed at `38a554df3`, using
+exact3eaf runtime0.18 and its own lock, with signed84-file emitted output
+and275-file runtime dependency authentication. Reviewed `2ccfcb86c` adds
+the intact original secp256k1 30-case module on each runtime profile:
+115 unique original curve cases per profile across distinct signed slices.
+Generated private Outer/Middle/Inner at reviewed `89bf52445` now replace
+the manual root and record the actual nested caller chain with both
+persisted receiver checks. Typed records/handles are not package authority;
+a new physical A/M/I package and checked token are next. Proof/funded,
+releasedSDK1 Caller execution, public admission and Linux remain open.
+
+The new physical A/M/I Caller candidate at reviewed `c1c61e77b` now binds
+1,652 files/77 directories with 16 refusal controls. This is physical packaging
+only; checked token/execution and proof/funded/public/Linux gates remain open.
+The [original runtime resolution record](original-runtime-resolution.md)
+qualifies 14/14 published cases while source 0.18 records zero passes and 14 missing-function failures from its intentionally closed export. Source existing-unit
+coverage separately passes 465/465 across 24 modules, with adapted/internal
+cases and overlapping counts. These local arm64 results add no Rust/proof or
+Linux claim. Finished owned Node/build scratch and worktrees are cleaned.
+
+The later checked A/M/I token at reviewed `2c5f11330` passes package Cargo checks
+and private VM execution with five tests, 26 dynamic refusals, 23 physical refusals and
+six downstream compiler refusals, independently replayed. It consumes the actual
+no-owner root, sealed observations and owned resolver material; no replacement
+execution context or expected-caller argument is accepted. This source SDK 9.1.0.2
+route adds no authenticated external assembly, proof, transaction, funded replay,
+SDK 9.1.0.1, public admission or Linux claim. Its 958 MiB target and clean worktree are removed. Closed
+source-specific unfunded prepartition preparation is the next design.
+
+
+The reviewed [six-case Rust Curve serialization bridge](original-runtime-curves.md#six-original-serialization-callbacks-through-rust)
+at `df89e5c82` passes six unchanged original callbacks with 37 independently
+replayed calls including separate diagnostics; 38 Curve callbacks remain
+filtered on this Rust path. This is a pure runtime API result, not generated
+contract, proof, full SDK ABI or Linux qualification. A separately reviewed
+[zero-width Rust encoding counterexample](zero-width-ledger9-encoding.md),
+tracked in [#784](https://github.com/betsudo/compact/issues/784), differs from
+released v3 attestation hashing. Its next runtime/derive fix must preserve
+legacy Ledger8/v2 behavior; generated profile/API qualification follows.
+
+
+The [four original runtime modules](original-runtime-descriptors.md) now have
+faithful reviewed red evidence: 924 parameterized cases per profile, published
+918 passed/6 failed and accepted source3eaf 894 passed/30 failed. A separate
+reviewed local bigint-helper repair at `d79f397fe`/runner `b1041130f` fixes three
+unchanged original cases, giving 897 passed/27 failed while existing source
+24-module/465-test regression stays green. Preserve the remaining diagnostics
+and accepted additional APIs; [#785](https://github.com/betsudo/compact/issues/785)
+tracks the gaps. These are JavaScript/API results, with no proof or Linux claim.
+
+Closed Caller preparation at reviewed `8707e3a82` now produces only three private
+unfunded SDK prepartition calls. Thirteen test groups cover 80 refusal cases;
+17 downstream compiler refusals and an ordinary SDK-clone positive pass, with
+independent replay. Product provenance stays opaque; SDK clones remain mutable
+ordinary data. No actual proof preimage, transaction, funded, SDK1 or Linux claim.
+Finished owned build targets and clean worktrees are removed; exact replay
+fixtures and qualification evidence are retained.
+
+
+The reviewed [zero-width runtime/derive slice](zero-width-ledger9-encoding.md)
+at `3e5625f14` now executes both encoding profiles together: legacy alignment
+and hash remain unchanged, while the explicit v3 attestation matches the released
+oracle. Thirteen runtime tests and 33 macro tests pass, with four downstream
+refusals and strict macro Clippy. This is direct API qualification; IR/profile
+threading, generated original contracts, the ABI55 handshake and proofs remain open.
+
+
+The [owned Ledger 9 coin amount boundary](original-runtime-descriptors.md#owned-ledger-9-coin-amount-refusal)
+now passes the unchanged original stdlib suite 31/31 at reviewed `5a7fc67db`.
+The four-module original cohort is 898 passed/26 failed, and source regression
+is 469/469 including four new error/state-identity cases. Generic descriptor
+encoding and legacy context behavior are retained. The remaining 26 failures
+are recorded; no Rust/proof/Linux claim follows from this JavaScript API repair.
+
 The Rust AST backend must accept the same Compact programs as mainstream
 Ledger 9, preserve their observable behavior, and expose the capabilities in
 typed generated Rust. The Rust AST development line retains its existing
@@ -664,6 +1026,40 @@ rebuild the pinned standalone verifier for fresh proofs. This
 protocol has syntax and targeted binding checks so far; a full positive
 source-bound proof and funded rerun plus native Linux qualification remain
 required before treating the follow-up as accepted.
+
+The signed v3 Events companion at `e6f94deda` extends the prior 838-file
+stage to 1,649 physical files with private Outer TypeScript and compiler
+manifest. Its reviewed signed receipt (`qualification-receipt-e6f94deda.json`, retained locally)
+SHA-256 `984f9cc7b6c645c4e618491e2fb7b29ff3adf5415873e1f2be346f0ea00e8d33`
+binds the transitive checker source and 18 refusal controls. It has no public
+Outer admission.
+
+A source-owned checked Events identity crate at signed `8302e704f` binds
+exact physical sources, keys, runtime closure and resolver values. Its
+reviewed signed receipt (`qualification-receipt-830.json`, retained locally)
+SHA-256 `27d7efd26f33395655c61e443e78b7d9d60839e7bd240a420cdb1e3bac1c5717`
+records verified package copying, identity Cargo check and Clippy, generated
+Outer Cargo check and three tamper refusals on Darwin arm64. The generated
+Outer had nine strict Clippy diagnostics. Signed source fix `17bf098f8`
+passes focused tests and scratch generated Outer Cargo check and Clippy; its
+local qualification (`qualification.json`, retained locally)
+SHA-256 is `97a9831a396465d0ea6b8bf9e6d8a4b743c2d25c3f5ce454f1e4e29a50f114cd`.
+The identity, Clippy fix and v3 checker are locally integrated at
+`c9ab32346`, where the v3 package verifies. A complete signed candidate,
+public CLI admission, generated two-contract parity, independent proof,
+funded strict application/replay and native Linux qualification remain open.
+
+The subsequent signed v4 physical candidate at `8ea671f79` binds 2,460
+files/119 directories, with identity SHA-256
+`605312a3bc2dfbe82212921e402f2cc1705a015e0dc12e59ca6432af46facf8b`.
+It combines checked Outer Rust, Cargo and complete manifest with the exact
+v3 TypeScript, IR, keys and runtime closure, preserving the signed parent.
+Independent exact-digest external-keyring verification and 18 refusal controls
+pass. Its signed receipt (`qualification-receipt-8ea671f79.json`, retained locally)
+SHA-256 is `84b2e7532177e2adeb7cb2b8f345e31a02f095b45dac65c9b0958007ba7874e4`.
+Status is `candidate-no-cli-admission`; complete-candidate Cargo qualification,
+public CLI admission, original Rust execution, independently verified fresh
+proofs, funded strict application/replay and Linux remain required.
 
 [upstream]: https://github.com/LFDT-Minokawa/compact/commit/672bd0f226f47a7d036c5c074ce71fbe1af1925e
 [release]: https://github.com/LFDT-Minokawa/compact/releases/tag/compactc-v0.36.0
