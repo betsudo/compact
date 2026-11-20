@@ -47,6 +47,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | A::ListPopFront { .. }
                 | A::ListReset { .. }
                 | A::MapInsert { .. }
+                | A::NestedMapInsert { .. }
+                | A::MapInitChild { .. }
                 | A::MapInsertDefault { .. }
                 | A::MapRemove { .. }
                 | A::MapReset { .. }
@@ -85,6 +87,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | A::ListPopFront { .. }
                 | A::ListReset { .. }
                 | A::MapInsert { .. }
+                | A::NestedMapInsert { .. }
+                | A::MapInitChild { .. }
                 | A::MapInsertDefault { .. }
                 | A::MapRemove { .. }
                 | A::MapReset { .. }
@@ -117,7 +121,19 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorFold { .. }
                 | E::Call { .. } => 32,
                 E::FieldCast { .. }
+                | E::VectorToBytes { .. }
+                | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
+                | E::BytesToField { .. }
+                | E::BytesToUint { .. }
+                | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
+                | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. } => 12,
                 E::Add { .. }
@@ -134,6 +150,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::PersistentHash { .. }
                 | E::PersistentCommit { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
                 | E::HashToCurve { .. }
@@ -144,6 +161,10 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::EcNeg { .. }
                 | E::EcMul { .. }
                 | E::EcMulGenerator { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::JubjubScalarFromNative { .. } => 39,
                 E::Unit
                 | E::Default { .. }
@@ -156,6 +177,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }
@@ -171,7 +193,22 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::MapIsEmpty { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
+                | E::EmitShieldedMint { .. }
+                | E::EmitShieldedReceive { .. }
+                | E::EmitUnshieldedSpend { .. }
+                | E::EmitUnshieldedReceive { .. }
+                | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
+                | E::EmitPaused { .. }
+                | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
+                | E::KernelUnshieldedEffect { .. }
+                | E::KernelBalance { .. }
+                | E::KernelBalanceLessThan { .. }
+                | E::KernelBalanceGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. } => 14,
@@ -185,6 +222,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetIsEmpty { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::MapSize { .. }
                 | E::MapIsEmpty { .. }
                 | E::MerkleCheckRoot { .. }
@@ -194,7 +232,22 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::ListHead { .. } => 51,
                 E::KernelSelf { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
+                | E::EmitShieldedMint { .. }
+                | E::EmitShieldedReceive { .. }
+                | E::EmitUnshieldedSpend { .. }
+                | E::EmitUnshieldedReceive { .. }
+                | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
+                | E::EmitPaused { .. }
+                | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
+                | E::KernelUnshieldedEffect { .. }
+                | E::KernelBalance { .. }
+                | E::KernelBalanceLessThan { .. }
+                | E::KernelBalanceGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. } => 21,
@@ -207,6 +260,10 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedMultiply { .. }
                 | E::Equal { .. }
                 | E::NotEqual { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Compare { .. } => 22,
                 E::Unit
                 | E::Default { .. }
@@ -216,7 +273,19 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedLiteral { .. }
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
+                | E::VectorToBytes { .. }
+                | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
+                | E::BytesToField { .. }
+                | E::BytesToUint { .. }
+                | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
+                | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -237,6 +306,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::TransientCommit { .. }
                 | E::PersistentHash { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::PersistentCommit { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
@@ -268,7 +338,23 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::UnsignedLiteral { .. }
                 | E::UnsignedCast { .. }
                 | E::FieldCast { .. }
+                | E::VectorToBytes { .. }
+                | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
+                | E::BytesToField { .. }
+                | E::BytesToUint { .. }
+                | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
+                | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Coerce { .. }
                 | E::Parameter { .. }
                 | E::EnumVariant { .. }
@@ -278,6 +364,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }
@@ -300,6 +387,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::TransientCommit { .. }
                 | E::PersistentHash { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::PersistentCommit { .. }
                 | E::DegradeToTransient { .. }
                 | E::UpgradeFromTransient { .. }
@@ -314,7 +402,22 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::JubjubScalarFromNative { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
+                | E::EmitShieldedMint { .. }
+                | E::EmitShieldedReceive { .. }
+                | E::EmitUnshieldedSpend { .. }
+                | E::EmitUnshieldedReceive { .. }
+                | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
+                | E::EmitPaused { .. }
+                | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
+                | E::KernelUnshieldedEffect { .. }
+                | E::KernelBalance { .. }
+                | E::KernelBalanceLessThan { .. }
+                | E::KernelBalanceGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. }
@@ -336,7 +439,23 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 E::Call { .. } => 21,
                 E::StructField { .. } | E::StructLiteral { .. } | E::Tuple { .. } => 7,
                 E::FieldCast { .. }
+                | E::VectorToBytes { .. }
+                | E::BytesToVector { .. }
+                | E::UintToBytes { .. }
+                | E::WideUintToBytes { .. }
+                | E::BytesToField { .. }
+                | E::BytesToUint { .. }
+                | E::BytesZeroPad { .. }
+                | E::BytesFromChunks { .. }
+                | E::BytesSlice { .. }
                 | E::FieldToBytes32 { .. }
+                | E::JubjubCast { .. }
+                | E::Secp256k1BytesCast { .. }
+                | E::EnumCast { .. }
+                | E::Secp256k1Neg { .. }
+                | E::Secp256k1Inv { .. }
+                | E::Secp256k1PointX { .. }
+                | E::Secp256k1PointY { .. }
                 | E::Coerce { .. }
                 | E::UnsignedCast { .. }
                 | E::UnsignedMultiply { .. }
@@ -365,6 +484,7 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::SetMember { .. }
                 | E::MapMember { .. }
                 | E::MapLookup { .. }
+                | E::NestedMapLookup { .. }
                 | E::ListLength { .. }
                 | E::ListIsEmpty { .. }
                 | E::ListHead { .. }
@@ -384,12 +504,28 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::VectorFold { .. }
                 | E::Compare { .. }
                 | E::Keccak256 { .. }
+                | E::Sha512 { .. }
                 | E::HashToCurve { .. }
                 | E::ConstructJubjubPoint { .. }
                 | E::EcNeg { .. }
                 | E::WitnessCall { .. }
                 | E::KernelClaim { .. }
+                | E::EmitShieldedSpend { .. }
+                | E::EmitShieldedBurn { .. }
+                | E::EmitShieldedMint { .. }
+                | E::EmitShieldedReceive { .. }
+                | E::EmitUnshieldedSpend { .. }
+                | E::EmitUnshieldedReceive { .. }
+                | E::EmitUnshieldedMint { .. }
+                | E::EmitUnshieldedBurn { .. }
+                | E::EmitMisc { .. }
+                | E::EmitPaused { .. }
+                | E::EmitUnpaused { .. }
                 | E::KernelMintShielded { .. }
+                | E::KernelUnshieldedEffect { .. }
+                | E::KernelBalance { .. }
+                | E::KernelBalanceLessThan { .. }
+                | E::KernelBalanceGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. }

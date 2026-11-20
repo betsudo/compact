@@ -28,6 +28,7 @@ import tempfile
 import time
 import tomllib
 
+from consumer_cargo import with_pinned_patches
 import proof_commands
 
 from target_checks import (
@@ -155,6 +156,10 @@ def check_manifest(output: Path, *, require_zkir: bool = True) -> None:
         check_tree(output / directory, manifest[directory])
 
 
+def write_consumer_manifest(consumer: Path, manifest: str) -> None:
+    (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, ROOT))
+
+
 def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     runtime = package["dependencies"]["midnight-compact-runtime"]
@@ -164,7 +169,8 @@ def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     assert (contract / "runtime-rs-macros/Cargo.toml").is_file()
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -219,7 +225,8 @@ def check_consumer(contract: Path, pure_contract: Path, consumer: Path) -> None:
     pure_consumer = consumer.parent / "pure-consumer"
     pure_consumer.mkdir()
     (pure_consumer / "tests").mkdir()
-    (pure_consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        pure_consumer,
         "[package]\nname = \"compactc-pure-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{pure_package["package"]["name"]} = {{ path = {json.dumps(str(pure_contract))} }}\n'
@@ -239,7 +246,8 @@ def check_observed_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -250,7 +258,7 @@ def check_observed_call_consumer(proof: Path, base: Path) -> None:
     environment = os.environ.copy()
     environment.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
     environment["COMPACT_RUST_OBSERVED_STATE"] = str(
-        ROOT / "tools/compact-rust-proof-smoke/tests/fixtures/confirmed-counter-state-abi18.bin"
+        ROOT / "tools/compact-rust-proof-smoke/tests/fixtures/confirmed-counter-state-ledger9.bin"
     )
     environment["COMPACT_RUST_OBSERVED_VERIFIER"] = str(proof / "keys/increment.verifier")
     subprocess.run(["cargo", "test", "--quiet"], cwd=consumer, env=environment, check=True)
@@ -262,7 +270,8 @@ def check_observed_map_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-map-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-map-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -312,7 +321,8 @@ def check_observed_witness_call_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-witness-call-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-witness-call-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -332,7 +342,8 @@ def check_observed_composite_key_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "observed-composite-key-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-observed-composite-key-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -366,7 +377,8 @@ def check_chunked_set_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-set-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-set-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -400,7 +412,8 @@ def check_chunked_list_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-list-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-list-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -434,7 +447,8 @@ def check_chunked_map_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-map-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-map-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -481,7 +495,8 @@ def check_chunked_cell_consumer(proof: Path, base: Path) -> None:
     package = tomllib.loads((contract / "Cargo.toml").read_text())
     consumer = base / "chunked-cell-consumer"
     (consumer / "tests").mkdir(parents=True)
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-chunked-cell-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -594,7 +609,8 @@ def check_witness_consumer(compiler: str, base: Path) -> None:
     consumer = base / "witness-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-witness-target-smoke\"\nversion = \"0.1.0\"\n"
         "edition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))}, features = ["ledger-transaction"] }}\n'
@@ -660,7 +676,8 @@ def check_merkle_witness_consumer(compiler: str, base: Path) -> None:
     consumer = base / "merkle-witness-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-merkle-witness-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))} }}\n'
@@ -772,7 +789,8 @@ def check_list_shapes_consumer(compiler: str, base: Path) -> None:
     consumer = base / "list-shapes-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    write_consumer_manifest(
+        consumer,
         "[package]\nname = \"compactc-list-shapes-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         f'{package["package"]["name"]} = {{ path = {json.dumps(str(contract))} }}\n'
@@ -822,7 +840,7 @@ def check_witness_composition(compiler: str, base: Path) -> None:
         package = tomllib.loads((output / "contract/Cargo.toml").read_text())["package"]["name"]
         original = ROOT / "tests-rust-backend" / fixture
         original_package = tomllib.loads((original / "Cargo.toml").read_text())["package"]["name"]
-        (consumer / "Cargo.toml").write_text(f'''[package]
+        write_consumer_manifest(consumer, f'''[package]
 name = "witness-composition-{label}"
 version = "0.1.0"
 edition = "2024"
@@ -1062,8 +1080,21 @@ def main() -> None:
             strict = subprocess.run([compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-dao")], cwd=ROOT, capture_output=True, text=True)
             assert strict.returncode == 0, strict.stderr
             if args.proof:
+                pin_path = ROOT / "tools/compact-rust-backend/tests/micro-dao-state-ledger9-artifacts.json"
+                pins = json.loads(pin_path.read_text())
+                raw_paths = {path.relative_to(output).as_posix()
+                             for path in (output / "zkir").glob("*.zkir")}
+                if raw_paths != {path for path in pins["source"] if path.endswith(".zkir")}:
+                    raise ValueError("MicroDAO raw circuit inventory differs from the original fixture")
+                for path, expected in pins["source"].items():
+                    if hashlib.sha256((output / path).read_bytes()).hexdigest() != expected:
+                        raise ValueError(f"MicroDAO artifact differs from the retained fixture: {path}")
                 (output / "keys").mkdir(exist_ok=True)
-                run("zkir", "compile", str(output / f"zkir/{selected}.zkir"), str(output / f"keys/{selected}.prover"), str(output / f"keys/{selected}.verifier"))
+                run("zkir-v3", "compile", str(output / f"zkir/{selected}.zkir"),
+                    str(output / f"keys/{selected}.prover"), str(output / f"keys/{selected}.verifier"))
+                for path, expected in pins["material"][selected].items():
+                    if hashlib.sha256((output / path).read_bytes()).hexdigest() != expected:
+                        raise ValueError(f"MicroDAO artifact differs from the retained fixture: {path}")
                 run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--micro-dao-vote-commit" if args.micro_dao_vote_commit else "--micro-dao-cash-out" if args.micro_dao_cash_out else "--micro-dao-buy-in" if args.micro_dao_buy_in else "--micro-dao-set-topic" if args.micro_dao_set_topic else "--micro-dao-advance" if args.micro_dao_advance else "--micro-dao-reveal" if args.micro_dao_reveal else "--micro-dao-token", str(output))
             print("original microDAO: advance, vote_reveal, dao_voting_token, set_topic, buy_in, cash_out and vote_commit recorded, no proof-required gaps retained")
             return
@@ -1312,33 +1343,24 @@ def main() -> None:
             check_manifest(cell_proof)
             proof_artifacts.require_circuit_files(cell_proof, 'set_flag')
             root_let_proof = base / "root-let-action-return-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT_LET_ACTION_RETURN_SOURCE), str(root_let_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--root-let-action-return", str(root_let_proof))
-            struct_proof = base / "stateful-struct-proof"
-            run(compiler,"--target","rust",str(ROOT / "examples/rust_backend/stateful_struct_oracle.compact"),str(struct_proof))
-            run("cargo","run","--quiet","-p","compact-rust-proof-smoke","--","--stateful-struct",str(struct_proof))
-            assertion_proof = base / "stateful-assert-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/stateful_assert_oracle.compact"), str(assertion_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--stateful-assert", str(assertion_proof))
-            effectful_proof = base / "effectful-return-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(EFFECTFUL_RETURN_SOURCE), str(effectful_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--effectful-return", str(effectful_proof))
-            counter_less_than_proof = base / "counter-less-than-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/counter_less_than_oracle.compact"), str(counter_less_than_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--counter-less-than", str(counter_less_than_proof))
-            literal_bytes_field_proof = base / "literal-bytes-field-proof"
-            run(compiler, "--target", "rust", "--rust-require-recording",
-                str(ROOT / "examples/rust_backend/literal_bytes_field_oracle.compact"),
-                str(literal_bytes_field_proof))
-            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-                "--literal-bytes-field", str(literal_bytes_field_proof))
+            application_checks.prove_root_let_action_return(
+                compiler, ROOT_LET_ACTION_RETURN_SOURCE, root_let_proof, run=run,
+            )
+            recording_checks.prove_stateful_struct(
+                compiler, base / "stateful-struct-proof", root=ROOT, run=run,
+            )
+            recording_checks.prove_stateful_assert(
+                compiler, base / "stateful-assert-proof", root=ROOT, run=run,
+            )
+            recording_checks.prove_effectful_return(
+                compiler, EFFECTFUL_RETURN_SOURCE, base / "effectful-return-proof", run=run,
+            )
+            scalar_checks.check_counter_less_than(
+                compiler, base, root=ROOT, proof_requested=True, run=run,
+            )
+            scalar_checks.prove_literal_bytes_field(
+                compiler, base / "literal-bytes-field-proof", root=ROOT, run=run,
+            )
             cell_read_proof = base / "cell-read-proof"
             run(compiler, "--target", "rust", str(CELL_READ_SOURCE), str(cell_read_proof))
             check_manifest(cell_read_proof)

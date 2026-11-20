@@ -61,6 +61,7 @@ pub(super) fn render(
         | Operation::UnsignedAdd(..)
         | Operation::UnsignedSubtract(..)
         | Operation::UnsignedMultiply(..)
+        | Operation::Secp256k1Unary { .. }
         | Operation::Convert { .. } => pure::expression(binding, &ty, value, |input| {
             let source = name(input);
             syn::parse_quote!(#source)
@@ -74,6 +75,61 @@ pub(super) fn render(
             steps.push(zswap::output(coin, recipient));
             syn::parse_quote!(())
         }
+        Operation::EmitShieldedSpend(input) => {
+            let nullifier = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_spend(#nullifier)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedBurn(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_burn(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedMint(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_mint(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitShieldedReceive(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_shielded_receive(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedSpend(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_spend(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedReceive(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_receive(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedMint(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_mint(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnshieldedBurn(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unshielded_burn(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitMisc(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_misc(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitPaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_paused(#payload)?;));
+            syn::parse_quote!(())
+        }
+        Operation::EmitUnpaused(input) => {
+            let payload = value(input);
+            steps.push(syn::parse_quote!(let frame = frame.emit_unpaused(#payload)?;));
+            syn::parse_quote!(())
+        }
         Operation::KernelClaim { kind, value: input } => {
             let claim = effect_values::claim(*kind, input);
             steps.push(syn::parse_quote!(let frame = frame.kernel_claim(#claim)?;));
@@ -85,6 +141,55 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(let frame = frame.kernel_mint_shielded(
                     runtime::ledger::HashOutput((#domain).into_array()), (#amount).value() as u64,
                 )?;));
+            syn::parse_quote!(())
+        }
+        Operation::KernelUnshieldedEffect {
+            kind,
+            key,
+            recipient,
+            amount,
+        } => {
+            let amount = value(amount);
+            if *kind == crate::ir::KernelUnshieldedEffectKind::Mint {
+                let domain = value(key);
+                steps.push(syn::parse_quote!(let frame = frame.kernel_mint_unshielded(
+                    runtime::ledger::HashOutput((#domain).into_array()), (#amount).value() as u64,
+                )?;));
+            } else {
+                let key = name(key);
+                let token: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                    #key.is_left, #key.left, #key.right,
+                ));
+                match kind {
+                    crate::ir::KernelUnshieldedEffectKind::Inputs => {
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_inc_unshielded_inputs(
+                            #token, (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Outputs => {
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_inc_unshielded_outputs(
+                            #token, (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Claim => {
+                        let recipient = name(recipient.as_ref().expect("checked claim recipient"));
+                        steps.push(
+                            syn::parse_quote!(let frame = frame.kernel_claim_unshielded_coin_spend(
+                            #token,
+                            runtime::ledger::unshielded_recipient_from_compact(
+                                #recipient.is_left, #recipient.left.bytes, #recipient.right.bytes,
+                            ),
+                            (#amount).value() as u128,
+                        )?;),
+                        );
+                    }
+                    crate::ir::KernelUnshieldedEffectKind::Mint => unreachable!("handled above"),
+                }
+            }
             syn::parse_quote!(())
         }
         Operation::OwnPublicKey => {
@@ -103,11 +208,45 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.kernel_self()?;));
             effect_values::address(&ty, syn::parse_quote!(#observed))
         }
+        Operation::KernelBalance { token }
+        | Operation::KernelBalanceLessThan { token, .. }
+        | Operation::KernelBalanceGreaterThan { token, .. } => {
+            let token = value(token);
+            let key: syn::Expr = syn::parse_quote!(runtime::ledger::token_type_from_compact(
+                #token.is_left, #token.left, #token.right
+            ));
+            let observed = syn::Ident::new(
+                &format!("__compact_effect_balance_{}", binding.value.id),
+                Span::call_site(),
+            );
+            match &binding.operation {
+                Operation::KernelBalance { .. } => steps
+                    .push(syn::parse_quote!(let (frame, #observed) = frame.kernel_balance(#key)?;)),
+                Operation::KernelBalanceLessThan { amount, .. } => {
+                    let amount = value(amount);
+                    steps.push(syn::parse_quote!(let (frame, #observed) =
+                        frame.kernel_balance_less_than(#key, (#amount).value())?;));
+                }
+                Operation::KernelBalanceGreaterThan { amount, .. } => {
+                    let amount = value(amount);
+                    steps.push(syn::parse_quote!(let (frame, #observed) =
+                        frame.kernel_balance_greater_than(#key, (#amount).value())?;));
+                }
+                _ => unreachable!(),
+            }
+            if matches!(binding.operation, Operation::KernelBalance { .. }) {
+                syn::parse_quote!(runtime::BoundedUint::<{u128::MAX}>::new(#observed)
+                    .expect("Kernel balance fits Uint<128>"))
+            } else {
+                syn::parse_quote!(#observed)
+            }
+        }
         Operation::PersistentCommit { .. }
         | Operation::FieldToBytes32(_)
         | Operation::PersistentHash(_)
         | Operation::HashToCurve(_)
-        | Operation::Keccak256(_)
+        | Operation::Keccak256(..)
+        | Operation::Sha512(_)
         | Operation::JubjubPointX(_)
         | Operation::JubjubPointY(_)
         | Operation::JubjubScalarFromNative(_)
@@ -159,6 +298,9 @@ pub(super) fn render(
         }
         Operation::MapMember { .. }
         | Operation::MapLookup { .. }
+        | Operation::NestedMapLookup { .. }
+        | Operation::NestedMapInsert { .. }
+        | Operation::MapInitChild { .. }
         | Operation::MapInsert { .. }
         | Operation::MapRemove { .. }
         | Operation::MapInsertDefault { .. }

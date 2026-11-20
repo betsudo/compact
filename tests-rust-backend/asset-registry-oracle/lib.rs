@@ -145,7 +145,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub fn assertRecordFreshEnough(
         policy: crate::types::FreshnessPolicy,
         record: crate::types::AssetRecord,
@@ -282,7 +282,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -403,7 +403,7 @@ pub mod ledger_contract {
             crate::ledger_slots::tags.witness_view(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -720,14 +720,40 @@ pub mod ledger_contract {
         let __compact_query_1 = crate::ledger_slots::auditorKey.read(context)?;
         context = __compact_query_1.context;
         total_cost += __compact_query_1.gas_cost;
-        if !(if __compact_value_0 != runtime::jubjub_point_x(__compact_query_1.result) {
-            true
-        } else {
-            let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
-            let __compact_query_3 = crate::ledger_slots::auditorKey.read(context)?;
-            context = __compact_query_3.context;
-            total_cost += __compact_query_3.gas_cost;
-            __compact_value_2 != runtime::jubjub_point_y(__compact_query_3.result)
+        if !({
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_value_0
+                != runtime::jubjub_point_x(__compact_query_1.result)
+            {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = true;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_value_2 = runtime::jubjub_point_y(__compact_param_0);
+                        let __compact_query_3 = crate::ledger_slots::auditorKey.read(context)?;
+                        context = __compact_query_3.context;
+                        total_cost += __compact_query_3.gas_cost;
+                        let __compact_branch_value =
+                            __compact_value_2 != runtime::jubjub_point_y(__compact_query_3.result);
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         }) {
             return Err(runtime::CompactError::AssertionFailed(
                 "operator key matches the auditor key".to_owned(),
@@ -826,14 +852,37 @@ pub mod ledger_contract {
             crate::ledger_slots::records.member(context, (__compact_param_0.clone()).clone())?;
         context = __compact_query_0.context;
         total_cost += __compact_query_0.gas_cost;
-        let result = if __compact_query_0.result {
-            true
-        } else {
-            let __compact_query_1 = crate::ledger_slots::custodyGrants
-                .member(context, (__compact_param_0.clone()).clone())?;
-            context = __compact_query_1.context;
-            total_cost += __compact_query_1.gas_cost;
-            __compact_query_1.result
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_query_0.result {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = true;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_1 = crate::ledger_slots::custodyGrants
+                            .member(context, (__compact_param_0.clone()).clone())?;
+                        context = __compact_query_1.context;
+                        total_cost += __compact_query_1.gas_cost;
+                        let __compact_branch_value = __compact_query_1.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

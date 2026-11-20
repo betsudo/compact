@@ -5,6 +5,128 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.218, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Qualify all 20 pinned original-token Rust circuits with source-bound proofs,
+  funded default-strict application and replay/refusal checks. Prepare the
+  complete source-only native Linux gate while keeping native Linux and
+  live-node qualification open.
+
+## [Toolchain 0.31.217, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Stage private per-address cross-contract call contexts, verified claim data,
+  Zswap snapshots and transactional rollback for generated calls. Keep public
+  generated invocation refused while the remaining ZKIR, Callee and Caller
+  groups are qualified.
+
+## [Toolchain 0.31.216, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Changed
+
+- Pair generated Rust contracts and the source runtime with one exact
+  Ledger 9.1.0.2 source graph. Generated Cargo manifests carry the same
+  Ledger and ZK patches as the compiler workspace so transitive dependencies
+  cannot fall back to incompatible registry copies. The functional checked
+  effect label remains 9.1.0.1 because the 9.1.0.2 client patch does not
+  change Compact language or effect semantics. Active proof consumers use
+  ZKIR 3.2.1; the Passport dogfood fixture retains its pre-migration
+  transient-crypto dependency and is outside this DID/runtime qualification.
+
+- Compare `Opaque<"Uint8Array">` values by length and contents in generated
+  TypeScript. Distinct arrays with identical bytes now compare equal.
+
+- The Compact standard library's `jubjubSchnorrVerify` now rejects the
+  identity verification key with a failed assertion. This is a breaking change
+  for callers that pass the default `JubjubPoint`.
+
+### Added
+
+- Qualify the pinned original Ledger 9 token contract in both generated targets.
+  Rust now records its unshielded kernel balance queries and token effects,
+  with independent proof verification, funded application, and replay checks
+  for the ten original unshielded circuits and shielded mint to self.
+- Emit generated declared-interface metadata and accept contract-typed exported
+  circuit arguments when their declarations match the compiled contracts.
+- Expose generated circuit signature metadata and runtime descriptor types for
+  exported Compact circuits.
+- Support the CompactStandardLibrary Boolean serialization built-ins in
+  TypeScript and Rust, with a checked decoder that accepts only 0 and 1.
+- Support fixed Bytes serialization and checked prefix decoding in the
+  TypeScript and Rust targets.
+- Support checked little-endian serialization of native Uint values in
+  the TypeScript and Rust targets.
+- Support canonical little-endian Field serialization in the TypeScript
+  and Rust targets.
+- Decode fixed-width structs, tuples and vectors with checked Boolean
+  components in the TypeScript and Rust backends.
+- Encode fixed-width structs, tuples and vectors with little-endian
+  components and zero padding in the TypeScript and Rust backends.
+- Encode and decode enum ordinals with checked bounds in both backends.
+- Encode and decode Uint values through Uint<248> in the Rust backend.
+- Encode and decode Secp256k1Base with the Ledger 9 wire format in both backends.
+- Extend Ledger 9 wire encoding and modular decoding to the remaining
+  secp256k1, P-256 and Curve25519 base and scalar fields.
+- Allow zero-length vectors in wire codecs when their element type
+  has no wire codec.
+- Support default insertion into maps of plain and historic Merkle trees
+  in ordinary and recorded Rust.
+- Support standalone `ShieldedMint` emission in ZKIR v3, TypeScript and
+  ordinary and recorded Rust.
+- Support standalone `ShieldedReceive` emission and its corrected
+  commitment, ciphertext and contract-address wire order.
+- Support standalone `UnshieldedSpend` emission with structural sender
+  encoding in ZKIR v3, TypeScript and Rust.
+- Support standalone `UnshieldedReceive` emission with structural
+  recipient encoding in ZKIR v3, TypeScript and Rust.
+- Support standalone `UnshieldedMint` emission with its 80-byte payload
+  in ZKIR v3, TypeScript and Rust.
+- Support standalone `UnshieldedBurn` emission with its 113-byte payload
+  in ZKIR v3, TypeScript and Rust.
+- Support `Paused` and `Unpaused` events and their zero-byte codecs
+  in ZKIR v3, TypeScript and Rust.
+- Support the `Misc` event and its 288-byte name and payload codec
+  in ZKIR v3, TypeScript and Rust.
+- Support standalone `ShieldedBurn` emission in ZKIR v3, TypeScript and
+  ordinary and recorded Rust.
+- Support standalone `ShieldedSpend` emission in ZKIR v3, TypeScript and
+  ordinary and recorded Rust. Successful circuit contexts expose the
+  VM-decoded event and its emitting contract address.
+
+### Changed
+
+- Pair the synchronous TypeScript runtime with the published Ledger 9 Onchain
+  Runtime 4.0.1 package. Generated TypeScript selects the new runtime minor.
+- Emit one ZKIR v3 impact per transcript operation, as required by the Ledger 9
+  transaction prover.
+- Generated Rust requires Rust 1.99 and Compact runtime ABI 54. Use
+  `--rust-functional-ledger9` for functional generation with the paired Ledger 9
+  compiler and runtime.
+
+### Fixed
+
+- Preserve nested comparisons inside stateful Boolean equality and inequality
+  when emitting Rust, including the original mixed foreign-field cast case.
+- Avoid an internal compiler error for addition and multiplication of small
+  nominal Uint values when the result has the same range as the operands.
+  Retain the run-time overflow check when the result can exceed that range.
+- Successful assertions produce the empty tuple in generated TypeScript.
+  A conditional can combine an assertion and an empty tuple literal.
+- Check witness disclosures through vector spreads, including conditions on
+  nested Boolean values.
+- Preserve leading U+FEFF characters when decoding stored opaque strings.
+- ZKIR v3 encodes Merkle tree defaults with the Ledger 9 depth field.
+  Circuit generation supports reset and default insertion through depth 32.
+
 ## [Toolchain 0.31.210, language 0.23.105, runtime 0.16.102]
 
 Unreleased local Rust-backend slice; generated API, native and proof

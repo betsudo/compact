@@ -15,19 +15,22 @@
 
 //! Complete nested-product SDKs, each compiled at its own crate root.
 //! Model observation generates no keys, proofs or funded transactions.
-use super::*;
+use super::{local_v3_application as v3, *};
 use compact_rust_vector_component_products_inner_product_single_sdk as single;
 use compact_rust_vector_component_products_witness_after_sdk as after;
 use compact_rust_vector_component_products_witness_before_sdk as before;
 use midnight_compact_runtime::{BoundedUint, Field, FixedVector};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
+
+const SELECTED: [(&str, u8); 3] = [
+    ("witness_before", 8),
+    ("witness_after", 8),
+    ("inner_product_single", 8),
+];
 
 fn selected(source: &str, circuit: &str) -> bool {
-    circuit == "run"
-        && matches!(
-            source,
-            "witness_before" | "witness_after" | "inner_product_single"
-        )
+    circuit == "run" && SELECTED.iter().any(|(name, _)| *name == source)
 }
 /// Observe every complete corpus export, including unselected or over-cap models.
 /// Python binds the entire producer directory before and after this observation.
@@ -72,8 +75,10 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
                 return Err("proof-not-applicable source acquired ZKIR".into());
             }
             for entry in entries {
-                rows.push(serde_json::json!({"source":name,"circuit":entry,"k":null,
-                    "proof_required":false,"selected_for_proof":false}));
+                rows.push(
+                    serde_json::json!({"source":name,"circuit":entry,"k":null,"rows":null,
+                    "proof_required":false,"selected_for_proof":false}),
+                );
             }
             continue;
         }
@@ -96,18 +101,19 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         for entry in entries {
             let entry = entry.as_str().ok_or("invalid export name")?;
-            let ir = IrSource::load(BufReader::new(File::open(
+            let ir = IrSourceV3::load(BufReader::new(File::open(
                 root.join(name).join(format!("zkir/{entry}.zkir")),
             )?))?;
+            let model = ir.model();
             rows.push(
-                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"proof_required":true,
+                serde_json::json!({"source":name,"circuit":entry,"k":model.k(),"rows":model.rows(),"proof_required":true,
                 "selected_for_proof":selected(name,entry)}),
             );
         }
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-vector-component-products-model-inventory/v1",
+        serde_json::json!({"format":"compact-vector-component-products-model-inventory/v2",
         "circuits":rows,"proof_execution":false,"scope":"complete model observation, no key generation or all-source proof acceptance"})
     );
     Ok(())
@@ -120,7 +126,7 @@ const BINDINGS: &[(&str, &[u8], &[u8])] = &[
             "../../compact-rust-backend/tests/vector_component_products/proof-goldens/witness_before/source-ir.json"
         ),
         include_bytes!(
-            "../../compact-rust-backend/tests/vector_component_products/proof-goldens/witness_before/checked-programs/program-0.json"
+            "../../compact-rust-backend/tests/vector_component_products/ledger9-proof-goldens/witness_before/checked-programs/program-0.json"
         ),
     ),
     (
@@ -129,7 +135,7 @@ const BINDINGS: &[(&str, &[u8], &[u8])] = &[
             "../../compact-rust-backend/tests/vector_component_products/proof-goldens/witness_after/source-ir.json"
         ),
         include_bytes!(
-            "../../compact-rust-backend/tests/vector_component_products/proof-goldens/witness_after/checked-programs/program-0.json"
+            "../../compact-rust-backend/tests/vector_component_products/ledger9-proof-goldens/witness_after/checked-programs/program-0.json"
         ),
     ),
     (
@@ -138,7 +144,7 @@ const BINDINGS: &[(&str, &[u8], &[u8])] = &[
             "../../compact-rust-backend/tests/vector_component_products/proof-goldens/inner_product_single/source-ir.json"
         ),
         include_bytes!(
-            "../../compact-rust-backend/tests/vector_component_products/proof-goldens/inner_product_single/checked-programs/program-0.json"
+            "../../compact-rust-backend/tests/vector_component_products/ledger9-proof-goldens/inner_product_single/checked-programs/program-0.json"
         ),
     ),
 ];
@@ -173,14 +179,15 @@ pub(super) fn models(pool: &Path) -> Result<(), Box<dyn Error>> {
     validate_bindings(pool)?;
     let mut rows = Vec::new();
     for (name, _, _) in BINDINGS {
-        let ir = IrSource::load(BufReader::new(File::open(
+        let ir = IrSourceV3::load(BufReader::new(File::open(
             pool.join(name).join("zkir/run.zkir"),
         )?))?;
-        rows.push(serde_json::json!({"source":name,"circuit":"run","k":ir.model().k(),"selected_for_proof":true}));
+        let model = ir.model();
+        rows.push(serde_json::json!({"source":name,"circuit":"run","k":model.k(),"rows":model.rows(),"selected_for_proof":true}));
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-vector-component-products-models/v1","circuits":rows,"proof_execution":false})
+        serde_json::json!({"format":"compact-vector-component-products-models/v2","circuits":rows,"proof_execution":false})
     );
     if rows.iter().any(|r| r["k"].as_u64().is_none_or(|k| k > 8)) {
         return Err("vector-component-products model exceeds tiny automatic k<=8".into());
@@ -303,10 +310,7 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
         return Err("proof result already exists".into());
     }
     let mut rows = Vec::new();
-    for (index, source) in ["witness_before", "witness_after", "inner_product_single"]
-        .into_iter()
-        .enumerate()
-    {
+    for (index, (source, k)) in SELECTED.into_iter().enumerate() {
         let root = pool.join(source);
         let mut rng = StdRng::seed_from_u64(0x0183_0000 + index as u64);
         let initial = match source {
@@ -322,7 +326,8 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
             _ => unreachable!(),
         };
         let initial_state = initial.ledger_state.get_ref().clone();
-        let deploy = make_deploy(&root, "run", initial_state.clone(), &mut rng)?;
+        let (ir, verifier, operation) = v3::operation(&root, "run", k)?;
+        let deploy = v3::deploy(initial_state.clone(), "run", operation, &mut rng);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -332,9 +337,6 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                 block_height: 0,
             },
         );
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/run.verifier"),
-        )?))?;
         macro_rules! witnessed {
             ($sdk:ident,$seen:expr) => {{
                 use $sdk::ledger_contract as api;
@@ -375,7 +377,13 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                     return Err("witness seen Cell mismatch".into());
                 }
                 let state = native.context.query.state.get_ref().clone();
-                let prepared = check_generated_trace(&root, "run", frecorded, ())?;
+                let prepared = midnight_compact_runtime::transaction::RecordedCall::new(
+                    &observed,
+                    frecorded,
+                    "run",
+                    (),
+                )
+                .prepare(verifier.clone(), Fr::from(0_u64))?;
                 let ow = Witness::new($seen);
                 let journal = ow.calls.clone();
                 let facade = api::Contract::from(ow);
@@ -429,7 +437,13 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                     return Err("single-product seen Cell mismatch".into());
                 }
                 let state = native.context.query.state.get_ref().clone();
-                let prepared = check_generated_trace(&root, "run", frecorded, single_input())?;
+                let prepared = midnight_compact_runtime::transaction::RecordedCall::new(
+                    &observed,
+                    frecorded,
+                    "run",
+                    single_input(),
+                )
+                .prepare(verifier.clone(), Fr::from(0_u64))?;
                 let ordinary = api::Contract::default()
                     .recording()
                     .run_call(&observed, 7, single_input())?
@@ -444,12 +458,17 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
             }
             _ => unreachable!(),
         };
-        let proof_bytes = prove(&root, pool, source, "run", index, &prepared, &verifier)?;
-        let transaction_bytes = apply(&root, "run", index, prepared, deploy, &state, rng)?;
-        rows.push(serde_json::json!({"source":source,"circuit":"run","initial_seen":0,"seen":1,"private_state":if index<2{8}else{7},"witness_count":if index<2{1}else{0},"witness_seen":if index<2{Some(index)}else{None},"result_type":if index<2{"Vector<2,[Vector<2,[Uint<16>,Uint<16>]>,Uint<32>]>"}else{"Vector<2,[Vector<2,[Uint<16>]>,Uint<16>]>"},"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
-            "standalone_proof":format!("{source}/vector-component-products-{index}.proof"),"applied_transaction":format!("{source}/vector-component-products-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"changed_preimage_rejected":true,"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
+        let stem = format!("vector-component-products-{index}");
+        let proof = prove(&root, source, &stem, &prepared, &verifier, &ir)?;
+        let transaction_proof_bytes =
+            v3::apply(&root, "run", &stem, prepared, deploy, &state, &proof)?;
+        let transaction_bytes =
+            std::fs::metadata(root.join(format!("{stem}-transaction.bin")))?.len();
+        rows.push(serde_json::json!({"source":source,"circuit":"run","initial_seen":0,"seen":1,"private_state":if index<2{8}else{7},"witness_count":if index<2{1}else{0},"witness_seen":if index<2{Some(index)}else{None},"result_type":if index<2{"Vector<2,[Vector<2,[Uint<16>,Uint<16>]>,Uint<32>]>"}else{"Vector<2,[Vector<2,[Uint<16>]>,Uint<16>]>"},"proof_bytes":proof.0.len(),"transaction_bytes":transaction_bytes,
+            "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,"positive_fee_dust_spends":1,
+            "standalone_proof":format!("{source}/vector-component-products-{index}.proof"),"applied_transaction":format!("{source}/vector-component-products-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"changed_preimage_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-vector-component-products-proof/v1","status":"passed","scope":"three existing complete source exports; other21required exports remain unproved; callbacks/constructor implementation not proved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":[["witness_before","run"],["witness_after","run"],["inner_product_single","run"]],"unproved_selected_source_exports":[],"calls":rows});
+    let result = serde_json::json!({"format":"compact-vector-component-products-proof/v2","status":"passed","scope":"three existing complete source exports; other 21 required exports remain unproved; callbacks/constructor implementation not proved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":[["witness_before","run"],["witness_after","run"],["inner_product_single","run"]],"unproved_selected_source_exports":[],"calls":rows});
     write_new(
         pool.join("vector-component-products-proof-result.json"),
         &serde_json::to_vec_pretty(&result)?,
@@ -475,29 +494,25 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 
 fn prove(
     root: &Path,
-    pool: &Path,
     source: &str,
-    name: &str,
-    index: usize,
+    stem: &str,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected vector-component-products proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{name}.bzkir")),
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
+        root.join("keys/run.prover"),
     )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("keys/{name}.prover")),
-    )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -515,33 +530,6 @@ fn prove(
     if proof.0.is_empty() {
         return Err("vector-component-products proof is empty".into());
     }
-    let mut corrupt = proof.clone();
-    corrupt.0[0] ^= 1;
-    if verifier
-        .verify(&PARAMS_VERIFIER, &corrupt, inputs.iter().copied())
-        .is_ok()
-    {
-        return Err("vector-component-products accepted corrupted proof bytes".into());
-    }
-    // A genuinely different source relation, not merely a second key for the same erased circuit.
-    let (other_source, other) = match (source, name) {
-        ("witness_before" | "witness_after", "run") => ("inner_product_single", "run"),
-        ("inner_product_single", "run") => ("witness_before", "run"),
-        _ => return Err("unknown source/circuit verifier pair".into()),
-    };
-    let wrong_path = pool
-        .join(other_source)
-        .join(format!("keys/{other}.verifier"));
-    if std::fs::read(&wrong_path)? == std::fs::read(root.join(format!("keys/{name}.verifier")))? {
-        return Err("wrong-verifier control has identical key bytes".into());
-    }
-    let wrong: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(wrong_path)?))?;
-    if wrong
-        .verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())
-        .is_ok()
-    {
-        return Err("vector-component-products accepted wrong immutable verifier".into());
-    }
     let mut changed_binding = inputs.clone();
     changed_binding[0] = if inputs[0] == Fr::from(0_u64) {
         Fr::from(1_u64)
@@ -557,8 +545,8 @@ fn prove(
     // Bind a genuinely different public result through the exact upstream
     // communication commitment, rather than changing an arbitrary input slot.
     let mut changed_call = call.clone();
-    changed_call.output = match (source, name) {
-        ("witness_before" | "witness_after", "run") => {
+    changed_call.output = match source {
+        "witness_before" | "witness_after" => {
             let changed: Wide = FixedVector::new([
                 (
                     FixedVector::new([(u(999), u(998)), (u(997), u(996))]),
@@ -571,7 +559,7 @@ fn prove(
             ]);
             AlignedValue::from(changed)
         }
-        ("inner_product_single", "run") => {
+        "inner_product_single" => {
             let changed: SingleOutput = FixedVector::new([
                 (FixedVector::new([(u(999),), (u(998),)]), u(997)),
                 (FixedVector::new([(u(996),), (u(995),)]), u(994)),
@@ -604,110 +592,54 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed vector-component-products proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("vector-component-products IR accepted changed result".into());
     }
-    write_new(
-        root.join(format!("vector-component-products-{index}.proof")),
-        &proof.0,
-    )?;
+    write_new(root.join(format!("{stem}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
-    write_new(
-        root.join(format!("vector-component-products-{index}.preimage")),
-        &bytes,
-    )?;
-    println!(
-        "vector-component-products {index}: {}-byte proof verified; changed binding/result refused",
-        proof.0.len()
-    );
-    Ok(proof.0.len())
+    write_new(root.join(format!("{stem}.preimage")), &bytes)?;
+    bytes.clear();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("{stem}.inputs")), &bytes)?;
+    Ok(proof)
 }
 
-fn apply(
-    root: &Path,
-    name: &'static str,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<usize, Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0183_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0183_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("vector-component-products strict apply failed: {result:?}").into());
+pub(super) fn verify(pool: &Path) -> Result<(), Box<dyn Error>> {
+    validate_bindings(pool)?;
+    for (index, (source, _)) in SELECTED.into_iter().enumerate() {
+        let root = pool.join(source);
+        let stem = format!("vector-component-products-{index}");
+        let verifier = v3::read_verifier(&root, "run")?;
+        v3::verify_standalone(&root, &stem, &verifier)?;
+        let other = if source == "inner_product_single" {
+            "witness_before"
+        } else {
+            "inner_product_single"
+        };
+        let wrong_root = pool.join(other);
+        if std::fs::read(wrong_root.join("keys/run.verifier"))?
+            == std::fs::read(root.join("keys/run.verifier"))?
+        {
+            return Err("wrong-verifier control has identical key bytes".into());
+        }
+        let wrong = v3::read_verifier(&wrong_root, "run")?;
+        let proof = Proof(std::fs::read(root.join(format!("{stem}.proof")))?);
+        let input_bytes = std::fs::read(root.join(format!("{stem}.inputs")))?;
+        let mut input_reader = input_bytes.as_slice();
+        let inputs: Vec<Fr> = tagged_deserialize(&mut input_reader)?;
+        if !input_reader.is_empty() {
+            return Err("vector-component-products proof inputs have trailing bytes".into());
+        }
+        if wrong
+            .verify(&PARAMS_VERIFIER, &proof, inputs.into_iter())
+            .is_ok()
+        {
+            return Err("vector-component-products accepted wrong immutable verifier".into());
+        }
+        println!(
+            "{source}/run: standalone v3 proof verified; corruption and wrong verifier refused"
+        );
     }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("vector-component-products contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("vector-component-products applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(format!(
-            "vector-component-products replay refused incorrectly or mutated ledger: {result:?}"
-        )
-        .into());
-    }
-    write_new(
-        root.join(format!("vector-component-products-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(
-        root.join(format!("vector-component-products-{index}-state.bin")),
-        &bytes,
-    )?;
-    println!(
-        "vector-component-products {index}: funded default-strict apply; replay refused without mutation"
-    );
-    Ok(transaction_bytes.len())
+    Ok(())
 }

@@ -1,0 +1,16 @@
+{
+  "files": {
+    "test-contracts/keywords/export/imports_not_reexported/compile.fail.test.ts": "42105c182feea0c8464966f312d109d32391ab09b28a154d8d5e88e9c4ebc71d",
+    "test-contracts/keywords/export/imports_not_reexported/export_imports_not_reexported.compact": "f9ddca2d2df09d0f333caf057ea70a6ec1ebbd68336e4c443cfbd33da5846467",
+    "test-contracts/keywords/export/names_differ_only_in_case/compile.fail.test.ts": "75b0b2f2d0c9a5b150b68651f7641343b9b1df4637da6a9794eea86c9693dc21",
+    "test-contracts/keywords/export/names_differ_only_in_case/export_names_differ_only_in_case.compact": "70156f3f599ea2e1aba2d34ad2dffaf847d635fd0964ae649f2614cc1168f042",
+    "test-contracts/keywords/export/reexport/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/export/reexport/export_reexport.compact": "3d2831589e174f37113817df28c897e7a879b3bd8de3ecee57696df237646863",
+    "test-contracts/keywords/export/reexport/runtime.pass.test.ts": "fd17eef6a02d67a719877ebfc2e28c494caecabdb0abbcb64d3ec9b63b1df61b",
+    "test-contracts/keywords/export/unexported_name_not_importable/compile.fail.test.ts": "35fbec38a3d348e520c3d796693f701926bdea7ce5fb9951ea6152fa509e71c7",
+    "test-contracts/keywords/export/unexported_name_not_importable/export_unexported_name_not_importable.compact": "6486c8b18746063bccb0c6cf366511628cfd1e50fbfa4720cfdfe2842519b081",
+    "test-contracts/keywords/export/without_body/compile.fail.test.ts": "618039e65417a57ef1e61322cf00524f26667a008beb90d643078b5dd15847df",
+    "test-contracts/keywords/export/without_body/export_without_body.compact": "a3f8f728e8c5e3558ec1256b79b54e9ed1525117de5c4e18abfc549f09083a7f"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

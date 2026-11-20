@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     .fold(HashMap::new(), |m, n| {
         m.insert(
             EntryPointBuf(n.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
     });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -156,7 +156,7 @@ fn check(out: CircuitResult<Private, ()>, row: &Value) {
 #[test]
 fn original_reveal_matches_ts_success_and_rejection_prefixes() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-reveal.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-reveal.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

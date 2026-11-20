@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #![cfg(feature = "ledger-transaction")]
 use compact_rust_keccak_fixture::ledger_contract as c;
 use midnight_compact_runtime as r;
@@ -32,10 +44,13 @@ impl c::TryWitnesses<u64> for Echo {
 }
 #[test]
 fn recorded_bytes_match_retained_ts_answers_and_empty_preparation() {
-    let oracle: serde_json::Value = serde_json::from_str(include_str!(
+    let aligned: serde_json::Value =
+        serde_json::from_str(include_str!("../aligned-oracle.json")).unwrap();
+    let historical: serde_json::Value = serde_json::from_str(include_str!(
         "../../../runtime-rs/tests/fixtures/keccak.json"
     ))
     .unwrap();
+    assert_eq!(aligned["format"], "compact-keccak-aligned-oracle/v1");
     let initial = c::initial_state(r::context::ConstructorContext::new(7_u64)).unwrap();
     let (state, key) = support::observation(initial.ledger_state.get_ref().clone(), &["hash_echo"]);
     let value = r::Field::from(2_u64);
@@ -55,10 +70,10 @@ fn recorded_bytes_match_retained_ts_answers_and_empty_preparation() {
         };
         assert_eq!(
             hex::encode(native.result.0),
-            oracle[id]["result"].as_str().unwrap()
+            aligned[id]["digest"].as_str().unwrap()
         );
         assert_eq!(native.context.private_state, 8);
-        support::private_oracle(&native, &oracle[id]);
+        support::private_oracle(&native, &historical[id]);
         for result in [&recorded, call.recorded()] {
             support::parity(result, &native);
         }

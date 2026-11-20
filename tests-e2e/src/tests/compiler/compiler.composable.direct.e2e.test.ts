@@ -233,14 +233,20 @@ describe('[Composable contracts direct] Compiler', () => {
     });
 
     test('should throw an error on exported circuit parameter', async () => {
+        // CCC: passing a contract value as an exported-circuit parameter is
+        // no longer rejected at the type-check level. The compiler still
+        // rejects this program, but via the disclosure analyzer: invoking
+        // calc.get_square(...) leaks the contract-reference parameter, and
+        // that disclosure has not been declared.
         const mainFileName = 'Main-export-circuit-parameter.compact';
         const mainFilePath = contractsDir + mainFileName;
         const returnValue = await compileWithContractPath(mainFilePath, 'Main', contractsDir);
 
         expectCompilerResult(returnValue).toBeFailure(
-            `Exception: ${mainFileName} line 21 char 1: ` +
-                'invalid type contract Calculator<get_square(Field): Field, get_cube(Field): Field> for circuit calculate_square argument 1: ' +
-                'exported circuit arguments cannot include contract values',
+            `Exception: ${mainFileName} line 22 char 16: ` +
+                'potential witness-value disclosure must be declared but is not: ' +
+                'witness value potentially disclosed: the value of parameter calc of exported circuit calculate_square at line 21 char 33; ' +
+                'nature of the disclosure: contract call contract reference might disclose the witness value',
             compilerDefaultOutput(),
         );
     });

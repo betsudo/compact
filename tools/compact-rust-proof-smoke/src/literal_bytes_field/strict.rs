@@ -1,24 +1,51 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
-//! Source-bound ordinary snapshot proof; constructor state is supplied.
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+//! Source-bound ordinary snapshot proof with a separately applied deployment.
 use super::*;
+use crate::local_v3_application as v3;
 use compact_rust_literal_bytes_field_oracle_fixture::ledger_slots as slots;
-use midnight_compact_runtime::{CompactError, recording::RecordingFrame};
+use midnight_compact_runtime::{
+    CompactError, recording::RecordingFrame, transaction::RecordedCall,
+};
 const RETAINED_IR: &str =
     include_str!("../../../compact-rust-backend/tests/literal-bytes-field-schema20-ir.json");
 const CIRCUIT: &str = "snapshot";
 
-pub(crate) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+pub(crate) fn run(root: &Path, verify: bool) -> Result<(), Box<dyn Error>> {
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         RETAINED_IR,
     )?;
+    let (ir, verifier, operation) = v3::operation(root, CIRCUIT, 6)?;
+    if ir.model().rows() != 47 {
+        return Err("literal Bytes-to-Field v3 row count differs".into());
+    }
+    if verify {
+        v3::verify_standalone(root, CIRCUIT, &verifier)?;
+        println!("{CIRCUIT}: separate v3 verification passed and corrupted proof was refused");
+        return Ok(());
+    }
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("literal Bytes-to-Field proof requires local proving".into());
+    }
     let mut rng = StdRng::seed_from_u64(0x0606_534e_4150);
     let expected = Fr::from(16961_u64);
     let initial = contract::initial_state(ConstructorContext::new(7_u64))?;
     let initial_state = initial.ledger_state.get_ref().clone();
-    let deploy = make_deploy(root, CIRCUIT, initial_state.clone(), &mut rng)?;
+    let deploy = v3::deploy(initial_state.clone(), CIRCUIT, operation, &mut rng);
     let observed = ObservedContractState::new(
         deploy.address(),
         deploy.initial_state.clone(),
@@ -73,22 +100,26 @@ pub(crate) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     if native.context.private_state != 7 || !native.private_transcript_outputs.is_empty() {
         return Err("snapshot native private state differs".into());
     }
-    let direct = check_generated_trace(root, CIRCUIT, recorded, ())?;
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/snapshot.verifier"),
-    )?))?;
-    let prepared = call.prepare(verifier.clone(), Fr::from(0_u64))?;
+    let randomness = Fr::from(0_u64);
+    let direct = RecordedCall::new(&observed, recorded, CIRCUIT, ())
+        .prepare(verifier.clone(), randomness)?;
+    let prepared = call.prepare(verifier.clone(), randomness)?;
     if prepared.input != AlignedValue::from(())
         || prepared.output != AlignedValue::from(expected)
         || format!("{direct:?}") != format!("{prepared:?}")
     {
         return Err("snapshot preparation binding differs".into());
     }
-    kernel_shielded_effects::prove_and_verify_call(root, CIRCUIT, &prepared, &verifier)?;
-    opaque_public::apply_funded(root, CIRCUIT, prepared, deploy, &initial_state, rng, 606)?;
-    println!(
-        "ordinary snapshot: source-bound native/recorded/observed/manual agreement, proof verified and changed binding rejected, strict funded ledger8 application; constructor state supplied, not proved"
-    );
+    let proof = v3::prove_standalone(root, CIRCUIT, CIRCUIT, &prepared, &verifier, None)?;
+    v3::apply_after_deployment(
+        root,
+        CIRCUIT,
+        CIRCUIT,
+        prepared,
+        deploy,
+        &initial_state,
+        &proof,
+    )?;
     Ok(())
 }
 #[cfg(test)]
@@ -116,7 +147,7 @@ mod tests {
         ));
         assert!(!root.exists());
         assert_eq!(
-            run(&root)
+            run(&root, false)
                 .unwrap_err()
                 .downcast_ref::<io::Error>()
                 .unwrap()

@@ -92,7 +92,7 @@ fn check_output<T>(output: CircuitResult<(), T>, oracle: &serde_json::Value) {
 #[test]
 fn direct_and_projected_native_key_match_typescript_without_user_witnesses() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/native-own-public-key-value.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-native-own-public-key-value.json"
     ))
     .unwrap();
     let key: [u8; 32] = oracle["coinPublicKey"]

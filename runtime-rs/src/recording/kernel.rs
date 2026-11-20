@@ -25,6 +25,22 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
         self.apply_verify_program(program)
     }
 
+    /// Record the Kernel claim for a callee's address, entry point and
+    /// communication commitment. The ledger matches it against another call
+    /// in the same transaction.
+    pub fn kernel_claim_contract_call(
+        self,
+        address: ledger::ContractAddress,
+        entry_point_hash: ledger::HashOutput,
+        communication_commitment: crate::Field,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_claim_contract_call_program(
+            address,
+            entry_point_hash,
+            communication_commitment,
+        ))
+    }
+
     /// Record a shielded mint effect, without fabricating a coin or a balance.
     pub fn kernel_mint_shielded(
         self,
@@ -33,6 +49,41 @@ impl<Private, D: DB> RecordingFrame<Private, D> {
     ) -> Result<Self, CompactError> {
         let program = ledger::kernel_mint_shielded_program::<ResultModeVerify, D>(domain, amount);
         self.apply_verify_program(program)
+    }
+
+    pub fn kernel_mint_unshielded(
+        self,
+        domain: ledger::HashOutput,
+        amount: u64,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_mint_unshielded_program(domain, amount))
+    }
+
+    pub fn kernel_inc_unshielded_inputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_inc_unshielded_inputs_program(token, amount))
+    }
+
+    pub fn kernel_inc_unshielded_outputs(
+        self,
+        token: ledger::TokenType,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_inc_unshielded_outputs_program(token, amount))
+    }
+
+    pub fn kernel_claim_unshielded_coin_spend(
+        self,
+        token: ledger::TokenType,
+        recipient: ledger::PublicAddress,
+        amount: u128,
+    ) -> Result<Self, CompactError> {
+        self.apply_verify_program(ledger::kernel_claim_unshielded_coin_spend_program(
+            token, recipient, amount,
+        ))
     }
 }
 
@@ -50,6 +101,132 @@ mod tests {
             )),
         )
         .into_circuit_context(ContractAddress::default())
+    }
+
+    #[test]
+    fn unshielded_effects_replay_matches_native_order_and_cost() {
+        let domain = ledger::HashOutput([1; 32]);
+        let token = ledger::token_type_from_compact(
+            true,
+            crate::FixedBytes([2; 32]),
+            crate::FixedBytes([0; 32]),
+        );
+        let recipient = ledger::unshielded_recipient_from_compact(
+            false,
+            crate::FixedBytes([0; 32]),
+            crate::FixedBytes([3; 32]),
+        );
+        let mut native = context();
+        let mut native_cost = RunningCost::ZERO;
+        let step = native.kernel_mint_unshielded(domain, 7).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native.kernel_inc_unshielded_inputs(token, 7).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native.kernel_inc_unshielded_outputs(token, 2).unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+        let step = native
+            .kernel_claim_unshielded_coin_spend(token, recipient, 2)
+            .unwrap();
+        native_cost += step.gas_cost;
+        native = step.context;
+
+        let recorded = RecordingFrame::new(context())
+            .kernel_mint_unshielded(domain, 7)
+            .unwrap()
+            .kernel_inc_unshielded_inputs(token, 7)
+            .unwrap()
+            .kernel_inc_unshielded_outputs(token, 2)
+            .unwrap()
+            .kernel_claim_unshielded_coin_spend(token, recipient, 2)
+            .unwrap()
+            .finish(());
+        assert_eq!(recorded.public.verify_ops().len(), 4 * 16);
+        assert_eq!(
+            recorded.execution.context.query.effects,
+            native.query.effects
+        );
+        assert_eq!(recorded.execution.gas_cost, native_cost);
+        let replay = recorded
+            .public
+            .initial()
+            .query(
+                recorded.public.verify_ops(),
+                None,
+                &recorded.execution.context.cost_model,
+            )
+            .unwrap();
+        assert_eq!(replay.context.effects, native.query.effects);
+        // Replaying one concatenated program incurs a different VM query
+        // overhead from four separately charged source queries.
+        assert_ne!(replay.gas_cost, RunningCost::ZERO);
+        assert_eq!(replay.context.state, recorded.public.initial().state);
+    }
+
+    #[test]
+    fn contract_claim_matches_generated_typescript_and_replays_in_order() {
+        use midnight_onchain_state::state::EntryPointBuf;
+
+        // The v3 TypeScript compiler emitted this program for the explicit
+        // kernel claim in the EntryPoint transfer adapter.
+        let oracle: serde_json::Value = serde_json::from_str(include_str!(
+            "../../tests/fixtures/kernel-entrypoint-claim-oracle.json"
+        ))
+        .unwrap();
+        let address = ContractAddress(ledger::HashOutput(
+            serde_json::from_value(oracle["calleeAddress"].clone()).unwrap(),
+        ));
+        let entry_point = EntryPointBuf(oracle["entryPoint"].as_str().unwrap().as_bytes().to_vec());
+        let hash = entry_point.ep_hash();
+        let args = (
+            oracle["argument"].as_u64().unwrap(),
+            oracle["result"].as_u64().unwrap(),
+        );
+        let commitment = crate::transient_commit(
+            args,
+            crate::Field::from(oracle["randomness"].as_u64().unwrap()),
+        );
+        let recorded = RecordingFrame::new(context())
+            .kernel_claim_contract_call(address, hash, commitment)
+            .unwrap()
+            .kernel_claim_contract_call(address, hash, commitment)
+            .unwrap()
+            .finish(());
+        let (first, second) = recorded.public.verify_ops().split_at(9);
+        assert_eq!(serde_json::to_value(first).unwrap(), oracle["operations"]);
+        assert_eq!(first, second);
+
+        let replay = recorded
+            .public
+            .initial()
+            .query(
+                recorded.public.verify_ops(),
+                None,
+                &recorded.execution.context.cost_model,
+            )
+            .unwrap();
+        assert_eq!(
+            replay.context.effects,
+            recorded.execution.context.query.effects
+        );
+        assert_eq!(replay.context.state, recorded.public.initial().state);
+        let mut claims: Vec<_> = replay
+            .context
+            .effects
+            .claimed_contract_calls
+            .iter()
+            .map(|claim| claim.into_inner())
+            .collect();
+        claims.sort_by_key(|claim| claim.0);
+        assert_eq!(
+            claims,
+            [
+                (0, address, hash, commitment),
+                (1, address, hash, commitment)
+            ]
+        );
     }
 
     #[test]
@@ -102,6 +279,16 @@ mod tests {
         ctx.gas_limit = Some(RunningCost::ZERO);
         assert!(matches!(
             RecordingFrame::new(ctx).kernel_mint_shielded(ledger::HashOutput([1; 32]), 7),
+            Err(CompactError::LedgerQueryRejected(_))
+        ));
+        let mut ctx = context();
+        ctx.gas_limit = Some(RunningCost::ZERO);
+        assert!(matches!(
+            RecordingFrame::new(ctx).kernel_claim_contract_call(
+                ContractAddress(ledger::HashOutput([1; 32])),
+                ledger::HashOutput([2; 32]),
+                crate::Field::from(3),
+            ),
             Err(CompactError::LedgerQueryRejected(_))
         ));
     }

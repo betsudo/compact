@@ -30,12 +30,33 @@ import tomllib
 from unittest.mock import patch
 
 import check_compactc_target as cli
+import check_constructor_equality_proof_preflight as equality
+import check_constructor_vector_proof_preflight as vector
 import proof_commands
+from consumer_cargo import with_pinned_patches
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class ProofCommands(unittest.TestCase):
+    def test_isolated_consumer_copies_versioned_root_patch_table(self):
+        manifest = '[package]\nname = "isolation-control"\nversion = "0.1.0"\n'
+        expected = tomllib.loads((ROOT / "Cargo.toml").read_text())["patch"]
+        rendered = with_pinned_patches(manifest, ROOT)
+        self.assertEqual(tomllib.loads(rendered)["patch"], expected)
+        self.assertEqual(tomllib.loads(rendered)["package"], tomllib.loads(manifest)["package"])
+        with self.assertRaisesRegex(ValueError, "already has Cargo patches"):
+            with_pinned_patches(rendered, ROOT)
+
+    def test_constructor_proof_consumers_inherit_single_sdk_patch_table(self):
+        expected = tomllib.loads((ROOT / "Cargo.toml").read_text())["patch"]
+        for owner in (vector, equality):
+            with self.subTest(owner=owner.__name__):
+                manifest = tomllib.loads(owner.consumer_manifest("compact-contract-control"))
+                self.assertEqual(manifest["patch"], expected)
+                self.assertEqual(manifest["dependencies"]["contract"]["package"],
+                                 "compact-contract-control")
+
     def test_native_scenario_inventory_and_shard_partition(self):
         # Freeze the complete pre-shard default invocation list, including
         # which focused modes historically received --proof.
@@ -331,6 +352,30 @@ class ProofCommands(unittest.TestCase):
         self.assertEqual(command[command.index("--compiler") + 1], "$COMPACTC")
         self.assertEqual(command[command.index("--case") + 1], "did/timestamp-zero")
         self.assertEqual(command[command.index("--output") + 1], "$RUNNER_TEMP/compact-did-zero-timestamp-proof")
+
+    def test_full_did_reducer_linux_gate_is_explicit_and_fail_closed(self):
+        workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()
+        dispatch = workflow.split("  workflow_dispatch:\n", 1)[1].split("  pull_request:\n", 1)[0]
+        self.assertIn("run_did_primitive_reducers:", dispatch)
+        self.assertIn("default: false", dispatch.split("run_did_primitive_reducers:", 1)[1])
+        job = workflow.split("  did-primitive-reducers:\n", 1)[1].split("  product-proofs:\n", 1)[0]
+        self.assertIn("needs: [compiler-linux, build]", job)
+        self.assertIn("github.event_name == 'workflow_dispatch' && inputs.run_did_primitive_reducers", job)
+        self.assertIn("ref: ${{ github.sha }}", job)
+        self.assertIn("--source-sha \"$SOURCE_SHA\" --system x86_64-linux", job)
+        self.assertIn("from check_release_packages import compatibility_record", job)
+        self.assertIn("resolve_ledger_test_static.py", job)
+        self.assertIn("nix build --no-link .#runtime.package", job)
+        self.assertIn("did_primitive_reducer_gate.py", job)
+        self.assertNotIn("--only", job)
+        self.assertIn("--target \"$CARGO_TARGET_DIR\"", job)
+        self.assertIn("len(receipt['reducers']) == len(receipt['expected_reducers']) == 9", job)
+        self.assertIn("== 21", job)
+        self.assertIn("compact-did-primitive-reducer-proof/", job)
+        complete = workflow.split("  complete:\n", 1)[1]
+        self.assertIn("did-primitive-reducers]", complete)
+        self.assertIn('test "$DID_REDUCERS_RESULT" = success', complete)
+        self.assertIn('test "$DID_REDUCERS_RESULT" = skipped', complete)
 
     def test_did_zero_proof_retains_failure_without_waiting_for_packages(self):
         workflow = (ROOT / ".github/workflows/build-compiler.yml").read_text()

@@ -1,0 +1,13 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export { Misc }"
+      )
+    (returns
+      (program ()
+        (export-typedef Misc ()
+          (tstruct Misc
+            (name (tbytes 32))
+            (payload (tbytes 256))))
+        (public-ledger-declaration %kernel.0 (Kernel))))
+    )

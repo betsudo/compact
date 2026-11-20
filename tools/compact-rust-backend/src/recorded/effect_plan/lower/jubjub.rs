@@ -1,9 +1,21 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Point operands are evaluated once, left to right, before creating an operation.
 use super::*;
+use crate::pure_semantics::jubjub::Curve;
 
 impl Lowerer<'_> {
     pub(super) fn jubjub(
@@ -13,42 +25,61 @@ impl Lowerer<'_> {
         bindings: &mut Vec<Binding>,
         path: &str,
     ) -> Result<(Operation, Type), RecordingGap> {
-        let mut operand = |expression, name, expected| {
+        let mut operand = |expression, name, expected: Option<Type>| {
             let path = format!("{path}.{name}");
             let value = self.expression(expression, scope, bindings, &path)?;
-            if value.ty != expected {
-                return Err(invalid(
-                    &path,
-                    format!("expected {expected:?} Jubjub operand"),
-                ));
+            if let Some(expected) = expected {
+                check_operand(value, expected, &path)
+            } else {
+                Ok(value)
             }
-            Ok(value)
         };
         Ok(match expression {
             Expr::JubjubScalarFromNative { value } => (
-                Operation::JubjubScalarFromNative(operand(value, "value", Type::Field)?),
+                Operation::JubjubScalarFromNative(operand(value, "value", Some(Type::Field))?),
                 Type::Field,
             ),
-            Expr::EcMulGenerator { scalar } => (
-                Operation::EcMulGenerator(operand(scalar, "scalar", Type::Field)?),
-                Type::JubjubPoint,
-            ),
+            Expr::EcMulGenerator { scalar } => {
+                let scalar = operand(scalar, "scalar", None)?;
+                let curve = Curve::for_scalar(&scalar.ty);
+                let scalar = check_operand(scalar, curve.scalar(), &format!("{path}.scalar"))?;
+                (Operation::EcMulGenerator(scalar), curve.point())
+            }
             Expr::EcNeg { value } => (
-                Operation::EcNeg(operand(value, "value", Type::JubjubPoint)?),
+                Operation::EcNeg(operand(value, "value", Some(Type::JubjubPoint))?),
                 Type::JubjubPoint,
             ),
             Expr::EcMul { point, scalar } => {
-                let point = operand(point, "point", Type::JubjubPoint)?;
-                let scalar = operand(scalar, "scalar", Type::Field)?;
-                (Operation::EcMul { point, scalar }, Type::JubjubPoint)
+                let point = operand(point, "point", None)?;
+                let curve = Curve::for_point(&point.ty);
+                let point = check_operand(point, curve.point(), &format!("{path}.point"))?;
+                let scalar = operand(scalar, "scalar", Some(curve.scalar()))?;
+                (Operation::EcMul { point, scalar }, curve.point())
             }
             Expr::EcAdd { left, right } => {
-                let left = operand(left, "left", Type::JubjubPoint)?;
-                let right = operand(right, "right", Type::JubjubPoint)?;
-                (Operation::EcAdd { left, right }, Type::JubjubPoint)
+                let left = operand(left, "left", None)?;
+                let curve = Curve::for_point(&left.ty);
+                let left = check_operand(left, curve.point(), &format!("{path}.left"))?;
+                let right = operand(right, "right", Some(curve.point()))?;
+                (Operation::EcAdd { left, right }, curve.point())
             }
             _ => return Err(self.unsupported_expression(expression, path)),
         })
+    }
+}
+
+fn check_operand(value: Value, expected: Type, path: &str) -> Result<Value, RecordingGap> {
+    if value.ty == expected {
+        Ok(value)
+    } else {
+        let curve = match expected {
+            Type::Secp256k1Point | Type::Secp256k1Scalar => "secp256k1",
+            _ => "Jubjub",
+        };
+        Err(invalid(
+            path,
+            format!("expected {expected:?} {curve} operand"),
+        ))
     }
 }
 

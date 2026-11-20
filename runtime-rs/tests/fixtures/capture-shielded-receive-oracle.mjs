@@ -19,10 +19,11 @@ import { createRequire } from 'node:module';
 import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const [contractPath, coraclePath] = process.argv.slice(2);
-if (!contractPath || !coraclePath) {
-  throw new Error('expected generated receive and original Coracle TypeScript contract paths');
+const [contractPath, coraclePath, mode, ...extra] = process.argv.slice(2);
+if (!contractPath || !coraclePath || (mode && mode !== '--ledger9') || extra.length) {
+  throw new Error('expected generated receive and original Coracle TypeScript contract paths, optionally --ledger9');
 }
+const ledger9 = mode === '--ledger9';
 const require = createRequire(contractPath);
 const generatedSource = readFileSync(contractPath, 'utf8');
 const generatedRuntimeVersion = generatedSource.match(/checkRuntimeVersion\('([^']+)'\)/)?.[1];
@@ -36,9 +37,10 @@ const runtime = await import(pathToFileURL(require.resolve('@midnight-ntwrk/comp
 const coinValueAlignment = runtime.ShieldedCoinInfoDescriptor.alignment().at(-1);
 if (coinValueAlignment?.tag !== 'atom'
     || coinValueAlignment.value.tag !== 'bytes'
-    || coinValueAlignment.value.length !== 8) {
-  throw new Error('Historical ADR195 capture requires the original b8 coin descriptor; '
-    + 'use runtime/test/check-shielded-receive-u128.mjs for the corrected u128 runtime');
+    || coinValueAlignment.value.length !== (ledger9 ? 16 : 8)) {
+  throw new Error(ledger9 ? 'Ledger 9 capture requires the u128 coin descriptor'
+    : 'Historical ADR195 capture requires the original b8 coin descriptor; '
+      + 'use --ledger9 for the current u128 runtime');
 }
 const { Contract } = await import(pathToFileURL(contractPath).href);
 const { Contract: CoracleContract } = await import(pathToFileURL(coraclePath).href);
@@ -109,7 +111,43 @@ const rows = [
   run('accept_renamed', 42n, 3, 2, 9, 7),
   run('accept', (1n << 64n) - 1n, 4, 5, 11, 13),
 ];
-const overRuntimeLimit = [1n << 64n, (1n << 128n) - 1n].map((value) => {
+const wideValues = [1n << 64n, (1n << 128n) - 1n];
+if (ledger9) {
+  for (const value of wideValues) rows.push(run('accept', value, 4, 5, 11, 13));
+}
+
+function rejectOutOfRange(value) {
+  const contract = new Contract({});
+  const coinPublicKey = { bytes: bytes(7) };
+  const address = runtime.decodeContractAddress(bytes(11));
+  const state = contract.initialState({
+    initialPrivateState: [],
+    initialZswapLocalState: runtime.emptyZswapLocalState(coinPublicKey),
+  }).currentContractState;
+  const context = runtime.createCircuitContext(address, coinPublicKey, state.data, []);
+  const start = 13n;
+  context.currentZswapLocalState.currentIndex = start;
+  const before = hex(state.serialize());
+  queries.length = 0;
+  try {
+    contract.circuits.accept(context, { nonce: bytes(4), color: bytes(5), value });
+  } catch (error) {
+    const after = hex(state.serialize());
+    const { currentIndex: end, outputs } = context.currentZswapLocalState;
+    const message = String(error.message);
+    if (!message.startsWith('type error: accept argument 1')
+        || queries.length || end !== start || outputs.length || before !== after) {
+      throw new Error('invalid coin value did not refuse at the call boundary', { cause: error });
+    }
+    return {
+      value: String(value), rejected: true, message, before, after,
+      start: String(start), end: String(end), queryCount: queries.length, outputCount: outputs.length,
+    };
+  }
+  throw new Error('invalid coin value was accepted');
+}
+
+function captureHistoricalWideRefusal(value) {
   const contract = new Contract({});
   const coin = { nonce: bytes(4), color: bytes(5), value };
   const recipient = { is_left: false, left: { bytes: bytes(0) }, right: { bytes: bytes(11) } };
@@ -121,7 +159,10 @@ const overRuntimeLimit = [1n << 64n, (1n << 128n) - 1n].map((value) => {
     return { value: value.toString(), rejected: true, pureCommitmentHex,
       message: String(error.message) };
   }
-});
+}
+const overRuntimeLimit = ledger9
+  ? [1n << 128n, -1n].map(rejectOutOfRange)
+  : wideValues.map(captureHistoricalWideRefusal);
 const unusedWitness = () => { throw new Error('pure identity vectors must not call witnesses'); };
 const coracle = new CoracleContract({
   local_secret_key: unusedWitness, local_board: unusedWitness,
@@ -149,6 +190,7 @@ const provenance = {
   nullifierSource: 'test-center/test-contracts/coracle.compact',
   generatedRuntimeVersion,
   runtimePackageVersion,
-  runtimeCoinValueDescriptor: 'runtime/src/compact-types.ts ShieldedCoinInfoDescriptor value: MaxUint8Descriptor',
+  runtimeCoinValueDescriptor: 'runtime/src/compact-types.ts ShieldedCoinInfoDescriptor value: '
+    + (ledger9 ? 'MaxUint16Descriptor' : 'MaxUint8Descriptor'),
 };
 process.stdout.write(JSON.stringify({ provenance, rows, overRuntimeLimit, identityVectors }, encode, 2) + '\n');

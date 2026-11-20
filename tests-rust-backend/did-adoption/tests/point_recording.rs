@@ -160,7 +160,7 @@ fn run(capture: &str, scenario_id: &str, expected_count: usize) {
 #[test]
 fn constructor_rotate_recover_deactivate_matches_native_ts_and_recorded_replay() {
     run(
-        include_str!("../oracle/lifecycle.json"),
+        include_str!("../oracle/ledger9/lifecycle.json"),
         "authorization-lifecycle",
         9,
     );
@@ -168,7 +168,7 @@ fn constructor_rotate_recover_deactivate_matches_native_ts_and_recorded_replay()
 #[test]
 fn point_specific_authority_version_witness_and_inactive_failures_preserve_rollback() {
     run(
-        include_str!("../oracle/point-lifecycle.json"),
+        include_str!("../oracle/ledger9/point-lifecycle.json"),
         "point-failures",
         12,
     );

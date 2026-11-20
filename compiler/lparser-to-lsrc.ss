@@ -235,6 +235,7 @@
       [(parenthesized ,src ,lparen ,[expr] ,rparen) expr]
       [(disclose ,src ,kwd ,lparen ,[expr] ,rparen)
        `(disclose ,src ,expr)]
+      [(emit ,src ,kwd ,lparen ,[expr] ,rparen) `(emit ,src ,expr)]
       [(assert ,src ,kwd ,lparen ,[expr] ,comma ,mesg ,rparen)
        `(assert ,src ,expr ,(token-value mesg))])
     (Function : Function (ir) -> Function ()

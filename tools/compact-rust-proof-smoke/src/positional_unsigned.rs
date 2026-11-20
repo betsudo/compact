@@ -33,10 +33,10 @@ use midnight_compact_runtime::transaction::{
 use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
-use super::{
-    Uint248, WideSecret, check_generated_trace, check_observed_call_parity, check_transaction,
-    make_deploy,
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
 };
+use super::{Uint248, WideSecret};
 
 pub(super) fn check_bounded(root: &Path, rng: &mut StdRng) -> Result<(), Box<dyn Error>> {
     let initial = uints_contract::initial_state(ConstructorContext::new(()))?;

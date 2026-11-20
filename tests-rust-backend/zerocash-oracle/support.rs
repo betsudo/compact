@@ -241,11 +241,11 @@ pub fn contract_state(
     let operations = midnight_storage::storage::HashMap::new()
         .insert(
             EntryPointBuf(b"zerocash_mint".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"spend".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     runtime::ledger::ContractState::new(value, operations, ContractMaintenanceAuthority::default())
 }

@@ -1,0 +1,50 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//    http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export ledger k1b: Secp256k1Base;
+export ledger k1s: Secp256k1Scalar;
+export ledger r1b: Secp256r1Base;
+export ledger r1s: Secp256r1Scalar;
+export ledger c25519b: Curve25519Base;
+export ledger c25519s: Curve25519Scalar;
+export ledger f: Field;
+export circuit castK1(b: Boolean, x: Secp256k1Base, y: Secp256k1Scalar): [] {
+  k1b = disclose(b ? x : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Secp256k1Base);
+  k1s = disclose(b ? y : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Secp256k1Scalar);
+}
+export circuit castR1(b: Boolean, x: Secp256r1Base, y: Secp256r1Scalar): [] {
+  r1b = disclose(b ? x : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Secp256r1Base);
+  r1s = disclose(b ? y : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Secp256r1Scalar);
+}
+export circuit castC25519(b: Boolean, x: Curve25519Base, y: Curve25519Scalar): [] {
+  c25519b = disclose(b ? x : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Curve25519Base);
+  c25519s = disclose(b ? y : (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) as Curve25519Scalar);
+}
+export circuit castZero(): [] {
+  k1b = disclose((0 as Field as Bytes<32>) as Secp256k1Base);
+  k1s = disclose((0 as Field as Bytes<32>) as Secp256k1Scalar);
+  r1b = disclose((0 as Field as Bytes<32>) as Secp256r1Base);
+  r1s = disclose((0 as Field as Bytes<32>) as Secp256r1Scalar);
+  c25519b = disclose((0 as Field as Bytes<32>) as Curve25519Base);
+  c25519s = disclose((0 as Field as Bytes<32>) as Curve25519Scalar);
+}
+export circuit castWide(): [] {
+  c25519s = disclose((7237005577332262213973186563042994240857116359379907606001950938285454250994 as Field as Bytes<32>) as Curve25519Scalar);
+}
+export circuit castNative(v: Bytes<32>, x: Uint<8>, y: Uint<8>): [] {
+  const k = (x < y) == (x < y) ? (452312848583266388373324160190187140051835877600158453279131187530910662661 as Field as Bytes<32>) : v;
+  f = disclose(k as Field);
+}

@@ -23,9 +23,9 @@ import check_field_return_wrappers_proof as gate
 
 
 def completed():
-    return {"format": "compact-field-return-wrappers-proof/v1", "status": "passed",
+    return {"format": "compact-field-return-wrappers-proof/v2", "status": "passed",
             "constructor_execution_proved": False, "unselected_branch_proved": False,
-            "calls": [{"key": key, "before": 1, "after": after, "proof_bytes": 100,
+            "calls": [{"key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_proof_bytes": 3824, "transaction_proof_version": 3, "positive_fee_dust_spends": 1,
                        "changed_result_same_geometry": True, "changed_binding_rejected": True,
                        "changed_result_rejected": True, "strict_application": "default",
                        "replay_refusal": "IntentAlreadyExists", "replay_unchanged": True}

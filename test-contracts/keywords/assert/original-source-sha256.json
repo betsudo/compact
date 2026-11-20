@@ -1,0 +1,22 @@
+{
+  "files": {
+    "test-contracts/keywords/assert/false_condition_fails/assert_false_condition_fails.compact": "597e1e7a03f05bfd84d89fbb5306ad216b3d0768bfae9fdbcd4cf9925300582b",
+    "test-contracts/keywords/assert/false_condition_fails/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/assert/false_condition_fails/runtime.fail.test.ts": "a4003fe1429cb1c04f36a28c1e822a9a713cc0e892d0246e5d8c6e6eb543ce92",
+    "test-contracts/keywords/assert/false_condition_in_constructor/assert_false_condition_in_constructor.compact": "7394fd9ae949b5fad2651911987e2404c4eccf8ccdbd57db811e4a1e39cd4567",
+    "test-contracts/keywords/assert/false_condition_in_constructor/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/assert/false_condition_in_constructor/runtime.fail.test.ts": "608bcbe28c72c35aacdbbc46714f7a56d5c507def801d996acc859b26ef31b5f",
+    "test-contracts/keywords/assert/in_untaken_branch/assert_in_untaken_branch.compact": "5a7328e8549e1a8cf37443d56e8d759cefe19d7daff02d05448498e6a26ed906",
+    "test-contracts/keywords/assert/in_untaken_branch/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/assert/in_untaken_branch/runtime.pass.test.ts": "93b04bffcfb54b084e1aa547f91227d90ee78295fe917e71fa1c0e5882bd1897",
+    "test-contracts/keywords/assert/old_statement_syntax/assert_old_statement_syntax.compact": "c463fdf9b294744889d7ef5dafd3dd0058c4a70b79c910fa36c2375ed9b4cf51",
+    "test-contracts/keywords/assert/old_statement_syntax/compile.fail.test.ts": "36b3941ca216be6fa28880a6f13817c2e1af1510e2af7c26b21b9563dc8ead26",
+    "test-contracts/keywords/assert/result_is_unit/assert_result_is_unit.compact": "06d9e0db7023e5120dca5c50725d5f3781c99be46cbb0dcd33c84507a8215da2",
+    "test-contracts/keywords/assert/result_is_unit/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/assert/result_is_unit/runtime.pass.test.ts": "838c8240f30d725c6c6ced78ef33b7188d1860a4cebf6891ed54957ecfc00bca",
+    "test-contracts/keywords/assert/true_condition_passes/assert_true_condition_passes.compact": "a6033a055df58c05343a6cc31e5df388965021d0e3ecb34d90f61755f0fb89c7",
+    "test-contracts/keywords/assert/true_condition_passes/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/assert/true_condition_passes/runtime.pass.test.ts": "d8e75970eb5d8de119141b95fa1e4ea0d60bde58dd7de6061f4240103f8c103f"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

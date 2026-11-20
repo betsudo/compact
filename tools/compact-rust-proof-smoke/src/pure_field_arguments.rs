@@ -24,8 +24,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prove scalar pure Field arguments and conditional casts in ledger-8 calls.
+//! Prove scalar pure Field arguments and conditional casts in Ledger 9 calls.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_internal_pure_call_fixture::ledger_contract as internal;
 use compact_rust_ternary_cond_oracle_fixture::ledger_contract as conditional;
@@ -156,6 +157,6 @@ pub(super) fn run(internal_root: &Path, ternary_root: &Path) -> Result<(), Box<d
             })?;
         }
     }
-    println!("scalar pure Field arguments and conditional witness proved on ledger-8");
+    println!("scalar pure Field arguments and conditional witness proved on Ledger 9");
     Ok(())
 }

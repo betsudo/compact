@@ -92,6 +92,9 @@ pub(in super::super) fn expression(
                 syn::parse_quote!(#a + #b)
             }
         }
+        Operation::Secp256k1Unary { kind, value: input } => {
+            crate::value_lowering::secp256k1_unary_syntax(*kind, value(input))
+        }
         Operation::Compare {
             operator,
             left,
@@ -158,6 +161,24 @@ pub(in super::super) fn expression(
                 unsigned_max(&input.ty),
                 unsigned_max(&binding.value.ty),
             ),
+            Conversion::FixedBytes(operation) => Ok(
+                crate::value_lowering::fixed_bytes_conversion_syntax(value(input), operation),
+            ),
+            Conversion::JubjubCast => {
+                crate::pure_semantics::conversion::JubjubCast::check(&input.ty, &binding.value.ty)
+                    .map(|cast| crate::value_lowering::jubjub_cast_syntax(value(input), cast))
+            }
+            Conversion::EnumCast => {
+                crate::pure_semantics::conversion::EnumCast::check(&input.ty, &binding.value.ty)
+                    .map(|cast| crate::value_lowering::enum_cast_syntax(value(input), cast))
+            }
+            Conversion::Secp256k1BytesCast => {
+                crate::pure_semantics::conversion::Secp256k1BytesCast::check(
+                    &input.ty,
+                    &binding.value.ty,
+                )
+                .map(|cast| crate::value_lowering::secp256k1_bytes_cast_syntax(value(input), cast))
+            }
         }
         .map_err(|e| invalid(path, e.to_string()))?,
         _ => return Ok(None),

@@ -16,21 +16,22 @@
 
 """Qualify the bounded ACC Jubjub Cell slice; no full-account adoption claim.
 
-Fresh ledger8 TS is checked against retained independently captured original
-Compact0.35/runtime0.20 point expectations. Only apply is proof-qualified; raw
-has behavior success/refusal controls. Constructor data is deployed, but its
-execution is not proved. Keys are generated fresh (no unchecked reuse mode).
+Fresh Ledger 9 TypeScript is checked against the active capture and the
+independent original point oracle. Seven apply calls use fresh v3 keys and
+standalone proofs, separate verification and funded default-strict application.
+Raw retains behavior and refusal coverage. Constructor data is deployed
+without a constructor-execution proof.
 """
 import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 
+import did_proof_gate as did
 import local_parity_gate as common
 import did_primitive_reducer_gate as primitive
-import resolve_ledger_test_static as ledger_static
+import did_reducer_proof as reducer
 
 ROOT = common.ROOT
 SOURCE = Path("examples/rust_backend/jubjub_scalar_cell.compact")
@@ -38,7 +39,11 @@ IR = Path("tools/compact-rust-backend/tests/jubjub-scalar-cell-schema20-ir.json"
 FIXTURE_ROOT = Path("tests-rust-backend/jubjub-scalar-cell")
 FIXTURE = FIXTURE_ROOT / "lib.rs"
 REFERENCE = FIXTURE_ROOT / "oracle/cases.json"
+CURRENT_CAPTURE = FIXTURE_ROOT / "oracle/cases-ledger9.json"
+BOUNDARIES = FIXTURE_ROOT / "oracle/boundaries.json"
 CAPTURE = Path("tools/compact-rust-backend/acc_jubjub_capture.mjs")
+RUNTIME_PACKAGE = Path("runtime/package.json")
+GEOMETRY = {"apply": (12, 2236), "raw": (10, 796)}
 CASES = ("zero", "one", "eight", "q_minus_one", "q", "q_plus_one", "native_max")
 ROW = {"kind": "acc-jubjub-cell", "proof_cases": [
     {"case": name, "operation": "apply"} for name in CASES]}
@@ -48,13 +53,14 @@ hashes = primitive.hashes
 
 
 def source_inventory():
-    files = [ROOT / path for path in (SOURCE, IR, FIXTURE, REFERENCE, CAPTURE,
+    files = [ROOT / path for path in (SOURCE, IR, FIXTURE, REFERENCE, CURRENT_CAPTURE, BOUNDARIES,
+             CAPTURE, RUNTIME_PACKAGE,
              "Cargo.toml", "Cargo.lock", "tools/compact-rust-proof-smoke/Cargo.toml",
              "tools/compact-rust-backend/Cargo.toml",
              "tools/compact-rust-backend/test_acc_jubjub_gate.py",
              "tools/compact-rust-backend/test_local_parity_gate.py")]
     files += [Path(__file__), Path(common.__file__), Path(primitive.__file__),
-              Path(ledger_static.__file__)]
+              Path(did.__file__), Path(did.ledger_static.__file__), Path(reducer.__file__)]
     require(all(path.is_file() for path in files), "missing maintained qualification input")
     for folder in ("runtime-rs", "runtime-rs-macros", "testkit-rs",
                    "tools/compact-rust-backend/src", "tools/compact-rust-proof-smoke/src",
@@ -105,23 +111,19 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                "oracle_mode": "retained-original-reference"}
     env = dict(os.environ if environment is None else environment)
     try:
-        for key in ("MIDNIGHT_PP", "MIDNIGHT_LEDGER_TEST_STATIC_DIR"):
-            path = Path(env.get(key, ""))
-            require(bool(env.get(key)) and path.is_absolute() and path.is_dir(),
-                    f"{key} must be an absolute existing directory")
-        discovered = {name: (shutil.which('zkir', path=env.get('PATH')) if name == "zkir" else
-                             shutil.which(name, path=env.get("PATH"))) for name in ("zkir", "node", "rustup")}
-        require(all(discovered.values()), "ACC Jubjub gate requires zkir, node and rustup")
-        dust_paths = []
-        for name, digest in ledger_static.FIXTURE_HASHES.items():
-            path = Path(env["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]) / "dust" / name
-            declaration = path.with_name(path.name + ".sha256")
-            require(path.is_file() and common.sha256(path) == digest,
-                    f"upstream Dust fixture mismatch: {name}")
-            require(declaration.read_text().split()[0] == digest,
-                    f"upstream Dust digest declaration mismatch: {name}")
-            dust_paths += [path, declaration]
-        receipt["dust_fixture_hashes"] = hashes(dust_paths)
+        require("MIDNIGHT_PROOF_SERVER" not in env, "ACC Jubjub requires local proving")
+        prereq = receipt["prerequisites"] = did.prerequisites(env, zkir_name="zkir-v3")
+        discovered = {name: shutil.which(name, path=env.get("PATH")) for name in ("node", "rustup")}
+        require(all(discovered.values()), "ACC Jubjub gate requires node and rustup")
+        discovered["zkir"] = prereq["zkir"]
+        receipt["dust_fixture_hashes"] = did.dust_fixture_inventory(Path(prereq["MIDNIGHT_LEDGER_TEST_STATIC_DIR"]))
+        runtime_root = Path(env.get("COMPACT_TS_RUNTIME_DIR", ROOT / "runtime")).resolve(strict=True)
+        runtime_manifest = reducer.checked_file(runtime_root / "package.json")
+        runtime_package = read_json(runtime_manifest)
+        source_package = read_json(ROOT / RUNTIME_PACKAGE)
+        require(all(runtime_package.get(key) == source_package[key] for key in ("name", "version")),
+                "ACC Jubjub requires the current Compact TypeScript runtime")
+        receipt["typescript_runtime"] = {"directory": str(runtime_root), "version": runtime_package["version"]}
         receipt["source_hashes"] = source_inventory()
         receipt["git_head"] = common.git_head()
         (directory / "bin").mkdir()
@@ -150,23 +152,32 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                     "CARGO_INCREMENTAL": "0", "RUSTUP_TOOLCHAIN": "1.99.0",
                     "PYTHONDONTWRITEBYTECODE": "1"})
 
-        receipt["key_generation"] = {"mode": "direct-native", "actual_zkir": components["zkir"]["snapshot"], "scope": "Fresh native key generation; proofs and assertions always execute."}
+        zkir = components["zkir"]["snapshot"]
+        receipt["key_generation"] = {"mode": "direct-native-v3", "actual_zkir": zkir}
         def execute(argv, label, stdout_path=None):
             command([str(arg) for arg in argv], label, directory, receipt, env=env,
                     stdout_path=stdout_path)
 
         node = components["node"]["snapshot"]
+        version = directory / "zkir-version.txt"
+        reducer.require_zkir_version(execute, zkir, version)
         node_libraries = directory / "node-libraries.json"
         execute([node, "-e", NODE_SHARED_OBJECTS], "freeze-node-runtime", node_libraries)
         receipt["node_libraries"] = node_library_identity(read_json(node_libraries))
         runtime_inventory = directory / "runtime-inventory.json"
-        execute([node, ROOT / CAPTURE, "--runtime-inventory"], "freeze-ts-runtime", runtime_inventory)
+        execute([node, ROOT / CAPTURE, "--runtime-root", runtime_root, "--runtime-inventory"],
+                "freeze-ts-runtime", runtime_inventory)
         receipt["ts_runtime_hashes"] = read_json(runtime_inventory)
         check_hashes(receipt["ts_runtime_hashes"], "invalid initial TS runtime inventory")
+        require(str(runtime_manifest) in receipt["ts_runtime_hashes"],
+                "TypeScript runtime inventory omitted its package manifest")
         reference = read_json(ROOT / REFERENCE)
         validate_capture(reference)
+        current = read_json(ROOT / CURRENT_CAPTURE)
+        validate_capture(current)
         output = directory / ROW["kind"]
-        execute([components["compactc"]["snapshot"], "--target", "ts", "--target", "rust", "--skip-zk",
+        execute([components["compactc"]["snapshot"], "--target", "ts", "--target", "rust",
+                 "--feature-zkir-v3", "--skip-zk",
                  "--rust-runtime-root", ROOT, ROOT / SOURCE, output], "compile-jubjub")
         # Keep generated source untouched; the maintained fixture uses pinned rustfmt.
         generated_source_hash = common.sha256(output / "contract/lib.rs")
@@ -186,67 +197,62 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
                 and all(all(row.get(k) is True for k in ("proof", "recorded", "observed_call")) for row in cap),
                 "Jubjub apply/raw proof/recording capabilities changed")
         receipt["capabilities"] = report
-        generated = [path for folder in ("contract", "compiler", "zkir")
+        generated = [reducer.checked_file(path) for folder in ("contract", "compiler", "zkir")
                      for path in (output / folder).rglob("*") if path.is_file()]
-        require((output / "zkir/apply.zkir").is_file(), "compiler did not emit apply ZKIR")
         receipt["generated_hashes"] = hashes(generated)
+        receipt["generated_hashes"].update(reducer.generated_hashes(output))
+        geometry = receipt["geometry"] = reducer.model(execute, receipt, zkir, output, GEOMETRY)
         capture = directory / "ts-capture.json"
         provenance = directory / "capture-provenance.json"
-        execute([node, ROOT / CAPTURE, "--generated", output / "contract/index.js", "--reference", ROOT / REFERENCE,
-                 "--boundaries", ROOT / FIXTURE_ROOT / "oracle/boundaries.json", "--source", ROOT / SOURCE,
+        execute([node, ROOT / CAPTURE, "--ledger9", "--runtime-root", runtime_root,
+                 "--generated", output / "contract/index.js", "--reference", ROOT / REFERENCE,
+                 "--boundaries", ROOT / BOUNDARIES, "--source", ROOT / SOURCE,
                  "--provenance", provenance], "capture-ts-reference", capture)
         actual = read_json(capture)
         validate_capture(actual)
-        require(actual == reference, "fresh ledger8 TS differs from retained independent oracle")
+        require(capture.read_bytes() == (ROOT / CURRENT_CAPTURE).read_bytes(),
+                "fresh Ledger 9 TypeScript differs from the current capture")
         provenance_data = read_json(provenance)
         require(provenance_data.get("format") == "compact-acc-jubjub-wrapper-provenance/v1"
                 and provenance_data.get("oracleMode") == "retained-original-reference"
                 and provenance_data.get("runtimeHashes") == receipt["ts_runtime_hashes"],
                 "capture provenance or runtime selection changed")
         input_hashes = {str(Path(row["path"]).resolve()): row["sha256"] for row in provenance_data["inputs"]}
+        runtime_entry = Path(provenance_data["runtime"]["path"]).resolve(strict=True)
+        require(runtime_entry.is_relative_to(runtime_root) and str(runtime_entry) in receipt["ts_runtime_hashes"],
+                "capture loaded a different TypeScript runtime")
         required_inputs = {str(path.resolve()) for path in (ROOT / CAPTURE, ROOT / SOURCE, ROOT / REFERENCE,
-                           ROOT / FIXTURE_ROOT / "oracle/boundaries.json", output / "contract/index.js")}
+                           ROOT / BOUNDARIES, output / "contract/index.js", runtime_entry)}
         require(required_inputs <= input_hashes.keys(), "capture provenance omitted required input")
         check_hashes(input_hashes, "capture input identity mismatch")
-        capture_hashes = hashes([capture, provenance, runtime_inventory, formatted, formatter_selection, node_libraries])
+        capture_hashes = hashes([capture, provenance, runtime_inventory, formatted, formatter_selection,
+                                 node_libraries, version])
         execute(["cargo", "+1.99.0", "test", "--locked", "--offline", "-j4", "-p",
                  "compact-rust-jubjub-scalar-cell-fixture", "--all-features"], "test-jubjub-behavior")
-        execute(["cargo", "+1.99.0", "build", "--locked", "--offline", "-j4", "-p",
+        execute(["cargo", "+1.99.0", "build", "--profile", "proof-checks", "--locked", "--offline", "-j4", "-p",
                  "compact-rust-proof-smoke"], "build-proof-runner")
-        components["proof-runner"] = snapshot(target.resolve() / "debug/compact-rust-proof-smoke",
+        components["proof-runner"] = snapshot(target.resolve() / "proof-checks/compact-rust-proof-smoke",
                                                directory / "bin/compact-rust-proof-smoke")
         runner = components["proof-runner"]["snapshot"]
         material = directory / "proof-material.json"
-        execute([runner, "--prepare-proof-material"], "prepare-proof-material", material)
-        prepared = read_json(material)
-        require(prepared.get("format") == "compact-proof-material/v1" and prepared.get("mode") == "prepare"
-                and Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(),
-                "proof material selection changed")
-        receipt["proof_material"] = prepared
-        material_hashes = hashes([material])
-        (output / "keys").mkdir(exist_ok=True)
-        execute([components["zkir"]["snapshot"], "compile", output / "zkir/apply.zkir",
-                 output / "keys/apply.prover", output / "keys/apply.verifier"], "keygen-apply")
-        match = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-        require(match is not None and (int(match[1]), int(match[2])) == (11, 1190),
-                "apply key shape changed without review")
-        receipt["keygen"] = {"operation": "apply", "k": 11, "rows": 1190}
+        k, rows = geometry["apply"]
+        receipt["parameter_hashes"] = reducer.prepare_parameters(
+            execute, receipt, runner, material, Path(prereq["MIDNIGHT_PP"]), {k})
+        reducer.keygen(execute, receipt, zkir, output, "apply", (k, rows), "keygen-apply")
+        receipt["keygen"] = {"operation": "apply", "k": k, "rows": rows}
         artifacts = [output / f"{folder}/apply.{ext}" for folder, ext in (
             ("keys", "prover"), ("keys", "verifier"), ("zkir", "zkir"), ("zkir", "bzkir"))]
-        require(all(path.is_file() and path.stat().st_size > 0 for path in artifacts),
-                "missing or empty apply proof material")
-        receipt["artifact_hashes"] = hashes(artifacts)
+        receipt["artifact_hashes"] = hashes(reducer.checked_file(path) for path in artifacts)
         execute([runner, "--did-primitive-reducer", ROW["kind"], output], "prove-apply")
-        summary = read_json(output / "proof-result.json")
-        primitive.validate_summary(summary, ROW)
-        results = [output / "proof-result.json"]
+        summary_path = reducer.checked_file(output / "proof-result.json")
+        summary = read_json(summary_path)
+        primitive.validate_summary(summary, ROW, require_v3=True)
+        results = [summary_path, reducer.checked_file(output / "reducer-deployment.bin"),
+                   reducer.checked_file(output / "reducer-ledger-after-deploy.bin")]
         for call in summary["calls"]:
-            state = output / f"{call['case']}-state.bin"
-            require(state.is_file() and state.stat().st_size == call["state_bytes"],
-                    f"{call['case']}: accepted state bytes mismatch")
-            results.append(state)
+            results.extend(reducer.proof_artifacts(output, call["case"], call, call["state_bytes"]))
         receipt["summary"] = summary
-        receipt["result_hashes"] = hashes(results) | capture_hashes | material_hashes
+        receipt["result_hashes"] = hashes([*results, material]) | capture_hashes
         node_recheck = directory / "node-libraries-final.json"
         execute([node, "-e", NODE_SHARED_OBJECTS], "recheck-node-runtime", node_recheck)
         require(node_library_identity(read_json(node_recheck)) == receipt["node_libraries"],
@@ -255,7 +261,8 @@ def run_gate(directory, compiler, scheme, target, environment=None, *, command=c
         require(source_inventory() == receipt["source_hashes"] and common.git_head() == receipt["git_head"],
                 "source inventory or HEAD changed during gate")
         check_hashes(input_hashes, "capture inputs changed during gate")
-        for field in ("generated_hashes", "ts_runtime_hashes", "dust_fixture_hashes", "artifact_hashes", "result_hashes"):
+        for field in ("generated_hashes", "ts_runtime_hashes", "dust_fixture_hashes",
+                      "parameter_hashes", "artifact_hashes", "result_hashes"):
             check_hashes(receipt[field], f"{field} changed during gate")
         require(all(Path(row["snapshot"]).is_file() and common.sha256(Path(row["snapshot"])) == row["sha256"]
                     for row in components.values()), "frozen tool changed during gate")

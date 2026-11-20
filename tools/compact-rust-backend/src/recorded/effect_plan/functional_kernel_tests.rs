@@ -155,7 +155,7 @@ fn six_circuit_effects_have_only_their_official_ledger8_capability() {
         let checked = checked(&root);
         let authority = Authority::new();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert_eq!(program.requirements().len(), 1);
         assert!(program.requirements().contains(&capability));
         let rendered = super::super::functional_render::render(&program).unwrap();
@@ -166,7 +166,7 @@ fn six_circuit_effects_have_only_their_official_ledger8_capability() {
                 .to_string()
                 .contains(&format!("ledger8 :: {trait_name}"))
         );
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: &[Capability::Pure],
         };
         assert!(
@@ -183,7 +183,7 @@ fn effect_identity_still_requires_original_source_occurrence() {
         let mut authority = Authority::new();
         authority.missing = Some(binding.value.id);
         assert!(
-            matches!(FunctionalProgram::project(&checked,&authority,Ledger8Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority {path}) if path==binding.path)
+            matches!(FunctionalProgram::project(&checked,&authority,Ledger9Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority {path}) if path==binding.path)
         );
     }
 }
@@ -253,7 +253,7 @@ fn selected_circuit_intents_keep_the_existing_guard_and_lazy_conversion_boundary
     );
     let checked = checked(&root);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let output = program
         .effects()
         .iter()

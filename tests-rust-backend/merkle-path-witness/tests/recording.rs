@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #![cfg(feature = "ledger-transaction")]
 
 use compact_rust_merkle_path_witness_fixture::{
@@ -244,7 +256,7 @@ fn new_path_apis_propagate_the_first_witness_failure_once() {
 #[test]
 fn metered_merkle_check_witnesses_match_native_observed_and_ts_query_costs() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/merkle-path-witness.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-merkle-path-witness.json"
     ))
     .unwrap();
     for historic in [false, true] {

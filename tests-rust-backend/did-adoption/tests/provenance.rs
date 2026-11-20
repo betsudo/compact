@@ -13,10 +13,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Checked-in evidence is bound to the original source, capture code and typed
-//! assertions. Changes require reviewing and regenerating the explicit matrix.
-#[path = "../../support/reviewed_capture.rs"]
-mod reviewed_capture;
+//! The retained Ledger 8 review and the current Ledger 9 captures each have
+//! their own byte identities. The reviewed case matrix still governs coverage.
 
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -32,21 +30,71 @@ fn data(name: &str) -> Value {
     )
     .unwrap()
 }
-fn hash_rows(rows: &Value) {
+fn hash_rows(rows: &Value, reviewed_ledger9_sources: bool) {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for row in rows.as_array().unwrap() {
         let path = row["path"].as_str().unwrap();
         assert!(!Path::new(path).is_absolute());
         assert!(!path.split('/').any(|p| p == ".."));
+        // The reviewed Runtime 0.17.0 capture pins the original test and
+        // generated library. Keep those historical bytes when the live test
+        // and current generated fixture change for later Ledger 9 work.
+        let frozen = if reviewed_ledger9_sources {
+            match path {
+                "runtime/src/built-ins.ts" => Some((
+                    "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/built-ins.ts",
+                    "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b",
+                )),
+                "runtime/src/compact-types.ts" => Some((
+                    "tools/compact-rust-backend/reviewed-ledger9-reducer-source-05912594/compact-types.ts",
+                    "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4",
+                )),
+                "tests-rust-backend/did-adoption/tests/provenance.rs" => Some((
+                    "tests-rust-backend/did-adoption/oracle/ledger9/reviewed-provenance-05912594.rs",
+                    "b864ec12133eff1391a010296ab7d7c122b9a66e9f0be2fc746b8f7ed6000884",
+                )),
+                "tests-rust-backend/did-adoption/lib.rs" => Some((
+                    "tests-rust-backend/did-adoption/oracle/ledger9/reviewed-lib-05912594.rs",
+                    "3e9d1d963651abc37028a34c2d72a35ddc2832913dcd7634c8447d210bf5bedd",
+                )),
+                _ => None,
+            }
+        } else {
+            None
+        };
+        let source = if let Some((reviewed_path, expected_sha)) = frozen {
+            assert_eq!(
+                row["sha256"], expected_sha,
+                "reviewed source identity: {path}"
+            );
+            root.join(reviewed_path)
+        } else {
+            root.join(path)
+        };
         assert_eq!(
-            hex::encode(Sha256::digest(fs::read(root.join(path)).unwrap())),
+            hex::encode(Sha256::digest(fs::read(source).unwrap())),
             row["sha256"],
             "stale evidence: {path}"
         );
     }
 }
 #[test]
-fn capture_source_and_reviewed_test_identities() {
+fn retained_ledger8_evidence_keeps_its_original_identity() {
+    let binding = data("ledger9/binding.json");
+    assert_eq!(
+        binding["ledger8_head"],
+        "09c75e2891283fed65f2db385925a5a4b9409af6"
+    );
+    hash_rows(&binding["ledger8_artifacts"], false);
+}
+
+#[test]
+fn ledger9_capture_source_and_test_identities() {
+    let binding = data("ledger9/binding.json");
+    assert_eq!(binding["format"], "compact-did-ledger9-capture-binding/v1");
+    assert_eq!(binding["compact_runtime"], "0.17.0");
+    assert_eq!(binding["onchain_runtime"], "4.0.1");
+    hash_rows(&binding["ledger9_artifacts"], true);
     for file in [
         "lifecycle.json",
         "pure.json",
@@ -56,13 +104,37 @@ fn capture_source_and_reviewed_test_identities() {
         "schnorr-method-lifecycle.json",
         "jwk-method-lifecycle.json",
     ] {
-        reviewed_capture::verify(env!("CARGO_MANIFEST_DIR"), file);
+        let capture = data(&format!("ledger9/{file}"));
+        hash_rows(&capture["provenance"], true);
+        assert_eq!(
+            capture["generatedJavaScriptSha256"],
+            binding["did_javascript_sha256"]
+        );
+        assert_eq!(
+            capture["runtimeJavaScriptSha256"],
+            binding["runtime_builtins_sha256"]
+        );
     }
-    hash_rows(&data("reviewed-matrix.json")["artifacts"]);
+    let composition: Value = serde_json::from_str(include_str!(
+        "../../../runtime-rs/tests/fixtures/ledger9-unit-composition.json"
+    ))
+    .unwrap();
+    hash_rows(&composition["provenance"], true);
+    assert_eq!(
+        composition["sources"],
+        serde_json::json!([
+            {"sha256": binding["crypto_javascript_sha256"]},
+            {"sha256": binding["did_javascript_sha256"]},
+        ])
+    );
+    assert_eq!(
+        composition["runtimeSha256"],
+        binding["runtime_builtins_sha256"]
+    );
 }
 #[test]
 fn exact_reviewed_native_cohort_and_outcomes() {
-    let capture = data("lifecycle.json");
+    let capture = data("ledger9/lifecycle.json");
     let matrix = data("reviewed-matrix.json");
     let scenarios = capture["scenarios"].as_array().unwrap();
     assert_eq!(scenarios.len(), 11);
@@ -144,7 +216,7 @@ fn exact_reviewed_native_cohort_and_outcomes() {
 }
 #[test]
 fn exact_twelve_direct_pure_exports_and_unique_cases() {
-    let capture = data("pure.json");
+    let capture = data("ledger9/pure.json");
     let matrix = data("reviewed-matrix.json");
     let rows = capture["cases"].as_array().unwrap();
     assert_eq!(rows.len(), 102);

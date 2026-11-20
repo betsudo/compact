@@ -22,7 +22,7 @@ use midnight_compact_runtime::{
 #[test]
 fn public_key_matches_the_single_organizer_in_captured_welcome_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/test-center-welcome.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-test-center-welcome.json"
     ))
     .unwrap();
     let row = &oracle["cases"][0];

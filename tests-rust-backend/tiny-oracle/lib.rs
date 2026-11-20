@@ -52,7 +52,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub(crate) fn some(
         value: runtime::Field,
     ) -> Result<crate::types::Maybe, runtime::CompactError> {
@@ -94,7 +94,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -112,7 +112,7 @@ pub mod ledger_contract {
             crate::ledger_slots::state.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -271,14 +271,38 @@ pub mod ledger_contract {
         let __compact_call_1 = in_state(context, __compact_call_argument_0)?;
         context = __compact_call_1.context;
         total_cost += __compact_call_1.gas_cost;
-        let result = if __compact_call_1.result {
-            let __compact_query_2 = crate::ledger_slots::value.read(context)?;
-            context = __compact_query_2.context;
-            total_cost += __compact_query_2.gas_cost;
-            let __compact_call_argument_3 = __compact_query_2.result;
-            crate::pure_circuits::some(__compact_call_argument_3)?
-        } else {
-            crate::pure_circuits::none()?
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_call_1.result {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_2 = crate::ledger_slots::value.read(context)?;
+                        context = __compact_query_2.context;
+                        total_cost += __compact_query_2.gas_cost;
+                        let __compact_call_argument_3 = __compact_query_2.result;
+                        let __compact_branch_value =
+                            crate::pure_circuits::some(__compact_call_argument_3)?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = crate::pure_circuits::none()?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

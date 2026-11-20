@@ -30,7 +30,7 @@ use serde_json::Value;
 use std::{cell::RefCell, collections::BTreeSet};
 fn capture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/direct-call-registry.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-direct-call-registry.json"
     ))
     .unwrap()
 }
@@ -273,7 +273,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =

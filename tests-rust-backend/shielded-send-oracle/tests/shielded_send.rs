@@ -23,7 +23,7 @@ use serde_json::{Value, json};
 
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/shielded-send-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-shielded-send-oracle.json"
     ))
     .unwrap()
 }
@@ -278,6 +278,18 @@ fn send_oracle_matches_native_recording_and_replay() {
             row["plan"]["outputs"].as_array().unwrap().len()
         );
         assert_eq!(plan.next_index().to_string(), row["plan"]["currentIndex"]);
+        let mut expected_indices = row["comIndices"].as_array().unwrap().clone();
+        expected_indices.sort_by_cached_key(Value::to_string);
+        let mut actual_indices: Vec<_> = native
+            .context
+            .query
+            .call_context
+            .com_indices
+            .iter()
+            .map(|(commitment, index)| json!([hex::encode(commitment.0.0), index.to_string()]))
+            .collect();
+        actual_indices.sort_by_cached_key(Value::to_string);
+        assert_eq!(actual_indices, expected_indices);
         for (actual, expected) in plan
             .outputs()
             .iter()

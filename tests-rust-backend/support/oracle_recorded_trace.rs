@@ -95,7 +95,7 @@ pub fn assert_trace<Private: std::fmt::Debug + PartialEq>(
 
 pub fn cases(source: &str, count: usize) -> Vec<Value> {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../runtime-rs/tests/fixtures/oracle-recorded-traces.json"
+        "../../runtime-rs/tests/fixtures/ledger9-oracle-recorded-traces.json"
     ))
     .unwrap();
     assert_eq!(capture["cases"].as_array().unwrap().len(), 9);

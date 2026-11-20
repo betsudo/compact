@@ -40,15 +40,28 @@ from did_proof_gate import dust_fixture_inventory, hashes, unchanged, require
 ROOT = common.ROOT
 LEGACY_PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v1"
 PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v2"
+V3_PROOF_RESULT_FORMAT = "compact-did-functional-lifecycle-proof/v3"
+DID_PARAMETER_K = 11
 CASES = {"did/valid": ("200", "--did-functional-lifecycle"),
          "did/timestamp-zero": ("0", "--did-functional-lifecycle-timestamp-zero")}
 
 
-def validate_proof_summary(summary, expected_case=None):
+def validate_proof_summary(summary, expected_case=None, *, require_v3=False):
     """Validate the result protocol; live Rust assertions establish the behavior."""
     # Decode old case-unbound receipts only as historical protocol evidence.
     # Every current gate invocation below supplies its exact expected case.
-    current = summary["format"] == PROOF_RESULT_FORMAT
+    version = summary["format"]
+    current = version in (PROOF_RESULT_FORMAT, V3_PROOF_RESULT_FORMAT)
+    if require_v3:
+        require(version == V3_PROOF_RESULT_FORMAT, "DID gate requires a Ledger 9 v3 proof receipt")
+    if version == V3_PROOF_RESULT_FORMAT:
+        require(type(summary.get("transaction_proof_version")) is int
+                and summary["transaction_proof_version"] == 3
+                and type(summary.get("funded_dust_spends")) is int
+                and summary["funded_dust_spends"] == 1
+                and type(summary.get("transaction_proof_bytes")) is int
+                and summary["transaction_proof_bytes"] > 0,
+                "DID v3 receipt requires a separate transaction proof and one proved Dust spend")
     if current:
         source_case = summary.get("source_case")
         require(source_case in CASES and summary.get("timestamp_witness") == CASES[source_case][0],
@@ -59,7 +72,7 @@ def validate_proof_summary(summary, expected_case=None):
     if expected_case is not None:
         require(expected_case in CASES and current and summary.get("source_case") == expected_case,
                 "DID proof result does not bind the requested case")
-    require(summary["format"] in {LEGACY_PROOF_RESULT_FORMAT, PROOF_RESULT_FORMAT}
+    require((version == LEGACY_PROOF_RESULT_FORMAT or current)
             and summary["status"] == "passed"
             and summary["constructor_execution_proved"] is False
             and summary["all_twelve_exports_proved"] is False
@@ -80,16 +93,34 @@ def validate_proof_summary(summary, expected_case=None):
             and bool(bytes.fromhex(summary["final_state_hex"])), "incomplete DID proof/application controls")
 
 
+def v3_artifacts(generated, summary):
+    proof = generated / "deactivate-input-control.proof"
+    transaction_proof = generated / "deactivate-transaction-bound.proof"
+    inputs = generated / "deactivate-input-control.inputs"
+    applied = generated / summary["applied_transaction_file"]
+    updated = generated / "did-ledger-after.bin"
+    replayed = generated / "did-ledger-replay.bin"
+    for artifact, field in ((proof, "proof_bytes"),
+                            (transaction_proof, "transaction_proof_bytes"),
+                            (applied, "applied_transaction_bytes")):
+        require(artifact.stat().st_size == summary[field], f"unexpected {artifact.name} length")
+    require(digest(proof) != digest(transaction_proof), "DID call proofs must be distinct")
+    require(inputs.stat().st_size > 0 and updated.stat().st_size > 0 and
+            digest(updated) == digest(replayed), "DID public inputs or exact replay bytes differ")
+    return [proof, transaction_proof, inputs, applied, updated, replayed]
+
+
 def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-did-functional-lifecycle-proof-gate/v1", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-did-functional-lifecycle-proof-gate/v2", "status": "incomplete", "commands": [],
                "scope": "one unchanged original-DID functional-recorded deactivation call proof and default-strict funded local transaction",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
     try:
         require_clean_source(receipt)
+        require("MIDNIGHT_PROOF_SERVER" not in env, "DID proof gate requires local proving")
         require(args.case in CASES, "unknown DID proof case")
         runner_case = CASES[args.case][1]
         receipt["source_case"] = args.case
@@ -112,7 +143,7 @@ def run(args):
         receipt["source_hashes"] = hashes(paths)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
-        selected_zkir = args.zkir or shutil.which("zkir", path=env.get("PATH"))
+        selected_zkir = args.zkir or shutil.which("zkir-v3", path=env.get("PATH"))
         require(selected_zkir is not None, "official direct zkir must be selected")
         (output / "bin").mkdir()
         components = receipt["components"] = {}
@@ -135,7 +166,7 @@ def run(args):
         components["runner"] = common.stable_copy(target / "proof-checks/compact-rust-proof-smoke", output / "bin/proof-runner")
         runner = components["runner"]["snapshot"]
         generated = output / "generated"
-        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger8",
+        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger9",
                  "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate")
         receipt["generated"] = generated_manifest_snapshot(generated)
         formatted = output / "formatted-lib.rs"
@@ -176,45 +207,46 @@ def run(args):
         require(refused.returncode != 0 and "DID checked-program bytes differ" in refused.stderr
                 and not (changed_program / "keys").exists(), "changed program did not refuse before keys/state")
         receipt["changed_program_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True}
+        zkir = components["zkir"]["snapshot"]
+        version = output / "zkir-version.txt"
+        execute([zkir, "--version"], "zkir-version", version)
+        require(version.read_text().strip() == "midnight-zkir 3.2.0", "expected published ZKIR v3 3.2.0")
+        source_ir = generated / "zkir/deactivate.zkir"
+        execute([zkir, "mock-compile", source_ir], "model-deactivate")
+        geometry = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
+        require(geometry is not None, "model omitted DID circuit geometry")
+        k, rows = map(int, geometry.groups())
+        require(k == DID_PARAMETER_K and rows > 0, "DID proof must stay within its explicit k11 recipe")
         material = output / "proof-material.json"
-        execute([runner, "--prepare-proof-material", "--verify-only"], "verify-builtins", material)
-        prepared = json.loads(material.read_text())
-        require(prepared["mode"] == "verify-only" and prepared["verification"] == "all files checked against locked upstream SHA256 tables", "built-in verification receipt differs")
-        require(Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected parameter directory")
+        execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
+                "verify-proof-material", material)
+        selected = json.loads(material.read_text())
+        require(selected["mode"] == "verify-only" and
+                selected["verification"] == "all files checked against locked upstream SHA256 tables" and
+                any(row["k"] == k for row in selected["parameters"]), "DID proof material was not verified")
+        require(Path(selected["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(),
+                "unexpected parameter directory")
+        material_paths = [Path(selected["cache_directory"]) / row["name"]
+                          for row in selected["assets"] + selected["parameters"]]
         (generated / "keys").mkdir()
-        execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
-        receipt["keygen"] = []
-        artifacts = []
-        for circuit in ("deactivate",):
-            execute([components["zkir"]["snapshot"], "compile", generated / f"zkir/{circuit}.zkir",
-                     generated / f"keys/{circuit}.prover", generated / f"keys/{circuit}.verifier"], f"keygen-{circuit}")
-            model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-            require(model is not None, "keygen omitted actual circuit model")
-            k, rows = map(int, model.groups())
-            receipt["keygen"].append({"mode": "fresh direct native", "circuit": circuit, "k": k, "rows": rows})
-            artifacts += [generated / f"keys/{circuit}.{ext}" for ext in ("prover", "verifier")]
-            artifacts += [generated / f"zkir/{circuit}.{ext}" for ext in ("zkir", "bzkir")]
-        material_paths = []
-        for k in sorted({row["k"] for row in receipt["keygen"]}):
-            selected_path = output / f"selected-material-{k}.json"
-            execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
-                    f"verify-selected-parameters-{k}", selected_path)
-            selected = json.loads(selected_path.read_text())
-            require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]),
-                    "selected SRS was not verified")
-            material_paths += [Path(selected["cache_directory"]) / row["name"]
-                               for row in selected["assets"] + selected["parameters"]]
+        prover = generated / "keys/deactivate.prover"
+        verifier = generated / "keys/deactivate.verifier"
+        execute([zkir, "compile", source_ir, prover, verifier], "keygen-deactivate")
+        keygen = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
+        require(keygen is not None and keygen.groups() == geometry.groups(),
+                "DID key generation geometry differs from the preflight model")
+        receipt["keygen"] = [{"mode": "fresh direct native v3", "circuit": "deactivate", "k": k, "rows": rows}]
+        artifacts = [prover, verifier, source_ir, generated / "zkir/deactivate.bzkir"]
         require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
         receipt["material_hashes"] = hashes(material_paths + artifacts)
         execute([runner, runner_case, generated], "prove-verify-apply")
-        summary = json.loads((generated / "did-functional-lifecycle-proof-result.json").read_text())
-        validate_proof_summary(summary, expected_case=args.case)
+        result = generated / "did-functional-lifecycle-proof-result.json"
+        summary = json.loads(result.read_text())
+        validate_proof_summary(summary, expected_case=args.case, require_v3=True)
         receipt["proof_result"] = summary
-        proof_file = generated / "deactivate-input-control.proof"
-        require(proof_file.stat().st_size == summary["proof_bytes"], "fresh proof bytes missing")
-        applied = generated / summary["applied_transaction_file"]
-        require(applied.stat().st_size == summary["applied_transaction_bytes"], "applied transaction bytes missing")
-        receipt["result_hashes"] = hashes([generated / "did-functional-lifecycle-proof-result.json", proof_file, applied])
+        receipt["result_hashes"] = hashes([result, *v3_artifacts(generated, summary)])
+        execute([runner, "--did-functional-lifecycle-verify", generated], "verify-standalone-separately")
+        unchanged(receipt["result_hashes"])
         unchanged(receipt["source_hashes"])
         unchanged(receipt["dust_fixture_hashes"])
         unchanged(receipt["material_hashes"])

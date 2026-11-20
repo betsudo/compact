@@ -15,10 +15,11 @@
 
 //! One complete, unedited13export family SDK at its own crate root.
 //! Four selected proofs do not prove its other exports or constructor/callbacks.
-use super::*;
+use super::{local_v3_application as v3, *};
 use compact_rust_nested_component_products_sdk as family;
 use midnight_compact_runtime::{BoundedUint, Field, FixedVector};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 
 const SELECTED: &[&str] = &[
     "helper",
@@ -72,8 +73,10 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
                 return Err("proof-not-applicable source acquired ZKIR".into());
             }
             for entry in entries {
-                rows.push(serde_json::json!({"source":name,"circuit":entry,"k":null,
-                    "proof_required":false,"selected_for_proof":false}));
+                rows.push(
+                    serde_json::json!({"source":name,"circuit":entry,"k":null,"rows":null,
+                    "proof_required":false,"selected_for_proof":false}),
+                );
             }
             continue;
         }
@@ -96,18 +99,19 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         for entry in entries {
             let entry = entry.as_str().ok_or("invalid export name")?;
-            let ir = IrSource::load(BufReader::new(File::open(
+            let ir = IrSourceV3::load(BufReader::new(File::open(
                 root.join(name).join(format!("zkir/{entry}.zkir")),
             )?))?;
+            let model = ir.model();
             rows.push(
-                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"proof_required":true,
+                serde_json::json!({"source":name,"circuit":entry,"k":model.k(),"rows":model.rows(),"proof_required":true,
                 "selected_for_proof":selected(name,entry)}),
             );
         }
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-nested-component-products-model-inventory/v1",
+        serde_json::json!({"format":"compact-nested-component-products-model-inventory/v2",
         "circuits":rows,"proof_execution":false,"scope":"complete model observation, no key generation or all-source proof acceptance"})
     );
     Ok(())
@@ -120,79 +124,79 @@ const PROGRAMS: &[(&str, &[u8])] = &[
     (
         "program-0.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-0.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-0.json"
         ),
     ),
     (
         "program-1.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-1.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-1.json"
         ),
     ),
     (
         "program-2.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-2.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-2.json"
         ),
     ),
     (
         "program-3.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-3.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-3.json"
         ),
     ),
     (
         "program-4.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-4.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-4.json"
         ),
     ),
     (
         "program-5.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-5.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-5.json"
         ),
     ),
     (
         "program-6.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-6.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-6.json"
         ),
     ),
     (
         "program-7.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-7.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-7.json"
         ),
     ),
     (
         "program-8.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-8.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-8.json"
         ),
     ),
     (
         "program-9.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-9.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-9.json"
         ),
     ),
     (
         "program-10.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-10.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-10.json"
         ),
     ),
     (
         "program-11.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-11.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-11.json"
         ),
     ),
     (
         "program-12.json",
         include_bytes!(
-            "../../compact-rust-backend/tests/nested_component_products/proof-goldens/family/checked-programs/program-12.json"
+            "../../compact-rust-backend/tests/nested_component_products/ledger9-proof-goldens/family/checked-programs/program-12.json"
         ),
     ),
 ];
@@ -223,10 +227,21 @@ fn validate_bindings(pool: &Path) -> Result<(), Box<dyn Error>> {
 }
 fn selected_models(pool: &Path) -> Result<Vec<serde_json::Value>, Box<dyn Error>> {
     validate_bindings(pool)?;
-    SELECTED.iter().map(|name| {
-        let ir=IrSource::load(BufReader::new(File::open(pool.join("family").join(format!("zkir/{name}.zkir")))?))?;
-        Ok(serde_json::json!({"source":"family","circuit":name,"k":ir.model().k(),"selected_for_proof":true}))
-    }).collect()
+    let root = pool.join("family/zkir");
+    SELECTED
+        .iter()
+        .map(|name| {
+            let ir = IrSourceV3::load(File::open(root.join(format!("{name}.zkir")))?)?;
+            let model = ir.model();
+            Ok(serde_json::json!({
+                "source": "family",
+                "circuit": name,
+                "k": model.k(),
+                "rows": model.rows(),
+                "selected_for_proof": true,
+            }))
+        })
+        .collect()
 }
 fn tiny_bound(rows: &[serde_json::Value]) -> Result<(), Box<dyn Error>> {
     if rows.len() != 4 || rows.iter().any(|r| r["k"].as_u64().is_none_or(|k| k > 8)) {
@@ -238,7 +253,7 @@ pub(super) fn models(pool: &Path) -> Result<(), Box<dyn Error>> {
     let rows = selected_models(pool)?;
     println!(
         "{}",
-        serde_json::json!({"format":"compact-nested-component-products-models/v1","circuits":rows,"proof_execution":false})
+        serde_json::json!({"format":"compact-nested-component-products-models/v2","circuits":rows,"proof_execution":false})
     );
     tiny_bound(&rows)
 }
@@ -358,7 +373,13 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
         if family::ledger_slots::seen.inspect(&initial_state)? != Field::from(0_u64) {
             return Err("initial Cell differs".into());
         }
-        let deploy = make_deploy(&root, name, initial_state, &mut rng)?;
+        let k = match name {
+            "helper" | "field_identity" => 8,
+            "witness_before" | "witness_after" => 7,
+            _ => unreachable!(),
+        };
+        let (ir, verifier, operation) = v3::operation(&root, name, k)?;
+        let deploy = v3::deploy(initial_state, name, operation, &mut rng);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -368,9 +389,6 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                 block_height: 0,
             },
         );
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
         macro_rules! scalar_call {
             ($entry:ident,$call:ident,$input:expr,$expected:expr,$output:ty,$seen:expr) => {{
                 use family::ledger_contract as api;
@@ -395,7 +413,10 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                     return Err("scalar selected Cell mismatch".into());
                 }
                 let state = native.context.query.state.get_ref().clone();
-                let prepared = check_generated_trace(&root, name, frecorded, $input)?;
+                let prepared = midnight_compact_runtime::transaction::RecordedCall::new(
+                    &observed, frecorded, name, $input,
+                )
+                .prepare(verifier.clone(), Fr::from(0_u64))?;
                 let ordinary = api::Contract::default()
                     .recording()
                     .$call(&observed, 7, $input)?
@@ -445,7 +466,13 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
                     return Err("witness selected Cell mismatch".into());
                 }
                 let state = native.context.query.state.get_ref().clone();
-                let prepared = check_generated_trace(&root, name, frecorded, ())?;
+                let prepared = midnight_compact_runtime::transaction::RecordedCall::new(
+                    &observed,
+                    frecorded,
+                    name,
+                    (),
+                )
+                .prepare(verifier.clone(), Fr::from(0_u64))?;
                 let ow = Witness::new($before);
                 let journal = ow.calls.clone();
                 let facade = api::Contract::from(ow);
@@ -476,12 +503,17 @@ pub(super) fn run(pool: &Path) -> Result<(), Box<dyn Error>> {
             ),
             _ => unreachable!(),
         };
-        let proof_bytes = prove(&root, pool, "family", name, index, &prepared, &verifier)?;
-        let transaction_bytes = apply(&root, name, index, prepared, deploy, &state, rng)?;
-        rows.push(serde_json::json!({"source":"family","circuit":name,"initial_seen":0,"seen":([2,5,6,14][index]),"private_state":if index==1||index==2{8}else{7},"witness_count":if index==1||index==2{1}else{0},"witness_seen":if index==1{Some(0)}else if index==2{Some(6)}else{None},"result_type":if index==3{"Vector<1,[Vector<1,[[Field,Uint<16>],Uint<16>]>,Uint<32>]>"}else{"Vector<1,[Vector<1,[[Uint<16>,Uint<32>],Uint<16>]>,Uint<32>]>"},"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
-            "standalone_proof":format!("family/nested-component-products-{index}.proof"),"applied_transaction":format!("family/nested-component-products-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","corrupt_proof_rejected":true,"changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"changed_preimage_rejected":true,"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
+        let stem = format!("nested-component-products-{index}");
+        let proof = prove(&root, name, &stem, &prepared, &verifier, &ir)?;
+        let transaction_proof_bytes =
+            v3::apply(&root, name, &stem, prepared, deploy, &state, &proof)?;
+        let transaction_bytes =
+            std::fs::metadata(root.join(format!("{stem}-transaction.bin")))?.len();
+        rows.push(serde_json::json!({"source":"family","circuit":name,"initial_seen":0,"seen":([2,5,6,14][index]),"private_state":if index==1||index==2{8}else{7},"witness_count":if index==1||index==2{1}else{0},"witness_seen":if index==1{Some(0)}else if index==2{Some(6)}else{None},"result_type":if index==3{"Vector<1,[Vector<1,[[Field,Uint<16>],Uint<16>]>,Uint<32>]>"}else{"Vector<1,[Vector<1,[[Uint<16>,Uint<32>],Uint<16>]>,Uint<32>]>"},"proof_bytes":proof.0.len(),"transaction_bytes":transaction_bytes,
+            "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,"positive_fee_dust_spends":1,
+            "standalone_proof":format!("family/nested-component-products-{index}.proof"),"applied_transaction":format!("family/nested-component-products-{index}-transaction.bin"),"transaction_proof_relationship":"independently proved","changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,"changed_preimage_rejected":true,"wrong_verifier_rejected":true,"strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-nested-component-products-proof/v1","status":"passed","scope":"four selected exports of the complete13export family; other10of14requiredsourceexports unproved; constructor/callbackimplementation notproved","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":SELECTED.iter().map(|name|["family",name]).collect::<Vec<_>>(),"unproved_selected_source_exports":[],"calls":rows});
+    let result = serde_json::json!({"format":"compact-nested-component-products-proof/v2","status":"passed","scope":"four selected exports of the complete 13-export family; ten of 14 required source exports remain unproved; constructor and callback implementation outside proof scope","constructor_execution_proved":false,"all_exports_proved":false,"all_source_exports_deployed":false,"selected_source_exports_proved":SELECTED.iter().map(|name|["family",name]).collect::<Vec<_>>(),"unproved_selected_source_exports":[],"calls":rows});
     write_new(
         pool.join("nested-component-products-proof-result.json"),
         &serde_json::to_vec_pretty(&result)?,
@@ -507,29 +539,25 @@ fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
 
 fn prove(
     root: &Path,
-    _pool: &Path,
-    _source: &str,
     name: &str,
-    index: usize,
+    stem: &str,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected nested-component-products proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{name}.bzkir")),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.prover")),
     )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -546,14 +574,6 @@ fn prove(
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
     if proof.0.is_empty() {
         return Err("nested-component-products proof is empty".into());
-    }
-    let mut corrupt = proof.clone();
-    corrupt.0[0] ^= 1;
-    if verifier
-        .verify(&PARAMS_VERIFIER, &corrupt, inputs.iter().copied())
-        .is_ok()
-    {
-        return Err("nested-component-products accepted corrupted proof bytes".into());
     }
     // A genuinely different source relation, not merely a second key for the same erased circuit.
     let other = match name {
@@ -612,110 +632,27 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed nested-component-products proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("nested-component-products IR accepted changed result".into());
     }
-    write_new(
-        root.join(format!("nested-component-products-{index}.proof")),
-        &proof.0,
-    )?;
+    write_new(root.join(format!("{stem}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
-    write_new(
-        root.join(format!("nested-component-products-{index}.preimage")),
-        &bytes,
-    )?;
-    println!(
-        "nested-component-products {index}: {}-byte proof verified; changed binding/result refused",
-        proof.0.len()
-    );
-    Ok(proof.0.len())
+    write_new(root.join(format!("{stem}.preimage")), &bytes)?;
+    bytes.clear();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("{stem}.inputs")), &bytes)?;
+    Ok(proof)
 }
 
-fn apply(
-    root: &Path,
-    name: &'static str,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<usize, Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0185_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0185_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("nested-component-products strict apply failed: {result:?}").into());
+pub(super) fn verify(pool: &Path) -> Result<(), Box<dyn Error>> {
+    validate_bindings(pool)?;
+    let root = pool.join("family");
+    for (index, &name) in SELECTED.iter().enumerate() {
+        let stem = format!("nested-component-products-{index}");
+        let verifier = v3::read_verifier(&root, name)?;
+        v3::verify_standalone(&root, &stem, &verifier)?;
+        println!("family/{name}: standalone v3 proof verified and corruption refused");
     }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("nested-component-products contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("nested-component-products applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(format!(
-            "nested-component-products replay refused incorrectly or mutated ledger: {result:?}"
-        )
-        .into());
-    }
-    write_new(
-        root.join(format!("nested-component-products-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(
-        root.join(format!("nested-component-products-{index}-state.bin")),
-        &bytes,
-    )?;
-    println!(
-        "nested-component-products {index}: funded default-strict apply; replay refused without mutation"
-    );
-    Ok(transaction_bytes.len())
+    Ok(())
 }

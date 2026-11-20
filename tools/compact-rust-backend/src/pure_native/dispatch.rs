@@ -13,7 +13,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 //! One exhaustive source variant map, instantiated for two native output views.
 //! The family owner checks children; projection runs only after it returns.
 //! No recording profile or syntax-free checker is selected here.
@@ -90,7 +89,7 @@ macro_rules! dispatch {
             $crate::ir::Expr::PersistentHash { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::Keccak256 { .. } => {
+            $crate::ir::Expr::Keccak256 { .. } | $crate::ir::Expr::Sha512 { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::PersistentCommit { .. } => {
@@ -114,7 +113,11 @@ macro_rules! dispatch {
             $crate::ir::Expr::ConstructJubjubPoint { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
-            $crate::ir::Expr::EcNeg { .. } => {
+            $crate::ir::Expr::EcNeg { .. }
+            | $crate::ir::Expr::Secp256k1Neg { .. }
+            | $crate::ir::Expr::Secp256k1Inv { .. }
+            | $crate::ir::Expr::Secp256k1PointX { .. }
+            | $crate::ir::Expr::Secp256k1PointY { .. } => {
                 $crate::pure_crypto_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::EcMul { .. } => {
@@ -128,6 +131,17 @@ macro_rules! dispatch {
             }
             $crate::ir::Expr::WitnessCall { .. }
             | $crate::ir::Expr::KernelClaim { .. }
+            | $crate::ir::Expr::EmitShieldedSpend { .. }
+            | $crate::ir::Expr::EmitShieldedBurn { .. }
+            | $crate::ir::Expr::EmitShieldedMint { .. }
+            | $crate::ir::Expr::EmitShieldedReceive { .. }
+            | $crate::ir::Expr::EmitUnshieldedSpend { .. }
+            | $crate::ir::Expr::EmitUnshieldedReceive { .. }
+            | $crate::ir::Expr::EmitUnshieldedMint { .. }
+            | $crate::ir::Expr::EmitUnshieldedBurn { .. }
+            | $crate::ir::Expr::EmitMisc { .. }
+            | $crate::ir::Expr::EmitPaused { .. }
+            | $crate::ir::Expr::EmitUnpaused { .. }
             | $crate::ir::Expr::KernelMintShielded { .. }
             | $crate::ir::Expr::CreateZswapInput { .. }
             | $crate::ir::Expr::CreateZswapOutput { .. }
@@ -135,6 +149,7 @@ macro_rules! dispatch {
             | $crate::ir::Expr::SetMember { .. }
             | $crate::ir::Expr::MapMember { .. }
             | $crate::ir::Expr::MapLookup { .. }
+            | $crate::ir::Expr::NestedMapLookup { .. }
             | $crate::ir::Expr::MerkleCheckRoot { .. }
             | $crate::ir::Expr::HistoricMerkleCheckRoot { .. }
             | $crate::ir::Expr::SetIsEmpty { .. }
@@ -154,6 +169,20 @@ macro_rules! dispatch {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::FieldToBytes32 { .. } => {
+                $crate::pure_conversion_expression($expr, $parameters, $circuits)
+            }
+            $crate::ir::Expr::VectorToBytes { .. }
+            | $crate::ir::Expr::BytesToVector { .. }
+            | $crate::ir::Expr::UintToBytes { .. }
+            | $crate::ir::Expr::WideUintToBytes { .. }
+            | $crate::ir::Expr::BytesToField { .. }
+            | $crate::ir::Expr::BytesToUint { .. }
+            | $crate::ir::Expr::BytesZeroPad { .. }
+            | $crate::ir::Expr::BytesFromChunks { .. }
+            | $crate::ir::Expr::BytesSlice { .. }
+            | $crate::ir::Expr::JubjubCast { .. }
+            | $crate::ir::Expr::Secp256k1BytesCast { .. }
+            | $crate::ir::Expr::EnumCast { .. } => {
                 $crate::pure_conversion_expression($expr, $parameters, $circuits)
             }
             $crate::ir::Expr::Coerce { .. } => {

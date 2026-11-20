@@ -32,6 +32,7 @@ mod functional_qualified_storage;
 mod functional_render;
 mod functional_sets;
 mod functional_witnesses;
+mod kernel_shapes;
 mod lower;
 mod vector_fold_syntax;
 use crate::source_diagnostics::RefusalObserver;
@@ -49,6 +50,7 @@ mod resource_tests;
 mod tests;
 mod type_environment;
 mod validate;
+pub(crate) use validate::map_cell_type;
 #[cfg(test)]
 mod vector_fold_ingress_tests;
 #[cfg(test)]

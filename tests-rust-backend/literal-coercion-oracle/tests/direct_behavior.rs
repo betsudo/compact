@@ -50,7 +50,7 @@ fn vector(value: &Value) -> FixedVector<Field, 2> {
 #[test]
 fn every_literal_export_has_an_independent_direct_typescript_result() {
     let oracle: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json"
     ))
     .unwrap();
     let expected_exports: BTreeSet<&str> = [

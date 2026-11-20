@@ -34,29 +34,12 @@
       url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3"; # zkir-v2
       inputs.zkir.follows = "zkir";
     };
-    onchain-runtime-v3 = {
-      # dependency for compact-runtime release
-      # all notes for the zkir input applies to onchain-runtime input too.
-      url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-wasm = {
-      # dependency for test-center
-      url = "github:midnightntwrk/midnight-ledger/ledger-8.1.3";
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-v3 = {
-      # zkir-v3 binary for v3 IR format
-      url = "github:midnightntwrk/midnight-ledger/3a7ae0361d03e6eed4fc91e31f6600f334f605d5"; # zkir-v3
-      inputs.zkir.follows = "zkir";
-    };
-    zkir-v3-wasm = {
-      # zkir-v3-wasm for test-center v3 support
-      url = "github:midnightntwrk/midnight-ledger/3a7ae0361d03e6eed4fc91e31f6600f334f605d5";
-      inputs.zkir.follows = "zkir";
-    };
     n2c.url = "github:nlewo/nix2container";
     chez-exe.url = "github:tkerber/chez-exe";
+    fenix = {
+      url = "github:nix-community/fenix/5b3016c5f8cdd37d5e557646d369ce76e30666de";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
@@ -70,14 +53,11 @@
   outputs = {
     self,
     zkir,
-    onchain-runtime-v3,
-    zkir-wasm,
-    zkir-v3,
-    zkir-v3-wasm,
     nixpkgs,
     utils,
     inclusive,
     chez-exe,
+    fenix,
     npmlock2nix,
     ...
   } @ inputs:
@@ -94,15 +74,24 @@
         sources = (import ./_sources/generated.nix) {inherit (pkgs) fetchgit fetchurl fetchFromGitHub;};
         nanopass = sources.nanopass.src;
         rough-draft = sources.rough-draft.src;
-        onchain-runtime-npm-compat = import ./nix/compat/npm-scope-compat.nix {
-          inherit pkgs;
-          profile = "onchain-runtime-v3";
-          upstream = onchain-runtime-v3.packages.${system}.onchain-runtime-wasm;
-        };
-        zkir-v2-npm-compat = import ./nix/compat/npm-scope-compat.nix {
-          inherit pkgs;
-          profile = "zkir-v2";
-          upstream = zkir-wasm.packages.${system}.zkir-wasm;
+        # Cross to static musl with the native toolchain and matching target std.
+        rust-linking-pkgs = if pkgs.stdenv.hostPlatform.isLinux then pkgs.pkgsStatic else pkgs;
+        rust-host-target = pkgs.stdenv.hostPlatform.rust.rustcTarget;
+        rust-cli-target = rust-linking-pkgs.stdenv.hostPlatform.rust.rustcTarget;
+        rust = fenix.packages.${system};
+        rust-version = (builtins.fromTOML (builtins.readFile ./rust-toolchain.toml)).toolchain.channel;
+        rust-manifest = builtins.fromTOML (builtins.readFile (builtins.fetchurl {
+          url = "https://static.rust-lang.org/dist/channel-rust-${rust-version}.toml";
+          sha256 = "sha256-zm3dyIY2T414ZRR3EhLOvptzG6gta4WZUcawzMUWtqI=";
+        }));
+        rust-cli-toolchain = rust.combine (
+          [(rust.fromManifest rust-manifest).minimalToolchain]
+          ++ pkgs.lib.optional (rust-cli-target != rust-host-target)
+            (rust.targets.${rust-cli-target}.fromManifest rust-manifest).rust-std
+        );
+        rust-cli-platform = rust-linking-pkgs.makeRustPlatform {
+          cargo = rust-cli-toolchain;
+          rustc = rust-cli-toolchain;
         };
         runtime-version = (__fromJSON (__readFile ./runtime/package.json)).version;
         vscode-extension-version = (__fromJSON (__readFile ./editor-support/vsc/compact/package.json)).version;
@@ -114,6 +103,7 @@
             cp -r ${self.packages.${system}.runtime.node-modules}/node_modules node_modules
             chown $USER -R node_modules
             chmod u+w -R node_modules
+            mkdir -p node_modules/@midnight-ntwrk
             cp -r ${self.packages.${system}.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
             chown $USER -R node_modules
             chmod u+w -R node_modules
@@ -157,8 +147,6 @@
           overlays.pretzel-fetcher = (import pretzel/fetcher.nix).overlay;
           overlays.pretzel-js = lib.pretzel-js.overlay;
           packages.pretzel-dry-install = dry-install.package;
-          packages.onchain-runtime-npm-scope-compat = onchain-runtime-npm-compat.package;
-          packages.zkir-v2-npm-scope-compat = zkir-v2-npm-compat.package;
           packages.runtime = let
             inclusive-src = inclusive.lib.inclusive ./. [
               ./runtime
@@ -175,19 +163,13 @@
             #name = "compact-runtime";
             #version = runtime-version;
             src = "${inclusive-src}/runtime";
+            # Dependency installation only has the two npm manifests. The
+            # runtime's prepare script runs when packing the full source.
+            nodeModulesAttrs.npm_config_ignore_scripts = "true";
             overrideBuildAttrs = {
-              common = pkgs.lib.trivial.id;
-              package = oldAttrs: oldAttrs // {
-                buildInputs = [ chez ];
+              common = oldAttrs: oldAttrs // {
+                buildInputs = (oldAttrs.buildInputs or []) ++ [chez];
                 CHEZSCHEMELIBDIRS = "${inclusive-src}/compiler:${inclusive-src}/third_party/compiler";
-              };
-              tests = pkgs.lib.trivial.id;
-              lints = pkgs.lib.trivial.id;
-            };
-
-            nixDependenciesMap = {
-              "@midnight-ntwrk/onchain-runtime-v3" = {
-                inherit (onchain-runtime-npm-compat) tarPath libPath;
               };
             };
           };
@@ -198,18 +180,6 @@
               overlays = [overlays.pretzel-js];
             };
             src = ./test-center;
-
-            nixDependenciesMap = {
-              "@midnight-ntwrk/zkir-v2" = {
-                inherit (zkir-v2-npm-compat) tarPath libPath;
-              };
-              "@midnight-ntwrk/zkir-v3" = let
-                pkg = zkir-v3-wasm.packages.${system}.zkir-v3-wasm;
-              in {
-                tarPath = "${pkg}/lib/midnight-zkir-v3-${pkg.version}.tgz";
-                libPath = "${pkg}/lib/node_modules/@midnight-ntwrk/zkir-v3";
-              };
-            };
           };
 
           packages.compactc-no-runtime = packages.compactc.overrideAttrs (oldAttrs: {
@@ -222,11 +192,119 @@
             checkPhase = "";
           });
 
-          packages.compact-rust-cli = let
-            # Cross to static musl with native build tools, avoiding a
-            # musl-hosted Rust/LLVM bootstrap just to package the Linux CLI.
-            linking-pkgs = if pkgs.lib.hasSuffix "linux" system then pkgs.pkgsStatic else pkgs;
-          in linking-pkgs.rustPlatform.buildRustPackage ({
+          # The pinned root test host invokes these fixtures without compilerArgs.
+          # Keep the compiler's legacy default and its explicit v3 refusals;
+          # select v3 only for these byte-exact upstream compile-pass cases.
+          packages.compactc-test-contracts = pkgs.writeShellScriptBin "compactc" ''
+            compiler=${packages.compactc}/bin/compactc
+            for arg in "$@"; do
+              case "$arg" in
+                --target|--target=*) exec "$compiler" "$@" ;;
+              esac
+            done
+            for arg in "$@"; do
+              expected=
+              case "$arg" in
+                */test-contracts/stdlib/curve25519/base/roundtrip/curve25519_base_roundtrip.compact)
+                  expected=4cb617334d5ab3fd810968345cd7e564be9d9ad6c0e7616e1b2fe13fe8ab38c8
+                  ;;
+                */test-contracts/stdlib/curve25519/scalar/roundtrip/curve25519_scalar_roundtrip.compact)
+                  expected=7e3b76271c55a71e492941398837427309d54cb32d0b33ef4660c2c6e3999c4a
+                  ;;
+                */test-contracts/stdlib/curve25519/default/maybe_either/curve25519_default_maybe_either.compact)
+                  expected=d753887f22666a4e58ed472e282ea9d0051376230ae439ea2772824de86d279a
+                  ;;
+                */test-contracts/stdlib/curve25519/verify/curve25519_verify.compact)
+                  expected=0208874ed5764915789f0d19d5892cd346b836d9d304f2d6e899b0c674a040c1
+                  ;;
+                */test-contracts/stdlib/foreign_field/self_subtract/foreign_field_self_subtract.compact)
+                  expected=5a3322fc1c889390fd3a620dd905e01c96bb81808af0e7ef587ab4f5f598c26a
+                  ;;
+                */test-contracts/stdlib/curve25519/slow/verify_sequential/curve25519_verify_sequential.compact)
+                  expected=7ad2e291ec23e496ab4f9157f1f46e17772edbe4d7516f5f2e12856a0122767f
+                  ;;
+                */test-contracts/stdlib/keccak256/cross_width/keccak256_cross_width.compact)
+                  expected=0f57999236e7d47004e9768626f52d2efe860fef5a04439b1f7c976c3e9c9e56
+                  ;;
+                */test-contracts/stdlib/keccak256/adt_rejected/keccak256_adt_rejected.compact)
+                  expected=92b9866f4edfa107320b97b1595102afd185b698ae4b71c02c96a7e6fb5d3378
+                  ;;
+                */test-contracts/stdlib/keccak256/field_types/keccak256_field_types.compact)
+                  expected=319b37a50f65125de0f6b14e9c8e91cb0ecb26f27df4b20d7b6ccc6afe3ac30e
+                  ;;
+                */test-contracts/stdlib/keccak256/flatten_equivalence/keccak256_flatten_equivalence.compact)
+                  expected=a9d34f4911f4e8faa866418d02bb0a6cbafbb9772e434331551c91da26dbca59
+                  ;;
+                */test-contracts/stdlib/keccak256/impure/keccak256_impure.compact)
+                  expected=61f4204b918f9635828d07b6117d404ab11041bd61fd47c556b8f3cca0ab9d59
+                  ;;
+                */test-contracts/stdlib/keccak256/known_vectors/keccak256_known_vectors.compact)
+                  expected=d95c93c2abddfbee69dae5b9de6b368ae9af6baff214367d3e18c16bf91767b3
+                  ;;
+                */test-contracts/stdlib/keccak256/multi_length/keccak256_multi_length.compact)
+                  expected=3d6cd76f04078b7cc4259580b1e7c093a9816752b56651672bc773c557bafeb2
+                  ;;
+                */test-contracts/stdlib/keccak256/ordinary_types/keccak256_ordinary_types.compact)
+                  expected=66856b94eb03bfe4eaade139cc3dd966bc6aaad9f9d4a4359c1fc7c551667988
+                  ;;
+                */test-contracts/stdlib/keccak256/trailing_zero/keccak256_trailing_zero.compact)
+                  expected=d8e791a46417c717ef51ffb155657c07660ef19ceeeb755b1481515e804428f1
+                  ;;
+                */test-contracts/stdlib/secp256k1/bitcoin_kat/secp256k1_bitcoin_kat.compact)
+                  expected=3f600e9c25498b8cd6c8b82270286aa58d864f1fe9a7e10ee1a01315c8c9b086
+                  ;;
+                */test-contracts/stdlib/secp256k1/base/roundtrip/secp256k1_base_roundtrip.compact)
+                  expected=c05e619523818a4bc6e870c367516edfc9fc8c42b4e0236c3f4687661e3a1548
+                  ;;
+                */test-contracts/stdlib/secp256k1/ecdsa_verify/secp256k1_ecdsa_verify.compact)
+                  expected=83aaf4309bbaa741537371d6d23ea55b46282abd892c255075c0b60fb3b16462
+                  ;;
+                */test-contracts/stdlib/secp256k1/ethereum_address/secp256k1_ethereum_address.compact)
+                  expected=819c1d11c841f15fa00ca01cabfbb8e659c8bbb41cd7ba12e20c88c5303007c2
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/prove_ethereum_address/secp256k1_prove_ethereum_address.compact)
+                  expected=14c198a3d1df93579a176de06b31af10c6062d03b2eae5bc2c7a19f6d58bc459
+                  ;;
+                */test-contracts/stdlib/secp256k1/slow/verify_sequential/secp256k1_verify_sequential.compact)
+                  expected=e1ba0175af4e5ff91af065e87dc631e89f033195177436cfc2c386331a68f3fe
+                  ;;
+                */test-contracts/stdlib/secp256r1/ecdsa_verify/secp256r1_ecdsa_verify.compact)
+                  expected=ce45565985916e21c16ec14ed351a05eaa44da144d08ff30fde682dcc646db30
+                  ;;
+                */test-contracts/stdlib/secp256r1/base/roundtrip/secp256r1_base_roundtrip.compact)
+                  expected=9f2a45968d342ef39ead91389665df952925f6e31bb725fdce2bf1f862bef9f9
+                  ;;
+                */test-contracts/stdlib/secp256r1/sha256_kat/secp256r1_sha256_kat.compact)
+                  expected=d174d86cf6e3af7be6d5a05485c8c3a39fb1b202f8e467e06fc1b8785e46540e
+                  ;;
+                */test-contracts/stdlib/secp256r1/slow/verify_sequential/secp256r1_verify_sequential.compact)
+                  expected=f1c20ef9040f20fc347007dda991b173e21e8d817d24a01e3bd41a9f7202c665
+                  ;;
+                */test-contracts/stdlib/sha256/multi_length/sha256_multi_length.compact)
+                  expected=1adb85bdf1d1be98dbf2635564011437b3a9366d96be467f2e82864314efccc0
+                  ;;
+                */test-contracts/stdlib/sha256/trailing_zero/sha256_trailing_zero.compact)
+                  expected=96a514e793a1870ef03b0d25e1efbb84d681d793af9b5ae8435c30bb8ad88636
+                  ;;
+              esac
+              if [ -n "$expected" ]; then
+                if ! { [ "$#" -eq 2 ] && [ "$1" = "$arg" ]; } &&
+                   ! { [ "$#" -eq 3 ] && [ "$1" = --skip-zk ] && [ "$2" = "$arg" ]; }; then
+                  echo "compactc-test-contracts: unexpected arguments for pinned fixture" >&2
+                  exit 1
+                fi
+                digest=$(${pkgs.coreutils}/bin/sha256sum "$arg" | ${pkgs.coreutils}/bin/cut -d ' ' -f 1)
+                if [ "$digest" != "$expected" ]; then
+                  echo "compactc-test-contracts: pinned fixture hash changed" >&2
+                  exit 1
+                fi
+                exec "$compiler" --feature-zkir-v3 "$@"
+              fi
+            done
+            exec "$compiler" "$@"
+          '';
+
+          packages.compact-rust-cli = rust-cli-platform.buildRustPackage ({
             pname = "compact-rust-cli";
             version = "0.2.0";
             # The CLI build needs only its crate sources; local harness scripts
@@ -239,7 +317,22 @@
             ];
             cargoLock = {
               lockFile = ./tools/compact-rust-backend/Cargo.lock;
-              outputHashes."midnight-base-crypto-1.0.2" = "sha256-iNrhLPBGrWxeospwl8eW4TtYNlk+vY5Y564OTRjwBoM=";
+              # The packages below come from two immutable Ledger/ZK
+              # checkouts. Nix still requires the shared checkout hash for
+              # each package identity referenced by Cargo.lock.
+              outputHashes = {
+                "midnight-base-crypto-1.1.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-base-crypto-derive-1.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-1.2.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-serialize-macros-1.0.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-core-1.2.3" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-storage-macros-1.0.1" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-transient-crypto-3.1.0" = "sha256-7nPujsILZToXHIBcRemu8NLrxmrg2+QM4sKPsJwGgu0=";
+                "midnight-circuits-7.3.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-curves-0.3.1" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-proofs-0.8.2" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+                "midnight-zk-stdlib-2.4.0" = "sha256-lofqa58hDlJ0C3vIWFodsdwYYwYoPEDpS1PMGV9TULg=";
+              };
             };
             cargoBuildFlags = [ "--bin" "compactc" ];
             # Compiler-backed gates run in build-compiler.yml against the full
@@ -272,7 +365,7 @@
 
           packages.compactc = pkgs.stdenv.mkDerivation {
             name = "compactc";
-            version = "0.31.210"; # NB: also update compiler-version in compiler/compiler-version.ss
+            version = "0.31.218"; # NB: also update compiler-version in compiler/compiler-version.ss
             src = inclusive.lib.inclusive ./. [
               ./compiler
               ./examples
@@ -281,6 +374,8 @@
               ./runtime/package.json
               ./srcMaps
               ./test-center
+              ./test-contracts/stdlib/historic_merkle_tree/deep_default
+              ./test-contracts/stdlib/merkle_tree/deep_default
               ./third_party/compiler
             ];
 
@@ -323,6 +418,7 @@
             checkPhase = ''
               cp -r ${packages.runtime.node-modules}/node_modules node_modules
               chmod -R +rw node_modules
+              mkdir -p node_modules/@midnight-ntwrk
               cp -r ${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime node_modules/@midnight-ntwrk/compact-runtime
               ./compiler/go
               ./srcMaps/test.sh
@@ -402,12 +498,28 @@
             '' else "");
           };
 
+          packages.zkir-v3 = rust-cli-platform.buildRustPackage rec {
+            pname = "midnight-zkir-v3";
+            version = (builtins.fromJSON (builtins.readFile ./test-center/package.json)).dependencies."@midnightntwrk/zkir-v3";
+            src = pkgs.fetchurl {
+              url = "https://static.crates.io/crates/midnight-zkir/midnight-zkir-${version}.crate";
+              name = "midnight-zkir-${version}.tar.gz";
+              hash = "sha256-r5jDrGGPRKYJ30lj20vmm+10EjoxEbVHXiKoHOxK2Fc=";
+            };
+            cargoLock.lockFile = ./nix/zkir-v3/Cargo.lock;
+            postPatch = ''
+              cp ${cargoLock.lockFile} Cargo.lock
+            '';
+            cargoBuildFlags = [ "--locked" "--bin" "zkir" "--features" "binary" ];
+            doCheck = false;
+          };
+
           # The upstream zkir-v3 package produces bin/zkir (same name as
           # zkir v2).  Wrap it so the binary is available as bin/zkir-v3,
           # which is the name the compiler invokes.
           packages.zkir-v3-bin = pkgs.runCommand "zkir-v3-bin" {} ''
             mkdir -p $out/bin
-            ln -s ${zkir-v3.packages.${system}.zkir-v3}/bin/zkir $out/bin/zkir-v3
+            ln -s ${packages.zkir-v3}/bin/zkir $out/bin/zkir-v3
           '';
 
           packages.compactc-binaryWrapperScript-nixos = pkgs.writeShellScriptBin "run-compactc" ''
@@ -427,7 +539,7 @@
               mv $out/bin/compactc $out/bin/compactc.bin
               cp bin/compactc-scheme $out/bin/compactc-scheme
               cp ${zkir.packages.${system}.zkir}/bin/zkir $out/lib/zkir
-              cp ${zkir-v3.packages.${system}.zkir-v3}/bin/zkir $out/lib/zkir-v3
+              cp ${packages.zkir-v3}/bin/zkir $out/lib/zkir-v3
 
               chmod +w $out/lib/zkir
               chmod +w $out/lib/zkir-v3
@@ -441,7 +553,7 @@
               done
             '' + (if isDarwin then ''
               install_name_tool -change ${inputs.zkir.inputs.nixpkgs.legacyPackages.${system}.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir"
-              install_name_tool -change ${inputs.zkir-v3.inputs.nixpkgs.legacyPackages.${system}.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir-v3"
+              install_name_tool -change ${pkgs.darwin.libiconv}/lib/libiconv.2.dylib /usr/lib/libiconv.2.dylib "$out/lib/zkir-v3"
             '' else "");
 
             # Execution on a Nix-equipped host can hide store-only libraries.
@@ -651,6 +763,17 @@
               pkgs.chez
             ];
             shellHook = runtime-shell-hook;
+          };
+
+          # The pinned root wrapper needs both the guarded compiler and a
+          # built runtime package with declarations for generated imports.
+          devShells.test-contracts = pkgs.mkShell {
+            packages = [
+              packages.compactc-test-contracts
+              packages.runtime.package
+              pkgs.nodejs
+            ];
+            COMPACT_RUNTIME_PKG = "${packages.runtime.package}/lib/node_modules/@midnight-ntwrk/compact-runtime";
           };
 
           devShells.dapp = packages.runtime.mkShell {

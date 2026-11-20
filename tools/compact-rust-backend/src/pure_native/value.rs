@@ -17,7 +17,7 @@
 //! This mapping never traverses source, checks types or reselects support policy.
 use super::fragment::NativeFragment as V;
 use crate::pure_semantics::{
-    aggregate::CheckedAggregate as A, crypto::CheckedCrypto as C, jubjub::CheckedJubjub as J,
+    aggregate::CheckedAggregate as A, crypto::CheckedCrypto as C, jubjub::CheckedCurve as J,
 };
 
 pub(crate) fn crypto(checked: C<V>) -> C<syn::Expr> {
@@ -40,22 +40,28 @@ pub(crate) fn crypto(checked: C<V>) -> C<syn::Expr> {
             value: value.into_expression(),
             opening: opening.into_expression(),
         },
-        C::Keccak256(value) => C::Keccak256(value.into_expression()),
+        C::Keccak256(value, encoding) => C::Keccak256(value.into_expression(), encoding),
+        C::Sha512(value) => C::Sha512(value.into_expression()),
         C::DegradeToTransient(value) => C::DegradeToTransient(value.into_expression()),
         C::UpgradeFromTransient(value) => C::UpgradeFromTransient(value.into_expression()),
         C::HashToCurve { value, encoding } => C::HashToCurve {
             value: value.into_expression(),
             encoding,
         },
-        C::Jubjub(checked) => C::Jubjub(jubjub(checked)),
+        C::Curve(checked) => C::Curve(curve(checked)),
+        C::Secp256k1Unary(kind, value) => C::Secp256k1Unary(kind, value.into_expression()),
     }
 }
-fn jubjub(checked: J<V>) -> J<syn::Expr> {
+fn curve(checked: J<V>) -> J<syn::Expr> {
     match checked {
         J::Reduce(value) => J::Reduce(value.into_expression()),
-        J::Generator(value) => J::Generator(value.into_expression()),
-        J::Multiply(left, right) => J::Multiply(left.into_expression(), right.into_expression()),
-        J::Add(left, right) => J::Add(left.into_expression(), right.into_expression()),
+        J::Generator(curve, value) => J::Generator(curve, value.into_expression()),
+        J::Multiply(curve, left, right) => {
+            J::Multiply(curve, left.into_expression(), right.into_expression())
+        }
+        J::Add(curve, left, right) => {
+            J::Add(curve, left.into_expression(), right.into_expression())
+        }
         J::Coordinate(axis, value) => J::Coordinate(axis, value.into_expression()),
         J::Construct(left, right) => J::Construct(left.into_expression(), right.into_expression()),
         J::Negate(value) => J::Negate(value.into_expression()),

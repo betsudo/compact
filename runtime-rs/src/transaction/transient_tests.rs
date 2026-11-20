@@ -102,6 +102,96 @@ fn record(
         .0
         .finish(())
 }
+
+fn record_receive(
+    bound: &OfferBackedObservedState,
+    received: crate::ledger::CoinInfo,
+) -> RecordedCircuitResult<(), ()> {
+    RecordingFrame::new(bound.observed.circuit_context(()))
+        .create_zswap_output(received, CoinRecipient::Contract(bound.observed.address))
+        .unwrap()
+        .kernel_self()
+        .unwrap()
+        .0
+        .finish(())
+}
+
+fn record_immediate_send(
+    bound: &OfferBackedObservedState,
+    received: crate::ledger::CoinInfo,
+    sent: crate::ledger::CoinInfo,
+) -> RecordedCircuitResult<(), ()> {
+    RecordingFrame::new(bound.observed.circuit_context(()))
+        .create_zswap_input(received.qualify(0))
+        .create_zswap_output(sent, CoinRecipient::Contract(bound.observed.address))
+        .unwrap()
+        .kernel_self()
+        .unwrap()
+        .0
+        .finish(())
+}
+
+#[test]
+fn separate_original_transient_calls_reconcile_only_as_an_ordered_exact_pair() {
+    let (mut bound, _, received, sent) = setup_transient(false);
+    let receive = record_receive(&bound, received);
+    let send = record_immediate_send(&bound, received, sent);
+    assert_eq!(
+        bound
+            .reconciliation()
+            .reconcile_transient_pair(&receive, &send),
+        Ok(())
+    );
+    assert_eq!(
+        bound
+            .reconciliation()
+            .reconcile_transient_pair(&send, &receive),
+        Err(ZswapIntentError::TransientPairShapeMismatch)
+    );
+    assert_eq!(
+        bound.reconcile(&receive),
+        Err(ZswapIntentError::TransientInputMismatch)
+    );
+    assert_eq!(
+        bound.reconcile(&send),
+        Err(ZswapIntentError::TransientInputMismatch)
+    );
+    let mut altered = record_immediate_send(&bound, received, sent);
+    altered.execution.context.circuit_zswap.events.reverse();
+    assert_eq!(
+        bound
+            .reconciliation()
+            .reconcile_transient_pair(&receive, &altered),
+        Err(ZswapIntentError::AllocationMismatch)
+    );
+    let mut rng = StdRng::seed_from_u64(205);
+    let wrong = Output::new_contract_owned(
+        &mut rng,
+        &super::zswap_tests::coin(99),
+        None,
+        bound.observed.address,
+    )
+    .unwrap();
+    bound.offer.outputs = vec![wrong].into_iter().collect();
+    assert_eq!(
+        bound
+            .reconciliation()
+            .reconcile_transient_pair(&receive, &send),
+        Err(ZswapIntentError::OutputMismatch)
+    );
+    let (mut owner_bound, _, received, sent) = setup_transient(false);
+    let owner_receive = record_receive(&owner_bound, received);
+    let owner_send = record_immediate_send(&owner_bound, received, sent);
+    let mut wrong_owner = owner_bound.offer.transient.get(0).unwrap().clone();
+    wrong_owner.contract_address = Some(Sp::new(ContractAddress(HashOutput([9; 32]))));
+    owner_bound.offer.transient = vec![wrong_owner].into_iter().collect();
+    assert_eq!(
+        owner_bound
+            .reconciliation()
+            .reconcile_transient_pair(&owner_receive, &owner_send),
+        Err(ZswapIntentError::TransientSelectionMismatch)
+    );
+}
 #[test]
 fn transient_pairs_require_exact_causal_source_events_and_keep_historical_zero() {
     for historical in [false, true] {
@@ -325,7 +415,8 @@ fn fallible_funded(
     let wc = w.coin_com;
     let seed = Offer::new(vec![], vec![h, w], vec![]).unwrap();
     let (state, indices) = ledger.zswap.try_apply(&seed, None).unwrap();
-    ledger.zswap = Sp::new(state.post_block_update(Timestamp::from_secs(0)));
+    ledger.zswap =
+        Sp::new(state.post_block_update(Timestamp::from_secs(0), ledger.parameters.global_ttl));
     assert_eq!(ledger.zswap.first_free, 2);
     let history = history.qualify(*indices.get(&hc).unwrap());
     let wallet = midnight_zswap::local::State::<DefaultDB>::new()

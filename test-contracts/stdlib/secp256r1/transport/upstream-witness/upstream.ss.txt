@@ -1,0 +1,94 @@
+
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger point: Secp256r1Point;"
+      "witness point0(): Secp256r1Point;"
+      "witness point1(): Secp256r1Point;"
+      "export circuit test0(): Secp256r1Point {"
+      "  point = disclose(point0());"
+      "  return point;"
+      "}"
+      "export circuit test1(): Secp256r1Point {"
+      "  point = disclose(point1());"
+      "  return point;"
+      "}"
+      )
+    (pass-returns reduce-to-zkir
+      (program
+        (circuit (test0) ()
+          ("Point<Secp256r1>")
+          (private_input "Point<Secp256r1>" %tmp.0)
+          (encode (%fld.1 %fld.2 %fld.3 %fld.4 %fld.5) %tmp.0)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 5 24 8 24 8 -2 %fld.1 %fld.2 %fld.3 %fld.4
+            %fld.5)
+          (impact 1 145)
+          (public_input "Point<Secp256r1>" %t.6)
+          (encode (%fld.7 %fld.8 %fld.9 %fld.10 %fld.11) %t.6)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 5 24 8 24 8 -2 %fld.7 %fld.8 %fld.9 %fld.10
+            %fld.11)
+          (output %t.6))
+        (circuit (test1) ()
+          ("Point<Secp256r1>")
+          (private_input "Point<Secp256r1>" %tmp.12)
+          (encode (%fld.13 %fld.14 %fld.15 %fld.16 %fld.17) %tmp.12)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 5 24 8 24 8 -2 %fld.13 %fld.14 %fld.15
+            %fld.16 %fld.17)
+          (impact 1 145)
+          (public_input "Point<Secp256r1>" %t.18)
+          (encode (%fld.19 %fld.20 %fld.21 %fld.22 %fld.23) %t.18)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 5 24 8 24 8 -2 %fld.19 %fld.20 %fld.21 %fld.22
+            %fld.23)
+          (output %t.18))))
+    (stage-javascript
+      '("test('Secp256r1Point coming from witnesses', async () => {"
+        "  const witnesses = {"
+        "    point0(wc: runtime.WitnessContext<{}, number>): [number, runtime.Secp256r1Point] {"
+        "      return ["
+        "        wc.privateState,"
+        "        {"
+        "          x: 0x0n,"
+        "          y: 0x66485c780e2f83d72433bd5d84a06bb6541c2af31dae871728bf856a174f93f4n,"
+        "          identity: false,"
+        "        },"
+        "      ];"
+        "    },"
+        "    point1(wc: runtime.WitnessContext<{}, number>): [number, runtime.Secp256r1Point] {"
+        "      return ["
+        "        wc.privateState,"
+        "        {"
+        "          x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n,"
+        "          y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n,"
+        "          identity: false,"
+        "        },"
+        "      ];"
+        "    },"
+        "  };"
+        "  const [contract, context] = await startContract(contractCode, witnesses, 0);"
+        "  // The point at X=1."
+        "  var pt = {"
+        "      x: 0x0n,"
+        "      y: 0x66485c780e2f83d72433bd5d84a06bb6541c2af31dae871728bf856a174f93f4n,"
+        "      identity: false,"
+        "  };"
+        "  var r = await contract.circuits.test0(context);"
+        "  expect(r.result).toEqual(pt);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).point).toEqual(pt);"
+        "  // The point G."
+        "  pt = {"
+        "      x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n,"
+        "      y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n,"
+        "      identity: false,"
+        "  };"
+        "  r = await contract.circuits.test1(context);"
+        "  expect(r.result).toEqual(pt);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).point).toEqual(pt);"
+        "});"
+        ))
+    )

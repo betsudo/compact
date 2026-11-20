@@ -126,7 +126,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["zerocash_mint", "spend"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -167,7 +167,7 @@ fn captured_path(value: &serde_json::Value) -> MerkleTreePath {
 #[test]
 fn zerocash_constructor_and_mint_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zerocash-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zerocash-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -190,7 +190,7 @@ fn zerocash_constructor_and_mint_match_typescript_state() {
 #[test]
 fn zerocash_spend_matches_typescript_state_with_captured_merkle_path() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zerocash-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zerocash-oracle.json"
     ))
     .unwrap();
     let witness = FixedWitness {
@@ -220,7 +220,7 @@ fn zerocash_spend_matches_typescript_state_with_captured_merkle_path() {
 fn recorded_mint_preserves_composite_witnesses_program_gas_and_historic_state() {
     use compact_rust_zerocash_oracle_fixture::ledger_contract::recorded;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zerocash-mint.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zerocash-mint.json"
     ))
     .unwrap();
     let initial = || {

@@ -30,7 +30,7 @@
           source-error-condition?
           make-halt-condition halt-condition?
           pending-conditions
-          stdlib-sfd stdlib-src?
+          stdlib-sfd stdlib-src? secp256k1-field-max foreign-field-max foreign-point-base foreign-native-type?
           renaming-table record-alias!
           pretty-print/formats
           split-search-path)
@@ -50,6 +50,32 @@
 
   (define stdlib-sfd (make-parameter #f))
   (define (stdlib-src? src) (eq? (source-object-sfd src) (stdlib-sfd)))
+
+  ;; The largest canonical value of each Ledger 9 secp256k1 field.
+  (define (secp256k1-field-max name)
+    (case name
+      [("Secp256k1Base") #xfffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2e]
+      [("Secp256k1Scalar") #xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140]
+      [else #f]))
+
+  (define (foreign-field-max name)
+    (or (secp256k1-field-max name)
+        (case name
+          [("Secp256r1Base") #xffffffff00000001000000000000000000000000fffffffffffffffffffffffe]
+          [("Secp256r1Scalar") #xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632550]
+          [("Curve25519Base") #x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffec]
+          [("Curve25519Scalar") #x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ec]
+          [else #f])))
+
+  (define (foreign-point-base name)
+    (case name
+      [("Secp256k1Point") "Secp256k1Base"]
+      [("Secp256r1Point") "Secp256r1Base"]
+      [("Curve25519Point") "Curve25519Base"]
+      [else #f]))
+
+  (define (foreign-native-type? name)
+    (and (or (string=? name "JubjubScalar") (foreign-point-base name) (foreign-field-max name)) #t))
 
   (define pending-conditions (make-parameter '()))
 
@@ -313,20 +339,23 @@
     (lambda (x)
       (fold-right (lambda (f x) (f x)) x f*)))
 
-  (define (shell command)
-    (let-values ([(to-stdin from-stdout from-stderr pid)
-                  (open-process-ports
-                    command
-                    (buffer-mode block)
-                    (native-transcoder))])
-      (close-port to-stdin)
-      (let* ([stdout-stuff (get-string-all from-stdout)]
-             [stderr-stuff (get-string-all from-stderr)])
-        (close-port from-stdout)
-        (close-port from-stderr)
-        (values
-          (if (eof-object? stdout-stuff) "" stdout-stuff)
-          (if (eof-object? stderr-stuff) "" stderr-stuff)))))
+  (define shell
+    (case-lambda
+      [(command) (shell command #vu8())]
+      [(command input)
+       (let-values ([(to-stdin from-stdout from-stderr pid)
+                     (open-process-ports command (buffer-mode block) #f)])
+         (put-bytevector to-stdin input)
+         (close-port to-stdin)
+         (let* ([from-stdout (transcoded-port from-stdout (native-transcoder))]
+                [from-stderr (transcoded-port from-stderr (native-transcoder))]
+                [stdout-stuff (get-string-all from-stdout)]
+                [stderr-stuff (get-string-all from-stderr)])
+           (close-port from-stdout)
+           (close-port from-stderr)
+           (values
+             (if (eof-object? stdout-stuff) "" stdout-stuff)
+             (if (eof-object? stderr-stuff) "" stderr-stuff))))]))
 
   (define (string-prefix? prefix str)
     (let ([n (string-length prefix)])

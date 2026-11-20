@@ -616,20 +616,33 @@ pub(crate) fn map_insert_program<K: CellValue, V: CellValue, D: DB>(
     key: K,
     value: V,
 ) -> Result<Vec<Op<ResultModeVerify, D>>, TranscriptRejected<D>> {
+    super::checked_path_operand::<D>(path.len(), 0)?;
+    map_insert_at(
+        path_keys(path),
+        super::vm::cell(key).map_err(super::input_rejected)?,
+        super::vm::cell(value).map_err(super::input_rejected)?,
+    )
+}
+
+fn map_insert_at<D: DB>(
+    path: Vec<Key>,
+    key: super::vm::Immediate<D>,
+    value: super::vm::Immediate<D>,
+) -> Result<Vec<Op<ResultModeVerify, D>>, TranscriptRejected<D>> {
     let insert_depth = super::checked_path_operand::<D>(path.len(), 0)?;
     Ok(vec![
         Op::Idx {
             cached: false,
             push_path: true,
-            path: path_keys(path).into(),
+            path: path.into(),
         },
         Op::Push {
             storage: false,
-            value: super::vm::cell(key).map_err(super::input_rejected)?,
+            value: key,
         },
         Op::Push {
             storage: true,
-            value: super::vm::cell(value).map_err(super::input_rejected)?,
+            value,
         },
         Op::Ins {
             cached: false,
@@ -640,6 +653,67 @@ pub(crate) fn map_insert_program<K: CellValue, V: CellValue, D: DB>(
             n: insert_depth,
         },
     ])
+}
+
+pub(crate) fn map_insert_merkle_default_program<K: CellValue, D: DB>(
+    path: &[u8],
+    key: K,
+    depth: u8,
+    historic: bool,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    if !(2..=32).contains(&depth) {
+        return Err(CompactError::InvalidLedgerCell(
+            "invalid nested Merkle depth".into(),
+        ));
+    }
+    super::checked_path_operand::<D>(path.len(), 0).map_err(super::query_rejected)?;
+    let value = if historic {
+        // Map defaults carry an empty history. Only top-level initialization
+        // and reset seed it with the blank root.
+        super::merkle::blank_historic_merkle_tree(depth)
+    } else {
+        super::merkle::constructor_merkle_tree(depth)
+    };
+    map_insert_at(
+        path_keys(path),
+        super::vm::cell(key)?,
+        super::vm::state(value)?,
+    )
+    .map_err(super::query_rejected)
+}
+
+fn map_child_path<K: CellValue>(path: &[u8], outer: K) -> Result<Vec<Key>, CompactError> {
+    let mut path = path_keys(path);
+    path.push(Key::Value(super::vm::key(try_aligned_cell_value(outer)?)?));
+    Ok(path)
+}
+
+pub(crate) fn map_init_child_program<K: CellValue, D: DB>(
+    path: &[u8],
+    key: K,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    super::checked_path_operand::<D>(path.len(), 0).map_err(super::query_rejected)?;
+    map_insert_at(
+        path_keys(path),
+        super::vm::cell(key)?,
+        StateValue::Map(LedgerHashMap::new()),
+    )
+    .map_err(super::query_rejected)
+}
+
+pub(crate) fn map_insert_child_program<K: CellValue, I: CellValue, V: CellValue, D: DB>(
+    path: &[u8],
+    outer: K,
+    inner: I,
+    value: V,
+) -> Result<Vec<Op<ResultModeVerify, D>>, CompactError> {
+    super::checked_path_operand::<D>(path.len(), 1).map_err(super::query_rejected)?;
+    map_insert_at(
+        map_child_path(path, outer)?,
+        super::vm::cell(inner)?,
+        super::vm::cell(value)?,
+    )
+    .map_err(super::query_rejected)
 }
 
 pub fn insert_map<K: CellValue, V: CellValue, D: DB>(
@@ -671,13 +745,33 @@ pub(crate) fn map_lookup_program<K: CellValue, M: ResultMode<D>, D: DB>(
     read_result: M::ReadResult,
 ) -> Result<Vec<Op<M, D>>, CompactError> {
     super::checked_index_path::<D>(path).map_err(super::query_rejected)?;
+    map_lookup_at(path_keys(path), key, read_result)
+}
+
+pub(crate) fn map_lookup_child_program<K: CellValue, I: CellValue, M: ResultMode<D>, D: DB>(
+    path: &[u8],
+    outer: K,
+    inner: I,
+    read_result: M::ReadResult,
+) -> Result<Vec<Op<M, D>>, CompactError> {
+    super::checked_index_path_length::<D>(path.len().saturating_add(1))
+        .map_err(super::query_rejected)?;
+    let path = map_child_path(path, outer)?;
+    map_lookup_at(path, inner, read_result)
+}
+
+fn map_lookup_at<K: CellValue, M: ResultMode<D>, D: DB>(
+    path: Vec<Key>,
+    key: K,
+    read_result: M::ReadResult,
+) -> Result<Vec<Op<M, D>>, CompactError> {
     let key = super::vm::key(try_aligned_cell_value(key)?)?;
     Ok(vec![
         Op::Dup { n: 0 },
         Op::Idx {
             cached: false,
             push_path: false,
-            path: path_keys(path).into(),
+            path: path.into(),
         },
         Op::Idx {
             cached: false,
@@ -700,8 +794,17 @@ pub fn lookup_map<K: CellValue, V: CellValue, D: DB>(
 ) -> Result<(QueryResults<ResultModeGather, D>, V), CompactError> {
     let path = path.into();
     let program = map_lookup_program::<K, ResultModeGather, D>(path.as_slice(), key, ())?;
+    gather_map_lookup(context, &program, gas_limit, cost_model)
+}
+
+pub(crate) fn gather_map_lookup<V: CellValue, D: DB>(
+    context: &QueryContext<D>,
+    program: &[Op<ResultModeGather, D>],
+    gas_limit: Option<RunningCost>,
+    cost_model: &CostModel,
+) -> Result<(QueryResults<ResultModeGather, D>, V), CompactError> {
     let result = context
-        .query(&program, gas_limit, cost_model)
+        .query(program, gas_limit, cost_model)
         .map_err(|error| CompactError::LedgerQueryRejected(format!("{error:?}")))?;
     let decoded = decode_last_read::<V, D>(&result)?;
     Ok((result, decoded))

@@ -52,7 +52,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
 }
 /// Typed descriptors for Compact ledger declarations.
 #[allow(non_upper_case_globals)]
@@ -63,7 +63,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -78,7 +78,7 @@ pub mod ledger_contract {
             runtime::BoundedUint::<18446744073709551615>::new(value as u128)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -318,15 +318,40 @@ pub mod ledger_contract {
             runtime::Field,
             runtime::Field,
             runtime::Field,
-        ) = if __compact_param_1 {
-            let __compact_call_argument_16 = __compact_expression_local_15.clone();
-            let __compact_call_17 = touch(context, witnesses, __compact_call_argument_16)?;
-            private_transcript_outputs.extend(__compact_call_17.private_transcript_outputs);
-            context = __compact_call_17.context;
-            total_cost += __compact_call_17.gas_cost;
-            __compact_call_17.result
-        } else {
-            __compact_expression_local_15.clone()
+        ) = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_1 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_call_argument_16 = __compact_expression_local_15.clone();
+                        let __compact_call_17 =
+                            touch(context, witnesses, __compact_call_argument_16)?;
+                        private_transcript_outputs
+                            .extend(__compact_call_17.private_transcript_outputs);
+                        context = __compact_call_17.context;
+                        total_cost += __compact_call_17.gas_cost;
+                        let __compact_branch_value = __compact_call_17.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = __compact_expression_local_15.clone();
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         let __compact_call_argument_19 = __compact_expression_local_18.clone();
         let __compact_call_20 = project(context, witnesses, __compact_call_argument_19)?;

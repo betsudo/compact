@@ -67,18 +67,19 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         for entry in entries {
             let name = entry.as_str().ok_or("invalid export name")?;
-            let ir = IrSource::load(BufReader::new(File::open(
+            let ir = midnight_zkir_v3::IrSource::load(BufReader::new(File::open(
                 root.join(role).join(format!("zkir/{name}.zkir")),
             )?))?;
+            let model = ir.model();
             rows.push(
-                serde_json::json!({"source":role,"circuit":name,"k":ir.model().k(),
+                serde_json::json!({"source":role,"circuit":name,"k":model.k(),"rows":model.rows(),
                 "proof_required":true,"selected_for_proof":false}),
             );
         }
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-outer-vector-product-model-inventory/v1",
+        serde_json::json!({"format":"compact-outer-vector-product-model-inventory/v2",
         "circuits":rows,"proof_execution":false,"key_generation":false,"selection_made":false,
         "scope":"complete intact model observation; no proof or integration acceptance"})
     );

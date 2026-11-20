@@ -22,7 +22,7 @@ use midnight_compact_runtime::{
 #[test]
 fn public_key_matches_authority_in_captured_tiny_constructor() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/tiny-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-tiny-oracle.json"
     ))
     .unwrap();
     let state: ContractState<DefaultDB> = midnight_serialize::tagged_deserialize(

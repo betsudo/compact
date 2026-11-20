@@ -74,7 +74,10 @@ fn upstream_merge_covers_historical_and_transient_union_without_index_remapping(
         let (ledger, indices) = midnight_zswap::ledger::State::<DefaultDB>::new()
             .try_apply(&seed, None)
             .unwrap();
-        let ledger = ledger.post_block_update(Timestamp::from_secs(0));
+        let ledger = ledger.post_block_update(
+            Timestamp::from_secs(0),
+            midnight_ledger_v9::structure::INITIAL_PARAMETERS.global_ttl,
+        );
         assert_eq!(ledger.first_free, 2);
         let a_qualified = a.qualify(*indices.get(&a_com).unwrap());
         let b_qualified = b.qualify(*indices.get(&b_com).unwrap());

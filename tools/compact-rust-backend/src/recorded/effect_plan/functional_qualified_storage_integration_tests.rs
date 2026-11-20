@@ -62,7 +62,7 @@ fn qualified_storage_requires_precise_target_and_source_before_emission() {
             Capability::QualifiedCellWrite
         };
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert_eq!(
             program.requirements(),
             &std::collections::BTreeSet::from([Capability::Pure, capability])
@@ -71,7 +71,7 @@ fn qualified_storage_requires_precise_target_and_source_before_emission() {
         assert_eq!(rendered.executor_bounds.len(), 1);
         assert_eq!(rendered.slots.len(), usize::from(!set));
         assert_eq!(rendered.sets.len(), usize::from(set));
-        let target = Ledger8Target {
+        let target = Ledger9Target {
             capabilities: &[
                 Capability::Pure,
                 Capability::CellWrite,
@@ -91,7 +91,7 @@ fn qualified_storage_requires_precise_target_and_source_before_emission() {
             ..Authority::new()
         };
         assert!(
-            matches!(FunctionalProgram::project(&checked,&missing,Ledger8Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority{path})if path==effect.binding().path)
+            matches!(FunctionalProgram::project(&checked,&missing,Ledger9Target::PINNED),Err(ProjectionRefusal::MissingSourceAuthority{path})if path==effect.binding().path)
         );
     }
 }

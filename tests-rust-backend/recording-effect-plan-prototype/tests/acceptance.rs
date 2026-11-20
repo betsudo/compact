@@ -1,6 +1,17 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 #![cfg(feature = "experimental-recording-plan")]
 
@@ -118,11 +129,11 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = operations
         .insert(
             EntryPointBuf(b"guardedChoice".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
         .insert(
             EntryPointBuf(b"orderedObservation".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -145,7 +156,7 @@ struct Case {
 #[test]
 fn new_compositions_match_explicit_results_native_execution_ts_and_public_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effect-plan-prototype.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json"
     ))
     .unwrap();
     let cases = [
@@ -414,7 +425,7 @@ fn new_compositions_match_explicit_results_native_execution_ts_and_public_replay
 #[test]
 fn failed_assertions_preserve_first_failure_and_witness_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/effect-plan-prototype.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-effect-plan-prototype.json"
     ))
     .unwrap();
     for (id, method, selector, next, mark, message, observation) in [

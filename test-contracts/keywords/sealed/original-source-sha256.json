@@ -1,0 +1,7 @@
+{
+  "files": {
+    "test-contracts/keywords/sealed/exported_circuit_cannot_mutate/compile.fail.test.ts": "89b122041a90f9bb8c8161eda36bcda548a4cc7419bf81c1b5ef654d2abcead8",
+    "test-contracts/keywords/sealed/exported_circuit_cannot_mutate/sealed_exported_circuit_cannot_mutate.compact": "a488d8edc90dcf8b2dbe3794189ef3eb7e7436f2d3fdd128bb14624a76f2b08e"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

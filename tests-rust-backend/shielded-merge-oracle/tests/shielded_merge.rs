@@ -22,7 +22,7 @@ use serde_json::{Value, json};
 
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/shielded-merge-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-shielded-merge-oracle.json"
     ))
     .unwrap()
 }

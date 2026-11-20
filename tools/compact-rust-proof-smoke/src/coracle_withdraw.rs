@@ -14,14 +14,16 @@
 // limitations under the License.
 //! Original withdraw from offline seeded game/coin state, not a funded game lifecycle.
 use super::coracle_withdraw_support as support;
+use super::local_v3_application as v3;
+use super::positional_transaction::make_deploy;
+use super::qualified_coin_funding as funding;
 use super::*;
 use compact_rust_test_center_coracle_fixture::{ledger_contract as c, ledger_slots as slots};
 use midnight_compact_runtime as runtime;
 use midnight_ledger::error::MalformedTransaction;
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{
-    OfferBackedObservedState, OfferBindingOptions, OfferPlacement, PersistentOutputAllocation,
-    RecordedCall,
+    OfferBackedObservedState, OfferBindingOptions, PersistentOutputAllocation, RecordedCall,
 };
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
@@ -37,7 +39,12 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_test_center_coracle_fixture::RETAINED_IR,
     )?;
+    v3::validate_pinned_artifacts(
+        root,
+        include_str!("../../compact-rust-backend/tests/coracle-withdraw-ledger9-artifacts.json"),
+    )?;
     const NAME: &str = "withdraw";
+    let stem = format!("coracle-withdraw-{}", if red { "red" } else { "blue" });
     let mut rng = StdRng::seed_from_u64(0x0206_0000 + u64::from(red));
     let mut settings = support::Settings {
         red,
@@ -51,7 +58,14 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
     let seeded = support::seeded(&settings)?;
     let deploy = make_deploy(root, NAME, seeded.query.state.get_ref().clone(), &mut rng)?;
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
+    let mut fees = funding::fee_funded_state_with_utxos(&mut rng, 2)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let resolver = funding::fee_resolver(root, NAME)?;
+    v3::apply_funded_deployment(
+        root, &stem, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let coins = [(3, 42), (4, 17), (5, 19)].map(|(n, value)| {
         runtime::ledger::coin_info_from_compact(
             FixedBytes::new([n; 32]),
@@ -65,7 +79,9 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
         .collect::<Result<Vec<_>, _>>()?;
     let genesis: Offer<ProofPreimage, DefaultDB> = Offer::new(vec![], genesis, vec![]).unwrap();
     let (zswap, seed_indices) = fees.ledger.zswap.try_apply(&genesis, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(zswap.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        zswap.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let qualified = coins.map(|coin| {
         coin.qualify(
             *seed_indices
@@ -89,6 +105,8 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
     }
     let mut prior = deploy.initial_state.clone();
     prior.data = ctx.query.state;
+    // The deployment commits to its original state and address. Seed the
+    // explicit prior game fixture at that address before proving the call.
     fees.ledger.contract = fees.ledger.contract.insert(address, prior.clone());
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
@@ -151,9 +169,7 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
         offer.clone(),
         OfferBindingOptions::default()
             .with_output_allocation(PersistentOutputAllocation::CanonicalOfferIndices)
-            .with_offer_placement(OfferPlacement::Fallible(
-                std::num::NonZeroU16::new(1).unwrap(),
-            )),
+            .with_wholly_fallible_offer(std::num::NonZeroU16::MIN),
     )?;
     let native = c::withdraw(
         bound
@@ -212,49 +228,43 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
         recorded.execution.context.query.call_context.com_indices,
         indices
     );
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/withdraw.verifier"),
-    )?))?;
+    let verifier = v3::read_verifier(root, NAME)?;
     let call = RecordedCall::new(bound.observed(), recorded, NAME, ());
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0u64))?;
     assert!(prepared.prototype().guaranteed_public_transcript.is_none());
     assert!(prepared.prototype().fallible_public_transcript.is_some());
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let sealed = v3::prove_funded_offer(
         root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (NAME, &stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0206_5052 + u64::from(reversed)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        |tx| {
+            let Transaction::Standard(structure) = tx else {
+                return Err("expected standard Coracle withdraw transaction".into());
+            };
+            assert!(structure.guaranteed_coins.is_none());
+            assert_eq!(structure.fallible_coins.iter().count(), 1);
+            assert_eq!(*structure.fallible_coins.get(&1).unwrap(), offer);
+            Ok(())
+        },
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0206_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
-    tagged_serialize(
-        &sealed,
-        &mut File::create(root.join(format!("withdraw-{red}-sealed.bin")))?,
+    let mut sealed_bytes = Vec::new();
+    tagged_serialize(&sealed, &mut sealed_bytes)?;
+    v3::write_new(
+        root.join(format!("withdraw-{red}-sealed.bin")),
+        &sealed_bytes,
     )?;
     let Transaction::Standard(structure) = &sealed else {
         panic!("standard transaction");
     };
     assert!(structure.guaranteed_coins.is_none());
     assert_eq!(structure.fallible_coins.iter().count(), 1);
-    assert!(structure.fallible_coins.contains_key(&1));
+    assert_eq!(
+        structure.fallible_coins.get(&1).unwrap().erase_proofs(),
+        offer.erase_proofs()
+    );
     assert_eq!(structure.intents.iter().count(), 2);
     let dust_row = structure
         .intents
@@ -336,6 +346,10 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
     );
 
     assert_eq!(updated.contract.get(&address).unwrap().data, prior.data);
+    assert_eq!(
+        updated.contract.get(&address).unwrap().operations,
+        prior.operations
+    );
     assert_eq!(updated.zswap.first_free, start + 2);
     for (i, coin) in sent.iter().enumerate() {
         let com = coin.commitment(&runtime::ledger::CoinRecipient::User(key));
@@ -355,6 +369,7 @@ fn run_order(root: &Path, red: bool, reversed: bool) -> Result<(), Box<dyn Error
     assert!(
         matches!(updated.zswap.try_apply(&offer,None),Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found)) if spent.contains(&found))
     );
+    v3::check_offer_replay(root, &stem, &updated, &verified, context)?;
     println!(
         "original Coracle.withdraw red={red}, reversed={reversed}: two full-value inputs/outputs, default strict proof/apply, unchanged Cells and untouched deposit, exact replay nullifier rejection; offline seeded prior game/coins with separate Dust"
     );

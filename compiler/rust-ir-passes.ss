@@ -22,6 +22,7 @@
 (library (rust-ir-passes)
   (export rust-ir-passes)
   (import (except (chezscheme) errorf)
+          (only (config-params) feature-zkir-v3)
           (utils)
           (nanopass)
           (json)
@@ -33,6 +34,106 @@
   (define-pass emit-rust-ir : Lnodisclose (ir) -> Lnodisclose ()
     (definitions
       (define (object . fields) (origin-object fields))
+
+      ;; Included modules can contribute distinct ledger slots with the same
+      ;; source spelling. Keep the existing Rust name for unique slots and
+      ;; disambiguate only colliding spellings by their certified root index.
+      (define duplicate-ledger-field-names '())
+      (define all-ledger-field-names '())
+
+      (define (rust-ledger-field-name ledger-field-name index)
+        (let ([name (symbol->string (id-sym ledger-field-name))])
+          (if (member name duplicate-ledger-field-names)
+              (let loop ([candidate (string-append name "__compact_index_"
+                                                (number->string index))])
+                (if (member candidate all-ledger-field-names)
+                    (loop (string-append candidate "__"))
+                    candidate))
+              name)))
+
+      (define (ledger-array-names pl-array)
+        (nanopass-case (Lnodisclose Public-Ledger-Array) pl-array
+          [(public-ledger-array ,pl-array-elt* ...)
+           (apply append
+             (map (lambda (element)
+                    (nanopass-case (Lnodisclose Public-Ledger-Array-Element) element
+                      [,pl-array (ledger-array-names pl-array)]
+                      [(,src ,ledger-field-name (,path-index* ...) ,type)
+                       (list (symbol->string (id-sym ledger-field-name)))]))
+                  pl-array-elt*))]))
+
+      (define (ledger-declaration-names pelt)
+        (nanopass-case (Lnodisclose Program-Element) pelt
+          [(public-ledger-declaration ,pl-array ,lconstructor)
+           (ledger-array-names pl-array)]
+          [else '()]))
+
+      (define (find-duplicate-ledger-names names)
+        (let ([seen (make-hashtable string-hash string=?)] [duplicates '()])
+          (for-each (lambda (name)
+                      (if (hashtable-ref seen name #f)
+                          (set! duplicates (cons name duplicates))
+                          (hashtable-set! seen name #t)))
+                    names)
+          duplicates))
+
+      ;; Propagate-ledger-paths emits array indices followed by typed Map
+      ;; keys. A one-key suffix denotes a lookup in the selected child.
+      (define (nested-map-path? path-elt*)
+        (let loop ([tail path-elt*] [saw-index? #f])
+          (and (pair? tail)
+               (let ([element (car tail)])
+                 (if (and (integer? element) (<= 0 element 14))
+                     (loop (cdr tail) #t)
+                     (and saw-index? (null? (cdr tail)) (not (integer? element))))))))
+
+      (define (ledger-default-kind expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(default ,src ,type)
+           (let loop ([type type])
+             (nanopass-case (Lnodisclose Type) type
+               [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+               [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
+                adt-name]
+               [else #f]))]
+          [else #f]))
+
+      (define (nested-map-lookup-ir src ledger-field-name path-elt* inner inner-type lower)
+        (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
+          [(,src^ ,type ,expr)
+           (object (cons "kind" "nested_map_lookup")
+                   (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                   (cons "index" (car path-elt*))
+                   (cons "outer" (lower expr type src^))
+                   (cons "inner" (lower inner inner-type src)))]))
+
+      (define (secp256k1-carrier type)
+        (nanopass-case (Lnodisclose Type) type
+          [(talias ,src ,nominal? ,type-name ,type^) (secp256k1-carrier type^)]
+          [(topaque ,src ,opaque-type)
+           (and (foreign-native-type? opaque-type) opaque-type)]
+          [else #f]))
+
+      (define (same-secp256k1-carrier? type1 type2)
+        (let ([carrier (secp256k1-carrier type1)])
+          (and carrier (equal? carrier (secp256k1-carrier type2)))))
+
+      (define (jubjub-cast-ir src type value)
+        (object (cons "kind" "jubjub_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
+      (define (secp256k1-cast-ir src type value)
+        (object (cons "kind" "secp256k1_bytes_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
+      (define (keccak-ir value)
+        (let ([fields (list (cons "kind" "keccak256") (cons "value" value))])
+          (apply object
+            (if (feature-zkir-v3)
+                (cons '("encoding" . "aligned") fields)
+                fields))))
 
       ;; Source-only accessors cover Lnodisclose's supplied locations.  They do
       ;; not unparse or walk children, and do not change admission/typechecking.
@@ -67,7 +168,11 @@
           [(new ,src ,type ,expr* ...) src]
           [(seq ,src ,expr* ... ,expr) src]
           [(let* ,src ([,local* ,expr*] ...) ,expr) src]
+          [(emit-log ,src ,nat ,len ,expr) src]
           [(assert ,src ,expr ,mesg) src]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2) src]
+          [(jubjub-cast ,src ,type ,expr) src]
+          [(secp256k1-bytes-cast ,src ,type ,expr) src]
           [(field->bytes ,src ,len ,expr) src]
           [(cast-from-bytes ,src ,type ,len ,expr) src]
           [(vector->bytes ,src ,len ,expr) src]
@@ -173,7 +278,58 @@
       (define call-argument-types (make-eq-hashtable))
       (define function-rust-names (make-eq-hashtable))
       (define native-witness-ids (make-eq-hashtable))
+      (define secp256k1-unary-natives (make-eq-hashtable))
+      (define curve-group-natives (make-eq-hashtable))
+
+      (define (curve-group-ir name src args lower lower-field)
+        (case name
+          [(ecAdd)
+           (unless (= (length args) 2)
+             (source-errorf src "ecAdd expects two arguments"))
+           (object (cons "kind" "ec_add")
+                   (cons "left" (lower (car args)))
+                   (cons "right" (lower (cadr args))))]
+          [(ecMul ecMulJubjubScalar secp256k1Mul secp256r1Mul curve25519Mul)
+           (unless (= (length args) 2)
+             (source-errorf src "ecMul expects two arguments"))
+           (object (cons "kind" "ec_mul")
+                   (cons "point" (lower (car args)))
+                   (cons "scalar"
+                         (case name
+                           [(ecMul) (lower-field (cadr args))]
+                           [(ecMulJubjubScalar)
+                            (jubjub-cast-ir src
+                              (with-output-language (Lnodisclose Type) `(tfield ,src))
+                              (lower (cadr args)))]
+                           [else (lower (cadr args))])))]
+          [(ecMulGenerator ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator curve25519MulGenerator)
+           (unless (= (length args) 1)
+             (source-errorf src "ecMulGenerator expects one argument"))
+           (object (cons "kind" "ec_mul_generator")
+                   (cons "scalar"
+                         (case name
+                           [(ecMulGenerator) (lower-field (car args))]
+                           [(ecMulGeneratorJubjubScalar)
+                            (jubjub-cast-ir src
+                              (with-output-language (Lnodisclose Type) `(tfield ,src))
+                              (lower (car args)))]
+                           [else (lower (car args))])))]
+          [else (assert cannot-happen)]))
+
+      (define (secp256k1-unary-ir kind src args lower)
+        (unless (= (length args) 1)
+          (source-errorf src "foreign field or coordinate operation expects one argument"))
+        (object (cons "kind" kind) (cons "value" (lower (car args)))))
       (define current-variable-types (make-parameter #f))
+      ;; An inline Fold over literal unsigned items can give its reducer a
+      ;; closed index domain. Key it by the analyzed item formal and scope it
+      ;; only to that reducer body.
+      (define current-static-fold-index-domains (make-parameter #f))
+      ;; Preserve only pure, fixed byte constructors in lexical scope. A
+      ;; Bytes-valued Fold source must come from this map before its item can
+      ;; receive a circuit-certified index domain.
+      (define current-static-byte-bindings (make-parameter #f))
+      (define current-static-byte-fold-index-domains (make-parameter #f))
       ;; Only constructor predicates need infallible implicit conversions.
       ;; Keep ordinary expressions and constructor value initializers on their
       ;; existing cast transport; parameterize restores this scope afterward.
@@ -191,9 +347,9 @@
       ;; Module expansion can leave distinct structs with the same source
       ;; name. Use the complete field structure, including nested structs,
       ;; to choose one stable Rust name at every type and value site.
-      (define (struct-rust-name source-name fields)
+      (define (struct-rust-name source-name fields kind)
         (let* ([source-name (symbol->string source-name)]
-               [fingerprint (cons source-name fields)]
+               [fingerprint (list kind source-name fields)]
                [existing (assoc fingerprint struct-shape-names)])
           (if existing
               (cdr existing)
@@ -242,13 +398,31 @@
           [(tfield ,src) (kind "field")]
           [(topaque ,src ,opaque-type)
            (cond
+             [(string=? opaque-type "JubjubScalar") (kind "jubjub_scalar")]
              [(string=? opaque-type "JubjubPoint") (kind "jubjub_point")]
+             [(string=? opaque-type "Secp256k1Base") (kind "secp256k1_base")]
+             [(string=? opaque-type "Secp256k1Scalar") (kind "secp256k1_scalar")]
+             [(string=? opaque-type "Secp256r1Base") (kind "secp256r1_base")]
+             [(string=? opaque-type "Secp256r1Scalar") (kind "secp256r1_scalar")]
+             [(string=? opaque-type "Curve25519Base") (kind "curve25519_base")]
+             [(string=? opaque-type "Curve25519Scalar") (kind "curve25519_scalar")]
+             [(string=? opaque-type "Secp256k1Point") (kind "secp256k1_point")]
+             [(string=? opaque-type "Secp256r1Point") (kind "secp256r1_point")]
+             [(string=? opaque-type "Curve25519Point") (kind "curve25519_point")]
              [(string=? opaque-type "string") (kind "opaque_string")]
              [(string=? opaque-type "Uint8Array") (kind "opaque_bytes")]
              [else (source-errorf src "Rust backend does not yet support this opaque type")])]
           [(tbytes ,src ,len)
            (object (cons "kind" "bytes")
                    (cons "length" len))]
+          [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+           (let ([fields
+                   (vector
+                     (object (cons "name" "bytes")
+                             (cons "ty" (object (cons "kind" "bytes") (cons "length" 32)))))])
+             (object (cons "kind" "struct")
+                     (cons "name" (struct-rust-name contract-name fields 'contract))
+                     (cons "fields" fields)))]
           [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
            (let ([fields
                    (list->vector
@@ -257,7 +431,7 @@
                                     (cons "ty" (type-ir ty owner-src))))
                           elt-name* type*))])
              (object (cons "kind" "struct")
-                     (cons "name" (struct-rust-name struct-name fields))
+                     (cons "name" (struct-rust-name struct-name fields 'struct))
                      (cons "fields" fields)))]
           [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
            (object (cons "kind" "enum")
@@ -277,11 +451,17 @@
                    (cons "length" len)
                    (cons "element" (type-ir type owner-src)))]
           [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
-           (if (and (eq? adt-name 'Map) (= (length adt-arg*) 2))
-               (object (cons "kind" "ledger_map")
-                       (cons "key" (type-ir (car adt-arg*) src))
-                       (cons "value" (type-ir (cadr adt-arg*) src)))
-               (source-errorf src "Rust backend does not yet support this ledger ADT type"))]
+           (cond
+             [(and (eq? adt-name 'Map) (= (length adt-arg*) 2))
+              (object (cons "kind" "ledger_map")
+                      (cons "key" (type-ir (car adt-arg*) src))
+                      (cons "value" (type-ir (cadr adt-arg*) src)))]
+             [(and (memq adt-name '(MerkleTree HistoricMerkleTree)) (= (length adt-arg*) 2))
+              (object (cons "kind" "ledger_merkle")
+                      (cons "historic" (eq? adt-name 'HistoricMerkleTree))
+                      (cons "depth" (car adt-arg*))
+                      (cons "ty" (type-ir (cadr adt-arg*) src)))]
+             [else (source-errorf src "Rust backend does not yet support this ledger ADT type")])]
           [(talias ,src ,nominal? ,type-name ,type)
            (type-ir type owner-src)]
           [else (source-errorf owner-src "Rust backend does not yet support this Compact type")]))
@@ -299,6 +479,109 @@
                (source-errorf src "Rust backend does not yet support ~a spreads" kind)]
               [else (void)]))
           tuple-arg*))
+
+      (define (literal-has-spread? tuple-arg*)
+        (exists (lambda (arg)
+                  (nanopass-case (Lnodisclose Tuple-Argument) arg
+                    [(spread ,src ,nat ,expr) #t]
+                    [else #f]))
+                tuple-arg*))
+
+      ;; The source compiler has already checked every spread's width and
+      ;; element type. Bind each argument in source order, then project each
+      ;; spread exactly once into the flat literal expected by Rust IR. This
+      ;; also evaluates a zero-width spread, which can carry a witness call.
+      (define (expanded-spread-literal src tuple-arg* expected-type)
+        (define (split-types type* count)
+          (let loop ([type* type*] [count count] [front '()])
+            (if (= count 0)
+                (values (reverse front) type*)
+                (if (null? type*)
+                    (source-errorf src "Rust spread literal length does not match its type")
+                    (loop (cdr type*) (- count 1) (cons (car type*) front))))))
+        (let-values ([(target-type* vector-element)
+                     (nanopass-case (Lnodisclose Type) expected-type
+                       [(tvector ,src^ ,len ,type) (values (make-list len type) type)]
+                       [(ttuple ,src^ ,type* ...) (values type* #f)]
+                       [else (source-errorf src "Rust spread literal needs an aggregate type")])])
+          (let loop ([arg* tuple-arg*] [type* target-type*]
+                     [rbindings '()] [relements '()])
+            (if (null? arg*)
+                (begin
+                  (unless (null? type*)
+                    (source-errorf src "Rust spread literal length does not match its type"))
+                  (let ([body (with-output-language (Lnodisclose Expression)
+                                `(tuple ,src ,(reverse relements) ...))])
+                    (fold-right
+                      (lambda (binding expr^)
+                        (let ([var-name (car binding)] [type (cadr binding)]
+                              [expr (caddr binding)])
+                          (with-output-language (Lnodisclose Expression)
+                            `(let* ,src (((,var-name ,type) ,expr)) ,expr^))))
+                      body (reverse rbindings))))
+                (nanopass-case (Lnodisclose Tuple-Argument) (car arg*)
+                  [(single ,src1 ,expr)
+                   (let-values ([(slot rest) (split-types type* 1)])
+                     (let ([var-name (make-source-id src1 'spread_single)])
+                       (loop (cdr arg*) rest
+                             (cons (list var-name (car slot) expr) rbindings)
+                             (cons (with-output-language (Lnodisclose Tuple-Argument)
+                                     `(single ,src1 (var-ref ,src1 ,var-name)))
+                                   relements))))]
+                  [(spread ,src1 ,nat ,expr)
+                   (let-values ([(slots rest) (split-types type* nat)])
+                     (let* ([var-name (make-source-id src1 'spread_vector)]
+                            [type^ vector-element]
+                            [type^* slots]
+                            [type (if vector-element
+                                      (with-output-language (Lnodisclose Type)
+                                        `(tvector ,src1 ,nat ,type^))
+                                      (with-output-language (Lnodisclose Type)
+                                        `(ttuple ,src1 ,type^* ...)))]
+                            [rprojections
+                              (map (lambda (kindex)
+                                     (with-output-language (Lnodisclose Tuple-Argument)
+                                       `(single ,src1
+                                          (tuple-ref ,src1 (var-ref ,src1 ,var-name) ,kindex))))
+                                   (iota nat))])
+                       (loop (cdr arg*) rest
+                             (cons (list var-name type expr) rbindings)
+                             (append (reverse rprojections) relements))))])))))
+
+      ;; Circuit lowering has already checked slice bounds and reduced the
+      ;; index. Use its exact original-node observation, then retain index
+      ;; evaluation after the input expression for source failure ordering.
+      (define (expanded-vector-slice src type expr start len index)
+        (let ([input-len
+                (nanopass-case (Lnodisclose Type) type
+                  [(tvector ,src^ ,len^ ,type^) len^]
+                  [(ttuple ,src^ ,type* ...) (length type*)]
+                  [else (source-errorf src "Rust Vector slice needs a Vector or tuple input")])])
+          (unless (<= (+ start len) input-len)
+            (source-errorf src "Rust Vector slice index and length exceed input length"))
+          (let* ([var-name (make-source-id src 'vector_slice_value)]
+                 [kindex* (map (lambda (offset) (+ start offset)) (iota len))]
+                 [tuple-arg*
+                   (map (lambda (kindex)
+                          (with-output-language (Lnodisclose Tuple-Argument)
+                            `(single ,src (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))
+                        kindex*)]
+                 [result (with-output-language (Lnodisclose Expression)
+                           `(tuple ,src ,tuple-arg* ...))])
+            (if index
+                (let ([index-name (make-source-id src 'vector_slice_position)]
+                      [index-type (vector-index-type index '() src)])
+                  (with-output-language (Lnodisclose Expression)
+                    `(let* ,src (((,var-name ,type) ,expr)
+                                 ((,index-name ,index-type) ,index)) ,result)))
+                (with-output-language (Lnodisclose Expression)
+                  `(let* ,src (((,var-name ,type) ,expr)) ,result))))))
+
+      (define (expanded-constant-vector-slice original src type expr index len)
+        (let ([start (rust-vector-index original)])
+          (unless start
+            (source-errorf src "Rust backend requires a constant Vector slice index"))
+          (expanded-vector-slice src type expr start len index)))
 
       (define (maybe-nonnegative-integer-literal expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
@@ -374,6 +657,17 @@
       ;; it does not reduce an out-of-range integer modulo the field prime.
       ;; Keep this normalization closed over literal data, without evaluating
       ;; variables, calls, or effects at compile time.
+      (define (literal-bytes-expression? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(quote ,src ,datum) (bytevector? datum)]
+          [(vector->bytes ,src ,len (tuple ,src^ ,tuple-arg* ...))
+           (andmap (lambda (arg)
+                     (nanopass-case (Lnodisclose Tuple-Argument) arg
+                       [(single ,src (quote ,src^ ,datum)) #t]
+                       [else #f]))
+                   tuple-arg*)]
+          [else #f]))
+
       (define (literal-bytes-field-ir type len expr src)
         (define (literal-byte arg)
           (nanopass-case (Lnodisclose Tuple-Argument) arg
@@ -385,9 +679,8 @@
                     (source-errorf src^^ "Rust Bytes-to-Field vector requires literal bytes"))]
                [else (source-errorf src^ "Rust Bytes-to-Field cast requires literal bytes")])]
             [else (source-errorf src "Rust Bytes-to-Field cast does not support vector spreads")]))
-        (nanopass-case (Lnodisclose Type) type
-          [(tfield ,src^) (void)]
-          [else (source-errorf src "Rust backend supports literal Bytes-to-Field casts only")])
+        (unless (field-carrier? type)
+          (source-errorf src "Rust backend requires a Field or Uint target for a Bytes cast"))
         (let ([bytes
                 (nanopass-case (Lnodisclose Expression) expr
                   [(quote ,src^ ,datum)
@@ -430,12 +723,89 @@
            (object (cons "kind" "kernel_mint_shielded")
                    (cons "domain" (lower (car expr*) (car type*)))
                    (cons "amount" (lower (cadr expr*) (cadr type*))))]
+          [(mintUnshielded incUnshieldedInputs incUnshieldedOutputs)
+           (arity! 2)
+           (object (cons "kind" "kernel_unshielded_effect")
+                   (cons "effect" (case ledger-op
+                                    [(mintUnshielded) "mint"]
+                                    [(incUnshieldedInputs) "inputs"]
+                                    [else "outputs"]))
+                   (cons "key" (lower (car expr*) (car type*)))
+                   (cons "amount" (lower (cadr expr*) (cadr type*))))]
+          [(claimUnshieldedCoinSpend)
+           (arity! 3)
+           (object (cons "kind" "kernel_unshielded_effect")
+                   (cons "effect" "claim")
+                   (cons "key" (lower (car expr*) (car type*)))
+                   (cons "recipient" (lower (cadr expr*) (cadr type*)))
+                   (cons "amount" (lower (caddr expr*) (caddr type*))))]
+          [(balance)
+           (arity! 1)
+           (object (cons "kind" "kernel_balance")
+                   (cons "token" (lower (car expr*) (car type*))))]
+          [(balanceLessThan balanceGreaterThan)
+           (arity! 2)
+           (object (cons "kind" (if (eq? ledger-op 'balanceLessThan)
+                                    "kernel_balance_less_than"
+                                    "kernel_balance_greater_than"))
+                   (cons "token" (lower (car expr*) (car type*)))
+                   (cons "amount" (lower (cadr expr*) (cadr type*))))]
           [else (source-errorf src "Rust backend does not yet support Kernel operation ~a" ledger-op)]))
 
       (define (expression-ir expr owner-src)
         (call-with-rust-origin "expression" (expression-origin expr)
           (expression-origin-preserve? expr)
           (lambda () (expression-ir-value expr owner-src)) (expression-operation-origin expr)))
+
+      ;; Only an if in discarded sequence-step position needs a Unit branch
+      ;; join. An inlined lambda returning a default Field is represented as
+      ;; an empty let around a Field literal. This restricted shape gives a
+      ;; checked binding type for evaluating that value before discarding it;
+      ;; other source expressions retain the existing sequence-step refusal.
+      (define (literal-field-ir? value)
+        (let ([kind^ (assoc "kind" value)])
+          (and kind^
+               (cond
+                 [(equal? (cdr kind^) "field_literal") #t]
+                 [(equal? (cdr kind^) "let")
+                  (let ([bindings (assoc "bindings" value)]
+                        [body (assoc "body" value)])
+                    (and bindings (vector? (cdr bindings))
+                         (zero? (vector-length (cdr bindings)))
+                         body (literal-field-ir? (cdr body))))]
+                 [else #f]))))
+
+      (define (discarded-field-ir src value)
+        (let ([name (make-source-id src 'discarded_field)])
+          (object (cons "kind" "let")
+                  (cons "bindings"
+                    (vector (object (cons "name" (sourced-rust-var-name name))
+                                    (cons "ty" (kind "field"))
+                                    (cons "value" value))))
+                  (cons "body" (kind "unit")))))
+
+      (define (discarded-expression-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (call-with-rust-origin "expression" (expression-origin expr)
+             (expression-origin-preserve? expr)
+             (lambda ()
+               (object (cons "kind" "if")
+                       (cons "condition" (expression-ir expr0 src))
+                       (cons "then" (discarded-expression-ir expr1 src))
+                       (cons "otherwise" (discarded-expression-ir expr2 src))))
+             (expression-operation-origin expr))]
+          [else
+           (let ([value (expression-ir expr owner-src)])
+             (if (literal-field-ir? value)
+                 (discarded-field-ir owner-src value)
+                 value))]))
+
+      (define (sequence-step-ir expr owner-src)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (discarded-expression-ir expr owner-src)]
+          [else (expression-ir expr owner-src)]))
 
       ;; Rust's existing type-ir erases numeric aliases to the same carrier.
       ;; Use the bridge's shared analyzed-bound query for typed expressions and
@@ -447,6 +817,97 @@
                 `(tunsigned ,(type-origin type) ,maximum))
               type)))
 
+      ;; Compact resolves nominal identity before this pass. Boolean aliases
+      ;; share the same Rust carrier, so their checked casts are identity.
+      (define (boolean-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tboolean ,src) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (boolean-carrier? type^)]
+          [else #f]))
+
+      (define (field-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tfield ,src) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (field-carrier? type^)]
+          [else #f]))
+
+      (define (bytes-cast-ir src type len expr lower)
+        (cond
+          [(rust-unsigned-maximum type) =>
+           (lambda (maximum)
+             (object (cons "kind" "bytes_to_uint")
+                     (cons "value" (lower expr))
+                     (cons "max" (number->string maximum))))]
+          [(and (field-carrier? type) (not (literal-bytes-expression? expr)))
+           (object (cons "kind" "bytes_to_field")
+                   (cons "value" (lower expr)))]
+          [else (literal-bytes-field-ir type len expr src)]))
+
+      (define (field-to-bytes-ir src len expr lower)
+        (if (= len 32)
+            (object (cons "kind" "field_to_bytes32")
+                    (cons "value" (lower expr)))
+            (or (nanopass-case (Lnodisclose Expression) expr
+                  [(safe-cast ,src^ ,type ,type^ ,expr^)
+                   (let ([maximum (rust-unsigned-maximum type^)])
+                     (and maximum
+                          (object (cons "kind" (if (<= (integer-length maximum) 128)
+                                                   "uint_to_bytes"
+                                                   "wide_uint_to_bytes"))
+                                  (cons "value" (lower expr^))
+                                  (cons "length" len))))]
+                  [else #f])
+                ;; The pinned Field cast targets Bytes<4>. Check that the
+                ;; canonical value fits before encoding its four little-endian
+                ;; bytes; slicing the 32-byte representation would incorrectly
+                ;; accept an overflowing Field. Keep other direct widths on
+                ;; the explicit refusal path.
+                (and (= len 4)
+                     (object (cons "kind" "uint_to_bytes")
+                             (cons "value"
+                                   (object (cons "kind" "bytes_to_uint")
+                                           (cons "value"
+                                                 (object (cons "kind" "field_to_bytes32")
+                                                         (cons "value" (lower expr))))
+                                           (cons "max" "4294967295")))
+                             (cons "length" 4)))
+                (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))))
+
+      ;; Checked nominal casts on products leave the generated carrier
+      ;; unchanged. Compare both Rust types before dropping the cast.
+      (define (nominal-product-type? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(talias ,src ,nominal? ,type-name ,type^)
+           (let loop ([type type^])
+             (nanopass-case (Lnodisclose Type) type
+               [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
+               [(tstruct ,src ,struct-name (,elt-name* ,type*) ...) #t]
+               [(ttuple ,src ,type* ...) #t]
+               [(tvector ,src ,len ,type^) #t]
+               [else #f]))]
+          [else #f]))
+
+      (define (same-product-carrier? type type^ src)
+        (and (or (nominal-product-type? type) (nominal-product-type? type^))
+             (equal? (type-ir type src) (type-ir type^ src))))
+
+      (define (enum-carrier? type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
+          [(talias ,src ,nominal? ,type-name ,type^) (enum-carrier? type^)]
+          [else #f]))
+
+      (define (enum-cast-ir type src value)
+        (object (cons "kind" "enum_cast")
+                (cons "ty" (type-ir type src))
+                (cons "value" value)))
+
+      (define (bytes-carrier-width type)
+        (nanopass-case (Lnodisclose Type) type
+          [(tbytes ,src ,len) len]
+          [(talias ,src ,nominal? ,type-name ,type^) (bytes-carrier-width type^)]
+          [else #f]))
+
       ;; type-ir erases aliases to their Vector carrier. Use that carrier
       ;; for expected Vector context and cast dispatch, including reducer
       ;; Vector literals. Other alias families retain their current owners.
@@ -456,6 +917,12 @@
             [(talias ,src ,nominal? ,type-name ,type^) (loop type^)]
             [(tvector ,src ,len ,type^) value]
             [else type])))
+
+      (define (secp256k1-arithmetic-ir op left right)
+        (object
+          (cons "kind" (case op [(+) "add"] [(-) "subtract"] [(*) "multiply"] [else (assert cannot-happen)]))
+          (cons "left" left)
+          (cons "right" right)))
 
       ;; arithmetic-binop annotates both operands with the result bound.
       ;; For multiplication by zero that bound is smaller than an operand's;
@@ -485,7 +952,7 @@
       ;; evaluating the index or using its resolved value as a type bound.
       ;; Explicit analyzed types stay intact; bare arithmetic has only mbits
       ;; here, so its unused evaluation binding retains that native carrier.
-      (define (vector-index-type index locals)
+      (define (vector-index-type index locals owner-src)
         (nanopass-case (Lnodisclose Expression) index
           [(quote ,src ,datum)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,datum))]
@@ -496,19 +963,23 @@
                    (or (and types (eq-hashtable-ref types var-name #f))
                        (source-errorf src "Rust backend has no type for this constant Vector index binding")))))]
           [(safe-cast ,src ,type ,type^ ,expr) type]
+          [(downcast-unsigned ,src ,nat? ,nat ,expr)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))]
+          [(if ,src ,expr0 ,expr1 ,expr2) (vector-index-type expr1 locals src)]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
           [(- ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
           [(* ,src ,mbits ,expr1 ,expr2)
            (with-output-language (Lnodisclose Type) `(tunsigned ,src ,(- (expt 2 mbits) 1)))]
-          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals)]
+          [(seq ,src ,expr* ... ,expr) (vector-index-type expr locals src)]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (vector-index-type expr
              (append (map (lambda (local)
                             (nanopass-case (Lnodisclose Argument) local
-                              [(,var-name ,type) (cons var-name type)])) local*) locals))]
-          [else (internal-errorf 'vector-index-type "unexpected admitted index")]))
+                              [(,var-name ,type) (cons var-name type)])) local*) locals) src)]
+          [else (source-errorf owner-src
+                  "Rust backend cannot preserve evaluation of this constant Vector index")]))
 
       (define (resolved-vector-expression original src type expr index)
         (let ([kindex (rust-vector-index original)])
@@ -538,11 +1009,467 @@
             [else
              (let ([var-name (make-source-id src 'vector_index_value)]
                    [index-name (make-source-id src 'vector_index_position)]
-                   [index-type (vector-index-type index '())])
+                   [index-type (vector-index-type index '() src)])
                (with-output-language (Lnodisclose Expression)
                  `(let* ,src (((,var-name ,type) ,expr)
                               ((,index-name ,index-type) ,index))
                     (tuple-ref ,src (var-ref ,src ,var-name) ,kindex))))]))))
+
+      (define (literal-fold-index-domain expr len item-type)
+        (define (literal arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(single ,src ,expr^)
+             (nanopass-case (Lnodisclose Expression) expr^
+               [(quote ,src^ ,datum)
+                (and (integer? datum) (exact? datum) (>= datum 0) datum)]
+               [else #f])]
+            [else #f]))
+        (let ([maximum (rust-unsigned-maximum item-type)])
+          (and maximum (> len 0) (<= len 10)
+               (nanopass-case (Lnodisclose Expression) expr
+                 [(tuple ,src ,tuple-arg* ...)
+                  (let ([indices (map literal tuple-arg*)])
+                    (and (= (length indices) len)
+                         (for-all (lambda (index) (and index (<= index maximum))) indices)
+                         (cons maximum indices)))]
+                 [else #f]))))
+
+      (define (literal-byte-binding-value expr bindings)
+        (define (byte expr)
+          (nanopass-case (Lnodisclose Expression) expr
+            [(quote ,src ,datum)
+             (and (integer? datum) (exact? datum) (<= 0 datum 255) datum)]
+            [(safe-cast ,src ,type ,type^ ,expr^)
+             (let ([target (rust-unsigned-maximum type)]
+                   [source (rust-unsigned-maximum type^)]
+                   [value (byte expr^)])
+               (and target source value (<= value source target) value))]
+            [else #f]))
+        (define (part arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(single ,src ,expr^)
+             (let ([value (byte expr^)])
+               (and value (list value)))]
+            [(spread ,src ,nat (bytes->vector ,src^ ,len (var-ref ,src^^ ,var-name)))
+             (let ([bytes (eq-hashtable-ref bindings var-name #f)])
+               (and bytes (= nat len) (= (length bytes) len) bytes))]
+            [else #f]))
+        (nanopass-case (Lnodisclose Expression) expr
+          [(vector->bytes ,src ,len (vector ,src^ ,tuple-arg* ...))
+           (and (integer? len) (exact? len) (<= 0 len 9)
+                (let ([parts (map part tuple-arg*)])
+                  (and (for-all (lambda (part) part) parts)
+                       (let ([bytes (apply append parts)])
+                         (and (= (length bytes) len) bytes)))))]
+          [else #f]))
+
+      (define (literal-byte-fold-index-domain expr len item-type)
+        (let ([bindings (current-static-byte-bindings)]
+              [maximum (rust-unsigned-maximum item-type)])
+          (and bindings maximum (= maximum 255) (> len 0) (<= len 8)
+               (nanopass-case (Lnodisclose Expression) expr
+                 [(var-ref ,src ,var-name)
+                  (let ([bytes (eq-hashtable-ref bindings var-name #f)])
+                    (and bytes (= (length bytes) len) (cons maximum bytes)))]
+                 [else #f]))))
+
+      ;; The Fold item is still a runtime formal, but an exact literal source
+      ;; limits its values. Keep direct dynamic indexes refused. Both the
+      ;; indexed operand and the index must be side-effect-free references;
+      ;; this preserves their source evaluation order without duplicating an
+      ;; effect in the conditional branches. A forged out-of-domain item fails.
+      (define (static-fold-vector-operand? value type src)
+        (nanopass-case (Lnodisclose Expression) value
+          [(var-ref ,src^ ,var-name) #t]
+          ;; A heterogeneous tuple binding is inserted as a safe-cast when
+          ;; the source indexes it as a Vector. The wrapper is
+          ;; pure and contains one bare reference, so each selected dispatch
+          ;; arm evaluates it exactly once. Keep calls, storage reads, nested
+          ;; casts and narrowing conversions outside this admission.
+          [(safe-cast ,src^ ,type^ ,type^^ ,expr^)
+           (and (nanopass-case (Lnodisclose Expression) expr^
+                  [(var-ref ,src^^ ,var-name) #t]
+                  [else #f])
+                (equal? (type-ir type^ src) (type-ir (vector-carrier-type type) src))
+                (nanopass-case (Lnodisclose Type) (vector-carrier-type type^)
+                  [(tvector ,src^^ ,len ,type1)
+                   (let ([maximum (rust-unsigned-maximum type1)])
+                     (and maximum
+                          (nanopass-case (Lnodisclose Type) type^^
+                            [(ttuple ,src^^^ ,type* ...)
+                             (and (= (length type*) len)
+                                  (for-all
+                                    (lambda (item)
+                                      (let ([bound (rust-unsigned-maximum item)])
+                                        (and bound (<= bound maximum))))
+                                    type*))]
+                            [else #f])))]
+                  [else #f]))]
+          [else #f]))
+
+      (define (static-fold-vector-ref-ir original src type value index lower)
+        (and (rust-vector-unique-source? original)
+             (static-fold-vector-operand? value type src)
+             (nanopass-case (Lnodisclose Expression) index
+               [(var-ref ,src^ ,var-name)
+                (let* ([domains (current-static-fold-index-domains)]
+                          [domain (and domains (eq-hashtable-ref domains var-name #f))]
+                          [width (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
+                                   [(tvector ,src^^^ ,len ,type^) len]
+                                   [else #f])]
+                          [item-maximum (nanopass-case (Lnodisclose Type) (vector-carrier-type type)
+                                          [(tvector ,src^^^ ,len ,type^)
+                                           (rust-unsigned-maximum type^)]
+                                          [else #f])])
+                     (and domain width
+                          (for-all (lambda (k) (< k width)) (cdr domain))
+                          ;; The same circuit evaluator that admits each
+                          ;; position must have visited this exact occurrence
+                          ;; once per literal item, in the same order. The
+                          ;; admitted index is a bare formal, so it contains
+                          ;; no hidden subtraction or assertion guard.
+                          (rust-vector-domain-certified? original (cdr domain))
+                          (let ([maximum (car domain)]
+                                [indices (cdr domain)]
+                                [name (rust-var-name var-name)])
+                            (define (item) (object (cons "kind" "parameter") (cons "name" name)))
+                            (define (same k)
+                              (object (cons "kind" "equal")
+                                      (cons "left" (item))
+                                      (cons "right" (object (cons "kind" "unsigned_literal")
+                                                            (cons "value" (number->string k))
+                                                            (cons "max" (number->string maximum))))))
+                            (define (project k)
+                              (let ([selected (object (cons "kind" "tuple_index")
+                                                      (cons "value" (lower value))
+                                                      (cons "index" k))])
+                                ;; A tuple-backed Vector retains each source
+                                ;; element's narrower Uint bound in Rust IR.
+                                ;; Widen the selected value to the admitted
+                                ;; Vector item bound before joining the arms.
+                                (nanopass-case (Lnodisclose Expression) value
+                                  [(safe-cast ,src^ ,type^ ,type^^ ,expr^)
+                                   (object (cons "kind" "unsigned_cast")
+                                           (cons "max" (number->string item-maximum))
+                                           (cons "value" selected))]
+                                  [else selected])))
+                            (let loop ([remaining indices])
+                              (if (null? (cdr remaining))
+                                  (object (cons "kind" "sequence")
+                                          (cons "steps" (vector
+                                            (object (cons "kind" "assert")
+                                                    (cons "condition" (same (car remaining)))
+                                                    (cons "message" "index outside static Fold domain"))))
+                                          (cons "value" (project (car remaining))))
+                                  (object (cons "kind" "if")
+                                          (cons "condition" (same (car remaining)))
+                                          (cons "then" (project (car remaining)))
+                                          (cons "otherwise" (loop (cdr remaining)))))))))]
+               [else #f])))
+
+      (define (static-fold-bytes-ref-ir original src type value index lower)
+        (and (rust-vector-unique-source? original)
+             (nanopass-case (Lnodisclose Expression) index
+               [(var-ref ,src^ ,var-name)
+                (nanopass-case (Lnodisclose Expression) value
+                  [(var-ref ,src^^ ,var-name^)
+                   (let* ([domains (current-static-byte-fold-index-domains)]
+                          [domain (and domains (eq-hashtable-ref domains var-name #f))]
+                          [bindings (current-static-byte-bindings)]
+                          [operand (and bindings (eq-hashtable-ref bindings var-name^ #f))]
+                          [width (bytes-carrier-width type)])
+                     (and domain operand width (= (length operand) width)
+                          (for-all (lambda (k) (< k width)) (cdr domain))
+                          ;; Only the circuit evaluator can attest that this
+                          ;; exact Bytes-ref occurrence saw every immutable
+                          ;; item once and in source order.
+                          (rust-vector-domain-certified? original (cdr domain))
+                          (let ([maximum (car domain)]
+                                [indices (cdr domain)]
+                                [name (rust-var-name var-name)])
+                            (define (item)
+                              (object (cons "kind" "parameter") (cons "name" name)))
+                            (define (same k)
+                              (object (cons "kind" "equal")
+                                      (cons "left" (item))
+                                      (cons "right"
+                                        (object (cons "kind" "unsigned_literal")
+                                                (cons "value" (number->string k))
+                                                (cons "max" (number->string maximum))))))
+                            (define (project k)
+                              (object (cons "kind" "bytes_to_uint")
+                                      (cons "value"
+                                        (object (cons "kind" "bytes_slice")
+                                                (cons "value" (lower value))
+                                                (cons "start" k)
+                                                (cons "length" 1)))
+                                      (cons "max" "255")))
+                            (let loop ([remaining indices])
+                              (if (null? (cdr remaining))
+                                  (object (cons "kind" "sequence")
+                                          (cons "steps" (vector
+                                            (object (cons "kind" "assert")
+                                                    (cons "condition" (same (car remaining)))
+                                                    (cons "message" "index outside static Bytes Fold domain"))))
+                                          (cons "value" (project (car remaining))))
+                                  (object (cons "kind" "if")
+                                          (cons "condition" (same (car remaining)))
+                                          (cons "then" (project (car remaining)))
+                                          (cons "otherwise" (loop (cdr remaining)))))))))]
+                  [else #f])]
+               [else #f])))
+
+      (define (byte-vector-type src len)
+        (with-output-language (Lnodisclose Type)
+          `(tvector ,src ,len (tunsigned ,src 255))))
+
+      (define (vector-to-bytes-ir src len value lower)
+        (define (from-vector value)
+          (let* ([byte-type (byte-vector-type src len)]
+                 [source-value
+                   (nanopass-case (Lnodisclose Expression) value
+                     ;; A default<Vector<N, Uint<M>>> keeps its declared
+                     ;; element bound in analyzed IR. Widen that value to
+                     ;; byte elements explicitly before serialization; asking
+                     ;; typed lowering to reinterpret the default as Uint<8>
+                     ;; would discard its source type and fail binding.
+                     [(default ,src^ ,type)
+                      (object (cons "kind" "coerce")
+                              (cons "value" (lower value type))
+                              (cons "ty" (type-ir byte-type src)))]
+                     [else (lower value byte-type)])])
+            (object (cons "kind" "vector_to_bytes")
+                    (cons "value" source-value)
+                    (cons "length" len))))
+        (define (zero-bytes? datum nat)
+          (and (bytevector? datum) (= nat (bytevector-length datum))
+               (let loop ([i 0])
+                 (or (= i nat)
+                     (and (= 0 (bytevector-u8-ref datum i))
+                          (loop (+ i 1)))))))
+        ;; Fixed-width serialization constructs a byte prefix followed by
+        ;; literal zero padding. Preserve that shape as one checked Rust
+        ;; conversion, irrespective of the declared width.
+        (define (zero-padded-prefix prefix suffix)
+          (nanopass-case (Lnodisclose Tuple-Argument) prefix
+            [(spread ,src1 ,nat1 (bytes->vector ,src2 ,len^ ,expr))
+             (and (= nat1 len^)
+                  (nanopass-case (Lnodisclose Tuple-Argument) suffix
+                    [(spread ,src1 ,nat2 (bytes->vector ,src2 ,len^^ (quote ,src3 ,datum)))
+                     (and (= nat2 len^^) (= (+ len^ len^^) len) (zero-bytes? datum nat2)
+                          (object (cons "kind" "bytes_zero_pad")
+                                  (cons "value" (lower expr (with-output-language (Lnodisclose Type)
+                                                              `(tbytes ,src ,len^))))
+                                  (cons "length" len)))]
+                    [else #f]))]
+            [else #f]))
+        (define (byte-chunk arg)
+          (nanopass-case (Lnodisclose Tuple-Argument) arg
+            [(spread ,src^ ,nat (bytes->vector ,src^^ ,len^ ,expr))
+             (and (= nat len^)
+                  (cons nat (lambda ()
+                    (lower expr (with-output-language (Lnodisclose Type)
+                                  `(tbytes ,src^ ,nat))))))]
+            [else #f]))
+        (define (from-chunks args)
+          (let ([chunks (map byte-chunk args)])
+            (and (pair? chunks) (for-all pair? chunks)
+                 (= len (apply + (map car chunks)))
+                 (object (cons "kind" "bytes_from_chunks")
+                         (cons "value" (object (cons "kind" "tuple")
+                                               (cons "elements" (list->vector
+                                                 (map (lambda (chunk) ((cdr chunk))) chunks)))))
+                         (cons "length" len)
+                         (cons "chunk_count" (length chunks))))))
+        (nanopass-case (Lnodisclose Expression) value
+          [(vector ,src^ ,tuple-arg* ...)
+           (or (and (= (length tuple-arg*) 2)
+                    (zero-padded-prefix (car tuple-arg*) (cadr tuple-arg*)))
+               (from-chunks tuple-arg*)
+               (from-vector (with-output-language (Lnodisclose Expression)
+                              `(tuple ,src^ ,tuple-arg* ...))))]
+          [else (from-vector value)]))
+
+      (define (bytes-slice-ir src value index length lower)
+        (let ([start (maybe-nonnegative-integer-literal index src)])
+          (unless start
+            (source-errorf src "Rust backend requires a constant Bytes slice index"))
+          (object (cons "kind" "bytes_slice")
+                  (cons "value" (lower value))
+                  (cons "start" start)
+                  (cons "length" length))))
+
+      (define (bytes-ref-ir original src type value index lower)
+        (let ([width (bytes-carrier-width type)]
+              [position (or (maybe-nonnegative-integer-literal index src)
+                            (and (eq? (rust-vector-index-guard-state original) 'safe)
+                                 (rust-vector-index original)))])
+          (unless width
+            (source-errorf src "Rust backend requires a Bytes indexing operand"))
+          (unless position
+            (source-errorf src "Rust backend requires a constant Bytes index"))
+          (unless (< position width)
+            (source-errorf src "Bytes index ~d is out of bounds for length ~d" position width))
+          (object (cons "kind" "bytes_to_uint")
+                  (cons "value"
+                        (object (cons "kind" "bytes_slice")
+                                (cons "value" (lower value))
+                                (cons "start" position)
+                                (cons "length" 1)))
+                  (cons "max" "255"))))
+
+      (define (unsigned-downcast-ir src unsigned-source? maximum value lower)
+        (if unsigned-source?
+            (object (cons "kind" "unsigned_cast")
+                    (cons "max" (number->string maximum))
+                    (cons "value" (lower value)))
+            (object (cons "kind" "bytes_to_uint")
+                    (cons "value"
+                          (object (cons "kind" "field_to_bytes32")
+                                  (cons "value" (lower value))))
+                    (cons "max" (number->string maximum)))))
+
+      ;; The Rust IR has one VectorMap source. Zip multiple Compact map
+      ;; operands into a vector of tuples, then bind the original formals from
+      ;; each tuple. Bind every operand once, in source order, including for an
+      ;; empty vector: an operand can still fail before the map body is skipped.
+      (define (vector-map-source-element-type source-type index src)
+        (nanopass-case (Lnodisclose Type) source-type
+          [(talias ,src^ ,nominal? ,type-name ,type)
+           (vector-map-source-element-type type index src)]
+          [(tbytes ,src^ ,len)
+           (with-output-language (Lnodisclose Type) `(tunsigned ,src 255))]
+          [(tvector ,src^ ,len ,type) type]
+          [(ttuple ,src^ ,type* ...) (list-ref type* index)]
+          [else (source-errorf src "Rust backend requires a Vector, Tuple, or Bytes map operand")]))
+
+      (define (vector-map-projection-ir src source-name index element-type formal-type)
+        (let* ([projection
+                 (with-output-language (Lnodisclose Expression)
+                   `(tuple-ref ,src (var-ref ,src ,source-name) ,index))]
+               [value (typed-expression-ir projection element-type src)]
+               [actual (type-ir element-type src)]
+               [target (type-ir formal-type src)])
+          (if (equal? actual target)
+              value
+              (object (cons "kind" "coerce") (cons "value" value) (cons "ty" target)))))
+
+      (define (unary-vector-map-source-ir src len expr source-type formal-type)
+        (let* ([bytes? (bytes-carrier-width source-type)]
+               [carrier (if bytes? (byte-vector-type src len) source-type)]
+               [value (typed-expression-ir expr source-type src)]
+               [normalized (if bytes?
+                               (object (cons "kind" "bytes_to_vector")
+                                       (cons "value" value) (cons "length" len))
+                               value)]
+               [target (with-output-language (Lnodisclose Type)
+                         `(tvector ,src ,len ,formal-type))])
+          (if (or (and (zero? len) (not bytes?))
+                  (equal? (type-ir carrier src) (type-ir target src)))
+              normalized
+              (object (cons "kind" "coerce")
+                      (cons "value" normalized) (cons "ty" (type-ir target src))))))
+
+      (define (vector-fold-source-ir src len expr source-type item-type)
+        (if (bytes-carrier-width source-type)
+            (unary-vector-map-source-ir src len expr source-type item-type)
+            (typed-expression-ir expr source-type src)))
+
+      (define (multi-vector-map-ir src len arg* result-type body map-arg*)
+        (unless (= (length arg*) (length map-arg*))
+          (source-errorf src "Vector map argument count differs from its function arity"))
+        (let* ([input*
+                (map (lambda (arg map-arg)
+                       (nanopass-case (Lnodisclose Argument) arg
+                         [(,var-name ,type^)
+                          (nanopass-case (Lnodisclose Map-Argument) map-arg
+                            [(,expr1 ,type1 ,type2)
+                             (list var-name type^ expr1 type1 type2)])]))
+                     arg* map-arg*)]
+               [source-name*
+                (map (lambda (input) (make-source-id src 'vector_map_source)) input*)]
+               [item-name (make-source-id src 'vector_map_item)]
+               [item-type
+                (object (cons "kind" "tuple")
+                        (cons "elements"
+                              (list->vector
+                                (map (lambda (input) (type-ir (cadr input) src))
+                                     input*))))]
+               [source
+                (object (cons "kind" "let")
+                        (cons "bindings"
+                              (list->vector
+                                (map (lambda (name input)
+                                       (object (cons "name" (sourced-rust-var-name name))
+                                               (cons "ty"
+                                                     (type-ir
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (byte-vector-type src len)
+                                                           (list-ref input 3)) src))
+                                               (cons "value"
+                                                     (let ([value
+                                                             (typed-expression-ir
+                                                               (list-ref input 2) (list-ref input 3) src)])
+                                                       (if (bytes-carrier-width (list-ref input 3))
+                                                           (object (cons "kind" "bytes_to_vector")
+                                                                   (cons "value" value)
+                                                                   (cons "length" len))
+                                                           value)))))
+                                     source-name* input*)))
+                        (cons "body"
+                              (object (cons "kind" "vector")
+                                      (cons "element" item-type)
+                                      (cons "elements"
+                                            (list->vector
+                                              (let loop ([index 0] [items '()])
+                                                (if (= index len)
+                                                    (reverse items)
+                                                    (loop (+ index 1)
+                                                      (cons
+                                                        (object (cons "kind" "tuple")
+                                                                (cons "elements"
+                                                                      (list->vector
+                                                                        (map
+                                                                          (lambda (name input)
+                                                                            (vector-map-projection-ir
+                                                                              src name index
+                                                                              (vector-map-source-element-type
+                                                                                (list-ref input 3) index src)
+                                                                              (cadr input)))
+                                                                          source-name* input*))))
+                                                        items)))))))))]
+               [item-ref (object (cons "kind" "parameter")
+                                 (cons "name" (rust-var-name item-name)))])
+          (when (current-variable-types)
+            (for-each
+              (lambda (input)
+                (eq-hashtable-set! (current-variable-types) (car input) (cadr input)))
+              input*))
+          (object (cons "kind" "vector_map")
+                  (cons "parameter"
+                        (object (cons "name" (sourced-rust-var-name item-name))
+                                (cons "ty" item-type)))
+                  (cons "source" source)
+                  (cons "body"
+                        (object (cons "kind" "let")
+                                (cons "bindings"
+                                      (list->vector
+                                        (let loop ([index 0] [inputs input*] [items '()])
+                                          (if (null? inputs)
+                                              (reverse items)
+                                              (let ([input (car inputs)])
+                                                (loop (+ index 1) (cdr inputs)
+                                                  (cons
+                                                    (object (cons "name" (sourced-rust-var-name (car input)))
+                                                            (cons "ty" (type-ir (cadr input) src))
+                                                            (cons "value"
+                                                                  (object (cons "kind" "tuple_index")
+                                                                          (cons "value" item-ref)
+                                                                          (cons "index" index))))
+                                                    items)))))))
+                                (cons "body" (typed-expression-ir body result-type src))))
+                  (cons "result" (type-ir result-type src))
+                  (cons "length" len))))
 
       (define (expression-ir-value expr owner-src)
         (nanopass-case (Lnodisclose Expression) expr
@@ -613,6 +1540,28 @@
              [else (object (cons "kind" "default")
                            (cons "ty" (type-ir type src)))])]
           [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (or (and (boolean-carrier? type) (boolean-carrier? type^))
+                      (and (field-carrier? type) (field-carrier? type^))))
+           (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (let ([width (bytes-carrier-width type)])
+                    (and width (eqv? width (bytes-carrier-width type^)))))
+           (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-product-carrier? type type^ src))
+           (expression-ir expr src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (enum-carrier? type) (enum-carrier? type^)
+                  (equal? (type-ir type src) (type-ir type^ src)))
+           (expression-ir expr src)]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (expression-ir expr src))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (expression-ir expr src))]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-secp256k1-carrier? type type^))
+           (typed-expression-ir expr type^ src)]
+          [(safe-cast ,src ,type ,type^ ,expr)
            (nanopass-case (Lnodisclose Type) (vector-carrier-type (unsigned-canonical-type type))
              [(tfield ,src^)
               (let ([value (maybe-nonnegative-integer-literal expr src)])
@@ -645,19 +1594,40 @@
              [(ttuple ,src^ ,type* ...)
               (typed-expression-ir expr type src type^)]
              [else (source-errorf src "Rust backend does not yet support this cast")])]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (secp256k1-arithmetic-ir arithmetic-op
+             (typed-expression-ir expr1 type src)
+             (typed-expression-ir expr2 type src))]
+          [(jubjub-cast ,src ,type ,expr)
+           (jubjub-cast-ir src type (field-argument-ir expr src))]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
+           (secp256k1-cast-ir src type (expression-ir expr src))]
+          [(vector->bytes ,src ,len ,expr)
+           (vector-to-bytes-ir src len expr
+             (lambda (value type) (typed-expression-ir value type src)))]
+          [(bytes->vector ,src ,len ,expr)
+           (object (cons "kind" "bytes_to_vector")
+                   (cons "value" (expression-ir expr src))
+                   (cons "length" len))]
+          [(bytes-slice ,src ,type ,expr ,index ,len)
+           (bytes-slice-ir src expr index len (lambda (value) (expression-ir value src)))]
+          [(bytes-ref ,src ,type ,expr^ ,index)
+           ;; The outer expr is the exact analyzed Bytes-ref occurrence. The
+           ;; operand is a distinct child and must not shadow that identity.
+           (bytes-ref-ir expr src type expr^ index
+             (lambda (operand) (expression-ir operand src)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
-           (literal-bytes-field-ir type len expr src)]
+           (bytes-cast-ir src type len expr (lambda (value) (expression-ir value src)))]
           [(field->bytes ,src ,len ,expr)
-           (unless (= len 32)
-             (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
-           (object (cons "kind" "field_to_bytes32")
-                   (cons "value" (expression-ir expr src)))]
+           (field-to-bytes-ir src len expr (lambda (value) (expression-ir value src)))]
+          [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
+           (guard (not nat?))
+           (jubjub-cast-ir src
+             (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))
+             (expression-ir expr^ src))]
           [(downcast-unsigned ,src ,nat? ,nat ,expr)
-           (unless nat?
-             (source-errorf src "Rust backend does not yet support Field-to-Uint downcasts"))
-           (object (cons "kind" "unsigned_cast")
-                   (cons "max" (number->string nat))
-                   (cons "value" (expression-ir expr src)))]
+           (unsigned-downcast-ir src nat? nat expr
+             (lambda (value) (expression-ir value src)))]
           [(tuple ,src ,tuple-arg* ...)
            (reject-spreads tuple-arg* "tuple")
            (if (null? tuple-arg*)
@@ -670,26 +1640,27 @@
            (reject-spreads tuple-arg* "vector")
            (source-errorf src "Rust backend does not yet support this Vector construction")]
           [(map ,src ,len ,fun ,map-arg ,map-arg* ...)
-           (unless (null? map-arg*)
-             (source-errorf src "Rust backend supports unary Vector map only"))
            (nanopass-case (Lnodisclose Function) fun
              [(circuit ,src^ (,arg* ...) ,type ,expr)
-              (unless (= (length arg*) 1)
-                (source-errorf src "Rust backend supports unary Vector map only"))
-              (nanopass-case (Lnodisclose Argument) (car arg*)
-                [(,var-name ,type^)
-                 (nanopass-case (Lnodisclose Map-Argument) map-arg
-                   [(,expr1 ,type1 ,type2)
-                    (when (current-variable-types)
-                      (eq-hashtable-set! (current-variable-types) var-name type^))
-                    (object (cons "kind" "vector_map")
-                            (cons "parameter"
-                                  (object (cons "name" (sourced-rust-var-name var-name))
-                                          (cons "ty" (type-ir type^ src))))
-                            (cons "source" (typed-expression-ir expr1 type1 src))
-                            (cons "body" (typed-expression-ir expr type src))
-                            (cons "result" (type-ir type src))
-                            (cons "length" len))])])]
+              (if (null? map-arg*)
+                  (begin
+                    (unless (= (length arg*) 1)
+                      (source-errorf src "Rust backend supports one formal for unary Vector map"))
+                    (nanopass-case (Lnodisclose Argument) (car arg*)
+                      [(,var-name ,type^)
+                       (nanopass-case (Lnodisclose Map-Argument) map-arg
+                         [(,expr1 ,type1 ,type2)
+                          (when (current-variable-types)
+                            (eq-hashtable-set! (current-variable-types) var-name type^))
+                          (object (cons "kind" "vector_map")
+                                  (cons "parameter"
+                                        (object (cons "name" (sourced-rust-var-name var-name))
+                                                (cons "ty" (type-ir type^ src))))
+                                  (cons "source" (unary-vector-map-source-ir src len expr1 type1 type^))
+                                  (cons "body" (typed-expression-ir expr type src))
+                                  (cons "result" (type-ir type src))
+                                  (cons "length" len))])]))
+                  (multi-vector-map-ir src len arg* type expr (cons map-arg map-arg*)))]
              [else (source-errorf src "Rust backend supports inline Vector map functions only")])]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (unless (null? map-arg*)
@@ -701,10 +1672,40 @@
                  (object (cons "kind" "vector_fold_call")
                          (cons "name" (rust-function-name function-name))
                          (cons "initial" (typed-expression-ir expr0 type0 src))
-                         (cons "source" (typed-expression-ir expr1 type1 src))
+                         (cons "source" (vector-fold-source-ir src len expr1 type1 type2))
                          (cons "accumulator" (type-ir type0 src))
                          (cons "element" (type-ir type2 src))
                          (cons "length" len))])]
+             [(circuit ,src^ (,arg* ...) ,type ,expr)
+              (unless (= (length arg*) 2)
+                (source-errorf src "Rust Vector fold reducer needs an accumulator and one item"))
+              (let ([variable-types (if (current-variable-types)
+                                        (hashtable-copy (current-variable-types) #t)
+                                        (make-eq-hashtable))])
+                (for-each (lambda (arg)
+                            (nanopass-case (Lnodisclose Argument) arg
+                              [(,var-name ,type^)
+                               (eq-hashtable-set! variable-types var-name type^)])) arg*)
+                (parameterize ([current-variable-types variable-types])
+                  (nanopass-case (Lnodisclose Map-Argument) map-arg
+                    [(,expr1 ,type1 ,type2)
+                     (if (and (= len 0)
+                              (nanopass-case (Lnodisclose Expression) expr1
+                                [(tuple ,src2 ,tuple-arg* ...) (null? tuple-arg*)]
+                                [else #f]))
+                         ;; The literal empty source has no evaluation effects.
+                         ;; Its element type remains Unknown, but no reducer
+                         ;; call or item can occur; retain the initial value.
+                         (typed-expression-ir expr0 type0 src)
+                         (object (cons "kind" "vector_fold")
+                                 (cons "accumulator" (argument-ir (car arg*) src))
+                                 (cons "items" (vector (argument-ir (cadr arg*) src)))
+                                 (cons "initial" (typed-expression-ir expr0 type0 src))
+                                 (cons "sources" (vector (vector-fold-source-ir src len expr1 type1 type2)))
+                                 (cons "body"
+                                       (object (cons "kind" "value")
+                                               (cons "value" (typed-expression-ir expr type src))))
+                                 (cons "length" len)))])))]
              [else (source-errorf src "Rust backend supports named Vector fold functions only")])]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "if")
@@ -741,7 +1742,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (expression-ir expr src)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (expression-ir expr src))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
@@ -760,25 +1761,25 @@
                    (lambda (arg ty) (typed-expression-ir arg ty src)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "counter_less_than")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "threshold" (typed-expression-ir (car expr*) (car type*) src)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map) (memq ledger-op '(member lookup)) (= (length expr*) 1))
                  (object (cons "kind" (if (eq? ledger-op 'member) "map_member" "map_lookup"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
@@ -804,7 +1805,11 @@
                [(eq? name 'keccak256)
                 (unless (= (length expr*) 1)
                   (source-errorf src "keccak256 expects one argument"))
-                (object (cons "kind" "keccak256")
+                (keccak-ir (expression-ir (car expr*) src))]
+               [(eq? name 'sha512)
+                (unless (= (length expr*) 1)
+                  (source-errorf src "sha512 expects one argument"))
+                (object (cons "kind" "sha512")
                         (cons "value" (expression-ir (car expr*) src)))]
                [(eq? name 'persistentCommit)
                 (unless (= (length expr*) 2)
@@ -834,12 +1839,11 @@
                                           "jubjub_point_x"
                                           "jubjub_point_y"))
                         (cons "value" (expression-ir (car expr*) src)))]
-               [(eq? name 'ecAdd)
-                (unless (= (length expr*) 2)
-                  (source-errorf src "ecAdd expects two arguments"))
-                (object (cons "kind" "ec_add")
-                        (cons "left" (expression-ir (car expr*) src))
-                        (cons "right" (expression-ir (cadr expr*) src)))]
+               [(eq-hashtable-ref curve-group-natives function-name #f) =>
+                (lambda (kind)
+                  (curve-group-ir kind src expr*
+                    (lambda (value) (expression-ir value src))
+                    (lambda (value) (field-argument-ir value src))))]
                [(eq? name 'constructJubjubPoint)
                 (unless (= (length expr*) 2)
                   (source-errorf src "constructJubjubPoint expects two arguments"))
@@ -851,17 +1855,9 @@
                   (source-errorf src "ecNeg expects one argument"))
                 (object (cons "kind" "ec_neg")
                         (cons "value" (expression-ir (car expr*) src)))]
-               [(eq? name 'ecMul)
-                (unless (= (length expr*) 2)
-                  (source-errorf src "ecMul expects two arguments"))
-                (object (cons "kind" "ec_mul")
-                        (cons "point" (expression-ir (car expr*) src))
-                        (cons "scalar" (field-argument-ir (cadr expr*) src)))]
-               [(eq? name 'ecMulGenerator)
-                (unless (= (length expr*) 1)
-                  (source-errorf src "ecMulGenerator expects one argument"))
-                (object (cons "kind" "ec_mul_generator")
-                        (cons "scalar" (field-argument-ir (car expr*) src)))]
+               [(eq-hashtable-ref secp256k1-unary-natives function-name #f) =>
+                (lambda (kind)
+                  (secp256k1-unary-ir kind src expr* (lambda (value) (expression-ir value src))))]
                [(eq? name 'jubjubScalarFromNative)
                 (unless (= (length expr*) 1)
                   (source-errorf src "jubjubScalarFromNative expects one argument"))
@@ -878,7 +1874,7 @@
                                         (unless (= (length expr*) (length formal-types))
                                           (source-errorf src "Rust call argument count differs from its declaration"))
                                         (map (lambda (arg formal-type)
-                                               (typed-expression-ir arg formal-type src))
+                                               (typed-call-argument-ir arg formal-type src))
                                              expr* formal-types))
                                       (map (lambda (arg) (expression-ir arg src)) expr*))))))]))]
           [(+ ,src ,mbits ,expr1 ,expr2)
@@ -964,6 +1960,30 @@
                      (typed-expression-ir expr expected-type owner-src source-type)))]
               [else (typed-expression-ir expr expected-type owner-src source-type)])]))
 
+      ;; Overload resolution can select a unique wider Vector parameter for
+      ;; an explicitly typed default value. Preserve the frontend's exact
+      ;; safe-cast around that default and let checked Coerce validate the
+      ;; conversion at the resolved call formal. Other casts and contexts keep
+      ;; their existing lowering.
+      (define (typed-call-argument-ir arg formal-type owner-src)
+        (nanopass-case (Lnodisclose Expression) arg
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (nanopass-case (Lnodisclose Expression) expr
+             [(default ,src^ ,type^^)
+              (if (and (equal? (type-ir formal-type src)
+                               (type-ir type src))
+                       (equal? (type-ir type^ src)
+                               (type-ir type^^ src^))
+                       (not (equal? (type-ir type src)
+                                    (type-ir type^ src)))
+                       (vector-value-widening? type type^))
+                  (object (cons "kind" "coerce")
+                          (cons "value" (typed-expression-ir expr type^ src^))
+                          (cons "ty" (type-ir type src)))
+                  (typed-expression-ir arg formal-type owner-src))]
+             [else (typed-expression-ir arg formal-type owner-src)])]
+          [else (typed-expression-ir arg formal-type owner-src)]))
+
       (define typed-expression-ir
         (case-lambda
           [(expr expected-type owner-src)
@@ -979,6 +1999,21 @@
       (define (typed-expression-ir-value expr expected-type owner-src source-type)
         (nanopass-case (Lnodisclose Expression) expr
           [(return ,src ,expr) (typed-expression-ir expr expected-type src source-type)]
+          [(bytes->vector ,src ,len ,expr)
+           ;; Bytes decode to Uint<8> elements. An explicit cast can then
+           ;; widen those elements; retain that checked Vector conversion in
+           ;; the Rust IR instead of assigning the narrow carrier directly to
+           ;; the widened binding.
+           (let* ([decoded (object (cons "kind" "bytes_to_vector")
+                                   (cons "value" (expression-ir expr src))
+                                   (cons "length" len))]
+                  [source (type-ir (byte-vector-type src len) src)]
+                  [target (type-ir expected-type src)])
+             (if (equal? source target)
+                 decoded
+                 (object (cons "kind" "coerce")
+                         (cons "value" decoded)
+                         (cons "ty" target))))]
           [(elt-ref ,src ,expr^ ,elt-name ,nat)
            (typed-projection-value-ir expr expected-type source-type owner-src)]
           [(tuple-ref ,src ,expr^ ,kindex)
@@ -1078,6 +2113,24 @@
                  (expression-ir expr owner-src)))]
           [(let* ,src ([,local* ,expr*] ...) ,expr)
            (let-expression-ir local* expr* expr expected-type src source-type)]
+          [(tuple-slice ,src ,type ,expr ,kindex ,len)
+           (typed-expression-ir
+             (expanded-vector-slice src type expr kindex len #f)
+             expected-type src source-type)]
+          [(vector-slice ,src ,type ,expr^ ,index ,len)
+           (typed-expression-ir
+             (expanded-constant-vector-slice expr src type expr^ index len)
+             expected-type src source-type)]
+          [(vector ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src source-type)]
+          [(tuple ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src source-type)]
           [(tuple ,src ,tuple-arg* ...)
            (let ([source-type* (if source-type
                                    (literal-source-types source-type (length tuple-arg*) src)
@@ -1126,7 +2179,7 @@
            (if (checked-unsigned-subtraction? expr* expr)
                (typed-expression-ir expr expected-type src source-type)
                (object (cons "kind" "sequence")
-                       (cons "steps" (list->vector (map (lambda (step) (expression-ir step src)) expr*)))
+                       (cons "steps" (list->vector (map (lambda (step) (sequence-step-ir step src)) expr*)))
                        (cons "value" (typed-expression-ir expr expected-type src source-type))))]
           [(+ ,src ,mbits ,expr1 ,expr2)
            (if mbits
@@ -1188,7 +2241,13 @@
 
       (define (rust-function-name function-name)
         (or (eq-hashtable-ref function-rust-names function-name #f)
-            (symbol->string (id-sym function-name))))
+            (let ([name (id-sym function-name)])
+              ;; Compact permits an import alias named _, but Rust reserves
+              ;; that spelling for a pattern. Keep its lexical identity in
+              ;; the source ID and give only the private Rust binding a name.
+              (if (eq? name '_)
+                  (format "__compact_function_underscore_~a" (id-uniq function-name))
+                  (symbol->string name)))))
 
       (define (index-function-names pelt*)
         (let ([counts (make-eq-hashtable)])
@@ -1213,10 +2272,25 @@
             pelt*)))
 
       (define (exported-names function-name export-alist)
+        (define (rust-export-name source-name)
+          (if (eq? source-name '_)
+              ;; The public Rust method cannot be spelled _. Avoid aliases
+              ;; already exported by this source, including a user's chosen
+              ;; spelling of the fallback itself.
+              (let loop ([suffix 0])
+                (let ([candidate (if (= suffix 0)
+                                     "__compact_export_underscore"
+                                     (format "__compact_export_underscore_~a" suffix))])
+                  (if (ormap (lambda (entry)
+                               (string=? candidate (symbol->string (car entry))))
+                             export-alist)
+                      (loop (+ suffix 1))
+                      candidate)))
+              (symbol->string source-name)))
         (fold-right
           (lambda (entry names)
             (if (eq? (cdr entry) function-name)
-                (cons (symbol->string (car entry)) names)
+                (cons (rust-export-name (car entry)) names)
                 names))
           '()
           export-alist))
@@ -1254,8 +2328,34 @@
               [else (void)]))
           pelt*))
 
-      (define (index-call-argument-types pelt)
+      (define (index-callables pelt)
         (nanopass-case (Lnodisclose Program-Element) pelt
+          [(native ,src ,function-name ,native-entry (,arg* ...) ,type)
+           (let ([kind (case (native-entry-function native-entry)
+                         [("__compactRuntime.secp256k1BaseNeg" "__compactRuntime.secp256k1ScalarNeg"
+                           "__compactRuntime.secp256r1BaseNeg" "__compactRuntime.secp256r1ScalarNeg"
+                           "__compactRuntime.curve25519BaseNeg" "__compactRuntime.curve25519ScalarNeg") "secp256k1_neg"]
+                         [("__compactRuntime.secp256k1BaseInv" "__compactRuntime.secp256k1ScalarInv"
+                           "__compactRuntime.secp256r1BaseInv" "__compactRuntime.secp256r1ScalarInv"
+                           "__compactRuntime.curve25519BaseInv" "__compactRuntime.curve25519ScalarInv") "secp256k1_inv"]
+                         [("__compactRuntime.secp256k1PointX" "__compactRuntime.secp256r1PointX" "__compactRuntime.curve25519PointX") "secp256k1_point_x"]
+                         [("__compactRuntime.secp256k1PointY" "__compactRuntime.secp256r1PointY" "__compactRuntime.curve25519PointY") "secp256k1_point_y"]
+                         [else #f])])
+             (when kind (eq-hashtable-set! secp256k1-unary-natives function-name kind)))
+           (let ([group (case (native-entry-function native-entry)
+                          [("__compactRuntime.ecAdd" "__compactRuntime.secp256k1Add" "__compactRuntime.secp256r1Add" "__compactRuntime.curve25519Add") 'ecAdd]
+                          [("__compactRuntime.ecMul") 'ecMul]
+                          [("__compactRuntime.ecMulGenerator") 'ecMulGenerator]
+                          [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
+                          [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
+                          [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                          [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
+                          [("__compactRuntime.curve25519Mul") 'curve25519Mul]
+                          [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                          [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
+                          [("__compactRuntime.curve25519MulGenerator") 'curve25519MulGenerator]
+                          [else #f])])
+             (when group (eq-hashtable-set! curve-group-natives function-name group)))]
           [(circuit ,src ,function-name (,arg* ...) ,type ,expr)
            (eq-hashtable-set! call-argument-types function-name
              (map (lambda (arg)
@@ -1326,37 +2426,42 @@
                         (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-index*))
              (source-errorf src "Rust backend requires an array-index ledger path"))
            (with-source src
-             (nanopass-case (Lnodisclose Type) type
+             (let unwrap-alias ([type type])
+               (nanopass-case (Lnodisclose Type) type
+             [(talias ,src^ ,nominal? ,type-name ,type^)
+              ;; Ledger ADT operations survive a Compact `new type` alias.
+              ;; The generated storage carrier already erases that wrapper.
+              (unwrap-alias type^)]
              [(tadt ,src^ ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
               (cond
                 [(eq? adt-name 'Counter)
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration" (kind "counter")))]
                 [(and (eq? adt-name '__compact_Cell) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "cell")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'Set) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "set")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'List) (= (length adt-arg*) 1))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
                                (object (cons "kind" "list")
                                        (cons "ty" (type-ir (car adt-arg*) src)))))]
                 [(and (eq? adt-name 'Map) (= (length adt-arg*) 2))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
@@ -1364,7 +2469,7 @@
                                        (cons "key" (type-ir (car adt-arg*) src))
                                        (cons "value" (type-ir (cadr adt-arg*) src)))))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree)) (= (length adt-arg*) 2))
-                 (object (cons "id" (symbol->string (id-sym ledger-field-name)))
+                 (object (cons "id" (rust-ledger-field-name ledger-field-name (car path-index*)))
                          (cons "index" (car path-index*))
                          (cons "path" (list->vector path-index*))
                          (cons "declaration"
@@ -1374,7 +2479,7 @@
                                        (cons "depth" (car adt-arg*))
                                        (cons "ty" (type-ir (cadr adt-arg*) src)))))]
                 [else (source-errorf src "Rust backend does not yet support this ledger ADT")])]
-             [else (source-errorf src "Rust backend does not yet support this ledger field type")]))]
+             [else (source-errorf src "Rust backend does not yet support this ledger field type")])))]
           [else (source-errorf owner-src "Rust backend does not yet support this ledger field shape")]))
 
       (define (ledger-array-ir pl-array owner-src)
@@ -1417,25 +2522,34 @@
       ;; bindings. Keep Counter lookup in that same lexical scope when a Fold
       ;; appears inside an initializer or an ordinary value expression.
       (define (stateful-bindings-ir local* value* src environment witness-ids emit)
-        (let loop ([locals local*] [values value*]
-                   [environment environment] [bindings '()])
-          (if (null? locals)
-              (parameterize ([current-counter-environment environment])
-                (emit (list->vector (reverse bindings)) environment))
-              (nanopass-case (Lnodisclose Argument) (car locals)
-                [(,var-name ,type)
-                 (let ([binding
-                         (parameterize ([current-counter-environment environment])
-                           (object (cons "name" (sourced-rust-var-name var-name))
-                                   (cons "ty" (type-ir type src))
-                                   (cons "value"
-                                         (stateful-typed-expression-ir (car values) type src witness-ids))))])
-                   (loop (cdr locals) (cdr values)
-                         (cons (cons var-name
-                                     (object (cons "kind" "parameter")
-                                             (cons "name" (rust-var-name var-name))))
-                               environment)
-                         (cons binding bindings)))]))))
+        (let ([byte-bindings (if (current-static-byte-bindings)
+                                 (hashtable-copy (current-static-byte-bindings) #t)
+                                 (make-eq-hashtable))])
+          (parameterize ([current-static-byte-bindings byte-bindings])
+            (let loop ([locals local*] [values value*]
+                       [environment environment] [bindings '()])
+              (if (null? locals)
+                  (parameterize ([current-counter-environment environment])
+                    (emit (list->vector (reverse bindings)) environment))
+                  (nanopass-case (Lnodisclose Argument) (car locals)
+                    [(,var-name ,type)
+                     (let* ([value (car values)]
+                            [binding
+                              (parameterize ([current-counter-environment environment])
+                                (object (cons "name" (sourced-rust-var-name var-name))
+                                        (cons "ty" (type-ir type src))
+                                        (cons "value"
+                                          (stateful-typed-expression-ir value type src witness-ids))))]
+                            [width (bytes-carrier-width type)]
+                            [bytes (and width (literal-byte-binding-value value byte-bindings))])
+                       (eq-hashtable-set! byte-bindings var-name
+                         (and bytes (= (length bytes) width) bytes))
+                       (loop (cdr locals) (cdr values)
+                             (cons (cons var-name
+                                         (object (cons "kind" "parameter")
+                                                 (cons "name" (rust-var-name var-name))))
+                                   environment)
+                             (cons binding bindings)))]))))))
 
       (define (state-action-ir expr owner-src environment witness-ids)
         (call-with-rust-origin "state_action" (expression-origin expr)
@@ -1444,12 +2558,34 @@
             (parameterize ([current-counter-environment environment])
               (state-action-ir-value expr owner-src environment witness-ids))) (expression-operation-origin expr)))
 
-      (define (state-action-ir-value expr owner-src environment witness-ids)
-        (nanopass-case (Lnodisclose Expression) expr
+      (define (state-action-ir-value action owner-src environment witness-ids)
+        (nanopass-case (Lnodisclose Expression) action
           [(tuple ,src ,tuple-arg* ...)
            (if (null? tuple-arg*)
                (object (cons "kind" "sequence") (cons "actions" (vector)))
                (source-errorf src "Rust backend does not support tuple values as state actions"))]
+          [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
+           (if (= len 0)
+               ;; The reducer is unreachable, but the initial value and each
+               ;; iterable still evaluate in Fold operand order.
+               (object (cons "kind" "sequence")
+                       (cons "actions"
+                             (list->vector
+                               (cons
+                                 (object (cons "kind" "expression")
+                                         (cons "value"
+                                               (stateful-typed-expression-ir
+                                                 expr0 type0 src witness-ids)))
+                                 (map (lambda (arg)
+                                        (nanopass-case (Lnodisclose Map-Argument) arg
+                                          [(,expr ,type1 ,type2)
+                                           (object (cons "kind" "expression")
+                                                   (cons "value"
+                                                         (stateful-typed-expression-ir
+                                                           expr type1 src witness-ids)))]))
+                                      (cons map-arg map-arg*))))))
+               (object (cons "kind" "expression")
+                       (cons "value" (stateful-expression-ir action src witness-ids))))]
           [(seq ,src ,expr* ... ,expr)
            (object (cons "kind" "sequence")
                    (cons "actions"
@@ -1462,18 +2598,23 @@
                                        (list (state-action-ir expr src environment witness-ids)))))))]
           [(call ,src ,function-name ,expr* ...)
            (cond
-             [(eq-hashtable-ref witness-ids function-name #f)
+             [(or (eq-hashtable-ref witness-ids function-name #f)
+                  (eq-hashtable-ref secp256k1-unary-natives function-name #f)
+                  (eq-hashtable-ref curve-group-natives function-name #f))
               (object (cons "kind" "expression")
-                      (cons "value" (stateful-expression-ir expr src witness-ids)))]
+                      (cons "value" (stateful-expression-ir action src witness-ids)))]
              [(eq-hashtable-ref native-witness-ids function-name #f)
               (if (and (eq? (id-sym function-name) 'ownPublicKey) (null? expr*))
                   (object (cons "kind" "native_witness_call") (cons "builtin" "own_public_key"))
                   (object (cons "kind" "expression")
-                          (cons "value" (stateful-expression-ir expr src witness-ids))))]
+                          (cons "value" (stateful-expression-ir action src witness-ids))))]
              [else
               (object (cons "kind" (if (id-pure? function-name) "pure_call" "circuit_call"))
                       (cons "name" (rust-function-name function-name))
                       (cons "arguments" (stateful-call-arguments-ir function-name expr* src witness-ids)))])]
+          [(emit-log ,src ,nat ,len ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir action src witness-ids)))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
@@ -1502,51 +2643,63 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger path"))
               (cond
                 [(eq? adt-name 'Kernel)
                  (object (cons "kind" "expression")
-                         (cons "value" (stateful-expression-ir expr src witness-ids)))]
+                         (cons "value" (stateful-expression-ir action src witness-ids)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'increment)
                       (= (length expr*) 1))
                  (object (cons "kind" "counter_increment")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*) environment src)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'decrement)
                       (= (length expr*) 1))
                  (object (cons "kind" "counter_decrement")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*) environment src)))]
                 [(and (eq? adt-name 'Counter)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "counter_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name '__compact_Cell)
                       (eq? ledger-op 'write)
                       (= (length expr*) 1))
                  (object (cons "kind" "cell_write")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
+                [(and (eq? adt-name '__compact_Cell)
+                      (eq? ledger-op 'resetToDefault)
+                      (null? expr*)
+                      (foreign-point-base (secp256k1-carrier (car adt-arg*))))
+                 (let ([default-value (with-output-language (Lnodisclose Expression)
+                                        `(default ,src ,(car adt-arg*)))])
+                   (object (cons "kind" "cell_write")
+                           (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                           (cons "index" (car path-elt*))
+                           (cons "value" (stateful-expression-ir default-value src witness-ids))))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name '__compact_Cell)
                       (eq? ledger-op 'writeCoin)
                       (= (length expr*) 2))
                  (object (cons "kind" "cell_write_coin")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "coin" (stateful-typed-expression-ir (car expr*) (car type*) src witness-ids))
                          (cons "recipient" (stateful-typed-expression-ir (cadr expr*) (cadr type*) src witness-ids)))]
@@ -1554,7 +2707,7 @@
                       (eq? ledger-op 'insertCoin)
                       (= (length expr*) 2))
                  (object (cons "kind" "set_insert_coin")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "coin" (typed-expression-ir (car expr*) (car type*) src))
                          (cons "recipient" (typed-expression-ir (cadr expr*) (cadr type*) src)))]
@@ -1562,61 +2715,78 @@
                       (eq? ledger-op 'remove)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "set_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'pushFront)
                       (= (length expr*) 1))
                  (object (cons "kind" "list_push_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (expression-ir (car expr*) src)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'popFront)
                       (null? expr*))
                  (object (cons "kind" "list_pop_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "list_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
+                [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                      (= (length expr*) 2) (nested-map-path? path-elt*))
+                 (nanopass-case (Lnodisclose Path-Element) (car (reverse path-elt*))
+                   [(,src^ ,type ,expr)
+                    (object (cons "kind" "nested_map_insert")
+                            (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                            (cons "index" (car path-elt*))
+                            (cons "outer" (typed-expression-ir expr type src^))
+                            (cons "inner" (typed-expression-ir (car expr*) (car adt-arg*) src))
+                            (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))])]
+                [(and (eq? adt-name 'Map) (eq? ledger-op 'insert)
+                      (= (length expr*) 2) (eq? (ledger-default-kind (cadr expr*)) 'Map))
+                 (object (cons "kind" "map_init_child")
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
+                [(and (eq? adt-name 'Map)
+                      (or (and (eq? ledger-op 'insertDefault) (= (length expr*) 1))
+                          (and (eq? ledger-op 'insert) (= (length expr*) 2)
+                               (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
+                 (object (cons "kind" "map_insert_default")
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'insert)
                       (= (length expr*) 2))
                  (object (cons "kind" "map_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))
                          (cons "value" (typed-expression-ir (cadr expr*) (cadr adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
-                      (eq? ledger-op 'insertDefault)
-                      (= (length expr*) 1))
-                 (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
-                [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'remove)
                       (= (length expr*) 1))
                  (object (cons "kind" "map_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'resetToDefault)
                       (null? expr*))
                  (object (cons "kind" "map_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'resetToDefault)
@@ -1624,13 +2794,13 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_reset_to_default"
                                           "historic_merkle_reset_to_default"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'HistoricMerkleTree)
                       (eq? ledger-op 'resetHistory)
                       (null? expr*))
                  (object (cons "kind" "historic_merkle_reset_history")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'insert)
@@ -1638,7 +2808,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert"
                                           "historic_merkle_insert"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -1647,7 +2817,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_index"
                                           "historic_merkle_insert_index"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-expression-ir (car expr*) src witness-ids))
                          (cons "position" (stateful-expression-ir (cadr expr*) src witness-ids)))]
@@ -1657,7 +2827,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_hash"
                                           "historic_merkle_insert_hash"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "hash" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -1666,7 +2836,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_hash_index"
                                           "historic_merkle_insert_hash_index"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "hash" (stateful-expression-ir (car expr*) src witness-ids))
                          (cons "position" (stateful-expression-ir (cadr expr*) src witness-ids)))]
@@ -1676,7 +2846,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_insert_index_default"
                                           "historic_merkle_insert_index_default"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "position" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [else (source-errorf src "Rust backend does not yet support this ledger operation")])])]
@@ -1975,6 +3145,61 @@
            (unit-return-type? type)]
           [else #f]))
 
+      ;; A selected Set insertion can be the value of a Unit return. Keep it
+      ;; in the ordered return body; lowering it as an ordinary nested value
+      ;; would either drop the mutation or evaluate it outside its branch.
+      (define (unit-set-insert-return-leaf? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
+           (nanopass-case (Lnodisclose ADT-Op) adt-op
+             [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
+              (and (eq? adt-name 'Set) (eq? ledger-op 'insert)
+                   (eq? op-class 'update)
+                   (= (length expr*) 1) (pair? path-elt*)
+                   (for-all pure-unit-set-insert-argument? expr*)
+                   (unit-return-type? type))])]
+          [else #f]))
+
+      ;; The branch's compiler-created argument bindings may contain casts
+      ;; and conditionals, but no call, witness, or ledger operation. Those
+      ;; effects need a separate ordered return qualification.
+      (define (pure-unit-set-insert-argument? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(quote ,src ,datum) #t]
+          [(var-ref ,src ,var-name) #t]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (pure-unit-set-insert-argument? expr)]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (pure-unit-set-insert-argument? expr1)
+                (pure-unit-set-insert-argument? expr2))]
+          [else #f]))
+
+      (define (unit-set-insert-return-branch? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (unit-set-insert-return-branch? expr))]
+          [else (unit-set-insert-return-leaf? expr)]))
+
+      (define (terminal-unit-set-insert-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (terminal-unit-set-insert-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-set-insert-return? expr))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (and (pure-unit-set-insert-argument? expr0)
+                (unit-set-insert-return-branch? expr1)
+                (unit-set-insert-return-branch? expr2))]
+          [else #f]))
+
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
       ;; nonliteral conversions select this owner through the value predicate.
@@ -2152,15 +3377,35 @@
                    (cons "otherwise"
                          (stateful-return-plan-ir expr2 expected-type src environment witness-ids finish)))]
           [else
-           (object (cons "kind" "value")
-                   (cons "value"
-                         (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids))))]))
+           (if (and (unit-return-type? expected-type)
+                    (unit-set-insert-return-leaf? expr))
+               (object (cons "kind" "sequence")
+                       (cons "actions" (vector (state-action-ir expr owner-src environment witness-ids)))
+                       (cons "result" (object (cons "kind" "value")
+                                              (cons "value" (finish (kind "unit"))))))
+               (object (cons "kind" "value")
+                       (cons "value"
+                             (finish (stateful-typed-expression-ir expr expected-type owner-src witness-ids)))))]))
 
       ;; A lexical Fold keeps its actual reducer body and typed formal carriers.
       ;; The paired schema20 consumer checks every annotation independently.
       (define (stateful-fold-ir src len fun expr0 type0 map-args witness-ids)
         (define (formal name type)
           (object (cons "name" name) (cons "ty" (type-ir type src))))
+        (define (source-ir expr source-type item-type)
+          (let* ([bytes? (bytes-carrier-width source-type)]
+                 [value (stateful-typed-expression-ir expr source-type src witness-ids)])
+            (if (not bytes?)
+                value
+                (let* ([decoded (object (cons "kind" "bytes_to_vector")
+                                        (cons "value" value) (cons "length" len))]
+                       [carrier (byte-vector-type src len)]
+                       [target (with-output-language (Lnodisclose Type)
+                                 `(tvector ,src ,len ,item-type))])
+                  (if (equal? (type-ir carrier src) (type-ir target src))
+                      decoded
+                      (object (cons "kind" "coerce")
+                              (cons "value" decoded) (cons "ty" (type-ir target src))))))))
         (define (emit formals body-ir)
           (unless (= (length formals) (+ 1 (length map-args)))
             (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
@@ -2169,7 +3414,7 @@
                    (map (lambda (arg)
                           (nanopass-case (Lnodisclose Map-Argument) arg
                             [(,expr ,type1 ,type2)
-                             (stateful-typed-expression-ir expr type1 src witness-ids)])) map-args)]
+                             (source-ir expr type1 type2)])) map-args)]
                  [reducer-ir (body-ir)])
             (object (cons "kind" "vector_fold")
                     (cons "accumulator" (car formals))
@@ -2200,12 +3445,34 @@
           [(circuit ,src^ (,arg* ...) ,type ,expr)
            (let ([variable-types (if (current-variable-types)
                                      (hashtable-copy (current-variable-types) #t)
-                                     (make-eq-hashtable))])
+                                     (make-eq-hashtable))]
+                 [index-domains (if (current-static-fold-index-domains)
+                                    (hashtable-copy (current-static-fold-index-domains) #t)
+                                    (make-eq-hashtable))]
+                 [byte-index-domains (if (current-static-byte-fold-index-domains)
+                                         (hashtable-copy (current-static-byte-fold-index-domains) #t)
+                                         (make-eq-hashtable))])
+             (unless (= (length arg*) (+ 1 (length map-args)))
+               (source-errorf src "Rust Fold reducer needs an accumulator and one item per iterable"))
+             (for-each
+               (lambda (arg map-arg)
+                 (nanopass-case (Lnodisclose Argument) arg
+                   [(,var-name ,type^)
+                    (nanopass-case (Lnodisclose Map-Argument) map-arg
+                      [(,expr1 ,type1 ,type2)
+                       (let ([domain (literal-fold-index-domain expr1 len type2)]
+                             [byte-domain (literal-byte-fold-index-domain expr1 len type2)])
+                         (when domain (eq-hashtable-set! index-domains var-name domain))
+                         (when byte-domain
+                           (eq-hashtable-set! byte-index-domains var-name byte-domain)))])]))
+               (cdr arg*) map-args)
              (for-each (lambda (arg)
                          (nanopass-case (Lnodisclose Argument) arg
                            [(,var-name ,type^)
                             (eq-hashtable-set! variable-types var-name type^)])) arg*)
-             (parameterize ([current-variable-types variable-types])
+             (parameterize ([current-variable-types variable-types]
+                            [current-static-fold-index-domains index-domains]
+                            [current-static-byte-fold-index-domains byte-index-domains])
                (emit (map (lambda (arg) (argument-ir arg src)) arg*)
                  (lambda ()
                    (if (stateful-body-has-storage-mutation? expr)
@@ -2255,6 +3522,24 @@
              src mbits expr1 expr2 owner-src witness-ids)]
           [(var-ref ,src ,var-name)
            (typed-expression-ir value-expr expected-type owner-src)]
+          [(tuple-slice ,src ,type ,expr ,kindex ,len)
+           (stateful-typed-expression-ir
+             (expanded-vector-slice src type expr kindex len #f)
+             expected-type src witness-ids)]
+          [(vector-slice ,src ,type ,expr ,index ,len)
+           (stateful-typed-expression-ir
+             (expanded-constant-vector-slice value-expr src type expr index len)
+             expected-type src witness-ids)]
+          [(vector ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (stateful-typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src witness-ids)]
+          [(tuple ,src ,tuple-arg* ...)
+           (guard (literal-has-spread? tuple-arg*))
+           (stateful-typed-expression-ir
+             (expanded-spread-literal src tuple-arg* expected-type)
+             expected-type src witness-ids)]
           [(tuple ,src ,tuple-arg* ...)
            (nanopass-case (Lnodisclose Type) expected-type
              [(tvector ,src^ ,len ,type)
@@ -2350,11 +3635,28 @@
       (define (stateful-expression-ir-value value-expr owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) value-expr
           [(vector-ref ,src ,type ,expr ,index)
-           (stateful-expression-ir
-             (resolved-vector-expression value-expr src type expr index) owner-src witness-ids)]
+           (or (static-fold-vector-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids)))
+               (stateful-expression-ir
+                 (resolved-vector-expression value-expr src type expr index) owner-src witness-ids))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (stateful-fold-ir src len fun expr0 type0 (cons map-arg map-arg*) witness-ids)]
           [(return ,src ,expr) (stateful-expression-ir expr src witness-ids)]
+          [(emit-log ,src ,nat ,len ,expr)
+           (object (cons "kind" (case nat
+                                  [(0) "emit_shielded_spend"]
+                                  [(1) "emit_shielded_receive"]
+                                  [(2) "emit_shielded_mint"]
+                                  [(3) "emit_shielded_burn"]
+                                  [(4) "emit_unshielded_spend"]
+                                  [(5) "emit_unshielded_receive"]
+                                  [(6) "emit_unshielded_mint"]
+                                  [(7) "emit_unshielded_burn"]
+                                  [(8) "emit_paused"]
+                                  [(9) "emit_unpaused"]
+                                  [(10) "emit_misc"]
+                                  [else (assert cannot-happen)]))
+                   (cons "value" (stateful-expression-ir expr src witness-ids)))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
@@ -2413,14 +3715,22 @@
                            (object (cons "kind" "create_zswap_output") (cons "coin" (car arguments))
                                    (cons "recipient" (cadr arguments))))))]
                   [else (source-errorf src "Rust backend does not yet support native witness ~a" name)])]
-               [(memq name '(transientHash persistentHash keccak256 degradeToTransient upgradeFromTransient
+               [(eq? name 'keccak256)
+                (unless (= (length expr*) 1)
+                  (source-errorf src "keccak256 expects one argument"))
+                (keccak-ir (stateful-expression-ir (car expr*) src witness-ids))]
+               [(eq-hashtable-ref secp256k1-unary-natives function-name #f) =>
+                (lambda (kind)
+                  (secp256k1-unary-ir kind src expr*
+                    (lambda (value) (stateful-expression-ir value src witness-ids))))]
+               [(memq name '(transientHash persistentHash sha512 degradeToTransient upgradeFromTransient
                               hashToCurve jubjubPointX jubjubPointY ecNeg jubjubScalarFromNative))
                 (unless (= (length expr*) 1)
                   (source-errorf src "Rust backend native expects one argument"))
                 (object (cons "kind" (case name
                                         [(transientHash) "transient_hash"]
                                         [(persistentHash) "persistent_hash"]
-                                        [(keccak256) "keccak256"]
+                                        [(sha512) "sha512"]
                                         [(degradeToTransient) "degrade_to_transient"]
                                         [(upgradeFromTransient) "upgrade_from_transient"]
                                         [(hashToCurve) "hash_to_curve"]
@@ -2429,11 +3739,10 @@
                                         [(ecNeg) "ec_neg"]
                                         [else "jubjub_scalar_from_native"]))
                         (cons "value" (stateful-expression-ir (car expr*) src witness-ids)))]
-               [(eq? name 'ecMulGenerator)
-                (unless (= (length expr*) 1)
-                  (source-errorf src "ecMulGenerator expects one argument"))
-                (object (cons "kind" "ec_mul_generator")
-                        (cons "scalar" (stateful-expression-ir (car expr*) src witness-ids)))]
+               [(eq-hashtable-ref curve-group-natives function-name #f) =>
+                (lambda (kind)
+                  (let ([lower (lambda (value) (stateful-expression-ir value src witness-ids))])
+                    (curve-group-ir kind src expr* lower lower)))]
                [(memq name '(transientCommit persistentCommit))
                 (unless (= (length expr*) 2)
                   (source-errorf src "Rust backend native expects two arguments"))
@@ -2442,20 +3751,12 @@
                                           "persistent_commit"))
                         (cons "value" (stateful-expression-ir (car expr*) src witness-ids))
                         (cons "opening" (stateful-expression-ir (cadr expr*) src witness-ids)))]
-               [(memq name '(ecAdd ecMul constructJubjubPoint))
+               [(eq? name 'constructJubjubPoint)
                 (unless (= (length expr*) 2)
                   (source-errorf src "Rust backend curve native expects two arguments"))
-                (if (eq? name 'constructJubjubPoint)
-                    (object (cons "kind" "construct_jubjub_point")
-                            (cons "x" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "y" (stateful-expression-ir (cadr expr*) src witness-ids)))
-                (if (eq? name 'ecAdd)
-                    (object (cons "kind" "ec_add")
-                            (cons "left" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "right" (stateful-expression-ir (cadr expr*) src witness-ids)))
-                    (object (cons "kind" "ec_mul")
-                            (cons "point" (stateful-expression-ir (car expr*) src witness-ids))
-                            (cons "scalar" (stateful-expression-ir (cadr expr*) src witness-ids)))))]
+                (object (cons "kind" "construct_jubjub_point")
+                        (cons "x" (stateful-expression-ir (car expr*) src witness-ids))
+                        (cons "y" (stateful-expression-ir (cadr expr*) src witness-ids)))]
                [else
                 (object (cons "kind" "call")
                         (cons "name" (rust-function-name function-name))
@@ -2465,7 +3766,9 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'lookup)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger query path"))
               (when (and (eq? adt-name 'Kernel) (not (null? path-elt*)))
                 (source-errorf src "Rust Kernel operation ~a requires its special empty path" ledger-op))
@@ -2475,43 +3778,46 @@
                    (lambda (arg ty) (stateful-typed-expression-ir arg ty src witness-ids)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'read) (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "counter_less_than")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "threshold" (stateful-typed-expression-ir (car expr*) (car type*) src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'member) (= (length expr*) 1))
                  (object (cons "kind" "map_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'lookup) (= (length expr*) 1))
-                 (object (cons "kind" "map_lookup")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids)))]
+                 (if (nested-map-path? path-elt*)
+                     (nested-map-lookup-ir src ledger-field-name path-elt* (car expr*) (car adt-arg*)
+                       (lambda (expr type src) (stateful-typed-expression-ir expr type src witness-ids)))
+                     (object (cons "kind" "map_lookup")
+                             (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                             (cons "index" (car path-elt*))
+                             (cons "key" (stateful-typed-expression-ir (car expr*) (car adt-arg*) src witness-ids))))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'length) (null? expr*))
                  (object (cons "kind" "list_length")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "list_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'head) (null? expr*))
                  (object (cons "kind" "list_head")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "ty" (type-ir type src)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
@@ -2520,26 +3826,48 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_check_root"
                                           "historic_merkle_check_root"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "root" (stateful-expression-ir (car expr*) src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "set_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'size) (null? expr*))
                  (object (cons "kind" "set_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'isEmpty) (null? expr*))
                  (object (cons "kind" "map_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'size) (null? expr*))
                  (object (cons "kind" "map_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [else (source-errorf src "Rust backend does not yet support this nested ledger query: ~a.~a" adt-name ledger-op)])])]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (or (and (boolean-carrier? type) (boolean-carrier? type^))
+                      (and (field-carrier? type) (field-carrier? type^))))
+           (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (let ([width (bytes-carrier-width type)])
+                    (and width (eqv? width (bytes-carrier-width type^)))))
+           (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-product-carrier? type type^ src))
+           (stateful-expression-ir expr src witness-ids)]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (enum-carrier? type) (enum-carrier? type^)
+                  (equal? (type-ir type src) (type-ir type^ src)))
+           (stateful-expression-ir expr src witness-ids)]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (stateful-expression-ir expr src witness-ids))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (enum-cast-ir type src (stateful-expression-ir expr src witness-ids))]
+          [(safe-cast ,src ,type ,type^ ,expr)
+           (guard (same-secp256k1-carrier? type type^))
+           (stateful-typed-expression-ir expr type^ src witness-ids)]
           [(safe-cast ,src ,type ,type^ ,expr)
            (nanopass-case (Lnodisclose Type) (unsigned-canonical-type type)
              [(tfield ,src^)
@@ -2558,19 +3886,41 @@
                           (cons "max" (number->string nat))
                           (cons "value" (stateful-expression-ir expr src witness-ids))))]
              [else (expression-ir value-expr owner-src)])]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (secp256k1-arithmetic-ir arithmetic-op
+             (stateful-typed-expression-ir expr1 type src witness-ids)
+             (stateful-typed-expression-ir expr2 type src witness-ids))]
+          [(jubjub-cast ,src ,type ,expr)
+           (jubjub-cast-ir src type (stateful-expression-ir expr src witness-ids))]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
+           (secp256k1-cast-ir src type (stateful-expression-ir expr src witness-ids))]
+          [(vector->bytes ,src ,len ,expr)
+           (vector-to-bytes-ir src len expr
+             (lambda (value type) (stateful-typed-expression-ir value type src witness-ids)))]
+          [(bytes->vector ,src ,len ,expr)
+           (object (cons "kind" "bytes_to_vector")
+                   (cons "value" (stateful-expression-ir expr src witness-ids))
+                   (cons "length" len))]
+          [(bytes-slice ,src ,type ,expr ,index ,len)
+           (bytes-slice-ir src expr index len
+             (lambda (value) (stateful-expression-ir value src witness-ids)))]
+          [(bytes-ref ,src ,type ,expr ,index)
+           (or (static-fold-bytes-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids)))
+               (bytes-ref-ir value-expr src type expr index
+                 (lambda (value) (stateful-expression-ir value src witness-ids))))]
           [(cast-from-bytes ,src ,type ,len ,expr)
-           (literal-bytes-field-ir type len expr src)]
+           (bytes-cast-ir src type len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(field->bytes ,src ,len ,expr)
-           (unless (= len 32)
-             (source-errorf src "Rust backend supports Field-to-Bytes<32> casts only"))
-           (object (cons "kind" "field_to_bytes32")
-                   (cons "value" (stateful-expression-ir expr src witness-ids)))]
+           (field-to-bytes-ir src len expr (lambda (value) (stateful-expression-ir value src witness-ids)))]
+          [(downcast-unsigned ,src ,nat? ,nat (jubjub-cast ,src^ ,type ,expr^))
+           (guard (not nat?))
+           (jubjub-cast-ir src
+             (with-output-language (Lnodisclose Type) `(tunsigned ,src ,nat))
+             (stateful-expression-ir expr^ src witness-ids))]
           [(downcast-unsigned ,src ,nat? ,nat ,expr)
-           (unless nat?
-             (source-errorf src "Rust backend does not yet support Field-to-Uint downcasts"))
-           (object (cons "kind" "unsigned_cast")
-                   (cons "max" (number->string nat))
-                   (cons "value" (stateful-expression-ir expr src witness-ids)))]
+           (unsigned-downcast-ir src nat? nat expr
+             (lambda (value) (stateful-expression-ir value src witness-ids)))]
           [(if ,src ,expr0 ,expr1 ,expr2)
            (object (cons "kind" "if")
                    (cons "condition" (stateful-expression-ir expr0 src witness-ids))
@@ -2671,6 +4021,13 @@
 
       (define (stateful-return-ir-value return-expr expected-type owner-src witness-ids)
         (nanopass-case (Lnodisclose Expression) return-expr
+          [(emit-log ,src ,nat ,len ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(quote ,src ,datum)
+           (guard (boolean? datum))
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(fold ,src ,len ,fun (,expr0 ,type0) ,map-arg ,map-arg* ...)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
@@ -2694,7 +4051,7 @@
           [(call ,src ,function-name ,expr* ...)
            (if (or (eq-hashtable-ref witness-ids function-name #f)
                    (memq (id-sym function-name)
-                         '(transientHash transientCommit persistentHash persistentCommit keccak256
+                         '(transientHash transientCommit persistentHash persistentCommit keccak256 sha512
                            degradeToTransient upgradeFromTransient hashToCurve
                            jubjubPointX jubjubPointY ecAdd ecNeg ecMul ecMulGenerator constructJubjubPoint
                            jubjubScalarFromNative)))
@@ -2731,9 +4088,24 @@
           [(safe-cast ,src ,type ,type^ ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(secp256k1-arithmetic ,src ,arithmetic-op ,type ,expr1 ,expr2)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(jubjub-cast ,src ,type ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(secp256k1-bytes-cast ,src ,type ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(cast-from-enum ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
+          [(cast-to-enum ,src ,type ,type^ ,expr)
+           (object (cons "kind" "expression")
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(cast-from-bytes ,src ,type ,len ,expr)
            (object (cons "kind" "expression")
-                   (cons "value" (literal-bytes-field-ir type len expr src)))]
+                   (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
           [(field->bytes ,src ,len ,expr)
            (object (cons "kind" "expression")
                    (cons "value" (stateful-expression-ir return-expr src witness-ids)))]
@@ -2754,7 +4126,9 @@
              [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
               (unless (or (eq? adt-name 'Kernel)
                           (and (pair? path-elt*)
-                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*)))
+                               (for-all (lambda (index) (and (integer? index) (<= 0 index 14))) path-elt*))
+                          (and (eq? adt-name 'Map) (eq? ledger-op 'lookup)
+                               (nested-map-path? path-elt*)))
                 (source-errorf src "Rust backend requires an array-index ledger path"))
               (cond
                 [(eq? adt-name 'Kernel)
@@ -2764,7 +4138,7 @@
                       (eq? ledger-op 'read)
                       (null? expr*))
                  (object (cons "kind" "cell_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'lessThan) (= (length expr*) 1))
                  (object (cons "kind" "expression")
@@ -2773,70 +4147,73 @@
                       (eq? ledger-op 'read)
                       (null? expr*))
                  (object (cons "kind" "counter_read")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'member)
                       (= (length expr*) 1))
                  (object (cons "kind" "set_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'size)
                       (null? expr*))
                  (object (cons "kind" "set_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "set_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'member)
                       (= (length expr*) 1))
                  (object (cons "kind" "map_member")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'lookup)
                       (= (length expr*) 1))
-                 (object (cons "kind" "map_lookup")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                 (if (nested-map-path? path-elt*)
+                     (object (cons "kind" "expression")
+                             (cons "value" (stateful-expression-ir return-expr src witness-ids)))
+                     (object (cons "kind" "map_lookup")
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
-                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src)))]
+                         (cons "key" (typed-expression-ir (car expr*) (car adt-arg*) src))))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'size)
                       (null? expr*))
                  (object (cons "kind" "map_size")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Map)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "map_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'length)
                       (null? expr*))
                  (object (cons "kind" "list_length")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'isEmpty)
                       (null? expr*))
                  (object (cons "kind" "list_is_empty")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List)
                       (eq? ledger-op 'head)
                       (null? expr*))
                  (object (cons "kind" "list_head")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'isFull)
@@ -2844,7 +4221,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_is_full"
                                           "historic_merkle_is_full"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (memq adt-name '(MerkleTree HistoricMerkleTree))
                       (eq? ledger-op 'checkRoot)
@@ -2852,7 +4229,7 @@
                  (object (cons "kind" (if (eq? adt-name 'MerkleTree)
                                           "merkle_check_root"
                                           "historic_merkle_check_root"))
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "root" (expression-ir (car expr*) src)))]
                 [else (source-errorf src "Rust backend does not yet support this ledger return operation")])])]
@@ -2876,9 +4253,11 @@
                       [local-vector-widening? (stateful-local-vector-widening? expr)]
                       [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
                                              (has-unit-mutation-initializer? expr)
-                                             (and (not (unit-return-type? type))
-                                                  (or (terminal-storage-mutation-conditional? expr)
-                                                      (lexical-storage-mutation-return? expr))))]
+                                             (or (and (unit-return-type? type)
+                                                      (terminal-unit-set-insert-return? expr))
+                                                 (and (not (unit-return-type? type))
+                                                      (or (terminal-storage-mutation-conditional? expr)
+                                                          (lexical-storage-mutation-return? expr)))))]
                       [all-names (if (member internal-name names)
                                      names
                                      (append names (list internal-name)))])
@@ -3017,7 +4396,9 @@
           [(call ,src ,function-name ,expr* ...)
            (object (cons "kind" "expression")
                    (cons "value"
-                         (if (eq-hashtable-ref witness-ids function-name #f)
+                         (if (or (eq-hashtable-ref witness-ids function-name #f)
+                                 (eq-hashtable-ref secp256k1-unary-natives function-name #f)
+                                 (eq-hashtable-ref curve-group-natives function-name #f))
                              (stateful-expression-ir expr src witness-ids)
                              (object (cons "kind" "call")
                                      (cons "name" (rust-function-name function-name))
@@ -3033,6 +4414,19 @@
                                    (if (empty-constructor-expression? expr)
                                        '()
                                        (list (constructor-step-ir expr parameters bindings src witness-ids)))))))]
+          [(if ,src ,expr0 ,expr1 ,expr2)
+           (object (cons "kind" "if")
+                   (cons "condition"
+                         (parameterize ([current-constructor-condition? #t])
+                           (expression-ir expr0 src)))
+                   (cons "then_steps"
+                         (if (empty-constructor-expression? expr1)
+                             (vector)
+                             (vector (constructor-step-ir expr1 parameters bindings src witness-ids))))
+                   (cons "otherwise_steps"
+                         (if (empty-constructor-expression? expr2)
+                             (vector)
+                             (vector (constructor-step-ir expr2 parameters bindings src witness-ids)))))]
           [(assert ,src ,expr ,mesg)
            (object (cons "kind" "assert")
                    (cons "condition" (stateful-expression-ir expr src witness-ids))
@@ -3127,75 +4521,77 @@
               (cond
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'increment) (= (length expr*) 1))
                  (object (cons "kind" "counter_increment")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*)
                                                            (constructor-counter-environment parameters bindings)
                                                            src)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'decrement) (= (length expr*) 1))
                  (object (cons "kind" "counter_decrement")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "amount" (counter-amount-ir (car expr*)
                                                            (constructor-counter-environment parameters bindings)
                                                            src)))]
                 [(and (eq? adt-name 'Counter) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "counter_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'insert) (= (length expr*) 1))
                  (object (cons "kind" "set_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'remove) (= (length expr*) 1))
                  (object (cons "kind" "set_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Set) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "set_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'pushFront) (= (length expr*) 1))
                  (object (cons "kind" "list_push_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "value" (constructor-value-ir (car expr*) (car adt-arg*)
                                                              parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'popFront) (null? expr*))
                  (object (cons "kind" "list_pop_front")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name 'List) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "list_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
+                [(and (eq? adt-name 'Map) (or (and (eq? ledger-op 'insertDefault) (= (length expr*) 1))
+                          (and (eq? ledger-op 'insert) (= (length expr*) 2)
+                               (memq (ledger-default-kind (cadr expr*)) '(MerkleTree HistoricMerkleTree)))))
+                 (object (cons "kind" "map_insert_default")
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
+                         (cons "index" (car path-elt*))
+                         (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
+                                                           parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'insert) (= (length expr*) 2))
                  (object (cons "kind" "map_insert")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
                                                            parameters bindings src witness-ids))
                          (cons "value" (constructor-value-ir (cadr expr*) (cadr adt-arg*)
                                                              parameters bindings src witness-ids)))]
-                [(and (eq? adt-name 'Map) (eq? ledger-op 'insertDefault) (= (length expr*) 1))
-                 (object (cons "kind" "map_insert_default")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
-                         (cons "index" (car path-elt*))
-                         (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
-                                                           parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'remove) (= (length expr*) 1))
                  (object (cons "kind" "map_remove")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*))
                          (cons "key" (constructor-value-ir (car expr*) (car adt-arg*)
                                                            parameters bindings src witness-ids)))]
                 [(and (eq? adt-name 'Map) (eq? ledger-op 'resetToDefault) (null? expr*))
                  (object (cons "kind" "map_reset")
-                         (cons "field" (symbol->string (id-sym ledger-field-name)))
+                         (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                          (cons "index" (car path-elt*)))]
                 [(and (eq? adt-name '__compact_Cell) (eq? ledger-op 'write) (= (length expr*) 1))
                  (nanopass-case (Lnodisclose Expression) (car expr*)
@@ -3204,12 +4600,12 @@
                       (unless (or binding (memq var-name parameters))
                         (source-errorf src1 "Rust constructor Cell initializer must be a constructor parameter or literal"))
                       (object (cons "kind" "cell_write")
-                              (cons "field" (symbol->string (id-sym ledger-field-name)))
+                              (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                               (cons "index" (car path-elt*))
                               (cons "value" (expression-ir (car expr*) src))))]
                    [else
                     (object (cons "kind" "cell_write")
-                            (cons "field" (symbol->string (id-sym ledger-field-name)))
+                            (cons "field" (rust-ledger-field-name ledger-field-name (car path-elt*)))
                             (cons "index" (car path-elt*))
                             (cons "value" (if (null? adt-arg*)
                                               (expression-ir (car expr*) src)
@@ -3282,16 +4678,21 @@
           [else #f])))
 
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (parameterize ([current-rust-origins (make-rust-origins)])
        (hashtable-clear! call-argument-types)
        (hashtable-clear! function-rust-names)
        (hashtable-clear! native-witness-ids)
+       (hashtable-clear! secp256k1-unary-natives)
+       (hashtable-clear! curve-group-natives)
        (set! struct-shape-names '())
        (set! used-struct-names '())
+       (set! all-ledger-field-names (apply append (map ledger-declaration-names pelt*)))
+       (set! duplicate-ledger-field-names
+         (find-duplicate-ledger-names all-ledger-field-names))
        (index-function-names pelt*)
        (index-native-witnesses pelt*)
-       (for-each index-call-argument-types pelt*)
+       (for-each index-callables pelt*)
        (let* ([witness-ids (witness-id-table pelt*)]
               [constructor* (filter (lambda (value) value)
                                     (map (lambda (pelt)

@@ -15,6 +15,7 @@
 
 //! Prove a root-Let circuit that returns a Field read before its Cell write.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_let_return_oracle_fixture::ledger_contract as contract;
 
@@ -66,6 +67,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("root-Let replace proved and applied through ledger-8");
+    println!("root-Let replace proved and applied through Ledger 9");
     Ok(())
 }

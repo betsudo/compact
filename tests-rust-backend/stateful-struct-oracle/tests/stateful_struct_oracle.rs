@@ -49,7 +49,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
         .fold(HashMap::new(), |a, n| {
             a.insert(
                 EntryPointBuf(n.as_bytes().to_vec()),
-                ContractOperation::new(None),
+                ContractOperation::new(None, None),
             )
         });
     let s = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -118,7 +118,7 @@ fn check<T: Clone + Into<AlignedValue>>(
 #[test]
 fn ordered_struct_members_match_independent_typescript() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-struct-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-struct-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {
@@ -210,7 +210,7 @@ fn check_recorded<T: Clone + Into<AlignedValue>>(
 #[test]
 fn composite_recording_matches_ts_members_calls_and_empty_branch() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/stateful-struct-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-stateful-struct-oracle.json"
     ))
     .unwrap();
     for row in rows.as_array().unwrap() {

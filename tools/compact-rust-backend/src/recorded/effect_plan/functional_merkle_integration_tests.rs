@@ -62,7 +62,7 @@ fn merkle_caps_source_refusals_and_minimal_executor_bounds_are_precise() {
         let checked = super::super::functional_merkle::tests::fixture(kind, true).unwrap();
         let authority = Authority::new();
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         assert!(program.requirements().contains(&cap));
         let rendered = super::super::functional_render::render(&program).unwrap();
         assert_eq!(rendered.merkle.len(), 1);
@@ -73,7 +73,7 @@ fn merkle_caps_source_refusals_and_minimal_executor_bounds_are_precise() {
                 .to_string()
                 .contains(trait_name)
         );
-        let target = Ledger8Target { capabilities: &[] };
+        let target = Ledger9Target { capabilities: &[] };
         assert!(
             matches!(FunctionalProgram::project(&checked,&authority,target),Err(ProjectionRefusal::MissingTargetCapability{capability,..})if capability==cap)
         );
@@ -83,7 +83,7 @@ fn merkle_caps_source_refusals_and_minimal_executor_bounds_are_precise() {
             ..Authority::new()
         };
         assert!(matches!(
-            FunctionalProgram::project(&checked, &missing, Ledger8Target::PINNED),
+            FunctionalProgram::project(&checked, &missing, Ledger9Target::PINNED),
             Err(ProjectionRefusal::MissingSourceAuthority { .. })
         ));
     }

@@ -23,15 +23,17 @@
 use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
+use std::num::NonZeroU16;
 
+use midnight_base_crypto::cost_model::CostDuration;
 use midnight_base_crypto::fab::AlignedValue;
-use midnight_base_crypto::signatures::Signature;
 use midnight_base_crypto::time::Timestamp;
 use midnight_coin_structure::coin::Commitment;
-use midnight_ledger::construct::{ContractCallPrototype, PreTranscript, partition_transcripts};
-use midnight_ledger::structure::{
-    INITIAL_PARAMETERS, Intent, LedgerState, ProofPreimageMarker, Transaction,
+use midnight_ledger_v9::construct::{ContractCallPrototype, PreTranscript, partition_transcripts};
+use midnight_ledger_v9::structure::{
+    INITIAL_PARAMETERS, Intent, LedgerState, ProofPreimageMarker, Signature, Transaction,
 };
+use midnight_onchain_runtime::context::Effects;
 use midnight_onchain_state::state::{ContractOperation, EntryPointBuf};
 use midnight_storage::storage::{HashMap, Map};
 use midnight_transient_crypto::commitment::PedersenRandomness;
@@ -49,6 +51,8 @@ pub use observation::{
     ObservationalOfferBackedState, OfferAdmission, TrustedCheckpointEvidence,
     TrustedObservationCheckpoint, TrustedObservationParts, WalletCheckpointMetadata,
 };
+mod pair;
+pub use pair::{CallProofBinding, CrossContractCallError, prepare_cross_contract_call};
 mod placement;
 #[path = "transaction/transients.rs"]
 mod transients;
@@ -56,9 +60,9 @@ pub use placement::OfferPlacement;
 use rand::{CryptoRng, Rng};
 pub use transients::ContractTransientCoins;
 
-use crate::context::CircuitContext;
+use crate::context::{CircuitContext, CircuitResult};
 use crate::ledger::{ContractAddress, ContractState, DB, DefaultDB};
-use crate::recording::RecordedCircuitResult;
+use crate::recording::{PublicTrace, RecordedCircuitResult};
 
 /// Where a caller observed public contract state. These values do not prove
 /// finality or authenticate the response from an indexer.
@@ -141,6 +145,7 @@ pub struct OfferBackedObservedState<D: DB = DefaultDB> {
     wallet_funding: Option<WalletFundingInputs<D>>,
     transients: Option<ContractTransientCoins<D>>,
     placement: OfferPlacement,
+    partition: OfferTranscriptPartition,
 }
 
 /// How persistent output intents bind to the retained upstream offer.
@@ -159,7 +164,15 @@ pub struct OfferBindingOptions<D: DB = DefaultDB> {
     wallet_funding: Option<WalletFundingInputs<D>>,
     transients: Option<ContractTransientCoins<D>>,
     placement: OfferPlacement,
+    partition: OfferTranscriptPartition,
 }
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum OfferTranscriptPartition {
+    Automatic,
+    WhollyFallible,
+}
+
 impl<D: DB> Default for OfferBindingOptions<D> {
     fn default() -> Self {
         Self {
@@ -167,15 +180,27 @@ impl<D: DB> Default for OfferBindingOptions<D> {
             wallet_funding: None,
             transients: None,
             placement: OfferPlacement::Guaranteed,
+            partition: OfferTranscriptPartition::Automatic,
         }
     }
 }
 impl<D: DB> OfferBindingOptions<D> {
-    /// Select one whole offer's logical placement explicitly. Fallible placement
-    /// requires canonical allocation; any wallet funding/transients must be
-    /// explicitly selected and constructed for the same nonzero segment.
+    /// Select one whole offer's logical placement with automatic transcript
+    /// partitioning. Fallible placement requires the automatic partition to be
+    /// wholly fallible, canonical allocation, and exact selected coin segments.
     pub fn with_offer_placement(mut self, placement: OfferPlacement) -> Self {
         self.placement = placement;
+        self.partition = OfferTranscriptPartition::Automatic;
+        self
+    }
+
+    /// Request that the ledger partition the entire recorded call into the
+    /// fallible section. All offer coins must already be bound to this segment
+    /// under the same canonical allocation and selection rules as
+    /// [`OfferPlacement::Fallible`].
+    pub fn with_wholly_fallible_offer(mut self, segment: NonZeroU16) -> Self {
+        self.placement = OfferPlacement::Fallible(segment);
+        self.partition = OfferTranscriptPartition::WhollyFallible;
         self
     }
     pub fn with_output_allocation(mut self, policy: PersistentOutputAllocation) -> Self {
@@ -374,6 +399,7 @@ impl<D: DB> OfferBackedObservedState<D> {
             wallet_funding,
             transients,
             placement: options.placement,
+            partition: options.partition,
         })
     }
 
@@ -393,6 +419,7 @@ impl<D: DB> OfferBackedObservedState<D> {
         {
             return Err(ObservedCallError::OfferMismatch);
         }
+        let offer_partition = Some(self.partition);
         // Empty plans preserve pre-existing offer-only calls only in the
         // default exact policy. Funded mode must bind actual circuit intents.
         if self.wallet_funding.is_none()
@@ -404,7 +431,7 @@ impl<D: DB> OfferBackedObservedState<D> {
             && call.recorded.public.verify_ops().is_empty()
         {
             return call
-                .prepare_inner(verifier, communication_commitment_rand, true)
+                .prepare_inner(verifier, communication_commitment_rand, offer_partition)
                 .map(|call| OfferBoundPreparedCall {
                     call,
                     offer: self.offer.clone(),
@@ -414,7 +441,8 @@ impl<D: DB> OfferBackedObservedState<D> {
         }
         self.reconcile(&call.recorded)
             .map_err(ObservedCallError::ZswapIntent)?;
-        let prepared = call.prepare_inner(verifier, communication_commitment_rand, true)?;
+        let prepared =
+            call.prepare_inner(verifier, communication_commitment_rand, offer_partition)?;
         self.placement
             .validate_prototype(&prepared)
             .map_err(ObservedCallError::ZswapIntent)?;
@@ -423,6 +451,55 @@ impl<D: DB> OfferBackedObservedState<D> {
             offer: self.offer.clone(),
             placement: self.placement,
             admission: OfferAdmission::CompleteLedger,
+        })
+    }
+
+    /// Bind two state-preserving calls on this contract to one physical offer.
+    /// The first must create one contract transient output; the second must
+    /// consume it before creating persistent output(s). Each recorded trace is
+    /// checked against this observation, then their ordered intent events are
+    /// reconciled together. Neither half is independently admitted.
+    pub fn prepare_transient_receive_then_send<
+        ReceivePrivate,
+        ReceiveOutput: Into<AlignedValue>,
+        SendPrivate,
+        SendOutput: Into<AlignedValue>,
+    >(
+        &self,
+        receive: RecordedCall<'_, ReceivePrivate, ReceiveOutput, D>,
+        receive_verifier: VerifierKey,
+        receive_rand: Fr,
+        send: RecordedCall<'_, SendPrivate, SendOutput, D>,
+        send_verifier: VerifierKey,
+        send_rand: Fr,
+    ) -> Result<OfferBoundPreparedPair<D>, ObservedCallError> {
+        if !std::ptr::eq(receive.observed, &self.observed)
+            || !std::ptr::eq(send.observed, &self.observed)
+        {
+            return Err(ObservedCallError::OfferMismatch);
+        }
+        if self.transients.is_none()
+            || self.offer.transient.len() != 1
+            || self.placement != OfferPlacement::Guaranteed
+        {
+            return Err(ObservedCallError::ZswapIntent(
+                ZswapIntentError::TransientPairShapeMismatch,
+            ));
+        }
+        self.reconciliation()
+            .reconcile_transient_pair(&receive.recorded, &send.recorded)
+            .map_err(ObservedCallError::ZswapIntent)?;
+        let receive =
+            receive.prepare_inner(receive_verifier, receive_rand, Some(self.partition))?;
+        let send = send.prepare_inner(send_verifier, send_rand, Some(self.partition))?;
+        self.placement
+            .validate_prototype(&receive)
+            .and_then(|()| self.placement.validate_prototype(&send))
+            .map_err(ObservedCallError::ZswapIntent)?;
+        Ok(OfferBoundPreparedPair {
+            receive,
+            send,
+            offer: self.offer.clone(),
         })
     }
     fn reconciliation(&self) -> OfferReconciliation<'_, D> {
@@ -460,12 +537,76 @@ struct OfferReconciliation<'a, D: DB> {
     placement: OfferPlacement,
 }
 impl<D: DB> OfferReconciliation<'_, D> {
+    fn reconcile_transient_pair<RP, RO, SP, SO>(
+        &self,
+        receive: &RecordedCircuitResult<RP, RO, D>,
+        send: &RecordedCircuitResult<SP, SO, D>,
+    ) -> Result<(), ZswapIntentError> {
+        use crate::zswap::IntentEvent;
+        self.validate_recorded(receive)?;
+        self.validate_recorded(send)?;
+        let first = receive.execution.context.circuit_zswap();
+        let second = send.execution.context.circuit_zswap();
+        let first_end = self
+            .frontier
+            .checked_add(first.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        let second_end = self
+            .frontier
+            .checked_add(second.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        if !first.inputs.is_empty()
+            || first.outputs.len() != 1
+            || second.inputs.len() != 1
+            || second.outputs.is_empty()
+            || first.allocation != second.allocation
+            || !matches!(
+                first.allocation,
+                crate::zswap::Allocation::CanonicalOfferBound { .. }
+            )
+            || first.next_index != first_end
+            || second.next_index != second_end
+        {
+            return Err(ZswapIntentError::TransientPairShapeMismatch);
+        }
+        // This adapter does not compose storage mutations. Both calls must
+        // leave the observed state intact so their independent traces share
+        // the exact state installed in the one Ledger transaction.
+        if receive.execution.context.query.state.get_ref() != self.observed.contract.data.get_ref()
+            || send.execution.context.query.state.get_ref() != self.observed.contract.data.get_ref()
+        {
+            return Err(ZswapIntentError::TransientPairStateMismatch);
+        }
+        let mut joined = first.clone();
+        let input_offset = joined.inputs.len();
+        let output_offset = joined.outputs.len();
+        joined.inputs.extend(second.inputs.iter().cloned());
+        joined.outputs.extend(second.outputs.iter().cloned());
+        joined
+            .events
+            .extend(second.events.iter().map(|event| match *event {
+                IntentEvent::Input(index) => IntentEvent::Input(input_offset + index),
+                IntentEvent::Output(index) => IntentEvent::Output(output_offset + index),
+            }));
+        joined.next_index = self
+            .frontier
+            .checked_add(joined.outputs.len() as u64)
+            .ok_or(ZswapIntentError::AllocationMismatch)?;
+        self.reconcile_plan(&joined)
+    }
+
     fn reconcile<Private, Output>(
         &self,
         recorded: &RecordedCircuitResult<Private, Output, D>,
     ) -> Result<(), ZswapIntentError> {
-        use crate::ledger::{CoinInfo, CoinRecipient};
-        use midnight_coin_structure::transfer::SenderEvidence;
+        self.validate_recorded(recorded)?;
+        self.reconcile_plan(recorded.execution.context.circuit_zswap())
+    }
+
+    fn validate_recorded<Private, Output>(
+        &self,
+        recorded: &RecordedCircuitResult<Private, Output, D>,
+    ) -> Result<(), ZswapIntentError> {
         let context = &recorded.execution.context;
         let plan = context.circuit_zswap();
         if !recorded.public.initial_intents().is_empty()
@@ -474,6 +615,18 @@ impl<D: DB> OfferReconciliation<'_, D> {
             || context.query.call_context.com_indices != self.observed.com_indices
             || plan.allocation != self.observed.allocation
         {
+            return Err(ZswapIntentError::AllocationMismatch);
+        }
+        Ok(())
+    }
+
+    fn reconcile_plan(
+        &self,
+        plan: &crate::zswap::CircuitZswapPlan,
+    ) -> Result<(), ZswapIntentError> {
+        use crate::ledger::{CoinInfo, CoinRecipient};
+        use midnight_coin_structure::transfer::SenderEvidence;
+        if plan.allocation != self.observed.allocation {
             return Err(ZswapIntentError::AllocationMismatch);
         }
         let canonical = matches!(
@@ -630,6 +783,8 @@ pub enum ZswapIntentError {
     TransientDuplicate,
     TransientEventMismatch,
     TransientInputMismatch,
+    TransientPairShapeMismatch,
+    TransientPairStateMismatch,
     WalletFundingOwner,
     WalletFundingDuplicate,
     WalletFundingMismatch,
@@ -642,6 +797,43 @@ pub struct OfferBoundPreparedCall<D: DB = DefaultDB> {
     call: ContractCallPrototype<D>,
     offer: Offer<ProofPreimage, D>,
     placement: OfferPlacement,
+}
+
+/// Two same-contract calls admitted only after their ordered Zswap intent
+/// stream is reconciled against one complete physical offer.
+pub struct OfferBoundPreparedPair<D: DB = DefaultDB> {
+    receive: ContractCallPrototype<D>,
+    send: ContractCallPrototype<D>,
+    offer: Offer<ProofPreimage, D>,
+}
+
+impl<D: DB> OfferBoundPreparedPair<D> {
+    pub fn prototypes(&self) -> (&ContractCallPrototype<D>, &ContractCallPrototype<D>) {
+        (&self.receive, &self.send)
+    }
+
+    /// Inspect the complete physical offer retained by the reconciled pair.
+    pub fn offer(&self) -> &Offer<ProofPreimage, D> {
+        &self.offer
+    }
+
+    pub fn into_transaction<R: Rng + CryptoRng + ?Sized>(
+        self,
+        rng: &mut R,
+        network_id: impl Into<String>,
+        ttl: Timestamp,
+    ) -> Transaction<Signature, ProofPreimageMarker, PedersenRandomness, D> {
+        let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, D> =
+            Intent::empty(rng, ttl)
+                .add_call::<ProofPreimage>(self.receive)
+                .add_call::<ProofPreimage>(self.send);
+        Transaction::new(
+            network_id,
+            HashMap::new().insert(1_u16, intent),
+            Some(self.offer),
+            HashMap::new(),
+        )
+    }
 }
 
 impl<D: DB> OfferBoundPreparedCall<D> {
@@ -755,21 +947,42 @@ impl Error for ObservedCallError {}
 
 impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, Output, D> {
     /// Check the observed state and installed verifier, then replay and
-    /// partition the trace through the ordinary ledger-8 call adapter.
+    /// partition the trace through the ledger call adapter.
     pub fn prepare(
         self,
         verifier: VerifierKey,
         communication_commitment_rand: Fr,
     ) -> Result<ContractCallPrototype<D>, ObservedCallError> {
-        self.prepare_inner(verifier, communication_commitment_rand, false)
+        self.prepare_inner(verifier, communication_commitment_rand, None)
     }
 
     fn prepare_inner(
         self,
         verifier: VerifierKey,
         communication_commitment_rand: Fr,
-        offer_bound: bool,
+        offer_partition: Option<OfferTranscriptPartition>,
     ) -> Result<ContractCallPrototype<D>, ObservedCallError> {
+        let operation = self.checked_operation(&verifier)?;
+        let mut prepared = prepare_call_inner(
+            self.recorded,
+            CallSpec::new(
+                self.entry_point,
+                verifier,
+                self.input,
+                communication_commitment_rand,
+            ),
+            offer_partition,
+        )
+        .map_err(ObservedCallError::Prepare)?;
+        // Preserve the observed operation's IR and verifier roles.
+        prepared.op = operation;
+        Ok(prepared)
+    }
+
+    fn checked_operation(
+        &self,
+        verifier: &VerifierKey,
+    ) -> Result<ContractOperation, ObservedCallError> {
         let initial = self.recorded.public.initial();
         if initial.address != self.observed.address {
             return Err(ObservedCallError::AddressMismatch);
@@ -788,22 +1001,12 @@ impl<'a, Private, Output: Into<AlignedValue>, D: DB> RecordedCall<'a, Private, O
             .operations
             .get(&EntryPointBuf(self.entry_point.as_bytes().to_vec()))
             .ok_or_else(|| ObservedCallError::MissingOperation(self.entry_point.to_owned()))?;
-        if operation.latest() != Some(&verifier) {
+        if operation.latest() != Some(verifier) {
             return Err(ObservedCallError::VerifierMismatch(
                 self.entry_point.to_owned(),
             ));
         }
-        prepare_call_inner(
-            self.recorded,
-            CallSpec::new(
-                self.entry_point,
-                verifier,
-                self.input,
-                communication_commitment_rand,
-            ),
-            offer_bound,
-        )
-        .map_err(ObservedCallError::Prepare)
+        Ok((*operation).clone())
     }
 }
 
@@ -853,6 +1056,7 @@ pub enum PrepareCallError {
     },
     CoinPublicKeyMismatch,
     UnboundZswapIntents,
+    CrossContractClaimsRequireJointPreparation,
     ZswapPlanMismatch,
     PartitionEffectsMismatch,
 }
@@ -875,6 +1079,9 @@ impl fmt::Display for PrepareCallError {
             }
             Self::UnboundZswapIntents => formatter
                 .write_str("Zswap intent-bearing calls require exact offer-backed preparation"),
+            Self::CrossContractClaimsRequireJointPreparation => {
+                formatter.write_str("cross-contract claims require joint call preparation")
+            }
             Self::EmptyTranscript => formatter.write_str("recorded call has no ledger transcript"),
             Self::NonCanonicalPrivateOutput {
                 output_index,
@@ -905,40 +1112,85 @@ pub fn prepare_call<Private, Output, D: DB>(
 where
     Output: Into<AlignedValue>,
 {
-    prepare_call_inner(recorded, spec, false)
+    prepare_call_inner(recorded, spec, None)
 }
 
 fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
     recorded: RecordedCircuitResult<Private, Output, D>,
     spec: CallSpec,
-    offer_bound: bool,
+    offer_partition: Option<OfferTranscriptPartition>,
 ) -> Result<ContractCallPrototype<D>, PrepareCallError> {
-    if recorded.public.verify_ops().is_empty() {
+    let (pre_transcript, replayed_effects) = validated_pre_transcript(
+        recorded.public,
+        &recorded.execution,
+        offer_partition.is_some(),
+    )?;
+    if !replayed_effects.claimed_contract_calls.is_empty() {
+        return Err(PrepareCallError::CrossContractClaimsRequireJointPreparation);
+    }
+    let address = pre_transcript.context.address;
+    let mut parameters = INITIAL_PARAMETERS;
+    if offer_partition == Some(OfferTranscriptPartition::WhollyFallible) {
+        // The ledger partitioner derives its guarantee budget from both limits.
+        // Keep its runtime cost model and gas calculation. These limits apply
+        // only to constructing this explicit whole-fallible call.
+        parameters.limits.min_time_to_dismiss = CostDuration::ZERO;
+        parameters.limits.time_to_dismiss_per_byte = CostDuration::ZERO;
+    }
+    let partitioned = partition_transcripts(&[pre_transcript], &parameters)
+        .map_err(|error| PrepareCallError::Partition(format!("{error:?}")))?;
+    let (guaranteed, fallible) = partitioned
+        .into_iter()
+        .next()
+        .ok_or(PrepareCallError::EmptyTranscript)?;
+    let transcript = guaranteed
+        .as_ref()
+        .or(fallible.as_ref())
+        .ok_or(PrepareCallError::EmptyTranscript)?;
+    if transcript.effects != replayed_effects {
+        return Err(PrepareCallError::PartitionEffectsMismatch);
+    }
+    Ok(ContractCallPrototype {
+        address,
+        entry_point: EntryPointBuf(spec.entry_point.as_bytes().to_vec()),
+        op: ContractOperation::new(Some(spec.verifier_key), None),
+        guaranteed_public_transcript: guaranteed,
+        fallible_public_transcript: fallible,
+        private_transcript_outputs: recorded.execution.private_transcript_outputs,
+        input: spec.input,
+        output: recorded.execution.result.into(),
+        communication_commitment_rand: spec.communication_commitment_rand,
+        key_location: spec.key_location,
+    })
+}
+
+// Replay establishes the trace and its effects before partitioning. Leave
+// communication commitments to the ledger transaction builder.
+fn validated_pre_transcript<Private, Output, D: DB>(
+    public: PublicTrace<D>,
+    execution: &CircuitResult<Private, Output, D>,
+    has_bound_offer: bool,
+) -> Result<(PreTranscript<D>, Effects<D>), PrepareCallError> {
+    if public.verify_ops().is_empty() {
         return Err(PrepareCallError::EmptyTranscript);
     }
-    if recorded.public.initial_coin_public_key() != recorded.public.final_coin_public_key()
-        || recorded.public.final_coin_public_key()
-            != recorded.execution.context.own_coin_public_key().ok()
+    if public.initial_coin_public_key() != public.final_coin_public_key()
+        || public.final_coin_public_key() != execution.context.own_coin_public_key().ok()
     {
         return Err(PrepareCallError::CoinPublicKeyMismatch);
     }
-    if recorded.public.final_intents() != recorded.execution.context.circuit_zswap()
-        || !recorded.public.initial_intents().is_empty()
+    if public.final_intents() != execution.context.circuit_zswap()
+        || !public.initial_intents().is_empty()
     {
         return Err(PrepareCallError::ZswapPlanMismatch);
     }
-    if !offer_bound && !recorded.public.final_intents().is_empty() {
+    if !has_bound_offer && !public.final_intents().is_empty() {
         return Err(PrepareCallError::UnboundZswapIntents);
     }
     // Exact in-memory source values can contain opaque trailing zeros. The
     // official serialized proof bridge rejects these atoms; never silently
     // normalize them or prepare a binding different from the executed witness.
-    for (output_index, output) in recorded
-        .execution
-        .private_transcript_outputs
-        .iter()
-        .enumerate()
-    {
+    for (output_index, output) in execution.private_transcript_outputs.iter().enumerate() {
         for (atom_index, atom) in output.value.0.iter().enumerate() {
             if !atom.is_in_normal_form() {
                 return Err(PrepareCallError::NonCanonicalPrivateOutput {
@@ -948,55 +1200,25 @@ fn prepare_call_inner<Private, Output: Into<AlignedValue>, D: DB>(
             }
         }
     }
-    let replay = recorded
-        .public
+    let replay = public
         .initial()
-        .query(
-            recorded.public.verify_ops(),
-            None,
-            &recorded.execution.context.cost_model,
-        )
+        .query(public.verify_ops(), None, &execution.context.cost_model)
         .map_err(|error| PrepareCallError::Replay(format!("{error:?}")))?;
-    if replay.context.effects != recorded.execution.context.query.effects {
+    if replay.context.effects != execution.context.query.effects {
         return Err(PrepareCallError::ReplayEffectsMismatch);
     }
-    if replay.context.state.get_ref() != recorded.execution.context.query.state.get_ref() {
+    if replay.context.state.get_ref() != execution.context.query.state.get_ref() {
         return Err(PrepareCallError::ReplayStateMismatch);
     }
-    let (context, program) = recorded.public.into_parts();
-    let address = context.address;
-    let partitioned = partition_transcripts(
-        &[PreTranscript {
+    let (context, program) = public.into_parts();
+    Ok((
+        PreTranscript {
             context,
             program,
             comm_comm: None,
-        }],
-        &INITIAL_PARAMETERS,
-    )
-    .map_err(|error| PrepareCallError::Partition(format!("{error:?}")))?;
-    let (guaranteed, fallible) = partitioned
-        .into_iter()
-        .next()
-        .ok_or(PrepareCallError::EmptyTranscript)?;
-    let transcript = guaranteed
-        .as_ref()
-        .or(fallible.as_ref())
-        .ok_or(PrepareCallError::EmptyTranscript)?;
-    if transcript.effects != replay.context.effects {
-        return Err(PrepareCallError::PartitionEffectsMismatch);
-    }
-    Ok(ContractCallPrototype {
-        address,
-        entry_point: EntryPointBuf(spec.entry_point.as_bytes().to_vec()),
-        op: ContractOperation::new(Some(spec.verifier_key)),
-        guaranteed_public_transcript: guaranteed,
-        fallible_public_transcript: fallible,
-        private_transcript_outputs: recorded.execution.private_transcript_outputs,
-        input: spec.input,
-        output: recorded.execution.result.into(),
-        communication_commitment_rand: spec.communication_commitment_rand,
-        key_location: spec.key_location,
-    })
+        },
+        replay.context.effects,
+    ))
 }
 
 #[cfg(test)]

@@ -1,0 +1,18 @@
+{
+  "files": {
+    "test-contracts/keywords/disclose/branch_conditions/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/disclose/branch_conditions/disclose_branch_conditions.compact": "08b999054089a57d8ac99ac54c579d02859f2f1a2d1b6266f224f9c289487888",
+    "test-contracts/keywords/disclose/branch_conditions/runtime.pass.test.ts": "d6752bacf3c8baeccb1f27d2d7b73df696afff6180c76b0787f5e1d4303e78e6",
+    "test-contracts/keywords/disclose/branch_conditions_in_constructor/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/disclose/branch_conditions_in_constructor/disclose_branch_conditions_in_constructor.compact": "7971179328de04fbae2076b610305b3483ef40f6b554906938a44544da2f93d1",
+    "test-contracts/keywords/disclose/branch_conditions_in_constructor/runtime.pass.test.ts": "255f67232470857d056bc561f3b6bc1587535f356e058492998145990178ea8e",
+    "test-contracts/keywords/disclose/param_to_ledger_undisclosed/compile.fail.test.ts": "1f658ccabe365207847a966b2b47af731f55d27723656224a790fb9bb91df86a",
+    "test-contracts/keywords/disclose/param_to_ledger_undisclosed/disclose_param_to_ledger_undisclosed.compact": "dd2cc01554377ab9c20f80e48e9060a7032a1c2b049ee46dae521813ad312f69",
+    "test-contracts/keywords/disclose/unexported_circuit_parameters/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/disclose/unexported_circuit_parameters/disclose_unexported_circuit_parameters.compact": "32446764fcd5acd2888faac7d975c19dbdb4f3fa38b189bfa430a0393fa88f29",
+    "test-contracts/keywords/disclose/unexported_circuit_parameters/runtime.pass.test.ts": "b99e7cfd6022a3be294a7495f907cc3e2f338b7dddeb2873ae02bd7fe087bc5d",
+    "test-contracts/keywords/disclose/vector_element_condition/compile.fail.test.ts": "1ed7e49dfa02f43d30c52146bda829fdd812eacf77b17c86d2738c38443623fb",
+    "test-contracts/keywords/disclose/vector_element_condition/disclose_vector_element_condition.compact": "75446e4a689da0b39a561032b35e8b58f56c9d2a6ec9558fa68c725ad98ecbd1"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

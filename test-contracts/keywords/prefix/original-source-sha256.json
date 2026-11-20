@@ -1,0 +1,17 @@
+{
+  "files": {
+    "test-contracts/keywords/prefix/adds_to_imported_names/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/prefix/adds_to_imported_names/prefix_adds_to_imported_names.compact": "1c157435da9484be6235d7decfaf51cb334c419b0383820f15559be275f95846",
+    "test-contracts/keywords/prefix/adds_to_imported_names/runtime.pass.test.ts": "4cbfc45540be38efdabd83cbb1e70d2f9d5d3d4707d89efb46b0d389cd033220",
+    "test-contracts/keywords/prefix/avoids_name_collision/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/keywords/prefix/avoids_name_collision/lib/one.compact": "06f7f19a0ae6aa1a9371e197a74394b4c29f52b7c0d7eeb363e561f78e321a57",
+    "test-contracts/keywords/prefix/avoids_name_collision/lib/two.compact": "5542097cb93d7301820a5c925354ccddfa1501b1da4933add6ca15d7969c85ec",
+    "test-contracts/keywords/prefix/avoids_name_collision/prefix_avoids_name_collision.compact": "3332c2b359adbb01dfc4fb7c309037124a21b9bf2f4a172e26b35a012ff1717d",
+    "test-contracts/keywords/prefix/avoids_name_collision/runtime.pass.test.ts": "d6b45429b7ba08153e18de04b87d6c02dcbd91fc6bfc512067fcd3716017a784",
+    "test-contracts/keywords/prefix/collision_without_prefix/compile.fail.test.ts": "e0c820c85d572a1fbd1fcf176b7ca6410c1407dd0d06ead58d5105b0f29dd0e4",
+    "test-contracts/keywords/prefix/collision_without_prefix/lib/one.compact": "06f7f19a0ae6aa1a9371e197a74394b4c29f52b7c0d7eeb363e561f78e321a57",
+    "test-contracts/keywords/prefix/collision_without_prefix/lib/two.compact": "5542097cb93d7301820a5c925354ccddfa1501b1da4933add6ca15d7969c85ec",
+    "test-contracts/keywords/prefix/collision_without_prefix/prefix_collision_without_prefix.compact": "4102fcbce4fdba043fab0b391a4611650f79e5c5349378035d5e435ffb68c943"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

@@ -14,6 +14,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -176,8 +178,8 @@ def main():
         for spec in definitions:
             name = spec["source"]
             target = generated / name
-            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                    *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []),
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
+                    *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []),
                     (SOURCES / (name + ".compact")).relative_to(ROOT), target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk",
                     (SOURCES / (name + ".compact")).relative_to(ROOT), output / "independent" / name])
@@ -200,7 +202,8 @@ def main():
                 else:
                     raise ValueError("derived result coercion relabeled as supplied")
             programs = inventory(target / "contract/checked-programs")
-            require(programs == inventory(FIXTURES / "goldens" / name / "checked-programs"), "complete Program roster differs: " + name)
+            require(programs == inventory(FIXTURES / "ledger9-goldens" / name / "checked-programs"),
+                    "complete Ledger 9 Program roster differs: " + name)
             require(len(programs) == (2 if spec["stateful"] else 0), "unexpected proof applicability: " + name)
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
@@ -217,7 +220,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "typescript.json"
         run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
+                "--version", "0.18.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == 33, "incomplete TypeScript oracle")
         report["typescript"] = {"path": str(ts), "sha256": digest(ts), "cases": 33}
@@ -240,7 +243,7 @@ def main():
             package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
             dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
         manifest = consumer / "Cargo.toml"
-        manifest.write_text('[workspace]\n[package]\nname="fold-vector-result-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
+        manifest.write_text(with_pinned_patches('[workspace]\n[package]\nname="fold-vector-result-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n', ROOT))
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
         require("test result: ok. 33 passed; 0 failed; 0 ignored;" in result.stdout, "all33 consumer tests must execute")
@@ -264,11 +267,53 @@ def main():
             report["compile_fail"][name] = compile_failure(rejected, name, code, source)
         report["source_refusals"] = {}
         for name, message in [("wrong_length", "mismatch between actual return type"), ("wrong_element", "mismatch between actual return type"),
-                ("narrow_return", "mismatch between actual return type"), ("inline_fold", "named Vector fold functions only"), ("binary_fold", "one iterable in Vector fold")]:
+                ("narrow_return", "mismatch between actual return type"), ("binary_fold", "one iterable in Vector fold")]:
             rejected = run("refused-" + name, [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
                 FIXTURES / (name + ".compact"), output / ("refused-" + name)], success=False)
             require(rejected.returncode and message.lower() in rejected.stderr.lower(), "source refusal changed: " + name)
             report["source_refusals"][name] = message
+        # Pinned Vector fold support now accepts this formerly refused inline
+        # reducer. Execute both generated targets and retain the real refusals.
+        inline_source = FIXTURES / "inline_fold.compact"
+        inline_ts = output / "inline-fold-typescript"
+        inline_both = output / "inline-fold-both"
+        run("inline-fold-ts-compile", [compiler, "--target", "ts", "--skip-zk", "--feature-zkir-v3",
+            inline_source, inline_ts])
+        run("inline-fold-paired-compile", [compiler, "--target", "ts", "--target", "rust", "--skip-zk",
+            "--feature-zkir-v3", "--rust-runtime-root", ROOT, inline_source, inline_both])
+        inline_info = json.loads((inline_both / "compiler/contract-info.json").read_text())
+        require(inline_info["circuits"] == [{"name": "value", "pure": True, "proof": False,
+            "arguments": [{"name": name, "type": {"type-name": "Vector", "length": 2,
+                "type": {"type-name": "Uint", "maxval": 255}}} for name in ("input", "seed")],
+            "result-type": {"type-name": "Vector", "length": 2,
+                "type": {"type-name": "Uint", "maxval": 65535}}}],
+            "inline Fold capability or result type changed")
+        for name in ("compiler/contract-info.json", "contract/index.js"):
+            require(digest(inline_ts / name) == digest(inline_both / name),
+                    "paired inline Fold changed generated TypeScript: " + name)
+        inline_manifest = source_manifest_snapshot(inline_both, False)
+        inline_snapshots = {"typescript": inventory(inline_ts), "paired": inventory(inline_both)}
+        run("inline-fold-typescript", ["node", FIXTURES / "inline_fold_acceptance.mjs",
+            inline_both / "contract/index.js"])
+        inline_consumer = output / "inline-fold-consumer"
+        (inline_consumer / "tests").mkdir(parents=True)
+        shutil.copyfile(FIXTURES / "inline_fold_acceptance.rs", inline_consumer / "tests/inline_fold.rs")
+        shutil.copyfile(ROOT / "Cargo.lock", inline_consumer / "Cargo.lock")
+        inline_package = tomllib.loads((inline_both / "contract/Cargo.toml").read_text())["package"]["name"]
+        inline_cargo = inline_consumer / "Cargo.toml"
+        inline_cargo.write_text(with_pinned_patches('[workspace]\n[package]\nname="inline-fold-acceptance-consumer"\n'
+            'version="0.1.0"\nedition="2024"\n[dependencies]\ninline_fold={package='
+            + json.dumps(inline_package) + ',path=' + json.dumps(str(inline_both / "contract")) + '}\n', ROOT))
+        run("inline-fold-rust-resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
+            "--manifest-path", inline_cargo])
+        inline_rust = run("inline-fold-rust", ["cargo", "test", "--locked", "--offline",
+            "--manifest-path", inline_cargo])
+        require("test result: ok. 1 passed; 0 failed;" in inline_rust.stdout,
+                "generated Rust inline Fold assertion did not pass")
+        report["source_acceptance"] = {"inline_fold": {
+            "source_sha256": digest(inline_source), "manifest": inline_manifest,
+            "generated": inline_snapshots, "rust_consumer_lock_sha256": digest(inline_consumer / "Cargo.lock"),
+            "scope": "generated TypeScript and Rust inline Vector fold result widening"}}
         wrong = copy.deepcopy(reference)
         next(row for row in wrong["rows"] if row["id"] == "small_bounds")["result"]["valueAtoms"] = [[42, 0], [0, 0]]
         wrong_path = output / "changed-result.json"
@@ -291,7 +336,7 @@ def main():
             mutant.mkdir()
             source = mutant / (name + ".compact")
             source.write_text(text.replace(old, new))
-            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT, source, mutant / "generated"])
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, source, mutant / "generated"])
             changed_manifest = manifest.read_text().replace(str(generated / name / "contract"), str(mutant / "generated/contract"))
             mutant_consumer = mutant / "consumer"
             mutant_consumer.mkdir()
@@ -328,6 +373,9 @@ def main():
             report["malformed_ir_refusals"][name] = rejected.stderr
         for name, before in snapshots.items():
             require(inventory(generated / name) == before, "generated artifact changed: " + name)
+        require(inventory(inline_ts) == inline_snapshots["typescript"]
+                and inventory(inline_both) == inline_snapshots["paired"],
+                "accepted inline Fold generated artifact changed")
         for path, sha in pins.items():
             require(digest(ROOT / path) == sha, "source changed: " + path)
         for path, sha in tools.items():

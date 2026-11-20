@@ -14,6 +14,9 @@
 // limitations under the License.
 //! Original concede from explicitly seeded prior game and funded coin state.
 use super::coracle_guess_support as support;
+use super::local_v3_application as v3;
+use super::positional_transaction::make_deploy;
+use super::qualified_coin_funding as funding;
 use super::*;
 use compact_rust_test_center_coracle_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
@@ -36,7 +39,12 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_test_center_coracle_fixture::RETAINED_IR,
     )?;
+    v3::validate_pinned_artifacts(
+        root,
+        include_str!("../../compact-rust-backend/tests/coracle-concede-ledger9-artifacts.json"),
+    )?;
     const NAME: &str = "concede";
+    let stem = format!("coracle-concede-{}", if red { "red" } else { "blue" });
     let mut rng = StdRng::seed_from_u64(0x0209_0000 + u64::from(red));
     let settings = support::Settings {
         red,
@@ -47,7 +55,14 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
     let seeded = support::seeded(&settings)?;
     let deploy = make_deploy(root, NAME, seeded.query.state.get_ref().clone(), &mut rng)?;
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
+    let mut fees = funding::fee_funded_state_with_utxos(&mut rng, 2)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let resolver = funding::fee_resolver(root, NAME)?;
+    v3::apply_funded_deployment(
+        root, &stem, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let coins = [(3, 42), (4, 17), (5, 19)].map(|(nonce, value)| {
         runtime::ledger::coin_info_from_compact(
             FixedBytes::new([nonce; 32]),
@@ -62,7 +77,9 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
     let genesis: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], genesis, vec![]).ok_or("empty genesis")?;
     let (zswap, indices) = fees.ledger.zswap.try_apply(&genesis, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(zswap.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        zswap.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let qualified = coins.map(|coin| {
         coin.qualify(
             *indices
@@ -90,6 +107,8 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
     }
     let mut prior = deploy.initial_state.clone();
     prior.data = ctx.query.state;
+    // The deployment commits to its original state and address. Seed the
+    // explicit prior game fixture at that address before proving the call.
     fees.ledger.contract = fees.ledger.contract.insert(address, prior.clone());
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
@@ -219,57 +238,19 @@ fn run_color(root: &Path, red: bool) -> Result<(), Box<dyn Error>> {
             slot.inspect(prior.data.get_ref())?
         );
     }
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/concede.verifier"),
-    )?))?;
+    let verifier = v3::read_verifier(root, NAME)?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0u64))?;
     assert!(prepared.prototype().guaranteed_public_transcript.is_some());
     assert!(prepared.prototype().fallible_public_transcript.is_none());
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let updated = v3::prove_and_apply_offer(
         root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let tx = prepared.into_transaction(
+        (NAME, &stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0209_5052 + u64::from(red)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        native.context.query.state.get_ref(),
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0209_5345 + u64::from(red)));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), fees.time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: fees.time,
-            last_block_time: fees.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = ledger.apply(&verified, &context);
-    assert!(
-        matches!(result, TransactionResult::Success(_)),
-        "{result:?}"
-    );
-    assert_eq!(
-        updated.contract.get(&address).unwrap().data,
-        native.context.query.state
-    );
     assert_eq!(updated.zswap.first_free, start + 1);
     assert_eq!(
         updated.zswap.coin_coms.index(allocated).unwrap().0,

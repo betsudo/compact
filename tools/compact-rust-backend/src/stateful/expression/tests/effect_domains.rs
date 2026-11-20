@@ -1,9 +1,21 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Domain admission at the native effect dispatcher boundary.
 use super::*;
-use crate::ir::KernelClaimKind;
+use crate::ir::{KernelClaimKind, KernelUnshieldedEffectKind};
 use syn::visit_mut::{self, VisitMut};
 
 #[derive(Default)]
@@ -146,6 +158,113 @@ fn mint_requires_digest_domain_and_exact_uint64_amount() {
             actual,
         );
     }
+}
+
+#[test]
+fn unshielded_kernel_effects_route_typed_operands_in_source_order() {
+    let declarations = Declarations::default();
+    let mut token = token_type();
+    let mut recipient = unshielded_recipient_type();
+    if let Type::Struct { name, .. } = &mut token {
+        *name = "EitherCompact1".into();
+    }
+    if let Type::Struct { name, .. } = &mut recipient {
+        *name = "EitherCompact2".into();
+    }
+    for (kind, method) in [
+        (KernelUnshieldedEffectKind::Mint, "kernel_mint_unshielded"),
+        (
+            KernelUnshieldedEffectKind::Inputs,
+            "kernel_inc_unshielded_inputs",
+        ),
+        (
+            KernelUnshieldedEffectKind::Outputs,
+            "kernel_inc_unshielded_outputs",
+        ),
+        (
+            KernelUnshieldedEffectKind::Claim,
+            "kernel_claim_unshielded_coin_spend",
+        ),
+    ] {
+        let mint = kind == KernelUnshieldedEffectKind::Mint;
+        let key = if mint {
+            Type::Bytes { length: 32 }
+        } else {
+            token.clone()
+        };
+        let maximum = if mint {
+            u64::MAX.to_string()
+        } else {
+            u128::MAX.to_string()
+        };
+        let amount = uint(&maximum);
+        let effect = || Expr::KernelUnshieldedEffect {
+            effect: kind,
+            key: default_value(key.clone()),
+            recipient: (kind == KernelUnshieldedEffectKind::Claim)
+                .then(|| default_value(recipient.clone())),
+            amount: default_value(amount.clone()),
+        };
+        admitted(declarations.lower(effect()), Type::Unit, method);
+        refused(
+            declarations.lower(Expr::KernelUnshieldedEffect {
+                effect: kind,
+                key: default_value(key.clone()),
+                recipient: (kind == KernelUnshieldedEffectKind::Claim)
+                    .then(|| default_value(recipient.clone())),
+                amount: default_value(Type::Field),
+            }),
+            amount,
+            Type::Field,
+        );
+    }
+}
+
+#[test]
+fn balance_reads_require_canonical_token_and_uint128_bound() {
+    let declarations = Declarations::default();
+    let mut token = token_type();
+    if let Type::Struct { name, .. } = &mut token {
+        *name = "EitherCompact3".into();
+    }
+    let amount = uint(&u128::MAX.to_string());
+    admitted(
+        declarations.lower(Expr::KernelBalance {
+            token: default_value(token.clone()),
+        }),
+        amount.clone(),
+        "kernel_balance",
+    );
+    admitted(
+        declarations.lower(Expr::KernelBalanceLessThan {
+            token: default_value(token.clone()),
+            amount: default_value(amount.clone()),
+        }),
+        Type::Boolean,
+        "kernel_balance_less_than",
+    );
+    admitted(
+        declarations.lower(Expr::KernelBalanceGreaterThan {
+            token: default_value(token.clone()),
+            amount: default_value(amount.clone()),
+        }),
+        Type::Boolean,
+        "kernel_balance_greater_than",
+    );
+    declarations
+        .lower(Expr::KernelBalanceGreaterThan {
+            token: parameter("bytes"),
+            amount: parameter("absent"),
+        })
+        .refused_before_effects(mismatch(token_type(), Type::Bytes { length: 32 }));
+    refused(
+        declarations.lower(Expr::KernelBalanceLessThan {
+            token: default_value(token_type()),
+            amount: parameter("uint"),
+        }),
+        amount,
+        uint("255"),
+    );
 }
 
 #[test]

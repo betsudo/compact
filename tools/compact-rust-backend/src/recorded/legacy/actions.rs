@@ -110,6 +110,8 @@ pub(in crate::recorded) fn append_steps(
         | StateAction::ListPushFront { .. }
         | StateAction::ListPopFront { .. }
         | StateAction::ListReset { .. }
+        | StateAction::NestedMapInsert { .. }
+        | StateAction::MapInitChild { .. }
         | StateAction::MapInsert { .. }
         | StateAction::MapInsertDefault { .. }
         | StateAction::MapRemove { .. }

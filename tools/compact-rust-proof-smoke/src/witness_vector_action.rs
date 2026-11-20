@@ -15,6 +15,7 @@
 
 //! Prove an ordered discarded Field witness call with a typed vector argument.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_witness_vector_action_fixture::ledger_contract as contract;
 
@@ -86,6 +87,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("typed vector witness discardResult proved and applied through ledger-8");
+    println!("typed vector witness discardResult proved and applied through Ledger 9");
     Ok(())
 }

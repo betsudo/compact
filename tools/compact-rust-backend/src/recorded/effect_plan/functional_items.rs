@@ -168,7 +168,7 @@ pub(crate) fn render_contract(
         let program = FunctionalProgram::project(
             &checked,
             &origin,
-            super::functional::Ledger8Target::PINNED,
+            super::functional::Ledger9Target::PINNED,
         )
         .map_err(|error| {
             invalid(

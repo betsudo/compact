@@ -13,13 +13,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Usage: node capture.mjs /absolute/generated/contract/index.js
+// Usage: node capture.mjs /absolute/generated/contract/index.js /absolute/compactc
 import { pathToFileURL } from "node:url";
 import { readFileSync, realpathSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import * as r from "../../../runtime/dist/index.js";
+if (process.argv.length !== 4)
+  throw Error("expected generated contract index and compiler executable");
 const modulePath = resolve(process.argv[2]);
+const compiler = execFileSync(resolve(process.argv[3]), ["--version"], {
+  encoding: "utf8",
+}).trim();
+const { version: runtime } = JSON.parse(readFileSync("runtime/package.json"));
 if (
   realpathSync(
     resolve(
@@ -124,8 +131,8 @@ process.stdout.write(
     {
       scope:
         "Branch TypeScript compiler/runtime independent execution capture; no proof or network claim",
-      compiler: "0.31.133",
-      runtime: "0.16.101",
+      compiler,
+      runtime,
       provenance,
       cases,
     },

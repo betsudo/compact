@@ -14,6 +14,10 @@
 // limitations under the License.
 
 //! Explicit upstream wallet input funding of an unchanged receiveShielded call.
+use super::local_v3_application as v3;
+use super::shielded_receive::{
+    FundedReceive, NAME, check_received_output, coin, deploy_funded, observed,
+};
 use super::*;
 use compact_rust_shielded_receive_oracle_fixture::ledger_contract as contract;
 use midnight_compact_runtime as runtime;
@@ -28,21 +32,19 @@ pub(super) fn run_observational(root: &Path) -> Result<(), Box<dyn Error>> {
     run_case(root, true)
 }
 fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>> {
-    super::shielded_receive::ensure_source_artifacts(root)?;
+    let stem = if observation_policy {
+        "observational-receive"
+    } else {
+        "wallet-funded-receive"
+    };
     let mut rng = StdRng::seed_from_u64(0x0199_0000);
-    let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(
-        root,
-        "accept",
-        initial.ledger_state.get_ref().clone(),
-        &mut rng,
-    )?;
+    let FundedReceive {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(root, stem, &mut rng)?;
     let address = deploy.address();
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/accept.verifier"),
-    )?))?;
-    let mut state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    let coin = super::shielded_receive::coin(3, 42);
+    let coin = coin(3, 42);
     let info = runtime::ledger::coin_info_from_compact(coin.nonce, coin.color, 42);
     let funded = super::qualified_coin_funding::seed_and_fund(
         &mut rng,
@@ -51,10 +53,6 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         runtime::ledger::CoinPublicKey(runtime::ledger::HashOutput([7; 32])),
         Timestamp::from_secs(0),
     )?;
-    state.ledger.contract = state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
     let input = funded
         .offer
         .inputs
@@ -71,7 +69,7 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     // The old constructor continues to require an exact contract-owned input
     // intent. A caller must opt into the explicit wallet selection.
     let default_bound = OfferBackedObservedState::new(
-        super::shielded_receive::observed(address, deploy.initial_state.clone()),
+        observed(address, deploy.initial_state.clone()),
         &state.ledger,
         offer.clone(),
     )?;
@@ -92,7 +90,7 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
         .map_err(|error| format!("wrong funding selection unexpectedly rejected: {error:?}"))?;
     assert!(
         OfferBackedObservedState::with_wallet_funding(
-            super::shielded_receive::observed(address, deploy.initial_state.clone()),
+            observed(address, deploy.initial_state.clone()),
             &state.ledger,
             offer.clone(),
             wrong_selection,
@@ -107,13 +105,13 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     let funding = WalletFundingInputs::from_inputs(vec![input.clone()])
         .map_err(|error| format!("wallet funding selection rejected: {error:?}"))?;
     let bound = OfferBackedObservedState::with_wallet_funding(
-        super::shielded_receive::observed(address, deploy.initial_state.clone()),
+        observed(address, deploy.initial_state.clone()),
         &state.ledger,
         offer.clone(),
         funding,
     )?;
     let other_bound = OfferBackedObservedState::with_wallet_funding(
-        super::shielded_receive::observed(address, deploy.initial_state),
+        observed(address, deploy.initial_state.clone()),
         &state.ledger,
         offer.clone(),
         WalletFundingInputs::from_inputs(vec![input.clone()])
@@ -195,10 +193,7 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
     let output_index = state.ledger.zswap.first_free;
     let updated = if observation_policy {
         use runtime::transaction::{ObservationalOfferBackedState, OfferAdmission};
-        let observed = super::shielded_receive::observed(
-            address,
-            state.ledger.contract.get(&address).unwrap().clone(),
-        );
+        let observed = observed(address, deploy.initial_state.clone());
         let checkpoint = super::observational_binding::checkpoint(&state.ledger, &observed)?;
         let binding = ObservationalOfferBackedState::bind(
             observed,
@@ -221,30 +216,27 @@ fn run_case(root: &Path, observation_policy: bool) -> Result<(), Box<dyn Error>>
             prepared.prototype(),
             observed_prepared.prototype(),
         )?;
-        super::composite_zswap::apply_bound(
+        v3::prove_and_apply_offer(
             root,
-            "accept",
+            (NAME, stem),
             observed_prepared,
-            state,
-            rng,
+            &mut state,
+            &mut rng,
             &verifier,
-            commitment,
-            output_index,
-            address,
+            deploy.initial_state.data.get_ref(),
         )?
     } else {
-        super::composite_zswap::apply_bound(
+        v3::prove_and_apply_offer(
             root,
-            "accept",
+            (NAME, stem),
             prepared,
-            state,
-            rng,
+            &mut state,
+            &mut rng,
             &verifier,
-            commitment,
-            output_index,
-            address,
+            deploy.initial_state.data.get_ref(),
         )?
     };
+    check_received_output(&updated, commitment, output_index)?;
     assert!(
         updated
             .zswap

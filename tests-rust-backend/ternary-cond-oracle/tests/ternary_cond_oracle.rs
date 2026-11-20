@@ -91,7 +91,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in EXPORTED {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -103,7 +103,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 
 fn oracle() -> serde_json::Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-cond-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-cond-oracle.json"
     ))
     .unwrap()
 }
@@ -157,7 +157,7 @@ fn ordered_vm_shape(operations: serde_json::Value) -> serde_json::Value {
 #[test]
 fn recorded_nested_uint4_matches_typescript_all_branches_and_replays() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-nested-if.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-nested-if.json"
     ))
     .unwrap();
     for (case, args, seed_flag) in [
@@ -283,7 +283,7 @@ fn recorded_nested_uint4_matches_typescript_all_branches_and_replays() {
 #[test]
 fn recorded_conditional_field_vectors_match_typescript_and_replay() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-vector-element.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-vector-element.json"
     ))
     .unwrap();
     for (case, seed_flag) in [("streamFalse", false), ("streamTrue", true)] {
@@ -380,7 +380,7 @@ fn recorded_conditional_field_vectors_match_typescript_and_replay() {
 #[test]
 fn recorded_annotated_uint8_matches_typescript_and_replay() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-annotated-uint8.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-annotated-uint8.json"
     ))
     .unwrap();
     for (case, c) in [("walkerTrue", true), ("walkerFalse", false)] {
@@ -469,7 +469,7 @@ fn recorded_annotated_uint8_matches_typescript_and_replay() {
 #[test]
 fn recorded_closed_curve_arguments_match_typescript_and_replay() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-native-arg.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-native-arg.json"
     ))
     .unwrap();
     for (case, args, seed_flag) in [
@@ -593,7 +593,7 @@ fn recorded_closed_curve_arguments_match_typescript_and_replay() {
 #[test]
 fn recorded_closed_unsigned_ternary_comparisons_match_typescript() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-comparison.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-comparison.json"
     ))
     .unwrap();
     for case in ["walkerTrue", "walkerFalse", "streamFalse"] {
@@ -690,7 +690,7 @@ fn recorded_closed_unsigned_ternary_comparisons_match_typescript() {
 #[test]
 fn recorded_streaming_comparison_and_struct_true_paths_match_typescript() {
     let capture: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/adr221-ternary-true.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-adr221-ternary-true.json"
     ))
     .unwrap();
     assert_eq!(capture["mode"], "ternary");
@@ -807,7 +807,7 @@ fn recorded_streaming_comparison_and_struct_true_paths_match_typescript() {
 #[test]
 fn recorded_closed_ternary_struct_members_match_typescript() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/ternary-recorded-struct-member.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-ternary-recorded-struct-member.json"
     ))
     .unwrap();
     for case in ["walkerTrue", "walkerFalse", "streamFalse"] {
@@ -903,7 +903,7 @@ fn recorded_closed_ternary_struct_members_match_typescript() {
 #[test]
 fn recorded_scalar_pure_and_witness_conditional_arguments_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-counter-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-counter-oracle.json"
     ))
     .unwrap();
     for (label, conditional, seed_flag) in [
@@ -1017,7 +1017,7 @@ fn initial(c: bool, d: bool, x: u64) -> midnight_compact_runtime::context::Const
 #[test]
 fn conditional_scalar_recordings_match_both_typescript_branches_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/conditional-counter-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-conditional-counter-oracle.json"
     ))
     .unwrap();
     for (name, conditional, seed_flag) in [
@@ -1254,7 +1254,7 @@ fn assert_direct_trace(
 #[test]
 fn walker_vector_element_executes_both_branches_against_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json"
     ))
     .unwrap();
     let rows = oracle["stateful"]

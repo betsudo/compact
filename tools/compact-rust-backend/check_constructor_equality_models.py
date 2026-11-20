@@ -25,6 +25,12 @@ if not __debug__ or sys.flags.optimize or os.environ.get('PYTHONOPTIMIZE'):
 import constructor_proof_dependencies as dependencies
 import check_functional_source_sdk as sdk
 import check_passport_current_profile as process_owner
+from check_constructor_vector_models import GEOMETRY
+
+def inventory_format(*, boundaries=False, tuple_guards=False):
+    cohort = 'tuple-equality' if tuple_guards else 'equality-boundaries' if boundaries else 'equality'
+    return f'compact-constructor-{cohort}-model-inventory/v2'
+
 
 def main(*, boundaries=False, tuple_guards=False):
     assert not (boundaries and tuple_guards), "one finite cohort required"
@@ -125,7 +131,7 @@ def main(*, boundaries=False, tuple_guards=False):
     assert not Path(env['CARGO_TARGET_DIR']).resolve().is_relative_to(W)
     configuration = sdk.cargo_configuration(env)
     env.pop('LD_LIBRARY_PATH', None)
-    r = dict(format='constructor-tuple-equality-model-observation/v1' if tuple_guards else 'constructor-equality-boundaries-model-observation/v1' if boundaries else 'constructor-equality-model-observation/v1', status='running', producer_source=accepted['head'], qualifier_source=source, qualifier_tree=git('rev-parse', 'HEAD^{tree}'), started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), inputs=pins, commands=[], key_generation=False, proof_execution=False, scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission')
+    r = dict(format='constructor-tuple-equality-model-observation/v2' if tuple_guards else 'constructor-equality-boundaries-model-observation/v2' if boundaries else 'constructor-equality-model-observation/v2', status='running', producer_source=accepted['head'], qualifier_source=source, qualifier_tree=git('rev-parse', 'HEAD^{tree}'), started_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(), inputs=pins, commands=[], key_generation=False, proof_execution=False, scope='intact model k observation and observer refusal controls only; no proof eligibility or full toolchain admission')
     save = lambda: (D / 'receipt.json').write_text(json.dumps(r, indent=2) + '\n')
     save()
     def run(label, argv, expected=0, diagnostic=None, timeout=600):
@@ -184,11 +190,13 @@ def main(*, boundaries=False, tuple_guards=False):
         run('clippy', ['cargo', 'clippy', '--profile', 'proof-checks', '--locked', '--offline', '-p', 'compact-rust-proof-smoke', '--bin', 'compact-rust-proof-smoke', '--features', 'constructor-vector-models', '--', '-D', 'warnings'])
         output = run('inventory', [binary, inventory_flag, root], timeout=observation_timeout)
         inventory = json.loads(output.read_text());rows=inventory['circuits']
+        assert inventory['format'] == inventory_format(boundaries=boundaries, tuple_guards=tuple_guards)
         assert len(rows) == model_count and {(x['source'], x['circuit']) for x in rows} == {(s['role'], e) for s in specs for e in s['entries']}
         assert not inventory['key_generation'] and not inventory['proof_execution'] and not inventory['selection_made']
         for x in rows:
             p = root / x['source'] / 'zkir' / (x['circuit']+'.zkir')
             assert x['zkir_bytes'] == p.stat().st_size
+            assert (x['k'], x['rows']) == GEOMETRY[x['circuit']]
             assert x['within_tiny_automatic_cap'] == (x['k'] <= 8)
             x['zkir_sha256'] = pins[str(p)]
         r['inventory'] = inventory

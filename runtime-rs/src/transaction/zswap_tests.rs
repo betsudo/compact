@@ -49,7 +49,8 @@ pub(super) fn setup() -> (
     let output = Output::new_contract_owned(&mut rng, &seed, None, address).unwrap();
     let offer = Offer::new(vec![], vec![output], vec![]).unwrap();
     let (state, _) = ledger.zswap.try_apply(&offer, None).unwrap();
-    ledger.zswap = Sp::new(state.post_block_update(Timestamp::from_secs(0)));
+    ledger.zswap =
+        Sp::new(state.post_block_update(Timestamp::from_secs(0), ledger.parameters.global_ttl));
     let input = Input::new_contract_owned(
         &mut rng,
         &seed.qualify(0),
@@ -715,7 +716,7 @@ fn public_prepare_preserves_default_and_funded_empty_call_boundaries() {
             }
             bound.observed.contract.operations = bound.observed.contract.operations.insert(
                 EntryPointBuf(b"empty".to_vec()),
-                ContractOperation::new(Some(verifier.clone())),
+                ContractOperation::new(Some(verifier.clone()), None),
             );
             for query in [false, true] {
                 let mut frame = RecordingFrame::new(bound.observed.circuit_context(()));

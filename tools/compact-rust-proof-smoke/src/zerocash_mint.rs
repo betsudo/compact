@@ -14,6 +14,7 @@
 // limitations under the License.
 
 //! Prove composite witness values and a typed commitment through historic Merkle insertion.
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_zerocash_oracle_fixture::ledger_contract as contract;
 use compact_rust_zerocash_oracle_fixture::types::{
@@ -114,6 +115,10 @@ impl Witnesses<()> for FixedWitness {
 }
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        compact_rust_zerocash_oracle_fixture::RETAINED_IR,
+    )?;
     let initial = contract::initial_state(ConstructorContext::new(()))?;
     let mut rng = StdRng::seed_from_u64(0x159);
     let deploy = make_deploy(

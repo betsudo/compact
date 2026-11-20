@@ -21,6 +21,13 @@ and Apple Silicon, passed before canonical merge `8d9798d609e0090978083ddaa05691
 Future compiler/toolchain changes still require their own qualification; see the
 [plan and limits](../plans/passport-current-profile-consumer.md).
 
+The Ledger 9 migration branch passed the maintained standalone gate with
+Rust 1.99 on macOS arm64. The same 202 live TypeScript cases, 18 Rust
+methods, strict Clippy checks and typed refusal controls passed with the
+generated SDK and documented consumer. See the
+[Ledger 9 adoption plan](../plans/ledger9-adoption.md) for the local
+qualification and remaining integration gates.
+
 ## What this contract provides
 
 The adopted digital-passport source exports75 pure functions for credentials, commitments, selective disclosure, age predicates, requests and signed protocol envelopes. Its authoritative IR has no ledger fields, witnesses or stateful circuits. Call `pure_circuits` directly. ContractLab is useful for contracts that have ledger state; no simulator setup or ledger transaction is needed for this pure source family.

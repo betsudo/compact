@@ -50,7 +50,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
 }
 /// Typed descriptors for Compact ledger declarations.
 #[allow(non_upper_case_globals)]
@@ -66,7 +66,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -84,7 +84,7 @@ pub mod ledger_contract {
             crate::ledger_slots::narrowed.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -272,24 +272,48 @@ pub mod ledger_contract {
         let context = step.context;
         total_cost += step.gas_cost;
         let mut context = context;
-        let __compact_action_local_1: runtime::BoundedUint<65535> = if __compact_param_2 {
-            let __compact_call_argument_10 = __compact_param_0;
-            let __compact_call_argument_11 = __compact_param_1;
-            let __compact_call_argument_12 = runtime::Field::from(3u128);
-            let __compact_call_13 = multiply(
-                context,
-                witnesses,
-                __compact_call_argument_10,
-                __compact_call_argument_11,
-                __compact_call_argument_12,
-            )?;
-            private_transcript_outputs.extend(__compact_call_13.private_transcript_outputs);
-            context = __compact_call_13.context;
-            total_cost += __compact_call_13.gas_cost;
-            __compact_call_13.result
-        } else {
-            runtime::BoundedUint::<65535>::new(0u128)
-                .expect("Compact Uint literal fits its maximum")
+        let __compact_action_local_1: runtime::BoundedUint<65535> = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_2 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_call_argument_10 = __compact_param_0;
+                        let __compact_call_argument_11 = __compact_param_1;
+                        let __compact_call_argument_12 = runtime::Field::from(3u128);
+                        let __compact_call_13 = multiply(
+                            context,
+                            witnesses,
+                            __compact_call_argument_10,
+                            __compact_call_argument_11,
+                            __compact_call_argument_12,
+                        )?;
+                        private_transcript_outputs
+                            .extend(__compact_call_13.private_transcript_outputs);
+                        context = __compact_call_13.context;
+                        total_cost += __compact_call_13.gas_cost;
+                        let __compact_branch_value = __compact_call_13.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = runtime::BoundedUint::<65535>::new(0u128)
+                            .expect("Compact Uint literal fits its maximum");
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         let step = crate::ledger_slots::product.write(context, __compact_action_local_1)?;
         let context = step.context;
@@ -327,23 +351,49 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
         let mut context = context;
-        let __compact_action_local_0: runtime::BoundedUint<255> = if __compact_param_2 {
-            let __compact_call_argument_0 = __compact_param_0;
-            let __compact_call_argument_1 = __compact_param_1;
-            let __compact_call_argument_2 = runtime::Field::from(5u128);
-            let __compact_call_3 = multiply(
-                context,
-                witnesses,
-                __compact_call_argument_0,
-                __compact_call_argument_1,
-                __compact_call_argument_2,
-            )?;
-            private_transcript_outputs.extend(__compact_call_3.private_transcript_outputs);
-            context = __compact_call_3.context;
-            total_cost += __compact_call_3.gas_cost;
-            runtime::cast_unsigned::<65535, 255>(__compact_call_3.result)?
-        } else {
-            runtime::BoundedUint::<255>::new(0u128).expect("Compact Uint literal fits its maximum")
+        let __compact_action_local_0: runtime::BoundedUint<255> = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_2 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_call_argument_0 = __compact_param_0;
+                        let __compact_call_argument_1 = __compact_param_1;
+                        let __compact_call_argument_2 = runtime::Field::from(5u128);
+                        let __compact_call_3 = multiply(
+                            context,
+                            witnesses,
+                            __compact_call_argument_0,
+                            __compact_call_argument_1,
+                            __compact_call_argument_2,
+                        )?;
+                        private_transcript_outputs
+                            .extend(__compact_call_3.private_transcript_outputs);
+                        context = __compact_call_3.context;
+                        total_cost += __compact_call_3.gas_cost;
+                        let __compact_branch_value =
+                            runtime::cast_unsigned::<65535, 255>(__compact_call_3.result)?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = runtime::BoundedUint::<255>::new(0u128)
+                            .expect("Compact Uint literal fits its maximum");
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         let step = crate::ledger_slots::narrowed.write(context, __compact_action_local_0)?;
         let context = step.context;

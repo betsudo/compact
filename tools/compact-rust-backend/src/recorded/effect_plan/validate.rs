@@ -30,6 +30,7 @@ pub(super) use merkle::root_type;
 mod pure;
 pub(super) mod sets;
 mod storage;
+pub(crate) use storage::map_cell_type;
 mod vector_fold;
 mod vector_map;
 pub(super) use storage::{list_element_type, map_key_type, merkle_leaf_type, set_element_type};
@@ -106,7 +107,20 @@ pub(super) fn scalar(ty: &Type) -> bool {
 /// Recorded ABI values; Cell storage and scalar arithmetic use separate predicates.
 pub(super) fn surface_type(ty: &Type) -> bool {
     scalar(ty)
-        || *ty == Type::JubjubPoint
+        || matches!(
+            ty,
+            Type::JubjubPoint
+                | Type::Secp256k1Base
+                | Type::Secp256k1Scalar
+                | Type::Secp256k1Point
+                | Type::JubjubScalar
+                | Type::Secp256r1Base
+                | Type::Secp256r1Scalar
+                | Type::Curve25519Base
+                | Type::Curve25519Scalar
+                | Type::Curve25519Point
+                | Type::Secp256r1Point
+        )
         || match ty {
             Type::Bytes { length } => {
                 *length <= crate::resource_limits::recording_byte_payload_limit()

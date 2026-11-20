@@ -23,6 +23,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -90,12 +92,12 @@ def main():
 
     try:
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-require-recording", "--rust-runtime-root", ROOT,
                          "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         conditional = output / "conditional-generated"
-        run("generate-conditional", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate-conditional", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
             "--rust-require-recording", "--rust-runtime-root", ROOT, "--skip-zk",
             FIXTURES / "conditional.compact", conditional])
         report["conditional_generated"] = generated_manifest_snapshot(conditional)
@@ -134,7 +136,7 @@ def main():
             if name in NEGATIVES:
                 lines.append(f'required-features=["{name}"]')
         manifest = consumer / "Cargo.toml"
-        manifest.write_text("\n".join(lines) + "\n")
+        manifest.write_text(with_pinned_patches("\n".join(lines) + "\n", ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)

@@ -22,12 +22,15 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tarfile
 import tempfile
 import tomllib
 
+from consumer_cargo import with_pinned_patches
 from consumer_safety import check_consumer_safety
+from check_release_packages import LOCKS, archive_source_patches, compatibility_record
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,6 +43,7 @@ CONTRACTS = (
     ("merkle-path-witness", ROOT / "examples/rust_backend/merkle_path_witness.compact"),
 )
 PACKAGE_NAMES = ("midnight-compact-runtime-macros", "midnight-compact-runtime")
+MACROS, RUNTIME = PACKAGE_NAMES
 
 
 def run(arguments: list[str], *, cwd: Path = ROOT, env: dict[str, str] | None = None) -> str:
@@ -80,9 +84,9 @@ def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
     manifest = tomllib.loads((directory / "Cargo.toml").read_text())
     if manifest["package"]["name"] != name or manifest["package"]["version"] != version:
         raise RuntimeError(f"{archive}: package identity mismatch")
-    if name == "midnight-compact-runtime":
-        dependency = manifest["dependencies"]["midnight-compact-runtime-macros"]
-        if dependency.get("version") != f"={macro_version}" or "path" in dependency:
+    if name == RUNTIME:
+        dependency = manifest["dependencies"][MACROS]
+        if dependency != {"version": f"={macro_version}"}:
             raise RuntimeError(f"{archive}: macro dependency is not version-only")
     files = {
         path.relative_to(directory).as_posix(): sha256(path)
@@ -94,38 +98,157 @@ def install_archive(vendor: Path, entry: dict, macro_version: str) -> Path:
     return directory
 
 
-def check_graph(metadata: dict, consumer: Path, vendor: Path, entries: list[dict]) -> None:
+def stage_ledger_vendor_static(vendor: Path, packages: list[dict]) -> None:
+    # The pinned Ledger 2.2.0 transient crypto crate uses a sibling workspace
+    # path for its embedded verifier parameters. Cargo vendors Git crates
+    # individually, so restore that path with the file from the same Git source.
+    old = vendor / "midnight-transient-crypto-2.2.0"
+    if not old.exists():
+        return
+    sources = {
+        (package["version"], package["source"])
+        for package in packages if package["name"] == "midnight-transient-crypto"
+    }
+    revisions = {source for version, source in sources
+                 if version == "2.2.0" and (source or "").startswith("git+")}
+    if len(revisions) != 1 or ("3.1.0", next(iter(revisions))) not in sources:
+        raise RuntimeError("Ledger transient crypto versions did not resolve from the same Git source")
+    current = vendor / "midnight-transient-crypto-3.1.0"
+    relative = "static/bls_midnight_2p14"
+    checksums = json.loads((current / ".cargo-checksum.json").read_text())["files"]
+    if sha256(current / relative) != checksums[relative]:
+        raise RuntimeError("vendored Ledger verifier parameters failed checksum verification")
+    sibling = vendor / "transient-crypto" / relative
+    sibling.parent.mkdir(parents=True)
+    shutil.copyfile(current / relative, sibling)
+
+
+def archived_source_hashes(archives: dict[str, Path]) -> dict[str, str]:
+    """Identify the exact archive files covered by the compiler's source fingerprint."""
+    hashes = {}
+    for name, source in ((MACROS, "runtime-rs-macros"), (RUNTIME, "runtime-rs")):
+        archive = archives[name]
+        hashes[f"{source}/Cargo.toml"] = sha256(archive / "Cargo.toml.orig")
+        for path in (archive / "src").rglob("*"):
+            if path.is_file():
+                hashes[f"{source}/{path.relative_to(archive).as_posix()}"] = sha256(path)
+    hashes["runtime-rs/compatibility.json"] = sha256(archives[RUNTIME] / "compatibility.json")
+    return hashes
+
+
+def file_record(path: Path) -> dict:
+    return {"type": "file", "size": path.stat().st_size, "hash": sha256(path)}
+
+
+def contract_record(contract: Path) -> dict:
+    record = {"type": "directory"}
+    for path in contract.iterdir():
+        if path.is_symlink():
+            raise RuntimeError(f"generated contract contains a symlink: {path}")
+        record[path.name] = contract_record(path) if path.is_dir() else file_record(path)
+    return record
+
+
+def project_contract(
+    artifact: Path, destination: Path, compatibility: dict, source_hashes: dict[str, str],
+) -> Path:
+    contract = artifact / "contract"
+    if (contract / "runtime-rs").exists() or (contract / "runtime-rs-macros").exists():
+        raise RuntimeError(f"{artifact}: shared-source generation copied runtime sources")
+    manifest = json.loads((artifact / "compiler/contract-manifest.json").read_text())
+    compatibility_path = artifact / "compiler/rust-compatibility.json"
+    if (
+        manifest["contract"] != contract_record(contract)
+        or manifest["compiler"]["rust-compatibility.json"] != file_record(compatibility_path)
+    ):
+        raise RuntimeError(f"{artifact}: generated files differ from their recorded hashes")
+    metadata = json.loads(compatibility_path.read_text())
+    if (
+        metadata["schema_version"] != 1
+        or metadata["distribution"] != "shared-source"
+        or metadata["registry_publication_verified"] is not False
+        or metadata["compatibility"] != compatibility
+        or metadata["source_sha256"] != source_hashes
+    ):
+        raise RuntimeError(f"{artifact}: generated runtime source differs from the release archives")
+
+    original = (contract / "Cargo.toml").read_text()
+    generated = tomllib.loads(original)
+    dependency = generated["dependencies"][RUNTIME]
+    if dependency != {"path": str(ROOT.resolve() / "runtime-rs"), "package": RUNTIME}:
+        raise RuntimeError(f"{artifact}: generated manifest has an unexpected runtime dependency")
+
+    # Preserve the original compiler output and change just the runtime edge in
+    # the consumer copy. Cargo then resolves the same sources via the archives.
+    version = f"={compatibility['runtime_version']}"
+    lines = original.splitlines(keepends=True)
+    runtime_lines = [index for index, line in enumerate(lines) if line.startswith(f"{RUNTIME} = ")]
+    if len(runtime_lines) != 1:
+        raise RuntimeError(f"{artifact}: cannot identify the single generated runtime dependency")
+    lines[runtime_lines[0]] = f'{RUNTIME} = {{ version = "{version}", package = "{RUNTIME}" }}\n'
+    projected = "".join(lines)
+    generated["dependencies"][RUNTIME] = {"version": version, "package": RUNTIME}
+    if tomllib.loads(projected) != generated:
+        raise RuntimeError(f"{artifact}: archive projection changed another manifest setting")
+    shutil.copytree(contract, destination)
+    (destination / "Cargo.toml").write_text(projected)
+    return destination
+
+
+def check_graph(
+    metadata: dict, consumer: Path, contracts: dict[str, Path],
+    archives: dict[str, Path], entries: list[dict], compatibility: dict,
+) -> None:
     packages = metadata["packages"]
-    runtime_id = None
-    for name in PACKAGE_NAMES:
+    lock_packages = tomllib.loads((consumer / "Cargo.lock").read_text())["package"]
+    package_ids = {}
+    for entry in entries:
+        name = entry["name"]
         found = [package for package in packages if package["name"] == name]
         if len(found) != 1:
             raise RuntimeError(f"expected one {name} in consumer graph, got {len(found)}")
         package = found[0]
-        if not package["source"].startswith("registry+"):
-            raise RuntimeError(f"{name} was not resolved as a registry package")
-        path = Path(package["manifest_path"]).resolve()
-        if not path.is_relative_to(vendor.resolve()):
-            raise RuntimeError(f"{name} did not come from the archive vendor source")
-        if name == "midnight-compact-runtime":
-            runtime_id = package["id"]
-    if runtime_id is None:
-        raise RuntimeError("runtime package missing from resolved graph")
+        if (
+            not (package["source"] or "").startswith("registry+")
+            or package["version"] != entry["version"]
+            or Path(package["manifest_path"]).resolve() != (archives[name] / "Cargo.toml").resolve()
+        ):
+            raise RuntimeError(f"{name} did not resolve to the exact archived registry package")
+        lock_entry = [locked for locked in lock_packages if locked["name"] == name]
+        if len(lock_entry) != 1 or any(
+            lock_entry[0].get(key) != expected for key, expected in (
+                ("version", entry["version"]), ("source", package["source"]), ("checksum", entry["sha256"]),
+            )
+        ):
+            raise RuntimeError(f"{name} does not match the archive checksum and source in Cargo.lock")
+        package_ids[name] = package["id"]
+
     nodes = {node["id"]: node for node in metadata["resolve"]["nodes"]}
-    for name, _ in CONTRACTS:
+    runtime_id = package_ids[RUNTIME]
+    if package_ids[MACROS] not in {dependency["pkg"] for dependency in nodes[runtime_id]["deps"]}:
+        raise RuntimeError("archived runtime did not resolve the archived macros")
+    if sources := compatibility.get("ledger_git_sources"):
+        archived_manifest = tomllib.loads((archives[RUNTIME] / "Cargo.toml").read_text())
+        direct = {dep["pkg"] for dep in nodes[runtime_id]["deps"]}
+        for name, dependency in archived_manifest["dependencies"].items():
+            if name not in sources:
+                continue
+            matches = [package for package in packages if package["id"] in direct and package["name"] == name]
+            if not matches and isinstance(dependency, dict) and dependency.get("optional"):
+                continue
+            source = sources[name]
+            expected_source = f'git+{source["git"]}?rev={source["rev"]}#{source["rev"]}'
+            version = compatibility["ledger_dependencies"][name].removeprefix("=")
+            if len(matches) != 1 or matches[0]["source"] != expected_source or matches[0]["version"] != version:
+                raise RuntimeError(f"{name} did not resolve to the archived runtime's pinned Git dependency")
+    for name, contract in contracts.items():
         package_name = f"compact-contract-{name}"
         found = [package for package in packages if package["name"] == package_name]
-        if len(found) != 1:
-            raise RuntimeError(f"expected one generated {package_name}")
+        if len(found) != 1 or Path(found[0]["manifest_path"]).resolve() != contract / "Cargo.toml":
+            raise RuntimeError(f"expected one generated {package_name} from the archive consumer")
         direct = {dependency["pkg"] for dependency in nodes[found[0]["id"]]["deps"]}
         if runtime_id not in direct:
             raise RuntimeError(f"{package_name} did not resolve the shared archived runtime")
-    lock = (consumer / "Cargo.lock").read_text()
-    for entry in entries:
-        name = entry["name"]
-        version = entry["version"]
-        if f'name = "{name}"\nversion = "{version}"\nsource = "registry+' not in lock:
-            raise RuntimeError(f"{name} is not a versioned registry entry in Cargo.lock")
 
 
 def main() -> None:
@@ -144,61 +267,68 @@ def main() -> None:
         raise RuntimeError("release manifest must contain macro then runtime archives")
     if release["source"].get("tree") != run(["git", "rev-parse", "HEAD^{tree}"]).strip():
         raise RuntimeError("release manifest does not describe this source tree")
-    macro_version = entries[0]["version"]
-    runtime_version = entries[1]["version"]
-    for entry in entries:
-        archive = ROOT / entry["archive"]
-        if not archive.is_file() or sha256(archive) != entry["sha256"]:
-            raise RuntimeError(f"{archive}: missing or different from release manifest")
+    compatibility = compatibility_record()
+    if release["compatibility"] != compatibility or [
+        entry["version"] for entry in entries
+    ] != [compatibility["macros_version"], compatibility["runtime_version"]]:
+        raise RuntimeError("release manifest does not describe this runtime compatibility")
+    if release["locks"] != {path: sha256(ROOT / path) for path in LOCKS}:
+        raise RuntimeError("release manifest does not describe the current dependency locks")
 
     (ROOT / "target").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="rust-archive-consumer-", dir=ROOT / "target") as scratch:
         temporary = Path(scratch)
         vendor = temporary / "vendor"
-        run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
-             "--manifest-path", str(ROOT / "runtime-rs/Cargo.toml"), str(vendor)])
-        for entry in entries:
-            install_archive(vendor, entry, macro_version)
+        # Vendor only the runtime rehearsal closure. The full workspace also
+        # contains Passport's independently pinned registry packages, which can
+        # have the same name/version as the Ledger Git packages.
+        seed = temporary / "vendor-seed"
+        seed.mkdir()
+        seed_manifest = seed / "Cargo.toml"
+        seed_manifest.write_text(with_pinned_patches(
+            '[workspace]\n[package]\nname="archive-vendor-seed"\nversion="0.0.0"\n'
+            'edition="2024"\n[lib]\npath="lib.rs"\n[dependencies]\n'
+            + 'midnight-compact-runtime={path=' + json.dumps(str(ROOT / "runtime-rs"))
+            + ',features=["ledger-transaction"]}\n', ROOT))
+        (seed / "lib.rs").write_text("// Manifest only: resolve the runtime archive dependency closure.\n")
+        shutil.copyfile(ROOT / "Cargo.lock", seed / "Cargo.lock")
+        seed_metadata = json.loads(run(
+            ["cargo", "metadata", "--offline", "--format-version", "1"], cwd=seed))
+        vendor_config = run(["cargo", "vendor", "--offline", "--locked", "--versioned-dirs",
+                             "--manifest-path", str(seed_manifest), str(vendor)], cwd=seed)
+        stage_ledger_vendor_static(vendor, seed_metadata["packages"])
+        archives = {
+            entry["name"]: install_archive(vendor, entry, compatibility["macros_version"])
+            for entry in entries
+        }
+        source_hashes = archived_source_hashes(archives)
 
         contracts = {}
         for name, source in CONTRACTS:
             artifact = temporary / name
-            run([args.compiler, "--target", "rust", "--rust-runtime-registry",
+            run([args.compiler, "--target", "rust", "--rust-runtime-root", str(ROOT),
                  "--skip-zk", str(source), str(artifact)])
-            contract = artifact / "contract"
-            manifest_path = contract / "Cargo.toml"
-            generated = tomllib.loads(manifest_path.read_text())
-            dependency = generated["dependencies"]["midnight-compact-runtime"]
-            if dependency != {
-                "version": f"={runtime_version}",
-                "package": "midnight-compact-runtime",
-            }:
-                raise RuntimeError(f"generated {name} manifest has an unexpected runtime dependency")
-            if (contract / "runtime-rs").exists() or (contract / "runtime-rs-macros").exists():
-                raise RuntimeError(f"generated {name} contract copied runtime sources in registry mode")
-            output_manifest = json.loads(
-                (artifact / "compiler/contract-manifest.json").read_text()
+            contracts[name] = project_contract(
+                artifact, temporary / "archive-contracts" / name, compatibility, source_hashes,
             )
-            recorded = output_manifest["contract"]["Cargo.toml"]
-            if recorded["hash"] != sha256(manifest_path) or recorded["size"] != manifest_path.stat().st_size:
-                raise RuntimeError(f"generated {name} Cargo manifest was not recorded accurately")
-            contracts[name] = contract
 
         consumer = temporary / "consumer"
         (consumer / "tests").mkdir(parents=True)
         (consumer / ".cargo").mkdir()
-        (consumer / "Cargo.toml").write_text(
+        manifest = (
             '[package]\nname = "compact-rust-archive-consumer"\nversion = "0.1.0"\n'
             'edition = "2024"\n\n[workspace]\n\n[dependencies]\n'
             + "".join(
-                f'compact-contract-{name} = {{ path = "{contract}", features = ["ledger-transaction"] }}\n'
+                f'compact-contract-{name} = {{ path = {json.dumps(str(contract), ensure_ascii=False)}, '
+                'features = ["ledger-transaction"] }\n'
                 for name, contract in contracts.items()
             )
         )
-        (consumer / ".cargo/config.toml").write_text(
-            '[source.crates-io]\nreplace-with = "archive-vendor"\n'
-            f'[source.archive-vendor]\ndirectory = "{vendor}"\n'
-        )
+        (consumer / "Cargo.toml").write_text(manifest + "\n" + archive_source_patches(compatibility))
+        # Preserve Cargo's Git and registry replacements for the same vendor
+        # directory. The staged runtime and macro archives are in that directory.
+        (consumer / ".cargo/config.toml").write_text(vendor_config)
+        shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         (consumer / "tests/counter.rs").write_text(
             'use compact_contract_counter as counter;\n'
             'use compact_contract_cell_boolean as cell;\n'
@@ -276,7 +406,10 @@ def main() -> None:
         environment.setdefault("CARGO_TARGET_DIR", str(ROOT / "target/compactc-consumer"))
         environment.setdefault("CARGO_INCREMENTAL", "0")
         environment.setdefault("CARGO_BUILD_JOBS", "2")
-        run(["cargo", "test", "--offline", "--quiet"], cwd=consumer, env=environment)
+        metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
+                                  cwd=consumer, env=environment))
+        check_graph(metadata, consumer, contracts, archives, entries, compatibility)
+        run(["cargo", "test", "--locked", "--offline", "--quiet"], cwd=consumer, env=environment)
         check_consumer_safety(consumer, environment)
         compile_rejections = {
             "wrong_set_key": (
@@ -316,7 +449,7 @@ def main() -> None:
             negative = consumer / f"tests/{name}.rs"
             negative.write_text(source)
             rejection = subprocess.run(
-                ["cargo", "check", "--offline", "--test", name, "--quiet"],
+                ["cargo", "check", "--locked", "--offline", "--test", name, "--quiet"],
                 cwd=consumer, env=environment, capture_output=True, text=True,
             )
             negative.unlink()
@@ -338,15 +471,12 @@ def main() -> None:
                 f'    let _ = {expression};\n}}\n'
             )
             rejection = subprocess.run(
-                ["cargo", "check", "--offline", "--test", name, "--quiet"],
+                ["cargo", "check", "--locked", "--offline", "--test", name, "--quiet"],
                 cwd=consumer, env=environment, capture_output=True, text=True,
             )
             negative.unlink()
             if rejection.returncode == 0 or "no method named" not in rejection.stderr:
                 raise RuntimeError(f"{name} was not rejected by the archive-only consumer: {rejection.stderr[-1200:]}")
-        metadata = json.loads(run(["cargo", "metadata", "--offline", "--format-version", "1"],
-                                  cwd=consumer, env=environment))
-        check_graph(metadata, consumer, vendor, entries)
     print("archive-only Counter + Cell + Set + Map + List + Merkle consumer passed with one shared runtime; public registry publication remains unverified")
 
 

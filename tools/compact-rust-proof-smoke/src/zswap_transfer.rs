@@ -14,15 +14,24 @@
 // limitations under the License.
 
 //! Exact intent reconciliation and a contract-owned funded transfer.
+use super::local_v3_application as v3;
+use super::positional_transaction::verify_separately;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_zswap_transfer_oracle_fixture::{ledger_contract as contract, types};
 use midnight_compact_runtime as runtime;
+use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{
     ObservedCallError, OfferBackedObservedState, PrepareCallError, RecordedCall, ZswapIntentError,
 };
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "native Zswap transfer requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     // Pair the complete circuit input before key loading or deployment.
     // Input identity alone does not authenticate proving-key provenance.
     counter_scenario::validate_ir(
@@ -30,15 +39,31 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         compact_rust_zswap_transfer_oracle_fixture::RETAINED_IR,
     )?;
     const NAME: &str = "transfer";
+    const STEM: &str = "native-zswap-transfer";
     let mut rng = StdRng::seed_from_u64(0x0188_5452);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let (_, verifier, operation) = v3::load_operation(root, NAME)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        NAME,
+        operation.clone(),
+        &mut rng,
+    );
     let address = deploy.address();
-    let mut fee_state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fee_state.ledger.contract = fee_state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let resolver = fee_resolver(root, NAME)?;
+    let mut fee_state = fee_funded_state_with_utxos(&mut rng, 2)?;
+    v3::apply_funded_deployment(
+        root,
+        STEM,
+        &deploy,
+        &mut fee_state,
+        &mut rng,
+        &executor,
+        &resolver,
+    )?;
     let time = fee_state.time;
     let seed_coin = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([1; 32]),
@@ -52,7 +77,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let (seeded, indices) = fee_state.ledger.zswap.try_apply(&seed_offer, None)?;
     let seed_index = *indices.get(&seed_commitment).ok_or("seed index missing")?;
     // Explicit offline genesis prerequisite; seal the root before contract spend.
-    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(time));
+    fee_state.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(time, fee_state.ledger.parameters.global_ttl),
+    );
     let ledger = fee_state.ledger.clone();
     let input = Input::new_contract_owned(
         &mut rng,
@@ -122,9 +149,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             com,
         )
     };
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/transfer.verifier"),
-    )?))?;
     let unbound = make_call()?
         .prepare(verifier.clone(), Fr::from(0_u64))
         .err()
@@ -161,12 +185,11 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     assert_eq!(call.recorded().execution.gas_cost, native.gas_cost);
     let expected_state = native.context.query.state.get_ref().clone();
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
+    if prepared.prototype().op != operation {
+        return Err("native Zswap transfer did not preserve the installed v3 operation".into());
+    }
+    let standalone = v3::prove_standalone(root, NAME, STEM, prepared.prototype(), &verifier, None)?;
+    verify_separately(root, NAME, STEM)?;
     // Altering publicly mutable context cannot erase the sealed intent snapshot.
     let mut changed = contract::recorded::transfer(
         bound.observed().circuit_context(()),
@@ -258,21 +281,35 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         "local-test",
         Timestamp::from_secs(time.to_secs() + 3600),
     );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0188_5052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("native Zswap v3 transfer proving failed: {error:?}"))?;
     let sealed = proven.seal(StdRng::seed_from_u64(0x0188_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fee_state.balance_tx(rng.clone(), sealed, &resolver))?;
+    let sealed = executor.block_on(fee_state.balance_tx(rng.clone(), sealed, &resolver))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls
+        .next()
+        .ok_or("missing funded native Zswap transfer call")?;
+    let ProofVersioned::V3(transaction_proof) = &call.proof else {
+        return Err("funded native Zswap transfer requires a transaction-bound v3 proof".into());
+    };
+    if transaction_proof == &standalone
+        || calls.next().is_some()
+        || v3::positive_fee_dust_spends(&sealed) != 1
+    {
+        return Err("funded native Zswap transfer proof or Dust spend differs".into());
+    }
+    let mut bytes = Vec::new();
+    tagged_serialize(&sealed, &mut bytes)?;
+    v3::write_new(root.join(format!("{STEM}-transaction.bin")), &bytes)?;
+    v3::write_new(
+        root.join(format!("{STEM}-transaction.proof")),
+        &transaction_proof.0,
+    )?;
     let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), time)?;
     let context = TransactionContext {
         ref_state: ledger.clone(),
@@ -287,10 +324,21 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     if !matches!(outcome, TransactionResult::Success(_)) {
         return Err(format!("funded transfer apply failed: {outcome:?}").into());
     }
+    let applied = updated
+        .contract
+        .get(&address)
+        .ok_or("funded native Zswap contract missing")?;
+    assert_eq!(applied.data.get_ref(), &expected_state);
     assert_eq!(
-        updated.contract.get(&address).unwrap().data.get_ref(),
-        &expected_state
+        applied
+            .operations
+            .get(&EntryPointBuf(NAME.as_bytes().to_vec())),
+        deploy
+            .initial_state
+            .operations
+            .get(&EntryPointBuf(NAME.as_bytes().to_vec()))
     );
+    assert!(updated.zswap.nullifiers.contains_key(&nullifier));
     assert_eq!(
         updated.zswap.coin_coms.index(index).map(|(hash, _)| hash),
         Some(commitment.0)
@@ -304,6 +352,36 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     assert!(
         matches!(replay,midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found) if found==nullifier)
     );
+    let (replayed, replay_result) = updated.apply(
+        &verified,
+        &TransactionContext {
+            ref_state: updated.clone(),
+            ..context
+        },
+    );
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != updated
+    {
+        return Err(format!(
+            "funded native Zswap transfer replay refused incorrectly: {replay_result:?}"
+        )
+        .into());
+    }
+    let mut after = Vec::new();
+    let mut replay = Vec::new();
+    tagged_serialize(&updated, &mut after)?;
+    tagged_serialize(&replayed, &mut replay)?;
+    if after != replay {
+        return Err("funded native Zswap transfer replay changed ledger bytes".into());
+    }
+    v3::write_new(root.join(format!("{STEM}-ledger-after.bin")), &after)?;
+    v3::write_new(root.join(format!("{STEM}-ledger-replay.bin")), &replay)?;
     let mut read_context = bound.observed().circuit_context(());
     read_context.query.state = runtime::ledger::ChargedState::new(expected_state);
     let stored = contract::read_coin(read_context)?.result;
@@ -312,7 +390,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     assert_eq!(stored.color, compact_coin.color);
     assert_eq!(stored.value, compact_coin.value);
     println!(
-        "funded contract-owned input -> distinct output42 with exact intents, Kernel claims, Dust: default strictness + ledger apply passed at index {index}; nullifier replay rejected"
+        "funded contract-owned input -> distinct output42 with exact intents, Kernel claims, Dust: Ledger 9 default-strict application passed at index {index}; offer nullifier and exact transaction replay refused"
     );
     Ok(())
 }

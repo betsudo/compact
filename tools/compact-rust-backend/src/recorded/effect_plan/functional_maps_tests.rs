@@ -138,7 +138,7 @@ fn all_eight_scalar_map_operations_have_typed_bounds_and_one_logical_binding() {
     let root = root(Type::Boolean, Type::Field);
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(program.requirements().contains(&Capability::MapRead));
     assert!(program.requirements().contains(&Capability::MapWrite));
     let rendered = super::super::functional_render::render(&program).unwrap();
@@ -175,7 +175,7 @@ fn scalar_owned_key_and_value_use_existing_codec_eligibility() {
     let root = root(Type::OpaqueString, Type::OpaqueBytes);
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let rendered = super::super::functional_render::render(&program)
         .unwrap()
         .body
@@ -214,7 +214,7 @@ fn nested_map_membership_preserves_structural_type_without_requesting_scalar_loo
     };
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert_eq!(
         program.requirements().iter().copied().collect::<Vec<_>>(),
         [Capability::MapRead]
@@ -233,7 +233,7 @@ fn map_target_capability_is_required_before_emission() {
     let root = root(Type::Boolean, Type::Field);
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[Capability::Pure],
     };
     assert!(matches!(
@@ -305,7 +305,7 @@ fn readonly_and_writeonly_maps_do_not_request_the_other_capability() {
         }
         let checked = checked(&root, &field);
         let program =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         let rendered = super::super::functional_render::render(&program).unwrap();
         let bounds = rendered
             .executor_bounds
@@ -351,7 +351,7 @@ fn nested_map_removal_uses_structural_remove_not_scalar_write() {
     };
     let checked = checked(&root, &field);
     let authority = Authority::new();
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     assert!(program.requirements().contains(&Capability::MapRemove));
     assert!(!program.requirements().contains(&Capability::MapWrite));
     let rendered = super::super::functional_render::render(&program).unwrap();
@@ -463,7 +463,7 @@ fn lookup_and_remove_request_their_own_target_capabilities() {
         },
     };
     let checked_lookup = checked(&lookup, &field);
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[
             Capability::Pure,
             Capability::MapRead,
@@ -487,7 +487,7 @@ fn lookup_and_remove_request_their_own_target_capabilities() {
     remove.result = Type::Unit;
     remove.return_value = StateReturn::Unit;
     let checked_remove = checked(&remove, &field);
-    let target = Ledger8Target {
+    let target = Ledger9Target {
         capabilities: &[
             Capability::Pure,
             Capability::MapRead,

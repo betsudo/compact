@@ -1,0 +1,86 @@
+{
+  "initialState": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a3400040004000402040408010404080403040c0004100801040414540304224401040304010801040401040204010400000024206164645f74727565000c000000081c2000042408010404289003044080f16cee92db5d88e20710d57fb1e715a9ddf92829a4e32b34ca502c14aabd9a65140800182c001003000400",
+  "afterState": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a4400080101000400080004000408080104040c90030440809dcf97a184f32623d11a73124ceb99a5709b083721e878a16d78f596718ba7b204100402041408010404180403041c0004200801040424290103048a1501010403040108010404010402040190030440809dcf97a184f32623d11a73124ceb99a5709b083721e878a16d78f596718ba7b20401080104040100080108010100010400000024206164645f74727565000c000000082c3000043408010404389003044080f16cee92db5d88e20710d57fb1e715a9ddf92829a4e32b34ca502c14aabd9a65141804283c041003000400",
+  "before": {
+    "result": false,
+    "privateState": 8,
+    "privateTranscriptOutputs": [
+      {
+        "valueAtoms": [
+          []
+        ],
+        "alignment": [
+          {
+            "tag": "atom",
+            "value": {
+              "tag": "bytes",
+              "length": 1
+            }
+          }
+        ]
+      }
+    ],
+    "queryCosts": [
+      {
+        "readTime": "170000000",
+        "computeTime": "1252757404",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      },
+      {
+        "readTime": "170000000",
+        "computeTime": "1251515246",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      },
+      {
+        "readTime": "170000000",
+        "computeTime": "1252339959",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      }
+    ]
+  },
+  "after": {
+    "result": true,
+    "privateState": 9,
+    "privateTranscriptOutputs": [
+      {
+        "valueAtoms": [
+          [
+            1
+          ]
+        ],
+        "alignment": [
+          {
+            "tag": "atom",
+            "value": {
+              "tag": "bytes",
+              "length": 1
+            }
+          }
+        ]
+      }
+    ],
+    "queryCosts": [
+      {
+        "readTime": "170000000",
+        "computeTime": "1252757404",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      },
+      {
+        "readTime": "170000000",
+        "computeTime": "1251515246",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      },
+      {
+        "readTime": "170000000",
+        "computeTime": "1252339959",
+        "bytesWritten": "0",
+        "bytesDeleted": "0"
+      }
+    ]
+  }
+}

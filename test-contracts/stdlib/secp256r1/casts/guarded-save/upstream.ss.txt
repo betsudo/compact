@@ -1,0 +1,13 @@
+  ; A secp256r1 value cast to bytes inside an if used to crash the compiler.
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger out: Bytes<32>;"
+      "export circuit save(c: Boolean, x: Secp256r1Base): [] {"
+      "  if (disclose(c)) {"
+      "    out = disclose(x as Bytes<32>);"
+      "  }"
+      "}"
+      )
+    (succeeds)
+    )

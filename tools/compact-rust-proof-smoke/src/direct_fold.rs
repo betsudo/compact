@@ -14,14 +14,16 @@
 // limitations under the License.
 
 //! Fresh source-bound Field Fold proofs and funded default-strict applications.
+use super::local_v3_application::{self as v3, write_new};
 use super::*;
 use midnight_compact_runtime::{self as r, Field, FixedVector};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 mod cases;
 mod empty_ordered;
 const NAME: &str = "run";
 
-pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
+fn validate_source(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
     let ir = match case {
         "single" => {
             include_str!("../../../tests-rust-backend/direct-fold-single-source/original-ir.json")
@@ -59,7 +61,14 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         ir,
-    )?;
+    )
+}
+
+pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("direct Fold requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    validate_source(case, root)?;
     if root.join("fold-proof-result.json").exists() {
         return Err("Fold proof result already exists".into());
     }
@@ -79,7 +88,7 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
         ],
         _ => unreachable!("case validated before key/state actions"),
     };
-    let result = serde_json::json!({"format":"compact-direct-fold-proof/v1", "status":"passed", "case":case,
+    let result = serde_json::json!({"format":"compact-direct-fold-proof/v2", "status":"passed", "case":case,
         "scope":"selected Field-returning source-bound functional-derived call proofs and funded default-strict local transactions",
         "constructor_execution_proved":false, "unselected_sources_proved":false, "calls":calls});
     write_new(
@@ -89,13 +98,34 @@ pub(super) fn run(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
     println!("{result}");
     Ok(())
 }
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
+pub(super) fn verify(case: &str, root: &Path) -> Result<(), Box<dyn Error>> {
+    validate_source(case, root)?;
+    let verifier = v3::read_verifier(root, NAME)?;
+    for index in 0..if case == "inline-branch" { 2 } else { 1 } {
+        v3::verify_standalone(root, &format!("fold-{index}"), &verifier)?;
+        println!("{case}/{index}: standalone v3 proof verified and corruption refused");
+    }
+    Ok(())
+}
+
+fn deployment(
+    root: &Path,
+    data: StateValue<DefaultDB>,
+    rng: &mut StdRng,
+) -> Result<(ContractDeploy<DefaultDB>, IrSourceV3, VerifierKey), Box<dyn Error>> {
+    let ir = IrSourceV3::load(File::open(root.join("zkir/run.zkir"))?)?;
+    let k = ir.k();
+    if !(1..=8).contains(&k) {
+        return Err("direct Fold exceeds the automatic tiny parameter cap".into());
+    }
+    let (ir, verifier, operation) = v3::operation(root, NAME, k)?;
+    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
+    let contract = ContractState::new(
+        data,
+        HashMap::new().insert(entry, operation),
+        ContractMaintenanceAuthority::default(),
+    );
+    Ok((ContractDeploy::new(rng, contract), ir, verifier))
 }
 
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
@@ -110,23 +140,21 @@ fn prove(
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected fold proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("zkir/run.bzkir"),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/run.prover"),
     )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -188,97 +216,19 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed fold proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("fold IR accepted changed result".into());
     }
     write_new(root.join(format!("fold-{index}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
     write_new(root.join(format!("fold-{index}.preimage")), &bytes)?;
+    let mut bytes = Vec::new();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("fold-{index}.inputs")), &bytes)?;
     println!(
         "fold {index}: {}-byte proof verified; changed binding/result refused",
         proof.0.len()
     );
-    Ok(proof.0.len())
-}
-
-fn apply(
-    root: &Path,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<(), Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0610_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0610_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    write_new(
-        root.join(format!("fold-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("fold strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("fold contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("fold applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(
-            format!("fold replay refused incorrectly or mutated ledger: {result:?}").into(),
-        );
-    }
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(root.join(format!("fold-{index}-state.bin")), &bytes)?;
-    println!("fold {index}: funded default-strict apply; replay refused without mutation");
-    Ok(())
+    Ok(proof)
 }

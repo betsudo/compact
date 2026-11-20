@@ -59,7 +59,7 @@ mod type_declarations;
 mod value_lowering;
 mod witness;
 
-const RUNTIME_ABI_VERSION: u32 = 53;
+const RUNTIME_ABI_VERSION: u32 = 54;
 
 const GENERATED_HEADER: &str = r#"// This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
@@ -158,6 +158,9 @@ pub enum RenderError {
         limit: usize,
         required_trait: &'static str,
     },
+    UnsupportedOpaqueHashInput {
+        operation: &'static str,
+    },
     InvalidFieldLiteral(String),
     InvalidUnsignedLiteral {
         value: String,
@@ -209,6 +212,30 @@ pub enum RenderError {
         expected: Type,
         actual: Type,
     },
+    InvalidBytesPadding {
+        length: usize,
+        input_length: usize,
+    },
+    InvalidByteChunks {
+        length: usize,
+        chunk_count: usize,
+    },
+    InvalidBytesSlice {
+        start: usize,
+        length: usize,
+        input_length: usize,
+    },
+    ExpectedBytes(Type),
+    UnsupportedUintBytesWidth,
+    InvalidEnumCast {
+        source: Type,
+        target: Type,
+    },
+    InvalidSecp256k1BytesCast {
+        source: Type,
+        target: Type,
+    },
+    ExpectedSecp256k1Field(Type),
     ExpectedUnsigned(Type),
     EffectfulExpression,
     MalformedReturnPlan,
@@ -218,6 +245,9 @@ pub enum RenderError {
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::UnsupportedOpaqueHashInput { operation } => {
+                write!(f, "{operation} cannot hash a value containing opaque data")
+            }
             Self::ResourceLimit {
                 resource,
                 limit,
@@ -347,6 +377,48 @@ impl fmt::Display for RenderError {
             ),
             Self::TypeMismatch { expected, actual } => {
                 write!(f, "expression has type {actual:?}, expected {expected:?}")
+            }
+            Self::InvalidBytesPadding {
+                length,
+                input_length,
+            } => write!(
+                f,
+                "cannot zero-pad Bytes<{input_length}> to the shorter length {length}"
+            ),
+            Self::InvalidByteChunks {
+                length,
+                chunk_count,
+            } => write!(
+                f,
+                "expected a tuple of {chunk_count} fixed Bytes chunks totaling {length} bytes"
+            ),
+            Self::InvalidBytesSlice {
+                start,
+                length,
+                input_length,
+            } => write!(
+                f,
+                "slice index {start} plus length {length} is out-of-bounds for Bytes<{input_length}>"
+            ),
+            Self::ExpectedBytes(ty) => write!(f, "expected a fixed Bytes operand, found {ty:?}"),
+            Self::UnsupportedUintBytesWidth => {
+                write!(f, "unsupported width for native Uint/Bytes conversion")
+            }
+            Self::InvalidEnumCast { source, target } => {
+                write!(
+                    f,
+                    "cannot cast between {source:?} and {target:?}; expected an enum and a numeric type"
+                )
+            }
+            Self::InvalidSecp256k1BytesCast { source, target } => write!(
+                f,
+                "cannot cast {source:?} to {target:?}; expected Bytes<32> and a supported foreign field"
+            ),
+            Self::ExpectedSecp256k1Field(actual) => {
+                write!(
+                    f,
+                    "expression has type {actual:?}, expected a secp256k1 or secp256r1 base or scalar field"
+                )
             }
             Self::ExpectedUnsigned(actual) => {
                 write!(f, "expression has type {actual:?}, expected Compact Uint")
@@ -663,6 +735,9 @@ fn collect_named_types_observed<'ir>(
         Type::Vector { element, .. } => {
             collect_named_types_observed(element, structs, enums, observer, origins.as_deref_mut())?
         }
+        Type::LedgerMerkle { ty, .. } => {
+            collect_named_types_observed(ty, structs, enums, observer, origins)?;
+        }
         Type::LedgerMap { key, value } => {
             collect_named_types_observed(key, structs, enums, observer, origins.as_deref_mut())?;
             collect_named_types_observed(value, structs, enums, observer, origins)?;
@@ -774,6 +849,10 @@ fn collect_expression_types<'ir>(
         | Expr::CounterLessThan {
             threshold: value, ..
         } => collect_expression_types(value, structs, enums, origins, observer)?,
+        Expr::NestedMapLookup { inner, outer, .. } => {
+            collect_expression_types(inner, structs, enums, origins, observer)?;
+            collect_expression_types(outer, structs, enums, origins, observer)?;
+        }
         Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {
             collect_expression_types(key, structs, enums, origins, observer)?
         }
@@ -787,12 +866,17 @@ fn collect_expression_types<'ir>(
         }
         Expr::TransientHash { value }
         | Expr::PersistentHash { value }
-        | Expr::Keccak256 { value }
+        | Expr::Keccak256 { value, .. }
+        | Expr::Sha512 { value }
         | Expr::DegradeToTransient { value }
         | Expr::UpgradeFromTransient { value }
         | Expr::HashToCurve { value }
         | Expr::JubjubPointX { value }
         | Expr::JubjubPointY { value }
+        | Expr::Secp256k1Neg { value }
+        | Expr::Secp256k1Inv { value }
+        | Expr::Secp256k1PointX { value }
+        | Expr::Secp256k1PointY { value }
         | Expr::EcNeg { value }
         | Expr::JubjubScalarFromNative { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
@@ -814,10 +898,22 @@ fn collect_expression_types<'ir>(
         }
         Expr::UnsignedCast { value, .. }
         | Expr::FieldCast { value }
+        | Expr::VectorToBytes { value, .. }
+        | Expr::BytesToVector { value, .. }
+        | Expr::UintToBytes { value, .. }
+        | Expr::WideUintToBytes { value, .. }
+        | Expr::BytesToField { value }
+        | Expr::BytesToUint { value, .. }
+        | Expr::BytesZeroPad { value, .. }
+        | Expr::BytesFromChunks { value, .. }
+        | Expr::BytesSlice { value, .. }
         | Expr::FieldToBytes32 { value } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
-        Expr::Coerce { value, ty } => {
+        Expr::Coerce { value, ty }
+        | Expr::JubjubCast { value, ty }
+        | Expr::Secp256k1BytesCast { value, ty }
+        | Expr::EnumCast { value, ty } => {
             collect_expression_types(value, structs, enums, origins, observer)?;
             collect_named_types_observed(ty, structs, enums, observer, Some(origins))?;
         }
@@ -843,11 +939,42 @@ fn collect_expression_types<'ir>(
         | Expr::BytesLiteral { .. }
         | Expr::UnsignedLiteral { .. }
         | Expr::Parameter { .. } => {}
-        Expr::KernelClaim { value, .. } => {
+        Expr::EmitShieldedSpend { value }
+        | Expr::EmitShieldedBurn { value }
+        | Expr::EmitShieldedMint { value }
+        | Expr::EmitShieldedReceive { value }
+        | Expr::EmitUnshieldedSpend { value }
+        | Expr::EmitUnshieldedReceive { value }
+        | Expr::EmitUnshieldedMint { value }
+        | Expr::EmitUnshieldedBurn { value }
+        | Expr::EmitMisc { value }
+        | Expr::EmitPaused { value }
+        | Expr::EmitUnpaused { value }
+        | Expr::KernelClaim { value, .. } => {
             collect_expression_types(value, structs, enums, origins, observer)?
         }
         Expr::KernelMintShielded { domain, amount } => {
             collect_expression_types(domain, structs, enums, origins, observer)?;
+            collect_expression_types(amount, structs, enums, origins, observer)?;
+        }
+        Expr::KernelUnshieldedEffect {
+            key,
+            recipient,
+            amount,
+            ..
+        } => {
+            collect_expression_types(key, structs, enums, origins, observer)?;
+            if let Some(recipient) = recipient {
+                collect_expression_types(recipient, structs, enums, origins, observer)?;
+            }
+            collect_expression_types(amount, structs, enums, origins, observer)?;
+        }
+        Expr::KernelBalance { token } => {
+            collect_expression_types(token, structs, enums, origins, observer)?;
+        }
+        Expr::KernelBalanceLessThan { token, amount }
+        | Expr::KernelBalanceGreaterThan { token, amount } => {
+            collect_expression_types(token, structs, enums, origins, observer)?;
             collect_expression_types(amount, structs, enums, origins, observer)?;
         }
         Expr::CreateZswapInput { coin } => {
@@ -958,7 +1085,19 @@ fn collect_action_types<'ir>(
             collect_expression_types(key, structs, enums, origins, observer)?;
             collect_expression_types(value, structs, enums, origins, observer)?;
         }
-        StateAction::MapInsertDefault { key, .. } | StateAction::MapRemove { key, .. } => {
+        StateAction::NestedMapInsert {
+            inner,
+            value,
+            outer,
+            ..
+        } => {
+            for operand in [inner, value, outer] {
+                collect_expression_types(operand, structs, enums, origins, observer)?;
+            }
+        }
+        StateAction::MapInitChild { key, .. }
+        | StateAction::MapInsertDefault { key, .. }
+        | StateAction::MapRemove { key, .. } => {
             collect_expression_types(key, structs, enums, origins, observer)?;
         }
         StateAction::MerkleInsertIndexDefault { position, .. }
@@ -1471,6 +1610,24 @@ fn pure_conversion_expression(
     let source = match expr {
         Expr::FieldCast { value } => ConversionSource::FieldCast { value },
         Expr::FieldToBytes32 { value } => ConversionSource::FieldToBytes32 { value },
+        Expr::JubjubCast { value, ty } => ConversionSource::JubjubCast { value, ty },
+        Expr::EnumCast { value, ty } => ConversionSource::EnumCast { value, ty },
+        Expr::Secp256k1BytesCast { value, ty } => {
+            ConversionSource::Secp256k1BytesCast { value, ty }
+        }
+        Expr::VectorToBytes { .. }
+        | Expr::BytesToVector { .. }
+        | Expr::UintToBytes { .. }
+        | Expr::WideUintToBytes { .. }
+        | Expr::BytesToField { .. }
+        | Expr::BytesToUint { .. }
+        | Expr::BytesZeroPad { .. }
+        | Expr::BytesFromChunks { .. }
+        | Expr::BytesSlice { .. } => {
+            let (value, operation) =
+                pure_semantics::conversion::FixedBytesConversion::from_expression(expr);
+            ConversionSource::FixedBytes { value, operation }
+        }
         Expr::Coerce { value, ty } => ConversionSource::Coerce { value, ty },
         Expr::UnsignedCast { max, value } => ConversionSource::UnsignedCast { max, value },
         _ => unreachable!("private pure-expression dispatcher selects this family"),
@@ -1568,7 +1725,8 @@ fn pure_crypto_expression(
         Expr::TransientCommit { value, opening } => CryptoSource::TransientCommit(value, opening),
         Expr::PersistentHash { value } => CryptoSource::PersistentHash(value),
         Expr::PersistentCommit { value, opening } => CryptoSource::PersistentCommit(value, opening),
-        Expr::Keccak256 { value } => CryptoSource::Keccak256(value),
+        Expr::Keccak256 { value, encoding } => CryptoSource::Keccak256(value, *encoding),
+        Expr::Sha512 { value } => CryptoSource::Sha512(value),
         Expr::DegradeToTransient { value } => CryptoSource::DegradeToTransient(value),
         Expr::UpgradeFromTransient { value } => CryptoSource::UpgradeFromTransient(value),
         Expr::HashToCurve { value } => CryptoSource::HashToCurve(value),
@@ -1577,6 +1735,14 @@ fn pure_crypto_expression(
         Expr::ConstructJubjubPoint { x, y } => CryptoSource::ConstructJubjubPoint(x, y),
         Expr::EcAdd { left, right } => CryptoSource::EcAdd(left, right),
         Expr::EcNeg { value } => CryptoSource::EcNeg(value),
+        Expr::Secp256k1Neg { .. }
+        | Expr::Secp256k1Inv { .. }
+        | Expr::Secp256k1PointX { .. }
+        | Expr::Secp256k1PointY { .. } => {
+            let (kind, value) =
+                pure_semantics::arithmetic::Secp256k1Unary::from_expression(expr).unwrap();
+            CryptoSource::Secp256k1Unary(kind, value)
+        }
         Expr::EcMul { point, scalar } => CryptoSource::EcMul(point, scalar),
         Expr::EcMulGenerator { scalar } => CryptoSource::EcMulGenerator(scalar),
         Expr::JubjubScalarFromNative { value } => CryptoSource::JubjubScalarFromNative(value),
@@ -1608,6 +1774,17 @@ fn pure_leaf_expression(
         Expr::EnumVariant { ty, variant } => LeafSource::EnumVariant { ty, variant },
         Expr::WitnessCall { .. }
         | Expr::KernelClaim { .. }
+        | Expr::EmitShieldedSpend { .. }
+        | Expr::EmitShieldedBurn { .. }
+        | Expr::EmitShieldedMint { .. }
+        | Expr::EmitShieldedReceive { .. }
+        | Expr::EmitUnshieldedSpend { .. }
+        | Expr::EmitUnshieldedReceive { .. }
+        | Expr::EmitUnshieldedMint { .. }
+        | Expr::EmitUnshieldedBurn { .. }
+        | Expr::EmitMisc { .. }
+        | Expr::EmitPaused { .. }
+        | Expr::EmitUnpaused { .. }
         | Expr::KernelMintShielded { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
@@ -1658,6 +1835,9 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
         | Expr::JubjubPointY { value }
         | Expr::StructField { value, .. }
         | Expr::Coerce { value, .. }
+        | Expr::JubjubCast { value, .. }
+        | Expr::Secp256k1BytesCast { value, .. }
+        | Expr::Secp256k1Neg { value }
         | Expr::FieldCast { value } => infallible_constructor_expr(value),
         _ => false,
     }
@@ -1668,6 +1848,15 @@ fn infallible_constructor_expr(value: &Expr) -> bool {
 // child diagnostics and structured Rust expression emission.
 fn infallible_constructor_condition(value: &Expr) -> bool {
     match value {
+        Expr::If {
+            condition,
+            then,
+            otherwise,
+        } => {
+            infallible_constructor_condition(condition)
+                && infallible_constructor_condition(then)
+                && infallible_constructor_condition(otherwise)
+        }
         Expr::Equal { left, right } | Expr::NotEqual { left, right } => {
             infallible_constructor_condition(left) && infallible_constructor_condition(right)
         }
@@ -2506,8 +2695,17 @@ fn render_constructor_vm_steps_observed<'a>(
                 let key = retained_value(key, key_ty);
                 let index = ledger_path_expr(declaration);
                 if matches!(step, ConstructorStep::MapInsertDefault { .. }) {
-                    let value_ty = native_header::carrier(value_ty, environment.observer)?;
-                    actions.push(syn::parse_quote!(let step = context.insert_map(#index, #key, <#value_ty as Default>::default())?;));
+                    if matches!(value_ty, Type::LedgerMerkle { .. }) {
+                        let slot = native_header::identifier(
+                            &declaration.id,
+                            RefusalSite::field(Owner::Ledger(declaration), "id"),
+                            environment.observer,
+                        )?;
+                        actions.push(syn::parse_quote!(let step = crate::ledger_slots::#slot.insert_default(context, #key)?;));
+                    } else {
+                        let value_ty = native_header::carrier(value_ty, environment.observer)?;
+                        actions.push(syn::parse_quote!(let step = context.insert_map(#index, #key, <#value_ty as Default>::default())?;));
+                    }
                 } else {
                     actions.push(syn::parse_quote!(let step = context.remove_map(#index, #key)?;));
                 }
@@ -3461,7 +3659,31 @@ fn render_with_refusals(
             Ok(syn::parse_quote!(runtime::ledger::constructor_historic_merkle_tree(#depth)))
         }
         LedgerFieldKind::Cell { ty } => {
-            if !matches!(ty, Type::Boolean | Type::Field | Type::JubjubPoint | Type::OpaqueString | Type::OpaqueBytes | Type::Unsigned { .. } | Type::Bytes { .. } | Type::Struct { .. } | Type::Enum { .. } | Type::Vector { .. } | Type::Tuple { .. } | Type::Unit) {
+            if !matches!(
+                ty,
+                Type::Boolean
+                    | Type::Field
+                    | Type::JubjubPoint
+                    | Type::Secp256k1Base
+                    | Type::Secp256r1Base
+                    | Type::Curve25519Base
+                    | Type::Secp256k1Scalar
+                    | Type::JubjubScalar
+                    | Type::Secp256r1Scalar
+                    | Type::Curve25519Scalar
+                    | Type::Secp256k1Point
+                    | Type::Secp256r1Point
+                    | Type::Curve25519Point
+                    | Type::OpaqueString
+                    | Type::OpaqueBytes
+                    | Type::Unsigned { .. }
+                    | Type::Bytes { .. }
+                    | Type::Struct { .. }
+                    | Type::Enum { .. }
+                    | Type::Vector { .. }
+                    | Type::Tuple { .. }
+                    | Type::Unit
+            ) {
                 if let Some(observer) = observer { observer.refused(RefusalSite::node(Owner::Type(ty))); }
                 return Err(RenderError::UnsupportedLedgerCellType(ty.clone()));
             }
@@ -3663,7 +3885,7 @@ fn render_with_refusals(
             }
             LedgerFieldKind::Map { key, value } => {
                 // Nested Map values are structural markers, not CellValue.
-                let has_cell_value = !matches!(value, Type::LedgerMap { .. });
+                let has_cell_value = !value.is_ledger_adt();
                 let Some((key, value)) = map_slot_types(key, value)? else {
                     continue;
                 };
@@ -3747,7 +3969,7 @@ fn render_with_refusals(
     )?;
     let public_state_view = (!public_state_getters.is_empty()).then(|| {
         quote! {
-            /// Read-only projection of an existing ledger-8 public state.
+            /// Read-only projection of the contract's public state.
             pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
                 state: &'a runtime::ledger::StateValue<D>,
             }

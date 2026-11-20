@@ -27,10 +27,16 @@ use midnight_storage::storage::HashMap;
 
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let mut operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
-    for name in ["item_count", "history_count"] {
+    for name in [
+        "item_count",
+        "history_count",
+        "first_item",
+        "drop_first",
+        "clear_items",
+    ] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -43,7 +49,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn constructor_list_actions_match_typescript_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/constructor-list-actions.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-constructor-list-actions.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();

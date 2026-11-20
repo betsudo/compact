@@ -21,7 +21,8 @@
 pub use midnight_base_crypto::hash::HashOutput;
 pub use midnight_coin_structure::coin::{
     Commitment as CoinCommitment, Info as CoinInfo, Nonce as CoinNonce, Nullifier as CoinNullifier,
-    PublicKey as CoinPublicKey, QualifiedInfo as QualifiedCoinInfo, ShieldedTokenType,
+    PublicAddress, PublicKey as CoinPublicKey, QualifiedInfo as QualifiedCoinInfo,
+    ShieldedTokenType, TokenType, UnshieldedTokenType, UserAddress,
 };
 pub use midnight_coin_structure::contract::ContractAddress;
 pub use midnight_coin_structure::transfer::Recipient as CoinRecipient;
@@ -93,7 +94,11 @@ fn checked_path_operand<D: DB>(length: usize, extra: u8) -> Result<u8, Transcrip
 // Idx uses four bits for (length - 1). Empty paths are the upstream
 // no-op root selection, while nonempty paths encode at most sixteen keys.
 fn checked_index_path<D: DB>(path: &[u8]) -> Result<(), TranscriptRejected<D>> {
-    if path.len() > 16 {
+    checked_index_path_length(path.len())
+}
+
+fn checked_index_path_length<D: DB>(length: usize) -> Result<(), TranscriptRejected<D>> {
+    if length > 16 {
         Err(midnight_onchain_vm::error::OnchainProgramError::BoundsExceeded.into())
     } else {
         Ok(())
@@ -208,6 +213,39 @@ pub fn coin_recipient_from_compact(
     }
 }
 
+/// Convert the Compact `left<Bytes<32>, Bytes<32>>(color)` token type.
+pub fn unshielded_token_type_from_compact(color: FixedBytes<32>) -> TokenType {
+    TokenType::Unshielded(UnshieldedTokenType(HashOutput(color.0)))
+}
+
+/// Convert Compact's `Either<Bytes<32>, Bytes<32>>` TokenType. The selected
+/// branch is carried by the SDK type so its aligned tag and padding are exact.
+pub fn token_type_from_compact(
+    is_left: bool,
+    unshielded_color: FixedBytes<32>,
+    shielded_color: FixedBytes<32>,
+) -> TokenType {
+    if is_left {
+        unshielded_token_type_from_compact(unshielded_color)
+    } else {
+        TokenType::Shielded(ShieldedTokenType(HashOutput(shielded_color.0)))
+    }
+}
+
+/// The unshielded recipient is contract-left and user-right, unlike the
+/// shielded coin recipient. Only the selected branch contributes to the key.
+pub fn unshielded_recipient_from_compact(
+    is_left: bool,
+    contract_address: FixedBytes<32>,
+    user_address: FixedBytes<32>,
+) -> PublicAddress {
+    if is_left {
+        PublicAddress::Contract(ContractAddress(HashOutput(contract_address.0)))
+    } else {
+        PublicAddress::User(UserAddress(HashOutput(user_address.0)))
+    }
+}
+
 /// Validate an already allocated qualified coin without inventing its index.
 /// Both Set insertion and Cell replacement leave index lookup to the ledger VM.
 pub(crate) fn qualified_coin_commitment<T: CellValue, D: DB>(
@@ -237,7 +275,26 @@ macro_rules! primitive_cell_value {
     )* };
 }
 
-primitive_cell_value!(bool, u8, u16, u32, u64, u128, Field, JubjubPoint);
+primitive_cell_value!(
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    Field,
+    JubjubPoint,
+    crate::JubjubScalar,
+    crate::Secp256k1Base,
+    crate::Secp256k1Point,
+    crate::Secp256r1Point,
+    crate::Secp256k1Scalar,
+    crate::Secp256r1Base,
+    crate::Curve25519Base,
+    crate::Curve25519Scalar,
+    crate::Curve25519Point,
+    crate::Secp256r1Scalar,
+);
 
 impl<const MAX: u128> CellValue for BoundedUint<MAX> {
     fn decode_cell_value(value: &ValueSlice) -> Result<Self, CompactError> {
@@ -369,11 +426,19 @@ fn field_at_path<'a, D: DB>(
     Ok(current)
 }
 
+mod balance;
 mod cell;
+pub(crate) use balance::{BalanceMode, BalanceValue, balance_program, query_balance};
 mod collections;
 mod counter;
+mod event;
 mod merkle;
 mod vm;
+pub(crate) use event::{
+    misc_program, paused_program, shielded_burn_program, shielded_mint_program,
+    shielded_receive_program, shielded_spend_program, unpaused_program, unshielded_burn_program,
+    unshielded_mint_program, unshielded_receive_program, unshielded_spend_program,
+};
 
 pub(crate) use cell::{
     aligned_cell_value, cell_read_program, cell_write_program, decode_last_read,
@@ -393,10 +458,12 @@ pub use collections::{
     set_view_at_path, size_map, size_set,
 };
 pub(crate) use collections::{
-    list_head_program, list_is_empty_program, list_length_program, list_pop_front_program,
-    list_push_front_program, list_reset_program, map_insert_program, map_lookup_program,
-    qualified_coin_set_insert_program, set_insert_program, set_is_empty_program,
-    set_member_program, set_remove_program, set_reset_program, set_size_program,
+    gather_map_lookup, list_head_program, list_is_empty_program, list_length_program,
+    list_pop_front_program, list_push_front_program, list_reset_program, map_init_child_program,
+    map_insert_child_program, map_insert_merkle_default_program, map_insert_program,
+    map_lookup_child_program, map_lookup_program, qualified_coin_set_insert_program,
+    set_insert_program, set_is_empty_program, set_member_program, set_remove_program,
+    set_reset_program, set_size_program,
 };
 pub use counter::{constructor_counter, decrement_counter, increment_counter, read_counter};
 pub(crate) use counter::{
@@ -465,8 +532,17 @@ pub fn empty_query_context() -> QueryContext<DefaultDB> {
 }
 
 mod kernel;
-pub use kernel::{KernelClaim, query_kernel_claim, query_kernel_mint_shielded};
-pub(crate) use kernel::{kernel_claim_program, kernel_mint_shielded_program};
+pub use kernel::{
+    KernelClaim, query_kernel_claim, query_kernel_claim_unshielded_coin_spend,
+    query_kernel_inc_unshielded_inputs, query_kernel_inc_unshielded_outputs,
+    query_kernel_mint_shielded, query_kernel_mint_unshielded,
+};
+pub(crate) use kernel::{
+    kernel_claim_contract_call_program, kernel_claim_program,
+    kernel_claim_unshielded_coin_spend_program, kernel_inc_unshielded_inputs_program,
+    kernel_inc_unshielded_outputs_program, kernel_mint_shielded_program,
+    kernel_mint_unshielded_program,
+};
 
 #[cfg(test)]
 mod program_path_tests;

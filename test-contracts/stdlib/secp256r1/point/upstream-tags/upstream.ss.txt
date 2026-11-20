@@ -1,0 +1,17 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export pure circuit curves(a: Secp256r1Base,"
+      "                           b: Secp256r1Scalar,"
+      "                           c: Secp256r1Point): [] { }"
+      )
+    (stage-javascript curveCode
+      '(
+        "test('secp256r1 curve leaf tags', () => {"
+        "  expect(curveCode.circuitSignatures.curves.argumentTypes).toEqual(["
+        "    {tag: 'Secp256r1Base'},"
+        "    {tag: 'Secp256r1Scalar'},"
+        "    {tag: 'Secp256r1Point'}]);"
+        "});"
+        ))
+    )

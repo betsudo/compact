@@ -26,6 +26,8 @@ from pathlib import Path
 import subprocess
 import tomllib
 
+from consumer_cargo import with_pinned_patches
+
 
 def check(
     compiler: str,
@@ -56,7 +58,7 @@ def check(
     consumer = base / "shared-consumer"
     consumer.mkdir()
     (consumer / "tests").mkdir()
-    (consumer / "Cargo.toml").write_text(
+    manifest = (
         "[package]\nname = \"compactc-shared-runtime-smoke\"\n"
         "version = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\n"
         + "".join(
@@ -65,6 +67,7 @@ def check(
         )
         + f'midnight-compact-runtime = {{ path = {json.dumps(str(root / "runtime-rs"))} }}\n'
     )
+    (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, root))
     (consumer / "tests/both.rs").write_text(
         (assets / 'tests/both.rs').read_text()
     )

@@ -18,11 +18,12 @@
 use crate::CompactError;
 use crate::primitives::checked_jubjub_coordinates;
 use crate::{BinaryHashRepr, Field, FieldRepr, FixedBytes, JubjubPoint};
-use midnight_base_crypto::fab::{Aligned, AlignedValue, Value};
+use midnight_base_crypto::fab::{Aligned, AlignedValue, AlignmentAtom, AlignmentSegment, Value};
 use midnight_base_crypto::hash::{self as persistent, HashOutput, PersistentHashWriter};
-use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine, embedded};
+use midnight_transient_crypto::curve::{EmbeddedFr, EmbeddedGroupAffine};
 use midnight_transient_crypto::fab::ValueReprAlignedValue;
 use midnight_transient_crypto::hash;
+use sha2::Sha512;
 use sha3::{Digest, Keccak256};
 
 fn value_repr<T: Aligned + Into<Value>>(value: T) -> ValueReprAlignedValue {
@@ -50,13 +51,47 @@ pub fn persistent_hash<T: Aligned + Into<Value>>(value: T) -> FixedBytes<32> {
     FixedBytes(writer.finalize().0)
 }
 
-/// Hash the concatenated FAB atoms using Compact's Keccak-256 encoding.
+/// Hash the concatenated normalized FAB atoms used by historical generated contracts.
 pub fn keccak256<T: Into<Value>>(value: T) -> FixedBytes<32> {
     let mut hasher = Keccak256::new();
     for atom in value.into().0 {
         hasher.update(atom.0);
     }
     FixedBytes(hasher.finalize().into())
+}
+
+/// Hash the aligned binary representation used by Ledger 9 ZKIR.
+///
+/// Only fixed-width byte and field atoms have a canonical hash input.
+pub fn keccak256_aligned<T: Aligned + Into<Value>>(
+    value: T,
+) -> Result<FixedBytes<32>, CompactError> {
+    Ok(FixedBytes(
+        Keccak256::digest(aligned_hash_input(value)?).into(),
+    ))
+}
+
+/// Hash the aligned binary representation with SHA-512.
+pub fn sha512<T: Aligned + Into<Value>>(value: T) -> Result<FixedBytes<64>, CompactError> {
+    Ok(FixedBytes(
+        Sha512::digest(aligned_hash_input(value)?).into(),
+    ))
+}
+
+fn aligned_hash_input<T: Aligned + Into<Value>>(value: T) -> Result<Vec<u8>, CompactError> {
+    let alignment = T::alignment();
+    if alignment.0.iter().any(|segment| {
+        !matches!(
+            segment,
+            AlignmentSegment::Atom(AlignmentAtom::Bytes { .. } | AlignmentAtom::Field)
+        )
+    }) {
+        return Err(CompactError::InvalidHashInput);
+    }
+    let value = AlignedValue::new(value.into(), alignment).ok_or(CompactError::InvalidHashInput)?;
+    let mut input = Vec::new();
+    ValueReprAlignedValue(value).binary_repr(&mut input);
+    Ok(input)
 }
 
 /// Commit to the FAB binary value using ledger-8's persistent commitment.
@@ -125,8 +160,5 @@ pub fn ec_mul_generator(scalar: Field) -> Result<JubjubPoint, CompactError> {
 
 /// Reduce a native field value into the embedded scalar field.
 pub fn jubjub_scalar_from_native(value: Field) -> Field {
-    let mut wide = [0u8; 64];
-    wide[..32].copy_from_slice(&value.as_le_bytes());
-    let scalar = EmbeddedFr(embedded::Scalar::from_bytes_wide(&wide));
-    Field::from_le_bytes(&scalar.as_le_bytes()).expect("embedded scalar fits the native field")
+    crate::JubjubScalar::from_field_reduced(value).as_field()
 }

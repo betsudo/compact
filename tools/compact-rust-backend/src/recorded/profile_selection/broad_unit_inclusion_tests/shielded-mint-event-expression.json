@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "cde729d3dd2a6ec2469c103b1b391742280ed743151336e6168b54764875a30b"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "a6a6a5c0229d3a12306a11baa116d910ca20e7e19c7dae9fc0259e91755e113e",
+      "previous_sha256": "2d4d876535dfef326a23cd24f150b5231d6c584f8ccd20583208badbe1cbabed",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::KernelClaim { value, .. } => visit(value),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "858d92c8c6017e7eebbbf12a007b5d82cb93ae082a8e2ffe4f2ffe5720beb81e",
+      "previous_sha256": "2ee8286dcbd4309274bea441d2e2e4ac042a605ff2b469e41983dff003eb6ba8",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::KernelClaim { value, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "964ad862caf203055cb378e76721c03456f6ebfdb38659061a750b64b3d69868",
+      "previous_sha256": "3d162782fac2c0da27dc8ce01996ebba31ab4906b3b7aceac517e03b1a44939c",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedBurn { .. }\n        | Expr::EmitShieldedMint { .. }\n",
+          "previous": "        | Expr::EmitShieldedBurn { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "29dafa6f0f67ad335f16509312fbbafd6bc9acd8b6affddd0f5d869585ce991f",
+      "previous_sha256": "3ff6e763de4c9f3f58e47e457ca50f63648e411ac8702851fb54cc82975d21d6",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedBurn { .. }\n        | Expr::EmitShieldedMint { .. }\n",
+          "previous": "        | Expr::EmitShieldedBurn { .. }\n"
+        }
+      ]
+    }
+  }
+}

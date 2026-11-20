@@ -1,0 +1,17 @@
+{
+  "increment": {
+    "contract/compact-rust-ir.json": "a4c33135d14d471fd403df4b536ab2026e98587142e7728b3e55b9837b2b4911",
+    "contract/lib.rs": "943822885ea6634a66d9add679aab8d8e4a6de75d451bebbb241b1beecbc920f",
+    "zkir/increment.zkir": "56ab0643bca927981a73605c349d8f6c437019136007ad59dcf8e929a57b7923"
+  },
+  "set_flag": {
+    "contract/compact-rust-ir.json": "11980ad2efa270bad5ed0ce7064b92dbc9d6678385619ff20d4ec1e7e60e21fa",
+    "contract/lib.rs": "5539afbb3142443a5748db32cb4316c7fe94d544c2a343b877fe41d45caf50d6",
+    "zkir/set_flag.zkir": "e6f544af58edd361246120cfc1255a5538c3a71bcfb4d5aca21473bd672bcd72"
+  },
+  "read_flag": {
+    "contract/compact-rust-ir.json": "757a419f5331272790b5c6db78eead9ebbb7427d350f4f0b990bb1373816f6b4",
+    "contract/lib.rs": "c7e4bf86a866f4d20cda7a2f9866998073530d2274a405a853d160e9a58b1aac",
+    "zkir/read_flag.zkir": "20e78f7d7405594c9932cf85d658b8280a12eed784e102ab4a6ca30b2c431246"
+  }
+}

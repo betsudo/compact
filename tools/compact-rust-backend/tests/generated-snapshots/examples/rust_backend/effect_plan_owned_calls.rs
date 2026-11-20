@@ -43,7 +43,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
 }
 /// Typed descriptors for Compact ledger declarations.
 #[allow(non_upper_case_globals)]
@@ -57,7 +57,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -72,7 +72,7 @@ pub mod ledger_contract {
             crate::ledger_slots::blob.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -504,78 +504,115 @@ pub mod ledger_contract {
         let context = step.context;
         total_cost += step.gas_cost;
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_call_argument_14 = ((__compact_action_local_2.clone()).text).clone();
-            let __compact_call_15 = touchText(context, witnesses, __compact_call_argument_14)?;
-            private_transcript_outputs.extend(__compact_call_15.private_transcript_outputs);
-            context = __compact_call_15.context;
-            total_cost += __compact_call_15.gas_cost;
-            let __compact_expression_local_16: runtime::OpaqueString = __compact_call_15.result;
-            let __compact_call_argument_17 = (__compact_action_local_2.clone()).pair;
-            let __compact_call_18 = touchPair(context, witnesses, __compact_call_argument_17)?;
-            private_transcript_outputs.extend(__compact_call_18.private_transcript_outputs);
-            context = __compact_call_18.context;
-            total_cost += __compact_call_18.gas_cost;
-            let __compact_expression_local_19: (runtime::Field, bool) = __compact_call_18.result;
-            let __compact_call_argument_20 = (__compact_action_local_2.clone()).large;
-            let __compact_call_21 = touchWide(context, witnesses, __compact_call_argument_20)?;
-            private_transcript_outputs.extend(__compact_call_21.private_transcript_outputs);
-            context = __compact_call_21.context;
-            total_cost += __compact_call_21.gas_cost;
-            let __compact_expression_local_22: runtime::WideUint<
-                4294967295u128,
-                340282366920938463463374607431768211455u128,
-            > = __compact_call_21.result;
-            let __compact_call_argument_23 = __compact_action_local_2.clone();
-            let __compact_call_argument_24 = __compact_param_1;
-            let __compact_call_25 = checked(
-                context,
-                witnesses,
-                __compact_call_argument_23,
-                __compact_call_argument_24,
-            )?;
-            private_transcript_outputs.extend(__compact_call_25.private_transcript_outputs);
-            context = __compact_call_25.context;
-            total_cost += __compact_call_25.gas_cost;
-            let __compact_expression_local_26: crate::types::Owned = __compact_call_25.result;
-            let __compact_value_27 = __compact_expression_local_26.clone();
-            if if if if if __compact_value_27 == __compact_action_local_1.clone() {
-                let __compact_value_28 = __compact_action_local_3.clone();
-                __compact_value_28 == __compact_action_local_1.clone()
-            } else {
-                false
-            } {
-                let __compact_value_29 = __compact_expression_local_16.clone();
-                __compact_value_29 == ((__compact_action_local_1.clone()).text).clone()
-            } else {
-                false
-            } {
-                let __compact_value_30 = __compact_expression_local_19;
-                __compact_value_30 == (__compact_action_local_1.clone()).pair
-            } else {
-                false
-            } {
-                let __compact_value_31 = __compact_expression_local_22;
-                __compact_value_31 == (__compact_action_local_1.clone()).large
-            } else {
-                false
-            } {
-                runtime::Field::from(1u128)
-            } else {
-                runtime::Field::from(0u128)
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
-        } else {
-            let __compact_value_32 = __compact_action_local_2.clone();
-            if if __compact_value_32 == __compact_action_local_1.clone() {
-                let __compact_value_33 = __compact_action_local_3.clone();
-                __compact_value_33 == __compact_action_local_1.clone()
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_call_argument_14 =
+                            ((__compact_action_local_2.clone()).text).clone();
+                        let __compact_call_15 =
+                            touchText(context, witnesses, __compact_call_argument_14)?;
+                        private_transcript_outputs
+                            .extend(__compact_call_15.private_transcript_outputs);
+                        context = __compact_call_15.context;
+                        total_cost += __compact_call_15.gas_cost;
+                        let __compact_expression_local_16: runtime::OpaqueString =
+                            __compact_call_15.result;
+                        let __compact_call_argument_17 = (__compact_action_local_2.clone()).pair;
+                        let __compact_call_18 =
+                            touchPair(context, witnesses, __compact_call_argument_17)?;
+                        private_transcript_outputs
+                            .extend(__compact_call_18.private_transcript_outputs);
+                        context = __compact_call_18.context;
+                        total_cost += __compact_call_18.gas_cost;
+                        let __compact_expression_local_19: (runtime::Field, bool) =
+                            __compact_call_18.result;
+                        let __compact_call_argument_20 = (__compact_action_local_2.clone()).large;
+                        let __compact_call_21 =
+                            touchWide(context, witnesses, __compact_call_argument_20)?;
+                        private_transcript_outputs
+                            .extend(__compact_call_21.private_transcript_outputs);
+                        context = __compact_call_21.context;
+                        total_cost += __compact_call_21.gas_cost;
+                        let __compact_expression_local_22: runtime::WideUint<
+                            4294967295u128,
+                            340282366920938463463374607431768211455u128,
+                        > = __compact_call_21.result;
+                        let __compact_call_argument_23 = __compact_action_local_2.clone();
+                        let __compact_call_argument_24 = __compact_param_1;
+                        let __compact_call_25 = checked(
+                            context,
+                            witnesses,
+                            __compact_call_argument_23,
+                            __compact_call_argument_24,
+                        )?;
+                        private_transcript_outputs
+                            .extend(__compact_call_25.private_transcript_outputs);
+                        context = __compact_call_25.context;
+                        total_cost += __compact_call_25.gas_cost;
+                        let __compact_expression_local_26: crate::types::Owned =
+                            __compact_call_25.result;
+                        let __compact_value_27 = __compact_expression_local_26.clone();
+                        let __compact_branch_value = if if if if if __compact_value_27
+                            == __compact_action_local_1.clone()
+                        {
+                            let __compact_value_28 = __compact_action_local_3.clone();
+                            __compact_value_28 == __compact_action_local_1.clone()
+                        } else {
+                            false
+                        } {
+                            let __compact_value_29 = __compact_expression_local_16.clone();
+                            __compact_value_29 == ((__compact_action_local_1.clone()).text).clone()
+                        } else {
+                            false
+                        } {
+                            let __compact_value_30 = __compact_expression_local_19;
+                            __compact_value_30 == (__compact_action_local_1.clone()).pair
+                        } else {
+                            false
+                        } {
+                            let __compact_value_31 = __compact_expression_local_22;
+                            __compact_value_31 == (__compact_action_local_1.clone()).large
+                        } else {
+                            false
+                        } {
+                            runtime::Field::from(1u128)
+                        } else {
+                            runtime::Field::from(0u128)
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
             } else {
-                false
-            } {
-                runtime::Field::from(1u128)
-            } else {
-                runtime::Field::from(0u128)
-            }
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_value_32 = __compact_action_local_2.clone();
+                        let __compact_branch_value =
+                            if if __compact_value_32 == __compact_action_local_1.clone() {
+                                let __compact_value_33 = __compact_action_local_3.clone();
+                                __compact_value_33 == __compact_action_local_1.clone()
+                            } else {
+                                false
+                            } {
+                                runtime::Field::from(1u128)
+                            } else {
+                                runtime::Field::from(0u128)
+                            };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

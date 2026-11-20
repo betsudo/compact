@@ -149,8 +149,19 @@ fn called_helpers(actions: &[StateAction], result: &StateReturn) -> CalledHelper
                 position: value, ..
             }
             | StateAction::MapInsertDefault { key: value, .. }
+            | StateAction::MapInitChild { key: value, .. }
             | StateAction::MapRemove { key: value, .. } => expression(value, called),
             StateAction::Assert { condition, .. } => expression(condition, called),
+            StateAction::NestedMapInsert {
+                inner,
+                value,
+                outer,
+                ..
+            } => {
+                for operand in [inner, value, outer] {
+                    expression(operand, called);
+                }
+            }
             StateAction::MapInsert { key, value, .. } => {
                 expression(key, called);
                 expression(value, called);

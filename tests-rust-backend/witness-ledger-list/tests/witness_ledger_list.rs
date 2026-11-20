@@ -35,7 +35,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["prepend", "drop_first"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -127,7 +127,7 @@ fn assert_projection_costs(
 #[test]
 fn witness_reads_current_typed_list() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-list-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-list-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -238,7 +238,7 @@ mod recording_parity {
     #[test]
     fn recorded_and_observed_witness_reads_match_native_and_ts() {
         let oracle: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../runtime-rs/tests/fixtures/witness-ledger-list-ts-output.json"
+            "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-list-ts-output.json"
         ))
         .unwrap();
         for (populated, key) in [(false, "before"), (true, "after")] {

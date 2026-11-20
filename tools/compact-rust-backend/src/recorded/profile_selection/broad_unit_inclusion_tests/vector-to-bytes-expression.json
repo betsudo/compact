@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "df6da9da4196639a03b3065fdf718d2a9a92ec26",
+  "scope": "Reverse only the VectorToBytes match arm in the retained exhaustive matchers.",
+  "predecessor_manifest": {
+    "path": "fixed-bytes-expression.json",
+    "sha256": "a2da256f5d860e8359ced0c98c69bd0fd12a830466ec795c93db4b9e80f3f1d2"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "6d4395b3fc0794485b941c65188351584bc44c3885b8230cc2a97d97d77118e4",
+      "previous_sha256": "24244e2884165559a160fab1c9ee4d56498474051b5f65929958f97da4e92f2f",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::VectorToBytes { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "86877b40ab71f3b3d50862a65529562df60afb8ad161624b435ac62e5192d987",
+      "previous_sha256": "d98b5e0d2059457ceb6121a3b519a52aaf337f4dce275849eb84cbbd461121ff",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::VectorToBytes { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "865a9778e17a9ad26a8c9364ebc3015a6e164b70bb844a52b4dadb2d71e5adb3",
+      "previous_sha256": "166ba3c20b13e61554406e58eb4a0540067a07633d2a0ce429d2ca7ffe9fb21e",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::VectorToBytes { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "63c154b36a0f9998c2b858aa13c396f560cb7286384ca8f1c2727ce88b9c168f",
+      "previous_sha256": "057bfd3ac9f8cac96300627ec8e2101d4918c29370ff65cd07ad85506b4d37be",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::VectorToBytes { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

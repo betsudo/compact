@@ -34,7 +34,9 @@ use midnight_compact_runtime::transaction::{
 use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
-use super::{check_generated_trace, check_observed_call_parity, check_transaction, make_deploy};
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
+};
 
 pub(super) fn check_operations(set_root: &Path, rng: &mut StdRng) -> Result<(), Box<dyn Error>> {
     for circuit in [

@@ -22,6 +22,12 @@ mod strict;
 pub(crate) use strict::run as run_strict;
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
+
+    counter_scenario::validate_ir(
+        &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
+        compact_rust_call_arg_declared_type_fixture::RETAINED_IR,
+    )?;
     let mut rng = StdRng::seed_from_u64(0x0090_434f_4d4d_4954);
     let initial = contract::initial_state(ConstructorContext::new(()))?;
     let deploy = make_deploy(
@@ -68,6 +74,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("Field persistent commitment proved and applied through ledger-8");
+    println!("Field persistent commitment proved and applied through Ledger 9");
     Ok(())
 }

@@ -14,6 +14,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -187,8 +189,8 @@ def main():
         for spec in definitions:
             name = spec["source"]
             target = generated / name
-            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT,
-                    *(["--rust-functional-ledger8", "--rust-require-recording"] if spec["stateful"] else []),
+            run("generate-" + name, [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT,
+                    *(["--rust-functional-ledger9", "--rust-require-recording"] if spec["stateful"] else []),
                     (SOURCES / (name + ".compact")).relative_to(ROOT), target])
             run("independent-" + name, [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk",
                     (SOURCES / (name + ".compact")).relative_to(ROOT), output / "independent" / name])
@@ -211,7 +213,8 @@ def main():
                 else:
                     raise ValueError("return conversion relabeled as supplied")
             programs = inventory(target / "contract/checked-programs")
-            require(programs == inventory(FIXTURES / "goldens" / name / "checked-programs"), "complete Program roster differs: " + name)
+            require(programs == inventory(FIXTURES / "ledger9-goldens" / name / "checked-programs"),
+                    "complete Ledger 9 Program roster differs: " + name)
             require(len(programs) == len(spec["entries"]), "complete checked Program count differs: " + name)
             caps = json.loads((target / "contract/rust-capabilities.json").read_text())["circuits"]
             if spec["stateful"]:
@@ -231,7 +234,7 @@ def main():
         (output / "package.json").write_text('{"type":"module"}\n')
         ts = output / "typescript.json"
         run("typescript", ["node", FIXTURES / "capture.mjs", "--generated", generated, "--runtime", runtime,
-                "--version", json.loads((ROOT / "runtime/package.json").read_text())["version"], "--output", ts])
+                "--version", "0.18.0", "--output", ts])
         reference = json.loads(ts.read_text())
         require(reference["status"] == "passed" and len(reference["rows"]) == case_count, "incomplete TypeScript oracle")
         report["typescript"] = {"path": str(ts), "sha256": digest(ts), "cases": case_count}
@@ -248,7 +251,7 @@ def main():
             package = tomllib.loads((path / "Cargo.toml").read_text())["package"]["name"]
             dependencies.append(name + '={package=' + json.dumps(package) + ',path=' + json.dumps(str(path)) + ',features=["ledger-transaction"]}')
         manifest = consumer / "Cargo.toml"
-        manifest.write_text('[workspace]\n[package]\nname="direct-stateful-vector-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n')
+        manifest.write_text(with_pinned_patches('[workspace]\n[package]\nname="direct-stateful-vector-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(dependencies) + '\n', ROOT))
         run("resolve", ["cargo", "metadata", "--offline", "--manifest-path", manifest, "--format-version", "1"])
         result = run("consumer", ["cargo", "test", "--locked", "--offline", "--manifest-path", manifest, "--lib"])
         require(f"test result: ok. {case_count} passed; 0 failed; 0 ignored;" in result.stdout, "all consumer cases must execute")
@@ -299,7 +302,7 @@ def main():
             mutant.mkdir()
             source = mutant / (name + ".compact")
             source.write_text(text.replace(old, new))
-            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording", source, mutant / "generated"])
+            run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--feature-zkir-v3", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording", source, mutant / "generated"])
             changed_manifest = manifest.read_text().replace(str(generated / name / "contract"), str(mutant / "generated/contract"))
             mutant_consumer = mutant / "consumer"
             mutant_consumer.mkdir()

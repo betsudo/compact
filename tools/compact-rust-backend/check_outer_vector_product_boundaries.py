@@ -183,7 +183,7 @@ def qualify(output, root, compiler, env, run, lock, bind, digest, require):
         bind(changed_source)
         generated = directory / "generated"
         run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", root,
-            "--rust-functional-ledger8", "--rust-require-recording", changed_source, generated])
+            "--rust-functional-ledger9", "--rust-require-recording", changed_source, generated])
         files = {str(p.relative_to(generated)): digest(p) for p in generated.rglob("*") if p.is_file()}
         for path in files:
             bind(generated / path)

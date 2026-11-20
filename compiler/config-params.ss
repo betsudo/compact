@@ -38,6 +38,7 @@
 
   ; default source path
   (export-parameter compact-path (split-search-path (or (getenv "COMPACT_PATH") "")))
+  (export-parameter contract-dependency-directory #f)
 
   ; formatter
   (export-parameter format-line-length 100)
@@ -49,4 +50,15 @@
 
   ; feature flags
   (export-parameter feature-zkir-v3 #f)
+
+  ; Select the released asynchronous TypeScript runtime contract explicitly.
+  ; The historical local 0.18 generator remains the default.
+  (export-parameter ts-runtime-profile #f)
+
+  ; Internal module-metadata qualification. Public compiler output stays byte-identical
+  ; until secure generated cross-contract invocation is admitted.
+  (export-parameter emit-verifier-key-metadata #f)
+
+  ; Internal statement qualification while the generated call runtimes are being ported.
+  (export-parameter compile-contract-statements #f)
 )

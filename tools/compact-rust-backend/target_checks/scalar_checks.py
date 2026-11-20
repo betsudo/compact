@@ -26,6 +26,25 @@ from pathlib import Path
 from subprocess import CompletedProcess
 
 
+def _prove_source_bound_v3(
+    output: Path,
+    retained: dict,
+    circuit: str,
+    selector: str,
+    *,
+    run: Callable[..., None],
+) -> None:
+    ir = json.loads((output / "contract/compact-rust-ir.json").read_text())
+    keys = output / "keys"
+    if json.dumps(ir, sort_keys=True) != json.dumps(retained, sort_keys=True) or keys.exists():
+        raise ValueError(f"{selector} source IR differs or preflight produced keys")
+    keys.mkdir()
+    run("zkir-v3", "compile", str(output / f"zkir/{circuit}.zkir"),
+        str(keys / f"{circuit}.prover"), str(keys / f"{circuit}.verifier"))
+    for flag in (selector, f"{selector}-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", flag, str(output))
+
+
 def check_wide_add(
     compiler: str,
     base: Path,
@@ -40,7 +59,11 @@ def check_wide_add(
     generated = (output / "contract/lib.rs").read_text()
     assert "runtime::add_wide_unsigned" in generated
     assert "runtime::narrow_wide_uint" in generated
-    assert "RUST_RUNTIME_ABI == 53" in generated
+    compatibility = json.loads((root / "runtime-rs/compatibility.json").read_text())
+    abi = compatibility["runtime_abi"]
+    assert f"assert!(runtime::RUST_RUNTIME_ABI == {abi});" in generated, (
+        "wide add runtime ABI differs from the current compatibility record"
+    )
     report = json.loads((output / "contract/rust-capabilities.json").read_text())
     assert len(report["circuits"]) == 1
     row = report["circuits"][0]
@@ -61,10 +84,8 @@ def check_counter_less_than(
     run: Callable[..., None],
 ) -> None:
     output = base / "counter-less-than"
-    command = [compiler, "--target", "rust", "--rust-require-recording"]
-    if not proof_requested:
-        command.append("--skip-zk")
-    run(*command, str(root / "examples/rust_backend/counter_less_than_oracle.compact"), str(output))
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(root / "examples/rust_backend/counter_less_than_oracle.compact"), str(output))
     ir = json.loads((output / "contract/compact-rust-ir.json").read_text())
     assert ir["schema_version"] == 20
     report = json.loads((output / "contract/rust-capabilities.json").read_text())
@@ -80,9 +101,25 @@ def check_counter_less_than(
                 yield from kinds(child)
     assert {"counter_less_than", "counter_read"}.issubset(set(kinds(ir)))
     if proof_requested:
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--counter-less-than", str(output))
+        retained = json.loads((root / "tools/compact-rust-backend/tests/counter-less-than-schema15-ir.json").read_text())
+        if retained["schema_version"] != 15:
+            raise ValueError("unexpected Counter lessThan retained IR schema")
+        retained["schema_version"] = 20
+        _prove_source_bound_v3(output, retained, "compare", "--counter-less-than", run=run)
     print("typed Counter less-than target gate passed")
+
+
+def prove_literal_bytes_field(
+    compiler: str,
+    output: Path,
+    *,
+    root: Path,
+    run: Callable[..., None],
+) -> None:
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(root / "examples/rust_backend/literal_bytes_field_oracle.compact"), str(output))
+    retained = json.loads((root / "tools/compact-rust-backend/tests/literal-bytes-field-schema20-ir.json").read_text())
+    _prove_source_bound_v3(output, retained, "snapshot", "--literal-bytes-field", run=run)
 
 
 def check_literal_bytes_field(
@@ -96,11 +133,7 @@ def check_literal_bytes_field(
 ) -> None:
     run(python_executable, str(root / "tools/compact-rust-backend/check_literal_bytes_field.py"))
     if proof_requested:
-        output = base / "literal-bytes-field"
-        run(compiler, "--target", "rust", "--rust-require-recording",
-            str(root / "examples/rust_backend/literal_bytes_field_oracle.compact"), str(output))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--literal-bytes-field", str(output))
+        prove_literal_bytes_field(compiler, base / "literal-bytes-field", root=root, run=run)
 
 
 def check_field_to_bytes32(

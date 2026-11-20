@@ -24,7 +24,6 @@ import argparse
 import json
 import os
 from pathlib import Path
-import re
 import shutil
 import subprocess
 import tomllib
@@ -34,10 +33,19 @@ import resolve_ledger_test_static as ledger_static
 from check_field_return_wrappers import SOURCE, digest
 from check_functional_effects import generated_manifest_snapshot, scheme_compiler
 from did_proof_gate import dust_fixture_inventory, hashes, unchanged
+from wrapper_v3_proof import prepare_material, verify_artifacts
 
 ROOT = common.ROOT
 FIXTURE = ROOT / "tests-rust-backend/field-return-wrappers-source"
-PROOF_RESULT_FORMAT = "compact-field-return-wrappers-proof/v1"
+PROOF_RESULT_FORMAT = "compact-field-return-wrappers-proof/v2"
+
+GEOMETRY = {
+    "checked": (9, 77),
+    "explicit": (7, 61),
+    "inferred": (7, 61),
+    "nested": (7, 98),
+    "ordered": (7, 65),
+}
 
 
 def require(value, message):
@@ -53,6 +61,9 @@ def validate_proof_summary(summary):
     require(summary["unselected_branch_proved"] is False, "unexpected unselected branch proof claim")
     for row in summary["calls"]:
         require(all(type(row[name]) is int for name in ("key", "before", "after", "proof_bytes")) and
+                type(row.get("transaction_proof_bytes")) is int and row["transaction_proof_bytes"] > 0 and
+                type(row.get("transaction_proof_version")) is int and row["transaction_proof_version"] == 3 and
+                type(row.get("positive_fee_dust_spends")) is int and row["positive_fee_dust_spends"] == 1 and
                 row["proof_bytes"] > 0 and
                 row["before"] == 1 and row["after"] == (1 if row["key"] == 5 else 2) and
                 row["changed_result_same_geometry"] is True and
@@ -64,8 +75,9 @@ def validate_proof_summary(summary):
 def run(args):
     output = args.output.absolute()
     require(not output.exists() and not output.is_symlink(), "proof destination must be absent")
+    require("MIDNIGHT_PROOF_SERVER" not in os.environ, "wrapper proof requires local proving")
     output.mkdir(parents=True)
-    receipt = {"format": "compact-field-return-wrappers-proof-gate/v1", "status": "incomplete", "commands": [],
+    receipt = {"format": "compact-field-return-wrappers-proof-gate/v2", "status": "incomplete", "commands": [],
                "scope": "two source-bound functional-derived call proofs and default-strict funded local transactions",
                "constructor_execution_proved": False, "full_integration_acceptance": "OPEN"}
     env = dict(os.environ, RUSTUP_TOOLCHAIN="1.99.0", CARGO_INCREMENTAL="0", PYTHONDONTWRITEBYTECODE="1")
@@ -77,7 +89,7 @@ def run(args):
                  ROOT / "tools/compact-rust-backend/check_field_return_wrappers.py",
                  ROOT / "tools/compact-rust-backend/check_functional_effects.py",
                  Path(common.__file__), Path(ledger_static.__file__),
-                 ROOT / "tools/compact-rust-backend/did_proof_gate.py",
+                 ROOT / "tools/compact-rust-backend/did_proof_gate.py", Path(__file__).with_name("wrapper_v3_proof.py"),
                  ROOT / "tools/compact-rust-backend/Cargo.toml"]
         for directory in ["runtime-rs", "runtime-rs-macros", "tools/compact-rust-backend/src",
                           "tools/compact-rust-proof-smoke", "tests-rust-backend"]:
@@ -88,8 +100,8 @@ def run(args):
         receipt["source_hashes"] = hashes(paths)
         compiler = args.compiler.resolve(strict=True)
         scheme = scheme_compiler(compiler, env)
-        selected_zkir = args.zkir or shutil.which("zkir", path=env.get("PATH"))
-        require(selected_zkir is not None, "official direct zkir must be selected")
+        selected_zkir = args.zkir or shutil.which("zkir-v3", path=env.get("PATH"))
+        require(selected_zkir is not None, "official direct zkir-v3 must be selected")
         (output / "bin").mkdir()
         components = receipt["components"] = {}
         for name, path in [("compactc", compiler), ("compactc-scheme", scheme), ("zkir", Path(selected_zkir).resolve(strict=True))]:
@@ -111,7 +123,7 @@ def run(args):
         components["runner"] = common.stable_copy(target / "proof-checks/compact-rust-proof-smoke", output / "bin/proof-runner")
         runner = components["runner"]["snapshot"]
         generated = output / "generated"
-        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger8",
+        execute([components["compactc"]["snapshot"], "--target", "rust", "--rust-functional-ledger9",
                  "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate")
         receipt["generated"] = generated_manifest_snapshot(generated)
         formatted = output / "formatted-lib.rs"
@@ -140,33 +152,16 @@ def run(args):
         require(not (negative / "keys").exists() and not list(negative.glob("field-wrappers-*")),
                 "changed IR refusal created proof/state outputs")
         receipt["changed_ir_refusal"] = {"exit_code": refused.returncode, "before_keys_or_state": True}
-        material = output / "proof-material.json"
-        execute([runner, "--prepare-proof-material", "--verify-only"], "verify-builtins", material)
-        prepared = json.loads(material.read_text())
-        require(prepared["mode"] == "verify-only" and prepared["verification"] == "all files checked against locked upstream SHA256 tables", "built-in verification receipt differs")
-        require(Path(prepared["cache_directory"]).resolve() == Path(env["MIDNIGHT_PP"]).resolve(), "unexpected parameter directory")
-        (generated / "keys").mkdir()
-        execute([components["zkir"]["snapshot"], "--version"], "zkir-version")
-        execute([components["zkir"]["snapshot"], "compile", generated / "zkir/inferred.zkir",
-                 generated / "keys/inferred.prover", generated / "keys/inferred.verifier"], "keygen")
-        model = re.search(r"\(k=(\d+), rows=(\d+)\)", Path(receipt["commands"][-1]["log"]).read_text())
-        require(model is not None, "keygen omitted actual circuit model")
-        k, rows = map(int, model.groups())
-        receipt["keygen"] = {"mode": "fresh direct native", "circuit": "inferred", "k": k, "rows": rows}
-        execute([runner, "--prepare-proof-material", "--verify-only", "--parameter-k", k],
-                "verify-selected-parameters", output / "selected-material.json")
-        selected = json.loads((output / "selected-material.json").read_text())
-        require(selected["mode"] == "verify-only" and any(row["k"] == k for row in selected["parameters"]), "selected SRS was not verified")
-        material_paths = [Path(selected["cache_directory"]) / row["name"] for row in selected["assets"] + selected["parameters"]]
-        artifacts = [generated / f"keys/inferred.{ext}" for ext in ("prover", "verifier")]
-        artifacts += [generated / f"zkir/inferred.{ext}" for ext in ("zkir", "bzkir")]
-        require(all(p.is_file() and p.stat().st_size for p in material_paths + artifacts), "proof material missing")
-        receipt["material_hashes"] = hashes(material_paths + artifacts)
+        receipt["material_hashes"] = prepare_material(
+            execute, receipt, generated, output, components["zkir"]["snapshot"], runner,
+            env["MIDNIGHT_PP"], GEOMETRY, ('inferred',),
+        )
         execute([runner, "--field-return-wrappers", generated], "prove-verify-apply")
         summary = json.loads((generated / "field-wrappers-proof-result.json").read_text())
         validate_proof_summary(summary)
         receipt["proof_result"] = summary
-        receipt["result_hashes"] = hashes([p for p in generated.glob("field-wrappers-*") if p.is_file()])
+        verify_artifacts(execute, receipt, generated, runner, "--field-return-wrappers-verify",
+                         "field-wrappers", summary["calls"])
         unchanged(receipt["source_hashes"])
         unchanged(receipt["dust_fixture_hashes"])
         unchanged(receipt["material_hashes"])

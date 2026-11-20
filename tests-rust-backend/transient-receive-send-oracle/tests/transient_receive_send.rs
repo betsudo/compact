@@ -27,7 +27,7 @@ fn bytes(first: u8) -> [u8; 32] {
 }
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/transient-receive-send-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-transient-receive-send-oracle.json"
     ))
     .unwrap()
 }

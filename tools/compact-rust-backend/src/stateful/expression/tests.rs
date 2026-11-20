@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 //! Diagnostic contracts at the native stateful expression dispatch boundary.
 use super::*;
 use crate::ir::{Parameter, StateReturn};
@@ -17,6 +29,81 @@ fn parameter(name: &str) -> Box<Expr> {
 }
 fn mismatch(expected: Type, actual: Type) -> RenderError {
     RenderError::TypeMismatch { expected, actual }
+}
+
+#[test]
+fn nested_unsigned_comparisons_remain_boolean_equality_operands() {
+    for negated in [false, true] {
+        let compare = || Expr::Compare {
+            operator: ComparisonOperator::Less,
+            left: parameter("uint"),
+            right: parameter("uint"),
+        };
+        let expression = if negated {
+            Expr::NotEqual {
+                left: Box::new(compare()),
+                right: Box::new(compare()),
+            }
+        } else {
+            Expr::Equal {
+                left: Box::new(compare()),
+                right: Box::new(compare()),
+            }
+        };
+        let observed = Declarations::default().lower(expression);
+        let (rendered, ty, witness_effect) = observed.result.expect("nested comparison lowers");
+        assert_eq!(ty, Type::Boolean);
+        assert!(!witness_effect && !observed.query_effect);
+        let syn::Expr::Binary(binary) = rendered else {
+            panic!("equality must remain a binary expression");
+        };
+        assert_eq!(matches!(binary.op, syn::BinOp::Ne(_)), negated);
+        assert!(matches!(*binary.right, syn::Expr::Binary(_)));
+    }
+}
+
+#[test]
+fn ordered_comparison_groups_compound_right_operands() {
+    let right = || Expr::If {
+        condition: parameter("boolean"),
+        then: parameter("uint"),
+        otherwise: Box::new(Expr::Default { ty: uint("255") }),
+    };
+    for operator in [
+        ComparisonOperator::Less,
+        ComparisonOperator::LessEqual,
+        ComparisonOperator::Greater,
+        ComparisonOperator::GreaterEqual,
+    ] {
+        for right in [
+            right(),
+            Expr::UnsignedAdd {
+                max: "255".into(),
+                left: parameter("uint"),
+                right: parameter("uint"),
+            },
+        ] {
+            let observed = Declarations::default().lower(Expr::Compare {
+                operator,
+                left: parameter("uint"),
+                right: Box::new(right),
+            });
+            let (rendered, ty, witness_effect) = observed.result.expect("comparison lowers");
+            assert_eq!(ty, Type::Boolean);
+            assert!(!witness_effect && !observed.query_effect);
+            let syn::Expr::Binary(binary) = rendered else {
+                panic!("ordered comparison must remain a binary expression");
+            };
+            let syn::Expr::MethodCall(method) = *binary.right else {
+                panic!("right value must be extracted before comparing");
+            };
+            assert_eq!(method.method, "value");
+            assert!(matches!(
+                *method.receiver,
+                syn::Expr::If(_) | syn::Expr::Try(_) | syn::Expr::Paren(_)
+            ));
+        }
+    }
 }
 
 #[derive(Default)]
@@ -545,6 +632,84 @@ fn conditional_domains_and_equal_arm_failures_preserve_diagnostics() {
             *parameter("absent"),
         ))
         .refused_before_effects(RenderError::UnknownParameter("absent".into()));
+}
+
+#[test]
+fn nested_query_conditionals_call_out_of_line_arms_but_pure_arms_do_not() {
+    use quote::ToTokens;
+    let read = || Expr::CellRead {
+        field: "slot".into(),
+        index: 0,
+    };
+    let query_shape = conditional(
+        *parameter("boolean"),
+        conditional(
+            *parameter("boolean"),
+            read(),
+            Expr::FieldLiteral { value: "1".into() },
+        ),
+        read(),
+    );
+    let observed = ledger(LedgerFieldKind::Cell { ty: Type::Field }).lower(query_shape);
+    let (rendered, ty, witness) = observed.result.expect("nested Cell reads lower");
+    assert_eq!(ty, Type::Field);
+    assert!(!witness && observed.query_effect);
+    let generated = rendered.to_token_stream().to_string();
+    assert!(
+        generated.matches("__compact_query_branch").count() >= 6,
+        "nested query arms must call their out-of-line helper: {generated}"
+    );
+    assert!(generated.contains("let __compact_branch_value ="));
+    assert!(
+        !generated.contains("if {"),
+        "nested query condition must not put a block in an if condition: {generated}"
+    );
+    assert!(
+        !generated.contains("Ok ((context , {"),
+        "a nested query value must be evaluated before its context is moved"
+    );
+
+    let boolean_read = || Expr::CellRead {
+        field: "slot".into(),
+        index: 0,
+    };
+    let nested_condition = conditional(
+        *parameter("boolean"),
+        boolean_read(),
+        Expr::Boolean { value: true },
+    );
+    let observed = ledger(LedgerFieldKind::Cell { ty: Type::Boolean }).lower(conditional(
+        nested_condition,
+        boolean_read(),
+        Expr::Boolean { value: false },
+    ));
+    let (rendered, ty, witness) = observed.result.expect("nested query condition lowers");
+    assert_eq!(ty, Type::Boolean);
+    assert!(!witness && observed.query_effect);
+    let generated = rendered.to_token_stream().to_string();
+    assert!(
+        generated.contains("let __compact_branch_condition ="),
+        "block-valued query condition must be evaluated once before the outer if: {generated}"
+    );
+    assert!(
+        !generated.contains("if {"),
+        "block-valued query condition must not appear directly in if: {generated}"
+    );
+
+    let pure = Declarations::default().lower(conditional(
+        *parameter("boolean"),
+        *parameter("field"),
+        Expr::FieldLiteral { value: "1".into() },
+    ));
+    let (rendered, ty, witness) = pure.result.expect("pure conditional lowers");
+    assert_eq!(ty, Type::Field);
+    assert!(!witness && !pure.query_effect);
+    assert!(
+        !rendered
+            .to_token_stream()
+            .to_string()
+            .contains("__compact_query_branch")
+    );
 }
 
 #[test]

@@ -1,0 +1,40 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+export enum Color { RED, GREEN, BLUE }
+export circuit serialize_enum (c: Color): Bytes<1> {
+  return serialize<Color, 1>(c);
+}
+export circuit deserialize_enum(c: Bytes<1>): Color {
+  return deserialize<Color, 1>(c);
+}
+new type Shade = Color;
+export enum UnitColor { BLACK }
+export circuit padded(c: Shade): Bytes<3> { return serialize<Shade, 3>(c); }
+export circuit unpadded(c: Bytes<3>): Shade { return deserialize<Shade, 3>(c); }
+export circuit zero_encode(c: UnitColor): Bytes<0> { return serialize<UnitColor, 0>(c); }
+export circuit zero_decode(c: Bytes<0>): UnitColor { return deserialize<UnitColor, 0>(c); }
+export circuit checked_zero(valid: Boolean): Bytes<0> {
+  return serialize<UnitColor, 0>(checked_color(valid));
+}
+circuit checked_color(valid: Boolean): UnitColor {
+  assert(valid, "checked singleton input");
+  return UnitColor.BLACK;
+}
+export circuit to_field(c: Color): Field { return c as Field; }
+export circuit to_small(c: Color): Uint<1> { return c as Uint<1>; }
+export circuit from_field(value: Field): Color { return value as Color; }
+export circuit nested(c: [Color, Boolean]): Bytes<2> { return serialize<[Color, Boolean], 2>(c); }

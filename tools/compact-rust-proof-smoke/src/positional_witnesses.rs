@@ -35,10 +35,10 @@ use midnight_onchain_vm::ops::Op;
 use midnight_transient_crypto::curve::Fr;
 use rand::rngs::StdRng;
 
-use super::{
-    NestedSecret, Secret, check_generated_trace, check_observed_call_parity, check_transaction,
-    make_deploy,
+use super::positional_transaction::{
+    check_generated_trace, check_observed_call_parity, check_transaction, make_deploy,
 };
+use super::{NestedSecret, Secret};
 
 pub(super) fn check_cell_witnesses(
     witness_root: &Path,

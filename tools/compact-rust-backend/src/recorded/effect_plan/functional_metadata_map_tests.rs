@@ -16,7 +16,7 @@
 //! Empty maps retain static review evidence without claiming runtime execution.
 use super::super::{
     declarations::Declarations,
-    functional::{FunctionalProgram, Ledger8Target, OriginEvidence, SourceAuthority, SourceSite},
+    functional::{FunctionalProgram, Ledger9Target, OriginEvidence, SourceAuthority, SourceSite},
     model::{Binding, Block, CheckedPlan, Operation, Plan, Value},
 };
 use super::*;
@@ -87,7 +87,7 @@ fn empty_map_metadata_keeps_inventory_token_and_explains_static_body_occurrences
         line: 1,
         column: 1,
     });
-    let program = FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+    let program = FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     let value: serde_json::Value = serde_json::from_str(&metadata(&program)).unwrap();
     assert_eq!(
         value["inventory_semantics"],

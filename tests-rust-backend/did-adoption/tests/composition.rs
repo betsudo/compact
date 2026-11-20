@@ -41,7 +41,7 @@ fn context(row: &Value) -> CircuitContext<u64> {
 #[test]
 fn independent_typescript_native_recorded_order_state_and_failures() {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/unit-composition.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-unit-composition.json"
     ))
     .unwrap();
     let rows: Vec<_> = capture["cases"]

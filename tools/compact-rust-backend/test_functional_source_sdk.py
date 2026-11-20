@@ -27,9 +27,41 @@ import unittest
 from unittest.mock import patch
 
 import check_functional_source_sdk as gate
+from check_release_packages import archive_source_patches
 
 
 class IsolatedSdkControls(unittest.TestCase):
+    def test_sdk_source_consumers_and_generated_roots_require_distinct_exact_pins(self):
+        with tempfile.TemporaryDirectory() as directory:
+            contract = Path(directory) / "contract"
+            runtime = contract / "runtime-rs"
+            runtime.mkdir(parents=True)
+            for name in ("Cargo.toml", "compatibility.json"):
+                shutil.copyfile(gate.ROOT / "runtime-rs" / name, runtime / name)
+            compatibility = json.loads((runtime / "compatibility.json").read_text())
+            (contract / "Cargo.toml").write_text(archive_source_patches(compatibility))
+            consumer = Path(directory) / "Cargo.toml"
+            shutil.copyfile(gate.EXAMPLE / "consumer/Cargo.toml", consumer)
+            gate.check_ledger_cohort(contract, consumer)
+
+            original = (runtime / "Cargo.toml").read_text()
+            registry_curves = '\n'.join(
+                'midnight-curves = "=0.3.1"' if line.startswith('midnight-curves =') else line
+                for line in original.splitlines())
+            (runtime / "Cargo.toml").write_text(registry_curves)
+            with self.assertRaisesRegex(ValueError, "SDK runtime Git dependency differs: midnight-curves"):
+                gate.check_ledger_cohort(contract, consumer)
+            (runtime / "Cargo.toml").write_text(original)
+
+            kept = consumer.read_text()
+            consumer.write_text(archive_source_patches(compatibility))
+            with self.assertRaisesRegex(ValueError, "SDK Cargo source patches differ"):
+                gate.check_ledger_cohort(contract, consumer)
+            consumer.write_text(kept)
+            (contract / "Cargo.toml").write_text(kept)
+            with self.assertRaisesRegex(ValueError, "SDK Cargo source patches differ"):
+                gate.check_ledger_cohort(contract, consumer)
+
     def test_clippy_library_requires_exact_nonfresh_owner(self):
         with tempfile.TemporaryDirectory() as directory:
             source = Path(directory) / "lib.rs"
@@ -167,6 +199,18 @@ class IsolatedSdkControls(unittest.TestCase):
                 failed = json.loads((output / "receipt.json").read_text())
                 self.assertEqual(failed["status"], "failed")
                 self.assertEqual(failed["commands"], [])
+
+    def test_proof_server_refuses_before_prerequisites(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "qualification"
+            with patch.dict(os.environ, {"MIDNIGHT_PROOF_SERVER": "http://localhost:9"}, clear=True), \
+                 patch.object(gate.common, "git_head", return_value="head"), \
+                 patch.object(gate.common, "dirty_paths", return_value=[]), \
+                 patch.object(gate.did_proof_gate, "prerequisites") as prerequisites:
+                with self.assertRaisesRegex(ValueError, "requires local proving"):
+                    gate.main(["--compiler", "compiler", "--material-runner", "runner",
+                               "--output", str(output)])
+                prerequisites.assert_not_called()
 
     def test_installed_runtime_selection_matches_cli_prefix_order_and_refuses_fallback(self):
         for layout in ("flat", "bin", "both", "missing", "first-is-file"):
@@ -363,6 +407,26 @@ class IsolatedSdkControls(unittest.TestCase):
                            ("final_state_hex", ""), ("changed_input_new_statement_check", "unqualified")):
             with self.assertRaises(ValueError):
                 gate.validate_result(dict(result, **{key: value}))
+
+    def test_ledger9_result_requires_distinct_funded_v3_proof(self):
+        result = dict(transaction_proof_version=3, funded_dust_spends=1,
+                      standalone_proof_bytes=2, transaction_proof_bytes=2,
+                      transaction_bytes=3)
+        with tempfile.TemporaryDirectory() as directory:
+            application = Path(directory)
+            (application / "standalone.proof").write_bytes(b"aa")
+            (application / "transaction-bound.proof").write_bytes(b"bb")
+            (application / "applied-transaction.bin").write_bytes(b"txn")
+            with patch.object(gate, "validate_result") as base:
+                gate.validate_ledger9_result(result, application)
+                base.assert_called_once_with(result)
+                for key, value in (("transaction_proof_version", 2), ("funded_dust_spends", True),
+                                   ("funded_dust_spends", 0), ("transaction_proof_bytes", 3)):
+                    with self.assertRaises(ValueError):
+                        gate.validate_ledger9_result(dict(result, **{key: value}), application)
+                (application / "transaction-bound.proof").write_bytes(b"aa")
+                with self.assertRaisesRegex(ValueError, "must be distinct"):
+                    gate.validate_ledger9_result(result, application)
 
     def test_selected_config_refuses_compiler_substitution_and_unchecked_profiles(self):
         for key in ("RUSTC_WRAPPER", "RUSTC_BOOTSTRAP", "CARGO_PROFILE_PROOF_CHECKS_DEBUG_ASSERTIONS",

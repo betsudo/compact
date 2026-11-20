@@ -25,6 +25,9 @@ if not __debug__ or sys.flags.optimize or os.environ.get('PYTHONOPTIMIZE'):
 import constructor_proof_dependencies as dependencies
 import check_functional_source_sdk as sdk
 
+INVENTORY_FORMAT = 'compact-constructor-vector-model-inventory/v2'
+GEOMETRY = {'read': (6, 34), 'advance': (7, 78), 'advance_other': (7, 79)}
+
 def main():
     W = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser(description=__doc__)
@@ -205,11 +208,13 @@ def main():
         )
         output = run('inventory', [binary, '--constructor-vector-inventory', root], timeout=120)
         inventory = json.loads(output.read_text());rows=inventory['circuits']
+        assert inventory['format'] == INVENTORY_FORMAT
         assert len(rows) == 42 and {(x['source'], x['circuit']) for x in rows} == {(s['role'], e) for s in specs for e in s['entries']}
         assert not inventory['key_generation'] and not inventory['proof_execution'] and not inventory['selection_made']
         for x in rows:
             p = root / x['source'] / 'zkir' / (x['circuit']+'.zkir')
             assert x['zkir_bytes'] == p.stat().st_size
+            assert (x['k'], x['rows']) == GEOMETRY[x['circuit']]
             assert x['within_tiny_automatic_cap'] == (x['k'] <= 8)
             x['zkir_sha256'] = pins[str(p)]
         r['inventory'] = inventory

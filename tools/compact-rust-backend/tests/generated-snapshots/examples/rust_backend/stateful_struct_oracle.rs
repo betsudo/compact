@@ -125,7 +125,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub fn pure_snapshot(
         first: runtime::BoundedUint<18446744073709551615>,
         second: runtime::BoundedUint<18446744073709551615>,
@@ -153,7 +153,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -165,7 +165,7 @@ pub mod ledger_contract {
             crate::ledger_slots::marker.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -216,59 +216,90 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
         let mut context = context;
-        let result = if __compact_param_0 {
-            let __compact_argument_0 = runtime::BoundedUint::<255>::new(1u128)
-                .expect("Compact Uint literal fits its maximum");
-            let __compact_witness_meter_1 = runtime::context::WitnessReadMeter::new(&context);
-            let (__compact_next_private_1, __compact_witness_1) = witnesses.next_value(
-                context.witness_context_with(LedgerView {
-                    state: context.query.state.get_ref(),
-                    meter: &__compact_witness_meter_1,
-                }),
-                __compact_argument_0,
-            )?;
-            total_cost += __compact_witness_meter_1.gas_cost();
-            context.private_state = __compact_next_private_1;
-            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_1));
-            let __compact_struct_member_2: runtime::BoundedUint<
-                340282366920938463463374607431768211455,
-            > = runtime::cast_unsigned::<
-                18446744073709551615,
-                340282366920938463463374607431768211455,
-            >(__compact_witness_1)?;
-            let __compact_query_3 = context.kernel_self()?;
-            context = __compact_query_3.context;
-            total_cost += __compact_query_3.gas_cost;
-            let __compact_struct_member_4: crate::types::ContractAddress =
-                crate::types::ContractAddress {
-                    bytes: runtime::ledger::contract_address_bytes(&__compact_query_3.result),
-                };
-            let __compact_argument_5 = runtime::BoundedUint::<255>::new(2u128)
-                .expect("Compact Uint literal fits its maximum");
-            let __compact_witness_meter_6 = runtime::context::WitnessReadMeter::new(&context);
-            let (__compact_next_private_6, __compact_witness_6) = witnesses.next_value(
-                context.witness_context_with(LedgerView {
-                    state: context.query.state.get_ref(),
-                    meter: &__compact_witness_meter_6,
-                }),
-                __compact_argument_5,
-            )?;
-            total_cost += __compact_witness_meter_6.gas_cost();
-            context.private_state = __compact_next_private_6;
-            private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_6));
-            let __compact_struct_member_7: runtime::BoundedUint<
-                340282366920938463463374607431768211455,
-            > = runtime::cast_unsigned::<
-                18446744073709551615,
-                340282366920938463463374607431768211455,
-            >(__compact_witness_6)?;
-            crate::types::Snapshot {
-                first: __compact_struct_member_2,
-                address: __compact_struct_member_4,
-                second: __compact_struct_member_7,
+        let result = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
             }
-        } else {
-            <crate::types::Snapshot as Default>::default()
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_0 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_argument_0 = runtime::BoundedUint::<255>::new(1u128)
+                            .expect("Compact Uint literal fits its maximum");
+                        let __compact_witness_meter_1 =
+                            runtime::context::WitnessReadMeter::new(&context);
+                        let (__compact_next_private_1, __compact_witness_1) = witnesses
+                            .next_value(
+                                context.witness_context_with(LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter: &__compact_witness_meter_1,
+                                }),
+                                __compact_argument_0,
+                            )?;
+                        total_cost += __compact_witness_meter_1.gas_cost();
+                        context.private_state = __compact_next_private_1;
+                        private_transcript_outputs
+                            .push(runtime::fab::AlignedValue::from(__compact_witness_1));
+                        let __compact_struct_member_2: runtime::BoundedUint<
+                            340282366920938463463374607431768211455,
+                        > = runtime::cast_unsigned::<
+                            18446744073709551615,
+                            340282366920938463463374607431768211455,
+                        >(__compact_witness_1)?;
+                        let __compact_query_3 = context.kernel_self()?;
+                        context = __compact_query_3.context;
+                        total_cost += __compact_query_3.gas_cost;
+                        let __compact_struct_member_4: crate::types::ContractAddress =
+                            crate::types::ContractAddress {
+                                bytes: runtime::ledger::contract_address_bytes(
+                                    &__compact_query_3.result,
+                                ),
+                            };
+                        let __compact_argument_5 = runtime::BoundedUint::<255>::new(2u128)
+                            .expect("Compact Uint literal fits its maximum");
+                        let __compact_witness_meter_6 =
+                            runtime::context::WitnessReadMeter::new(&context);
+                        let (__compact_next_private_6, __compact_witness_6) = witnesses
+                            .next_value(
+                                context.witness_context_with(LedgerView {
+                                    state: context.query.state.get_ref(),
+                                    meter: &__compact_witness_meter_6,
+                                }),
+                                __compact_argument_5,
+                            )?;
+                        total_cost += __compact_witness_meter_6.gas_cost();
+                        context.private_state = __compact_next_private_6;
+                        private_transcript_outputs
+                            .push(runtime::fab::AlignedValue::from(__compact_witness_6));
+                        let __compact_struct_member_7: runtime::BoundedUint<
+                            340282366920938463463374607431768211455,
+                        > = runtime::cast_unsigned::<
+                            18446744073709551615,
+                            340282366920938463463374607431768211455,
+                        >(__compact_witness_6)?;
+                        let __compact_branch_value = crate::types::Snapshot {
+                            first: __compact_struct_member_2,
+                            address: __compact_struct_member_4,
+                            second: __compact_struct_member_7,
+                        };
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = <crate::types::Snapshot as Default>::default();
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         Ok(runtime::context::CircuitResult {
             context,

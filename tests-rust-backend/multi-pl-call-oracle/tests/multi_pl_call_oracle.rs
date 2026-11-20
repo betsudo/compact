@@ -29,7 +29,7 @@ use runtime::recording::RecordedCircuitResult;
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"record_update".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -136,7 +136,7 @@ fn assert_three_query_capture(
 #[test]
 fn exact_multi_ledger_call_oracle_preserves_action_order() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/multi-pl-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-multi-pl-call-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();
@@ -171,7 +171,7 @@ fn exact_multi_ledger_call_oracle_preserves_action_order() {
 #[test]
 fn three_public_ledger_actions_record_in_order_with_typescript_gas_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/multi-pl-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-multi-pl-call-oracle.json"
     ))
     .unwrap();
     let initial = || {

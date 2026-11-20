@@ -86,6 +86,7 @@
      default
      disclose
      else
+     emit
      enum
      fold
      for
@@ -838,6 +839,10 @@
        (lambda (src kwd lparen e comma str rparen)
          (with-output-language (Lparser Expression)
            `(assert ,src ,kwd ,lparen ,e ,comma ,str ,rparen)))]
+      [term-emit :: src (KEYWORD emit) #\( expr #\) =>
+       (lambda (src kwd lparen expr rparen)
+         (with-output-language (Lparser Expression)
+           `(emit ,src ,kwd ,lparen ,expr ,rparen)))]
       [term-disclose :: src (KEYWORD disclose) #\( expr #\) =>
        (lambda (src kwd lparen expr rparen)
          (with-output-language (Lparser Expression)

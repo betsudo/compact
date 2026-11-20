@@ -15,28 +15,21 @@
 
 //! One user-owned Zswap output allocates the coin index used by writeCoin.
 
+use super::local_v3_application as v3;
+use super::positional_transaction::{check_generated_trace, make_deploy, verify_separately};
 use super::*;
 use compact_rust_qualified_coin_cell_oracle_fixture::{ledger_contract as contract, types};
 use midnight_compact_runtime as runtime;
 use midnight_compact_runtime::transaction::OfferBackedObservedState;
-use midnight_zswap::prove::ZswapResolver;
+use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
 use midnight_zswap::{Delta, Offer, Output};
 
-struct OfferResolver {
-    contract: ArtifactResolver,
-    zswap: ZswapResolver,
-}
-
-impl Resolver for OfferResolver {
-    async fn resolve_key(&self, location: KeyLocation) -> io::Result<Option<ProvingKeyMaterial>> {
-        if let Some(key) = self.contract.resolve_key(location.clone()).await? {
-            return Ok(Some(key));
-        }
-        self.zswap.resolve_key(location).await
-    }
-}
-
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "Qualified Coin Cell requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     // Pair the complete compiler input before key loading or deployment.
     // This checks input identity, not authenticated proving-key provenance.
     counter_scenario::validate_ir(
@@ -140,7 +133,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         AlignedValue::from(coin.clone()),
         AlignedValue::from(recipient.clone()),
     ]);
-    let _manual = check_generated_trace(root, name, recorded, input)?;
+    let manual = check_generated_trace(root, name, recorded, input)?;
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.verifier")),
     )?))?;
@@ -205,28 +198,38 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         },
     )?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0_u64))?;
+    if format!("{manual:?}") != format!("{:?}", prepared.prototype()) {
+        return Err("offer-backed writeCoin observed and direct preparation differ".into());
+    }
+    let unfunded_stem = "qualified-coin-unfunded";
+    let unfunded_proof = v3::prove_standalone(
+        root,
+        name,
+        unfunded_stem,
+        prepared.prototype(),
+        &verifier,
+        None,
+    )?;
+    verify_separately(root, name, unfunded_stem)?;
     let tx = prepared.into_transaction(&mut rng, "local-test", Timestamp::from_secs(0));
-    let params = MidnightDataProvider::new(
-        FetchMode::Synchronous,
-        OutputMode::Log,
-        midnight_zswap::ZSWAP_EXPECTED_FILES.to_owned(),
-    )?;
-    let resolver = OfferResolver {
-        contract: ArtifactResolver {
-            root: root.to_owned(),
-            circuit: name,
-        },
-        zswap: ZswapResolver(params.clone()),
-    };
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0176_5052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
+    let resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("unfunded qualified coin proving failed: {error:?}"))?;
     let sealed = proven.seal(StdRng::seed_from_u64(0x0176_5345));
+    let mut calls = sealed.calls();
+    if !matches!(calls.next(), Some((_, call)) if matches!(&call.proof, ProofVersioned::V3(proof) if proof != &unfunded_proof))
+        || calls.next().is_some()
+    {
+        return Err("unfunded offer requires one transaction-bound v3 proof".into());
+    }
     let validation_time = Timestamp::from_secs(0);
     let strict_error = sealed
         .well_formed(&ledger, WellFormedStrictness::default(), validation_time)
@@ -267,11 +270,20 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("offer-backed writeCoin applied state differs".into());
     }
     println!(
-        "qualified coin Cell writeCoin output-backed proof verified and ledger-8 applied with balancing disabled"
+        "qualified coin Cell writeCoin output-backed proof verified and Ledger 9 applied with balancing disabled"
     );
-    let mut fee_state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
+    let funded_stem = "qualified-coin-funded";
+    let mut fee_state = super::qualified_coin_funding::fee_funded_state_with_utxos(&mut rng, 2)?;
+    v3::apply_funded_deployment(
+        root,
+        funded_stem,
+        &deploy,
+        &mut fee_state,
+        &mut rng,
+        &executor,
+        &resolver,
+    )?;
     let mut funded_ledger = fee_state.ledger.clone();
-    funded_ledger.contract = ledger.contract.clone();
     let funded_time = fee_state.time;
     let funded = super::qualified_coin_funding::seed_and_fund(
         &mut rng,
@@ -331,33 +343,65 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         return Err("funded write_coin native and recorded differ".into());
     }
     let funded_expected_state = funded_native.context.query.state.get_ref().clone();
+    let funded_input = AlignedValue::concat(&[
+        AlignedValue::from(funded_coin.clone()),
+        AlignedValue::from(funded_recipient.clone()),
+    ]);
+    let funded_manual = check_generated_trace(root, name, funded_recorded, funded_input)?;
     let funded_call = generated.recording().write_coin_call(
         funded_bound.observed(),
         (),
         funded_coin,
         funded_recipient,
     )?;
-    let funded_prepared = funded_bound.prepare(funded_call, verifier, Fr::from(0_u64))?;
+    let funded_prepared = funded_bound.prepare(funded_call, verifier.clone(), Fr::from(0_u64))?;
+    if format!("{funded_manual:?}") != format!("{:?}", funded_prepared.prototype()) {
+        return Err("funded writeCoin observed and direct preparation differ".into());
+    }
+    let standalone = v3::prove_standalone(
+        root,
+        name,
+        funded_stem,
+        funded_prepared.prototype(),
+        &verifier,
+        None,
+    )?;
+    verify_separately(root, name, funded_stem)?;
     let funded_tx = funded_prepared.into_transaction(
         &mut rng,
         "local-test",
         Timestamp::from_secs(funded_time.to_secs() + 3_600),
     );
-    let funded_provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0180_5152),
-        resolver: &resolver,
-        params: &params,
-    };
-    let funded_proven = futures_executor::block_on(funded_tx.prove(
-        funded_provider,
-        &INITIAL_PARAMETERS.cost_model.runtime_cost_model,
-    ))?;
+    let funded_proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &funded_tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("funded qualified coin proving failed: {error:?}"))?;
     let funded_sealed = funded_proven.seal(StdRng::seed_from_u64(0x0180_5445));
-    let fee_resolver = super::qualified_coin_funding::fee_resolver(root, name)?;
-    let funded_sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fee_state.balance_tx(rng.clone(), funded_sealed, &fee_resolver))?;
+    let funded_sealed =
+        executor.block_on(fee_state.balance_tx(rng.clone(), funded_sealed, &resolver))?;
+    let mut funded_calls = funded_sealed.calls();
+    let (_, funded_call) = funded_calls
+        .next()
+        .ok_or("missing funded qualified coin call")?;
+    let ProofVersioned::V3(funded_proof) = &funded_call.proof else {
+        return Err("funded qualified coin requires a transaction-bound v3 proof".into());
+    };
+    if funded_proof == &standalone
+        || funded_calls.next().is_some()
+        || v3::positive_fee_dust_spends(&funded_sealed) != 1
+    {
+        return Err("funded qualified coin proof or Dust spend differs".into());
+    }
+    let mut bytes = Vec::new();
+    tagged_serialize(&funded_sealed, &mut bytes)?;
+    v3::write_new(root.join(format!("{funded_stem}-transaction.bin")), &bytes)?;
+    v3::write_new(
+        root.join(format!("{funded_stem}-transaction.proof")),
+        &funded_proof.0,
+    )?;
     let funded_verified =
         funded_sealed.well_formed(&funded_ledger, WellFormedStrictness::default(), funded_time)?;
     let funded_context = TransactionContext {
@@ -414,8 +458,40 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     ) {
         return Err("replayed upstream offer did not reject the spent nullifier".into());
     }
+    let (replayed, replay_result) = funded_updated.apply(
+        &funded_verified,
+        &TransactionContext {
+            ref_state: funded_updated.clone(),
+            ..funded_context
+        },
+    );
+    if !matches!(
+        replay_result,
+        TransactionResult::Failure(
+            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
+                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
+            )
+        )
+    ) || replayed != funded_updated
+    {
+        return Err(
+            format!("funded qualified coin replay refused incorrectly: {replay_result:?}").into(),
+        );
+    }
+    let mut after = Vec::new();
+    let mut replay = Vec::new();
+    tagged_serialize(&funded_updated, &mut after)?;
+    tagged_serialize(&replayed, &mut replay)?;
+    if after != replay {
+        return Err("funded qualified coin replay changed ledger bytes".into());
+    }
+    v3::write_new(root.join(format!("{funded_stem}-ledger-after.bin")), &after)?;
+    v3::write_new(
+        root.join(format!("{funded_stem}-ledger-replay.bin")),
+        &replay,
+    )?;
     println!(
-        "funded qualified coin Cell writeCoin passed default strict validation and ledger-8 application; native/recorded state, input nullifier, output index/commitment, and exact replay rejection verified"
+        "funded qualified coin Cell writeCoin passed default strict validation and Ledger 9 application; native/recorded state, input nullifier, output index/commitment, and exact replay rejection verified"
     );
     Ok(())
 }

@@ -15,6 +15,7 @@
 
 //! Prove a custody grant read from a state seeded with one valid grant.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_asset_registry_oracle_fixture::ledger_contract as asset;
 use compact_rust_asset_registry_oracle_fixture::types::{
@@ -94,6 +95,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("custody grant guard proved, verified, validated and applied through ledger-8");
+    println!("custody grant guard proved, verified, validated and applied through Ledger 9");
     Ok(())
 }

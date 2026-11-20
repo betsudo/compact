@@ -1,0 +1,8 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export circuit test(s: Secp256r1Scalar): Bytes<33> { return s as Bytes<33>; }"
+      )
+    (oops
+      message: "~a:\n  ~?"
+      irritants: '("testfile.compact line 2 char 61" "cannot cast from type ~a to type ~a" ("Secp256r1Scalar" "Bytes<33>"))))

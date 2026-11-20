@@ -18,8 +18,8 @@
 (library (pass-helpers)
   (export target-ports get-target-port target-directory source-directory source-file-name
           find-source-pathname
-          contract-ht
-          proof-circuit-names
+          contract-ht contract-info-pathname
+          proof-circuit-names verifier-key-hashes
           define-passes define-checker checkers
           passrec-name passrec-pass passrec-unparse passrec-pretty-formats)
   (import (except (chezscheme) errorf)
@@ -36,6 +36,12 @@
   ; source-file-name is used for getting the contract name from the source file
   ; for the print-TS pass.
   (define source-file-name (make-parameter #f))
+
+  (define (contract-info-pathname contract-name)
+    (let ([directory (or (contract-dependency-directory) (path-parent (target-directory)))])
+      (format "~a/~a/compiler/contract-info.json"
+        (if (string=? directory "") "." directory)
+        contract-name)))
 
   (define (find-source-pathname src pathname err)
     (define (try pathname)
@@ -58,6 +64,7 @@
 
   (define contract-ht (make-parameter #f))
   (define proof-circuit-names (make-parameter '()))
+  (define verifier-key-hashes (make-parameter '()))
 
   (define-record-type passrec
     (nongenerative)

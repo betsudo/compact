@@ -1,0 +1,347 @@
+{
+  "format": "compact-did-primitive-reducer-capture/v1",
+  "kind": "alias-digest",
+  "generatedJavaScriptSha256": "50589dd90db7425aa7ebd432bba3765e65f775152cb6d2327fd85cdaca52b384",
+  "runtimeJavaScriptSha256": "6bf225a6320b99fbb08e021db28eded4074853227b84f67c053f93194ec28558",
+  "captureSha256": "97e2ed2b889abc091417a436025d909afbe232ce84031ff6c781e864579b2507",
+  "runtimeVersion": "0.17.0",
+  "provenance": [
+    {
+      "path": "tools/compact-rust-backend/tests/set-composition/opaque_digest.compact",
+      "sha256": "a37c43c298b2f72e5cc28cf94c56ab4eaa4e16757d577acdf023be5f81f7a3c7"
+    },
+    {
+      "path": "tests-rust-backend/did-alias-digest-reducer/lib.rs",
+      "sha256": "14cfaa8dd77fa4e964d646b5f6c92b663a28eb0860eb2279830cfa9c453f3bde"
+    },
+    {
+      "path": "tests-rust-backend/did-alias-digest-reducer/tests/behavior.rs",
+      "sha256": "2ac65e711583936f99fe43646b8a5ad742878f371b4ad9ba5525b0987111ad06"
+    },
+    {
+      "path": "tests-rust-backend/did-alias-digest-reducer/tests/provenance.rs",
+      "sha256": "7e895dfce939ebf6cb30f294545fbf05302d52874ee96dc7a93d67148dc03636"
+    },
+    {
+      "path": "tools/compact-rust-backend/did_primitive_reducers.json",
+      "sha256": "8dd3a33a6d3f49610065e7219b827dc1f8cd69febce0da73743b7f1336ad42ea"
+    },
+    {
+      "path": "tools/compact-rust-backend/did_primitive_reducer_capture.mjs",
+      "sha256": "97e2ed2b889abc091417a436025d909afbe232ce84031ff6c781e864579b2507"
+    },
+    {
+      "path": "tools/compact-rust-backend/did_primitive_reducer_cases.mjs",
+      "sha256": "ae03edee964bf17d4772084f7a26b42433e08d005552f21d6afc7612f8e3dd39"
+    },
+    {
+      "path": "runtime/src/built-ins.ts",
+      "sha256": "89f0f6a65c7e62f85bbd88044e872d9d3555f6ebeb45dba460e1601c025f2a4b"
+    },
+    {
+      "path": "runtime/src/compact-types.ts",
+      "sha256": "07328c4c793ef7c81171d9835c8535543959bfef1c1f67c730ed8fe65e7576f4"
+    }
+  ],
+  "cases": [
+    {
+      "id": "unicode-insert",
+      "operation": "run",
+      "value": "référence-東京",
+      "mutation": 1,
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008400104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010840010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateBefore": 0,
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008010104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010801010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateAfter": 1,
+      "result": [],
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  []
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    1
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": [
+        {
+          "valueAtoms": [
+            [
+              1
+            ]
+          ],
+          "alignment": [
+            {
+              "tag": "atom",
+              "value": {
+                "tag": "bytes",
+                "length": 1
+              }
+            }
+          ]
+        }
+      ],
+      "queries": [
+        {
+          "readTime": "85000000",
+          "computeTime": "1233942932",
+          "bytesWritten": "36",
+          "bytesDeleted": "36"
+        }
+      ],
+      "witnessInputs": [
+        "4439721dbf9105f67ee6467765125d17f8b697754fa12cee88204ad002685255"
+      ],
+      "admit": true
+    },
+    {
+      "id": "empty-remove",
+      "operation": "run",
+      "value": "",
+      "mutation": 2,
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008400104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010840010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateBefore": 0,
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008010104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010801010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateAfter": 1,
+      "result": [],
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  []
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    1
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": [
+        {
+          "valueAtoms": [
+            [
+              1
+            ]
+          ],
+          "alignment": [
+            {
+              "tag": "atom",
+              "value": {
+                "tag": "bytes",
+                "length": 1
+              }
+            }
+          ]
+        }
+      ],
+      "queries": [
+        {
+          "readTime": "85000000",
+          "computeTime": "1233942932",
+          "bytesWritten": "36",
+          "bytesDeleted": "36"
+        }
+      ],
+      "witnessInputs": [
+        "ee9e1b82ccf1825831a73969aafb063b777fb70169e0b51bf6e423929f508632"
+      ],
+      "admit": true
+    },
+    {
+      "id": "undefined-is-only-hashed",
+      "operation": "run",
+      "value": "référence-東京",
+      "mutation": 0,
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008400104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010840010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateBefore": 0,
+      "after": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008010104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010801010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateAfter": 1,
+      "result": [],
+      "publicTranscript": [
+        {
+          "push": {
+            "storage": false,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  []
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "push": {
+            "storage": true,
+            "value": {
+              "tag": "cell",
+              "content": {
+                "value": [
+                  [
+                    1
+                  ]
+                ],
+                "alignment": [
+                  {
+                    "tag": "atom",
+                    "value": {
+                      "tag": "bytes",
+                      "length": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "ins": {
+            "cached": false,
+            "n": 1
+          }
+        }
+      ],
+      "privateTranscript": [
+        {
+          "valueAtoms": [
+            [
+              1
+            ]
+          ],
+          "alignment": [
+            {
+              "tag": "atom",
+              "value": {
+                "tag": "bytes",
+                "length": 1
+              }
+            }
+          ]
+        }
+      ],
+      "queries": [
+        {
+          "readTime": "85000000",
+          "computeTime": "1233942932",
+          "bytesWritten": "36",
+          "bytesDeleted": "36"
+        }
+      ],
+      "witnessInputs": [
+        "47a4a202c1daaf2f7554a00ce49cf377c2d544ea9073ca338cbfd3d957635c01"
+      ],
+      "admit": true
+    },
+    {
+      "id": "witness-denied",
+      "operation": "run",
+      "value": "référence-東京",
+      "mutation": 1,
+      "admit": false,
+      "before": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008400104000401040408010404080403040c0004100801040414580304244801040304010801040401040104010840010000100c72756e000c000000081c20000424080104042890030440806ae60e31fdb4b353d38709288ce63fe4d787e216a2944a836d6d2f44d1fa35d8000400140830182c301003000400",
+      "privateBefore": 0,
+      "error": "failed assert: unauthorized",
+      "queries": [],
+      "witnessInputs": [
+        "4439721dbf9105f67ee6467765125d17f8b697754fa12cee88204ad002685255"
+      ]
+    }
+  ]
+}

@@ -59,8 +59,10 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
                 return Err("proof-not-applicable source acquired ZKIR".into());
             }
             for entry in entries {
-                rows.push(serde_json::json!({"source":name,"circuit":entry,"k":null,
-                    "proof_required":false,"selected_for_proof":false}));
+                rows.push(
+                    serde_json::json!({"source":name,"circuit":entry,"k":null,"rows":null,
+                    "proof_required":false,"selected_for_proof":false}),
+                );
             }
             continue;
         }
@@ -83,18 +85,19 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         for entry in entries {
             let entry = entry.as_str().ok_or("invalid export name")?;
-            let ir = IrSource::load(BufReader::new(File::open(
+            let ir = midnight_zkir_v3::IrSource::load(BufReader::new(File::open(
                 root.join(name).join(format!("zkir/{entry}.zkir")),
             )?))?;
+            let model = ir.model();
             rows.push(
-                serde_json::json!({"source":name,"circuit":entry,"k":ir.model().k(),"proof_required":true,
+                serde_json::json!({"source":name,"circuit":entry,"k":model.k(),"rows":model.rows(),"proof_required":true,
                 "selected_for_proof":false}),
             );
         }
     }
     println!(
         "{}",
-        serde_json::json!({"format":"compact-component-product-vector-model-inventory/v1",
+        serde_json::json!({"format":"compact-component-product-vector-model-inventory/v2",
         "circuits":rows,"proof_execution":false,"scope":"complete model observation, no key generation or all-source proof acceptance"})
     );
     Ok(())

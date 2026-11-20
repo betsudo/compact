@@ -76,11 +76,27 @@ impl Lowerer<'_> {
             Expr::VectorFoldCall { .. } => Self::vector_fold_call,
             Expr::VectorFold { .. } => Self::vector_fold,
             Expr::CreateZswapInput { .. } | Expr::CreateZswapOutput { .. } => Self::zswap,
-            Expr::KernelClaim { .. } | Expr::KernelMintShielded { .. } => Self::kernel,
+            Expr::EmitShieldedSpend { .. }
+            | Expr::EmitShieldedBurn { .. }
+            | Expr::EmitShieldedMint { .. }
+            | Expr::EmitShieldedReceive { .. }
+            | Expr::EmitUnshieldedSpend { .. }
+            | Expr::EmitUnshieldedReceive { .. }
+            | Expr::EmitUnshieldedMint { .. }
+            | Expr::EmitUnshieldedBurn { .. }
+            | Expr::EmitMisc { .. }
+            | Expr::EmitPaused { .. }
+            | Expr::EmitUnpaused { .. } => Self::emit_event,
+            Expr::KernelClaim { .. }
+            | Expr::KernelMintShielded { .. }
+            | Expr::KernelUnshieldedEffect { .. } => Self::kernel,
             Expr::NativeWitnessCall {
                 builtin: NativeWitnessBuiltin::OwnPublicKey,
             } => Self::query_operation,
             Expr::KernelSelf { .. } => Self::query_operation,
+            Expr::KernelBalance { .. }
+            | Expr::KernelBalanceLessThan { .. }
+            | Expr::KernelBalanceGreaterThan { .. } => Self::query_operation,
             Expr::DegradeToTransient { .. }
             | Expr::UpgradeFromTransient { .. }
             | Expr::TransientHash { .. }
@@ -90,10 +106,25 @@ impl Lowerer<'_> {
                 Self::query_operation
             }
             Expr::FieldToBytes32 { .. } => Self::conversion_operation,
-            Expr::PersistentHash { .. } | Expr::Keccak256 { .. } => Self::persistent_operation,
+            Expr::VectorToBytes { .. }
+            | Expr::BytesToVector { .. }
+            | Expr::UintToBytes { .. }
+            | Expr::WideUintToBytes { .. }
+            | Expr::BytesToField { .. }
+            | Expr::BytesToUint { .. }
+            | Expr::BytesZeroPad { .. }
+            | Expr::BytesFromChunks { .. }
+            | Expr::BytesSlice { .. }
+            | Expr::JubjubCast { .. }
+            | Expr::Secp256k1BytesCast { .. }
+            | Expr::EnumCast { .. } => Self::conversion_operation,
+            Expr::PersistentHash { .. } | Expr::Keccak256 { .. } | Expr::Sha512 { .. } => {
+                Self::persistent_operation
+            }
             Expr::PersistentCommit { .. } => Self::persistent_operation,
             Expr::MapMember { .. }
             | Expr::MapLookup { .. }
+            | Expr::NestedMapLookup { .. }
             | Expr::MapIsEmpty { .. }
             | Expr::MapSize { .. } => Self::map_expression,
             Expr::SetMember { .. } => Self::query_operation,
@@ -113,6 +144,10 @@ impl Lowerer<'_> {
             | Expr::ConstructJubjubPoint { .. }
             | Expr::EcMul { .. }
             | Expr::EcAdd { .. } => Self::jubjub_selected,
+            Expr::Secp256k1Neg { .. }
+            | Expr::Secp256k1Inv { .. }
+            | Expr::Secp256k1PointX { .. }
+            | Expr::Secp256k1PointY { .. } => Self::secp256k1_unary,
             Expr::Add { .. }
             | Expr::Subtract { .. }
             | Expr::Multiply { .. }

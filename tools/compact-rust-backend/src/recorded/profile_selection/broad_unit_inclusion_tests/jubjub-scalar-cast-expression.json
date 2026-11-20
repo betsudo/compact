@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "fd174242900038bd0bb4f8a595fe64406c3e3b24",
+  "scope": "Reverse only Jubjub cast arms in exhaustive historical reference matchers.",
+  "predecessor_manifest": {
+    "path": "vector-to-bytes-expression.json",
+    "sha256": "7cf84de7b79af54d0fe946b1d18fb1d25ca9e7311433cb056c029b14eba10117"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "a83e2d200e689350e0e50db70bdea2043f35bcf713d6ec9562bee76839ac854c",
+      "previous_sha256": "6d4395b3fc0794485b941c65188351584bc44c3885b8230cc2a97d97d77118e4",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::JubjubCast { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "09c4ab741e09d6e73237df2477e6029280e36a4e5e0b06572c3024053be39b21",
+      "previous_sha256": "86877b40ab71f3b3d50862a65529562df60afb8ad161624b435ac62e5192d987",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {\n",
+          "previous": "        Expr::Coerce { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "83944814208a921f6ea7fe1bd27ed6bc6ff6b1ac80822a939d5aec05ffb4445b",
+      "previous_sha256": "865a9778e17a9ad26a8c9364ebc3015a6e164b70bb844a52b4dadb2d71e5adb3",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::JubjubCast { .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "31e4e0a3bc65b0ddb99641e7ba83cf53fa93392f202a5efb9d1add527d3e4204",
+      "previous_sha256": "63c154b36a0f9998c2b858aa13c396f560cb7286384ca8f1c2727ce88b9c168f",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::JubjubCast { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "files": {
+    "test-contracts/keywords/pragma/compiler_version_negation_needs_version_atom/compile.fail.test.ts": "22c9ba825b1c32e211bd3159905a022dd5364a36c78a389fc1338b7c97d18145",
+    "test-contracts/keywords/pragma/compiler_version_negation_needs_version_atom/pragma_compiler_version_negation_needs_version_atom.compact": "7f0b8428b5cdef8656280ee13a64ba6727567683d4e254aa727852eba5fb4944",
+    "test-contracts/keywords/pragma/negation_needs_version_atom/compile.fail.test.ts": "ce51b3f61de10e3a46e8f40c79b289360e9e49f8ee88f79744342550eda4ca32",
+    "test-contracts/keywords/pragma/negation_needs_version_atom/pragma_negation_needs_version_atom.compact": "21203f0fffc4058be9813616e4f631fc4df6143c561b7eea57ef5399365a03b9"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

@@ -56,6 +56,10 @@ fn run() -> Result<(), Box<dyn Error>> {
     let compiler = env::var_os("COMPACTC").unwrap_or_else(|| "compactc".into());
     let staging = StagedOutput::new(&output)?;
     let artifacts = ConfiguredFrontend::new(compiler)
+        .with_environment(
+            "COMPACT_INTERNAL_CONTRACT_DEPENDENCY_DIRECTORY",
+            StagedOutput::output_parent(&output).as_os_str(),
+        )
         .invoke(FrontendRequest {
             source,
             arguments: vec!["--skip-zk".into()],

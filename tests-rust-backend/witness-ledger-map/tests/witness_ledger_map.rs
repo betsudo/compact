@@ -33,7 +33,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     let mut operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new();
     operations = operations.insert(
         EntryPointBuf(b"put_true".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -94,7 +94,7 @@ fn assert_oracle_output(result: &CircuitResult<u64, bool>, oracle: &serde_json::
 #[test]
 fn witness_reads_current_typed_map() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-map-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-map-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -119,7 +119,7 @@ fn witness_reads_current_typed_map() {
 #[test]
 fn map_projection_matches_each_typescript_query_cost() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-map-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-map-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -155,7 +155,7 @@ fn map_projection_matches_each_typescript_query_cost() {
 #[test]
 fn populated_map_projection_matches_lookup_query_cost() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/witness-ledger-map-ts-output.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-map-ts-output.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -277,7 +277,7 @@ mod recording_parity {
     #[test]
     fn recorded_and_observed_witness_reads_match_native_and_ts() {
         let oracle: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../runtime-rs/tests/fixtures/witness-ledger-map-ts-output.json"
+            "../../../runtime-rs/tests/fixtures/ledger9-witness-ledger-map-ts-output.json"
         ))
         .unwrap();
         for (populated, key) in [(false, "before"), (true, "after")] {

@@ -1,21 +1,33 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 use super::*;
 use crate::ir::{Expr, StructField};
 
 mod emission;
 
-const OPERATIONS: [Operation; 8] = [
+const OPERATIONS: [Operation; 9] = [
     Operation::Equal,
     Operation::NotEqual,
     Operation::TransientHash,
     Operation::TransientCommit,
     Operation::PersistentHash,
     Operation::PersistentCommit,
-    Operation::Keccak256,
+    Operation::Keccak256(crate::ir::KeccakEncoding::NormalizedAtoms),
     Operation::HashToCurve,
+    Operation::Sha512,
 ];
 
 fn tuple(arity: usize) -> Type {
@@ -51,8 +63,9 @@ fn expression(operation: Operation, value: Expr) -> Expr {
             value,
             opening: Box::new(Expr::BytesLiteral { bytes: vec![0; 32] }),
         },
-        Operation::Keccak256 => Expr::Keccak256 { value },
+        Operation::Keccak256(encoding) => Expr::Keccak256 { value, encoding },
         Operation::HashToCurve => Expr::HashToCurve { value },
+        Operation::Sha512 => Expr::Sha512 { value },
     }
 }
 
@@ -131,7 +144,7 @@ fn exact_hash_input_diagnostic_follows_the_whole_opaque_encoding_carrier() {
     for operation in [
         Operation::PersistentHash,
         Operation::PersistentCommit,
-        Operation::Keccak256,
+        Operation::Keccak256(crate::ir::KeccakEncoding::NormalizedAtoms),
     ] {
         assert_refusal(
             check_tuple_traits(operation, &carrier).unwrap_err(),
@@ -151,7 +164,19 @@ fn opaque_source_policy_and_ordinary_leaf_support_are_not_changed() {
             Type::JubjubPoint,
             Type::Unit,
         ] {
-            check_tuple_traits(operation, &carrier).unwrap();
+            let result = check_tuple_traits(operation, &carrier);
+            if matches!(operation, Operation::Sha512)
+                && matches!(carrier, Type::OpaqueString | Type::OpaqueBytes)
+            {
+                assert_eq!(
+                    result,
+                    Err(RenderError::UnsupportedOpaqueHashInput {
+                        operation: "sha512"
+                    }),
+                );
+            } else {
+                result.unwrap();
+            }
         }
     }
 }

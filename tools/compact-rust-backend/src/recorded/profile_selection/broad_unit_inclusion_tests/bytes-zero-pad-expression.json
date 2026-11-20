@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "76f84b0985527396e52f606d44e35171f82c67aff119b1e59f6a61be7653ea34"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "613abb5616362b52e1043e193bf1532621d52a88b775816479fe76ac19b12174",
+      "previous_sha256": "5c1c31df5a37b431867a631937628546fff3dde61c60f0b4214aecc4325fbaf1",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesZeroPad { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "1ab396f41ebf525c9e579475624923fc8db061dc64fb38f7eea5ef06fc540deb",
+      "previous_sha256": "922b57c3d81da99e1a43190a3ce69e12bec05bfe52b46940743d9173002a49fc",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesZeroPad { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "42e88122b86af23b2eab9e040ba3b956f9360f038151d7d1afec0ff172c0b22a",
+      "previous_sha256": "8033307d69e412ee25845c28c186d0649cd5c50e127f4e723f8d39ad1b882a13",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::BytesToVector { .. }\n        | Expr::BytesZeroPad { .. }\n        | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": "        Expr::BytesToVector { .. } | Expr::BytesSlice { .. } => Err(RenderError::EffectfulExpression),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "871fc1f4aee61caf0e382040b1f22b2b7fe23930cbe9d0ecb6a47166a4066b80",
+      "previous_sha256": "0b4196908db831ab111e6a8f3fbc01b09971d61665723188f2d04e7e7b43b002",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::BytesZeroPad { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

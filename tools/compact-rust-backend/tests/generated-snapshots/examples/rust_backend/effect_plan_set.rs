@@ -57,7 +57,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub(crate) fn defaultKey() -> Result<crate::types::OwnedKey, runtime::CompactError> {
         Ok(<crate::types::OwnedKey as Default>::default())
     }
@@ -107,7 +107,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -115,7 +115,7 @@ pub mod ledger_contract {
         meter: &'a runtime::context::WitnessReadMeter<'a>,
     }
     impl<'a> LedgerView<'a> {}
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -327,13 +327,36 @@ pub mod ledger_contract {
         total_cost += __compact_query_1.gas_cost;
         let __compact_action_local_1: bool = __compact_query_1.result;
         let mut context = context;
-        let __compact_action_local_2: crate::types::OwnedKey = if __compact_param_1 {
-            let __compact_query_2 = crate::ledger_slots::storedKey.read(context)?;
-            context = __compact_query_2.context;
-            total_cost += __compact_query_2.gas_cost;
-            __compact_query_2.result
-        } else {
-            crate::pure_circuits::defaultKey()?
+        let __compact_action_local_2: crate::types::OwnedKey = {
+            #[inline(never)]
+            fn __compact_query_branch<C, T>(
+                context: C,
+                body: impl FnOnce(C) -> Result<(C, T), runtime::CompactError>,
+            ) -> Result<(C, T), runtime::CompactError> {
+                body(context)
+            }
+            let (__compact_next_context, __compact_branch_value) = if __compact_param_1 {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_query_2 = crate::ledger_slots::storedKey.read(context)?;
+                        context = __compact_query_2.context;
+                        total_cost += __compact_query_2.gas_cost;
+                        let __compact_branch_value = __compact_query_2.result;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            } else {
+                __compact_query_branch(
+                    context,
+                    |mut context| -> Result<_, runtime::CompactError> {
+                        let __compact_branch_value = crate::pure_circuits::defaultKey()?;
+                        Ok((context, __compact_branch_value))
+                    },
+                )?
+            };
+            context = __compact_next_context;
+            __compact_branch_value
         };
         let mut context = context;
         let __compact_query_3 = crate::ledger_slots::keys

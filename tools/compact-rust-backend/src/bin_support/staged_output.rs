@@ -108,16 +108,20 @@ fn recover_interrupted_output(
 }
 
 impl StagedOutput {
+    pub(crate) fn output_parent(output: &Path) -> &Path {
+        output
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .unwrap_or_else(|| Path::new("."))
+    }
+
     pub(crate) fn new(output: &Path) -> Result<Self, Box<dyn Error>> {
         let Some(Component::Normal(name)) = output.components().next_back() else {
             return Err(
                 "Rust output must name a directory, not current or parent directory".into(),
             );
         };
-        let parent = output
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-            .unwrap_or_else(|| Path::new("."));
+        let parent = Self::output_parent(output);
         fs::create_dir_all(parent)?;
         let name = name.to_string_lossy();
         let lock_path = parent.join(format!(".{name}.compactc.lock"));

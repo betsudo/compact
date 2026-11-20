@@ -12,6 +12,8 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+#[path = "../../support/ledger9_partition.rs"]
+mod ledger9_partition;
 #[path = "../support/advance.rs"]
 mod support;
 use compact_rust_test_center_micro_dao_fixture::{ledger_contract as c, types};
@@ -21,7 +23,7 @@ use serde_json::{Value, json};
 
 fn fixture() -> Value {
     serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-set-topic.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-set-topic.json"
     ))
     .unwrap()
 }
@@ -232,10 +234,11 @@ fn original_set_topic_native_and_recorded_preserve_independent_typescript_cases(
             result.context.circuit_zswap().outputs().len(),
             if occupied { 2 } else { 1 }
         );
+        ledger9_partition::assert_partition(&recorded, row);
         let partition = row["partition"]
             .as_array()
             .expect("actual pinned ledger partition");
-        assert!(partition[usize::from(!occupied)].is_null());
+        assert!(partition[1].is_null());
         assert_eq!(
             row["publicTranscript"].as_array().unwrap().len(),
             if occupied { 71 } else { 44 }

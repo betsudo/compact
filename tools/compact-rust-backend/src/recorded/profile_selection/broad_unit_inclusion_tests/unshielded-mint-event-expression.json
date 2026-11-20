@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "3f6ae7f9c972cc30591c81e39bc5a731ef7846765cc6bf31ad4522a930d3e19c"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "a64973eb973247a8ecd865ff2237881cf7bfa2512d576253c405cdf426ed7248",
+      "previous_sha256": "77ffadab8c8d5ed5293d0c22b8ed1cf498e3796923e95ef37301164abcf43f60",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::KernelClaim { value, .. } => visit(value),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "349b37cdf3925f08b4047bd1345f42ed45c2bc500537fea7e269f684cefcff0d",
+      "previous_sha256": "232420539dd8e07f3959cfd9310ba6895f12379b01f2bda3849807447332fe61",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::EmitUnshieldedMint { value } | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::EmitUnshieldedReceive { value } | Expr::KernelClaim { value, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "39826937c2c56770b6bd3d09e8ac72f39b4749a45adf74a747fcb4a399db933a",
+      "previous_sha256": "e8f0964d5033801bd5465d015a3e31d722c494878960428929f013e939a07124",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitUnshieldedReceive { .. }\n        | Expr::EmitUnshieldedMint { .. }\n",
+          "previous": "        | Expr::EmitUnshieldedReceive { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "f632ef4b5cfd0b7f138620ef9d0d1db254c3f9e175b638efb3ad7cd055d39664",
+      "previous_sha256": "cf87dc9a5f8c6df47fd69ec4f26ff6eeb30e0df5e344d896e521dd3a4b564584",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitUnshieldedReceive { .. }\n        | Expr::EmitUnshieldedMint { .. }\n",
+          "previous": "        | Expr::EmitUnshieldedReceive { .. }\n"
+        }
+      ]
+    }
+  }
+}

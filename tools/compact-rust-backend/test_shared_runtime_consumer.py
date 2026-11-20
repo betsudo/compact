@@ -61,6 +61,9 @@ DIAGNOSTICS = {
 class ConsumerHarness:
     def __init__(self, root, base, *, environment=None, mutate_contract=None, outcomes=None):
         self.root, self.base = root, base
+        (root / "Cargo.toml").write_text(
+            '[patch.crates-io]\nledger = { git = "https://example.invalid/ledger", rev = "deadbeef" }\n'
+        )
         self.environment = {} if environment is None else environment
         self.mutate_contract = mutate_contract
         self.outcomes = {} if outcomes is None else outcomes

@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -130,7 +132,7 @@ def main():
             name = definition["source"]
             source = SOURCES / f"{name}.compact"
             run(f"generate-{name}", [compiler, "--target", "rust", "--target", "ts",
-                 "--rust-require-recording", "--rust-functional-ledger8", "--rust-runtime-root", ROOT,
+                 "--rust-require-recording", "--rust-functional-ledger9", "--rust-runtime-root", ROOT,
                  "--skip-zk", source.relative_to(ROOT), generated / name])
             report["generated"][name] = generated_manifest_snapshot(generated / name)
             capabilities = json.loads((generated / name / "contract/rust-capabilities.json").read_text())
@@ -234,7 +236,7 @@ def main():
             lines.extend(['[[bin]]', f'name="{name}"', f'path="src/bin/{name}.rs"',
                           f'required-features=["{name}"]'])
         manifest = consumer / "Cargo.toml"
-        manifest.write_text("\n".join(lines) + "\n")
+        manifest.write_text(with_pinned_patches("\n".join(lines) + "\n", ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)

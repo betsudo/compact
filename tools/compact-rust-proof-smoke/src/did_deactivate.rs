@@ -17,8 +17,18 @@ use super::did_deactivate_support::Witness;
 use super::*;
 use compact_rust_did_adoption_fixture::{ledger_contract as c, ledger_slots as slots, types};
 use midnight_compact_runtime as runtime;
+use midnight_ledger::{structure::ProofVersioned, test_utilities::tx_prove};
+use midnight_onchain_state::state::IrBuf;
+use midnight_storage::arena::Sp;
+use midnight_transient_crypto::proofs::Zkir;
+use midnight_zkir_v3::IrSource as IrSourceV3;
 use serde_json::Value;
-use std::cell::RefCell;
+use std::{cell::RefCell, io::Write};
+
+pub(super) enum ProofProtocol {
+    V2,
+    V3 { changed_input: AlignedValue },
+}
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let capture: Value = serde_json::from_str(include_str!(
         "../../../runtime-rs/tests/fixtures/unit-composition.json"
@@ -29,7 +39,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         .iter()
         .find(|r| r["id"] == "did/valid")
         .ok_or("missing DID valid row")?;
-    run_with(root, row, prepare_ordinary, check_ordinary_final, None).map(|_| ())
+    run_with(
+        root,
+        row,
+        prepare_ordinary,
+        check_ordinary_final,
+        ProofProtocol::V2,
+    )
+    .map(|_| ())
 }
 
 // Share funded default-strict application, with source-specific preparation and
@@ -50,12 +67,41 @@ pub(super) fn run_with(
         &ContractState<DefaultDB>,
         &Value,
     ) -> Result<String, Box<dyn Error>>,
-    changed_input: Option<AlignedValue>,
+    protocol: ProofProtocol,
 ) -> Result<Value, Box<dyn Error>> {
+    let v3 = matches!(protocol, ProofProtocol::V3 { .. });
+    if v3 && std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "Ledger 9 DID proof requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     let prior: ContractState<DefaultDB> =
         tagged_deserialize(&mut hex::decode(row["before"].as_str().unwrap())?.as_slice())?;
     let mut rng = StdRng::seed_from_u64(0x0251);
-    let deploy = make_deploy(root, "deactivate", prior.data.get_ref().clone(), &mut rng)?;
+    let entry = EntryPointBuf(b"deactivate".to_vec());
+    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
+        root.join("keys/deactivate.verifier"),
+    )?))?;
+    let deploy = if v3 {
+        let ir = IrSourceV3::load(File::open(root.join("zkir/deactivate.zkir"))?)?;
+        let binary = std::fs::read(root.join("zkir/deactivate.bzkir"))?;
+        let mut expected = Vec::new();
+        tagged_serialize(&ir, &mut expected)?;
+        if expected != binary || ir.k() != 11 {
+            return Err("DID v3 IR differs from the bound raw circuit or k11 recipe".into());
+        }
+        let operation =
+            ContractOperation::new(Some(verifier.clone()), Some(Sp::new(IrBuf::from(binary))));
+        let operations = HashMap::new().insert(entry.clone(), operation);
+        let contract = ContractState::new(
+            prior.data.get_ref().clone(),
+            operations,
+            ContractMaintenanceAuthority::default(),
+        );
+        ContractDeploy::new(&mut rng, contract)
+    } else {
+        make_deploy(root, "deactivate", prior.data.get_ref().clone(), &mut rng)?
+    };
     let address = deploy.address();
     let mut state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
     state.ledger.contract = state
@@ -72,42 +118,90 @@ pub(super) fn run_with(
         },
     );
     let (prepared, expected) = prepare(root, &observed, row)?;
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/deactivate.verifier"),
-    )?))?;
-    let retain_transaction = changed_input.is_some();
-    let proof_bytes = super::kernel_shielded_effects::prove_and_verify_call_with_input_control(
-        root,
-        "deactivate",
-        &prepared,
-        &verifier,
-        changed_input,
-    )?;
+    let installed_operation = prepared.op.clone();
+    let standalone = match protocol {
+        ProofProtocol::V3 { changed_input } => Some(
+            super::kernel_shielded_effects::prove_and_verify_call_with_input_control::<IrSourceV3>(
+                root,
+                "deactivate",
+                &prepared,
+                &verifier,
+                Some(changed_input),
+                FetchMode::Synchronous,
+            )?,
+        ),
+        ProofProtocol::V2 => None,
+    };
+    let proof_bytes = if let Some((proof, _)) = &standalone {
+        proof.0.len()
+    } else {
+        super::kernel_shielded_effects::prove_and_verify_call_measured(
+            root,
+            "deactivate",
+            &prepared,
+            &verifier,
+        )?
+    };
+    let ttl = if v3 {
+        state.time + state.ledger.parameters.global_ttl
+    } else {
+        Timestamp::from_secs(state.time.to_secs() + 3600)
+    };
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
+        Intent::empty(&mut rng, ttl).add_call::<ProofPreimage>(prepared);
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1u16, intent));
     let resolver = super::qualified_coin_funding::fee_resolver(root, "deactivate")?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x02515052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x02515345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(state.balance_tx(rng, sealed, &resolver))?;
-    // This is the separately generated transaction proof, not the standalone
-    // call proof used for the immutable-verifier mutation controls.
-    let transaction_bytes = if retain_transaction {
-        let mut bytes = Vec::new();
-        tagged_serialize(&sealed, &mut bytes)?;
-        Some(bytes)
+        .build()?;
+    let proven = if v3 {
+        executor
+            .block_on(tx_prove(
+                StdRng::from_rng(rand::rngs::OsRng)?,
+                &tx,
+                &resolver,
+            ))
+            .map_err(|error| format!("DID transaction proving failed: {error:?}"))?
+    } else {
+        let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
+        let provider = LocalProvingProvider {
+            rng: StdRng::seed_from_u64(0x02515052),
+            resolver: &resolver,
+            params: &params,
+        };
+        futures_executor::block_on(
+            tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        )?
+    };
+    let sealed = proven.seal(StdRng::seed_from_u64(0x02515345));
+    let sealed = executor.block_on(state.balance_tx(rng, sealed, &resolver))?;
+    let transaction_proof = if let Some((standalone, _)) = &standalone {
+        let mut calls = sealed.calls();
+        let (_, call) = calls.next().ok_or("missing funded DID call")?;
+        let ProofVersioned::V3(proof) = &call.proof else {
+            return Err("expected a v3 transaction-bound DID proof".into());
+        };
+        if calls.next().is_some() || proof == standalone {
+            return Err(
+                "DID needs one fresh transaction-bound proof distinct from the standalone proof"
+                    .into(),
+            );
+        }
+        let dust_spends = sealed
+            .intents()
+            .filter_map(|(_, intent)| intent.dust_actions)
+            .map(|actions| {
+                actions
+                    .spends
+                    .iter()
+                    .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
+                    .count()
+            })
+            .sum::<usize>();
+        if dust_spends != 1 {
+            return Err("expected one proved, positive-fee Dust spend".into());
+        }
+        Some(proof.0.clone())
     } else {
         None
     };
@@ -127,8 +221,10 @@ pub(super) fn run_with(
         return Err(format!("DID apply failed: {result:?}").into());
     }
     let actual = updated.contract.get(&address).ok_or("DID missing")?;
-    if actual.data.get_ref() != &expected {
-        return Err("DID final state differs".into());
+    if actual.data.get_ref() != &expected
+        || actual.operations.get(&entry).as_deref() != Some(&installed_operation)
+    {
+        return Err("DID final data or installed operation differs".into());
     }
     let replay_context = TransactionContext {
         ref_state: updated.clone(),
@@ -154,15 +250,38 @@ pub(super) fn run_with(
         );
     }
     let stale_error = check_final(address, actual, row)?;
-    // Retain the named applied artifact only after strict verification, actual
-    // application, exact replay refusal and source-specific state checks pass.
-    if let Some(bytes) = &transaction_bytes {
-        use std::io::Write;
-        std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(root.join("did-functional-applied-transaction.bin"))?
-            .write_all(bytes)?;
+    let mut applied_bytes = Vec::new();
+    if let (Some((proof, inputs)), Some(transaction_proof)) = (&standalone, &transaction_proof) {
+        let mut after = Vec::new();
+        let mut after_replay = Vec::new();
+        tagged_serialize(&updated, &mut after)?;
+        tagged_serialize(&replayed, &mut after_replay)?;
+        if after_replay != after {
+            return Err("DID replay changed serialized ledger bytes".into());
+        }
+        tagged_serialize(&sealed, &mut applied_bytes)?;
+        let mut public_inputs = Vec::new();
+        tagged_serialize(inputs, &mut public_inputs)?;
+        for (name, bytes) in [
+            (
+                "did-functional-applied-transaction.bin",
+                applied_bytes.as_slice(),
+            ),
+            ("deactivate-input-control.proof", proof.0.as_slice()),
+            ("deactivate-input-control.inputs", public_inputs.as_slice()),
+            (
+                "deactivate-transaction-bound.proof",
+                transaction_proof.as_slice(),
+            ),
+            ("did-ledger-after.bin", after.as_slice()),
+            ("did-ledger-replay.bin", after_replay.as_slice()),
+        ] {
+            std::fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(root.join(name))?
+                .write_all(bytes)?;
+        }
     }
     println!(
         "original DID deactivate: proof verified, changed binding rejected, default-strict separate Dust ledger apply; exact final state and stale repeat rejection; constructor-derived seeded prior state, not a full DID lifecycle"
@@ -171,13 +290,16 @@ pub(super) fn run_with(
     tagged_serialize(actual, &mut final_state)?;
     Ok(serde_json::json!({
         "proof_bytes":proof_bytes,"changed_binding_rejected":true,
-        "changed_version_input_rejected":retain_transaction,"changed_input_same_geometry":retain_transaction,
+        "changed_version_input_rejected":v3,"changed_input_same_geometry":v3,
         "strict_application":"default","replay_refusal":"IntentAlreadyExists",
         "replay_unchanged":replayed == updated,"stale_version_rejected":true,
         "stale_version_error":stale_error,
-        "standalone_call_proof_file": if retain_transaction { Some("deactivate-input-control.proof") } else { None },
-        "applied_transaction_file": if retain_transaction { Some("did-functional-applied-transaction.bin") } else { None },
-        "applied_transaction_bytes":transaction_bytes.as_ref().map_or(0, Vec::len),
+        "standalone_call_proof_file": if v3 { Some("deactivate-input-control.proof") } else { None },
+        "applied_transaction_file": if v3 { Some("did-functional-applied-transaction.bin") } else { None },
+        "applied_transaction_bytes":applied_bytes.len(),
+        "transaction_proof_version": if v3 { 3 } else { 2 },
+        "transaction_proof_bytes":transaction_proof.as_ref().map_or(0, Vec::len),
+        "funded_dust_spends": if v3 { Some(1) } else { None },
         "proof_relationship":"standalone mutation-control proof; transaction independently proved and default-strictly verified",
         "final_state_hex":hex::encode(final_state)
     }))

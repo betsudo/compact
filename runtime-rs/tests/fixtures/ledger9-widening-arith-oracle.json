@@ -1,0 +1,135 @@
+{
+  "afterInit": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008400804000401040408010404080403040c00041008010404145803042448010403040108010404010401040108400800002c287265636f726441726561000c000000081c200004240801040428900304408021b3bf7c472c52dc9d112ec6d03ff6c09128263f40da6943c847c67899400e3b000400140830182c301003000400",
+  "sumBytes": "510",
+  "ageThresholdDays": "93075",
+  "productBytes": "65025",
+  "areaOf": "4294836225",
+  "afterRecordMax": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008010804000401040408010404080403040c00041008010404145803042448010403040108010404010401040108010800002c287265636f726441726561000c000000081c200004240801040428900304408021b3bf7c472c52dc9d112ec6d03ff6c09128263f40da6943c847c67899400e3b000400140830182c301003000400",
+  "countAfterRecordMax": "1",
+  "afterRecordSmall": "6d69646e696768743a636f6e74726163742d73746174655b76385d3a380008020804000401040408010404080403040c00041008010404145803042448010403040108010404010401040108020800002c287265636f726441726561000c000000081c200004240801040428900304408021b3bf7c472c52dc9d112ec6d03ff6c09128263f40da6943c847c67899400e3b000400140830182c301003000400",
+  "countAfterRecordSmall": "2",
+  "maxQueries": [
+    {
+      "gasCost": {
+        "readTime": "170000000",
+        "computeTime": "1323481916",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      },
+      "opTags": [
+        "idx",
+        "addi",
+        "ins"
+      ]
+    }
+  ],
+  "maxReportedGas": {
+    "readTime": "170000000",
+    "computeTime": "1323481916",
+    "bytesWritten": "36",
+    "bytesDeleted": "36"
+  },
+  "maxPublicTranscript": [
+    {
+      "idx": {
+        "cached": false,
+        "pushPath": true,
+        "path": [
+          {
+            "tag": "value",
+            "value": {
+              "value": [
+                {
+                  "bytesHex": ""
+                }
+              ],
+              "alignment": [
+                {
+                  "tag": "atom",
+                  "value": {
+                    "tag": "bytes",
+                    "length": 1
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "addi": {
+        "immediate": 1
+      }
+    },
+    {
+      "ins": {
+        "cached": true,
+        "n": 1
+      }
+    }
+  ],
+  "maxPrivateOutputCount": 0,
+  "smallQueries": [
+    {
+      "gasCost": {
+        "readTime": "170000000",
+        "computeTime": "1323481916",
+        "bytesWritten": "36",
+        "bytesDeleted": "36"
+      },
+      "opTags": [
+        "idx",
+        "addi",
+        "ins"
+      ]
+    }
+  ],
+  "smallReportedGas": {
+    "readTime": "170000000",
+    "computeTime": "1323481916",
+    "bytesWritten": "36",
+    "bytesDeleted": "36"
+  },
+  "smallPublicTranscript": [
+    {
+      "idx": {
+        "cached": false,
+        "pushPath": true,
+        "path": [
+          {
+            "tag": "value",
+            "value": {
+              "value": [
+                {
+                  "bytesHex": ""
+                }
+              ],
+              "alignment": [
+                {
+                  "tag": "atom",
+                  "value": {
+                    "tag": "bytes",
+                    "length": 1
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "addi": {
+        "immediate": 1
+      }
+    },
+    {
+      "ins": {
+        "cached": true,
+        "n": 1
+      }
+    }
+  ],
+  "smallPrivateOutputCount": 0
+}

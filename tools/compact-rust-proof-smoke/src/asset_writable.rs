@@ -15,6 +15,7 @@
 
 //! Prove the two asset writes gated by a Boolean conditional assertion.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_asset_registry_oracle_fixture::ledger_contract as asset;
 use compact_rust_asset_registry_oracle_fixture::types::ContractAddress as Holder;
@@ -137,6 +138,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
     }
-    println!("asset writable assertions proved and applied through ledger-8");
+    println!("asset writable assertions proved and applied through Ledger 9");
     Ok(())
 }

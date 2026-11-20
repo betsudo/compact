@@ -1,8 +1,19 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! All four pure conversion rules, independent of output and child traversal.
+//! Pure conversion rules, independent of output and child traversal.
 //! This family is complete; the exhaustive syntax-free body fold is pending.
 use super::{
     children::Children,
@@ -16,17 +27,344 @@ use crate::{
 };
 
 pub(crate) enum ConversionSource<'a> {
-    FieldCast { value: &'a Expr },
-    FieldToBytes32 { value: &'a Expr },
-    Coerce { value: &'a Expr, ty: &'a Type },
-    UnsignedCast { max: &'a str, value: &'a Expr },
+    FieldCast {
+        value: &'a Expr,
+    },
+    FieldToBytes32 {
+        value: &'a Expr,
+    },
+    JubjubCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    EnumCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    Secp256k1BytesCast {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    FixedBytes {
+        value: &'a Expr,
+        operation: Result<FixedBytesConversion, RenderError>,
+    },
+    Coerce {
+        value: &'a Expr,
+        ty: &'a Type,
+    },
+    UnsignedCast {
+        max: &'a str,
+        value: &'a Expr,
+    },
 }
 
 pub(crate) enum ConversionFacts {
     UintToField { wide: bool },
     FieldToBytes32,
+    JubjubCast(JubjubCast),
+    EnumCast(EnumCast),
+    Secp256k1BytesCast(Secp256k1BytesCast),
+    FixedBytes(FixedBytesConversion),
     Coercion(CoercionPlan),
     ExplicitUnsignedCast(UnsignedCastStrategy),
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum FixedBytesConversion {
+    ToVector { length: usize },
+    FromVector { length: usize },
+    Slice { start: usize, length: usize },
+    ZeroPad { length: usize },
+    FromChunks { length: usize, chunk_count: usize },
+    UintToBytes { length: usize },
+    BytesToField,
+    WideUintToBytes { length: usize },
+    BytesToUint { max: String, bound: UnsignedMaximum },
+}
+
+impl FixedBytesConversion {
+    pub(crate) fn from_expression(expr: &Expr) -> (&Expr, Result<Self, RenderError>) {
+        let (value, operation) = match expr {
+            Expr::VectorToBytes { value, length } => (value, Self::FromVector { length: *length }),
+            Expr::BytesToVector { value, length } => (value, Self::ToVector { length: *length }),
+            Expr::UintToBytes { value, length } => (value, Self::UintToBytes { length: *length }),
+            Expr::WideUintToBytes { value, length } => {
+                (value, Self::WideUintToBytes { length: *length })
+            }
+            Expr::BytesToField { value } => (value, Self::BytesToField),
+            Expr::BytesToUint { value, max } => {
+                let bound = unsigned_maximum(max).map(|bound| Self::BytesToUint {
+                    max: max.clone(),
+                    bound,
+                });
+                return (value, bound);
+            }
+            Expr::BytesZeroPad { value, length } => (value, Self::ZeroPad { length: *length }),
+            Expr::BytesFromChunks {
+                value,
+                length,
+                chunk_count,
+            } => (
+                value,
+                Self::FromChunks {
+                    length: *length,
+                    chunk_count: *chunk_count,
+                },
+            ),
+            Expr::BytesSlice {
+                value,
+                start,
+                length,
+            } => (
+                value,
+                Self::Slice {
+                    start: *start,
+                    length: *length,
+                },
+            ),
+            _ => unreachable!("dispatcher selected a fixed bytes conversion"),
+        };
+        (value, Ok(operation))
+    }
+
+    fn byte_vector(length: usize) -> Type {
+        Type::Vector {
+            length,
+            element: Box::new(Type::Unsigned { max: "255".into() }),
+        }
+    }
+
+    pub(crate) fn result_type(&self, source: &Type) -> Result<Type, RenderError> {
+        match *self {
+            Self::ToVector { length } => {
+                let expected = Type::Bytes { length };
+                if *source != expected {
+                    return Err(RenderError::TypeMismatch {
+                        expected,
+                        actual: source.clone(),
+                    });
+                }
+                Ok(Self::byte_vector(length))
+            }
+            Self::FromVector { length } => {
+                let expected = Self::byte_vector(length);
+                if *source != expected {
+                    return Err(RenderError::TypeMismatch {
+                        expected,
+                        actual: source.clone(),
+                    });
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::UintToBytes { length } | Self::WideUintToBytes { length } => {
+                let Type::Unsigned { max } = source else {
+                    return Err(RenderError::ExpectedUnsigned(source.clone()));
+                };
+                let wide = matches!(unsigned_maximum(max)?, UnsignedMaximum::Wide { .. });
+                if wide != matches!(self, Self::WideUintToBytes { .. })
+                    || length > crate::resource_limits::recording_byte_payload_limit()
+                {
+                    return Err(RenderError::UnsupportedUintBytesWidth);
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::BytesToField => {
+                if !matches!(source, Type::Bytes { .. }) {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                }
+                Ok(Type::Field)
+            }
+            Self::BytesToUint { ref max, bound } => {
+                if !matches!(source, Type::Bytes { .. }) {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                }
+                if unsigned_maximum(max)? != bound {
+                    return Err(RenderError::InvalidUnsignedMaximum(max.clone()));
+                }
+                Ok(Type::Unsigned { max: max.clone() })
+            }
+            Self::ZeroPad { length } => {
+                let Type::Bytes {
+                    length: input_length,
+                } = *source
+                else {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                };
+                if input_length > length {
+                    return Err(RenderError::InvalidBytesPadding {
+                        length,
+                        input_length,
+                    });
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::FromChunks {
+                length,
+                chunk_count,
+            } => {
+                let invalid = || RenderError::InvalidByteChunks {
+                    length,
+                    chunk_count,
+                };
+                let Type::Tuple { elements } = source else {
+                    return Err(invalid());
+                };
+                if chunk_count == 0
+                    || elements.len() != chunk_count
+                    || length > crate::resource_limits::recording_byte_payload_limit()
+                {
+                    return Err(invalid());
+                }
+                let total = elements.iter().try_fold(0usize, |total, ty| match ty {
+                    Type::Bytes { length } => total.checked_add(*length),
+                    _ => None,
+                });
+                if total != Some(length) {
+                    return Err(invalid());
+                }
+                Ok(Type::Bytes { length })
+            }
+            Self::Slice { start, length } => {
+                let Type::Bytes {
+                    length: input_length,
+                } = *source
+                else {
+                    return Err(RenderError::ExpectedBytes(source.clone()));
+                };
+                if length > input_length || start > input_length - length {
+                    return Err(RenderError::InvalidBytesSlice {
+                        start,
+                        length,
+                        input_length,
+                    });
+                }
+                Ok(Type::Bytes { length })
+            }
+        }
+    }
+}
+
+pub(crate) enum JubjubCast {
+    Scalar,
+    Field,
+    Unsigned(UnsignedMaximum),
+}
+
+impl JubjubCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Field, Type::JubjubScalar) => Ok(Self::Scalar),
+            (Type::JubjubScalar, Type::Field) => Ok(Self::Field),
+            (Type::JubjubScalar, Type::Unsigned { max }) => {
+                Ok(Self::Unsigned(unsigned_maximum(max)?))
+            }
+            _ => Err(RenderError::TypeMismatch {
+                expected: if *target == Type::JubjubScalar {
+                    Type::Field
+                } else {
+                    Type::JubjubScalar
+                },
+                actual: source.clone(),
+            }),
+        }
+    }
+}
+
+pub(crate) enum EnumCast {
+    ToField,
+    ToUnsigned {
+        max_ordinal: u128,
+        strategy: UnsignedCastStrategy,
+    },
+    FromNumber {
+        name: super::identifier::CheckedName,
+        source: EnumOrdinalSource,
+    },
+}
+
+pub(crate) enum EnumOrdinalSource {
+    Field,
+    Small,
+    Wide,
+}
+
+impl EnumCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Enum { variants, .. }, Type::Field) if !variants.is_empty() => Ok(Self::ToField),
+            (Type::Enum { variants, .. }, Type::Unsigned { max }) if !variants.is_empty() => {
+                let max_ordinal = (variants.len() - 1) as u128;
+                Ok(Self::ToUnsigned {
+                    max_ordinal,
+                    strategy: cast_strategy_from_bounds(
+                        UnsignedMaximum::Small(max_ordinal),
+                        unsigned_maximum(max)?,
+                    ),
+                })
+            }
+            (Type::Field | Type::Unsigned { .. }, Type::Enum { name, variants })
+                if !variants.is_empty() =>
+            {
+                let source = match source {
+                    Type::Field => EnumOrdinalSource::Field,
+                    Type::Unsigned { max } => match unsigned_maximum(max)? {
+                        UnsignedMaximum::Small(_) => EnumOrdinalSource::Small,
+                        UnsignedMaximum::Wide { .. } => EnumOrdinalSource::Wide,
+                    },
+                    _ => unreachable!("enum cast source is numeric"),
+                };
+                Ok(Self::FromNumber {
+                    name: super::identifier::check_name(name)?,
+                    source,
+                })
+            }
+            _ => Err(RenderError::InvalidEnumCast {
+                source: source.clone(),
+                target: target.clone(),
+            }),
+        }
+    }
+}
+
+pub(crate) enum Secp256k1BytesCast {
+    ToBase,
+    ToScalar,
+    ToSecp256r1Base,
+    ToSecp256r1Scalar,
+    ToCurve25519Base,
+    ToCurve25519Scalar,
+    WideToCurve25519Scalar,
+    ToBytes,
+}
+
+impl Secp256k1BytesCast {
+    pub(crate) fn check(source: &Type, target: &Type) -> Result<Self, RenderError> {
+        match (source, target) {
+            (Type::Bytes { length: 32 }, Type::Secp256k1Base) => Ok(Self::ToBase),
+            (Type::Bytes { length: 32 }, Type::Secp256k1Scalar) => Ok(Self::ToScalar),
+            (Type::Bytes { length: 32 }, Type::Secp256r1Base) => Ok(Self::ToSecp256r1Base),
+            (Type::Bytes { length: 32 }, Type::Secp256r1Scalar) => Ok(Self::ToSecp256r1Scalar),
+            (Type::Bytes { length: 32 }, Type::Curve25519Base) => Ok(Self::ToCurve25519Base),
+            (Type::Bytes { length: 32 }, Type::Curve25519Scalar) => Ok(Self::ToCurve25519Scalar),
+            (Type::Bytes { length: 64 }, Type::Curve25519Scalar) => {
+                Ok(Self::WideToCurve25519Scalar)
+            }
+            (
+                Type::Secp256k1Base
+                | Type::Secp256k1Scalar
+                | Type::Secp256r1Base
+                | Type::Secp256r1Scalar
+                | Type::Curve25519Base
+                | Type::Curve25519Scalar,
+                Type::Bytes { length: 32 },
+            ) => Ok(Self::ToBytes),
+            _ => Err(RenderError::InvalidSecp256k1BytesCast {
+                source: source.clone(),
+                target: target.clone(),
+            }),
+        }
+    }
 }
 
 pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
@@ -62,6 +400,31 @@ pub(crate) fn fold_conversion<S: ConversionSink, C: Children<S>>(
                 child.output,
                 Type::Bytes { length: 32 },
             )
+        }
+        ConversionSource::JubjubCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = JubjubCast::check(&child.ty, ty)?;
+            (ConversionFacts::JubjubCast(cast), child.output, ty.clone())
+        }
+        ConversionSource::EnumCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = EnumCast::check(&child.ty, ty)?;
+            (ConversionFacts::EnumCast(cast), child.output, ty.clone())
+        }
+        ConversionSource::Secp256k1BytesCast { value, ty } => {
+            let child = children.visit(value, sink)?;
+            let cast = Secp256k1BytesCast::check(&child.ty, ty)?;
+            (
+                ConversionFacts::Secp256k1BytesCast(cast),
+                child.output,
+                ty.clone(),
+            )
+        }
+        ConversionSource::FixedBytes { value, operation } => {
+            let operation = operation?;
+            let child = children.visit(value, sink)?;
+            let ty = operation.result_type(&child.ty)?;
+            (ConversionFacts::FixedBytes(operation), child.output, ty)
         }
         ConversionSource::Coerce { value, ty } => {
             let child = children.visit(value, sink)?;

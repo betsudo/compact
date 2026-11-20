@@ -34,7 +34,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["runAlpha", "runBeta"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -66,7 +66,7 @@ fn ordered_vm_shape(operations: serde_json::Value) -> serde_json::Value {
 #[test]
 fn distinct_constructor_calls_match_typescript_recording_and_replay() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/struct-collision-recorded.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-struct-collision-recorded.json"
     ))
     .unwrap();
     for (name, value) in [("alpha", 5_u64), ("beta", 7_u64)] {
@@ -157,7 +157,7 @@ fn distinct_constructor_calls_match_typescript_recording_and_replay() {
 #[test]
 fn distinct_struct_layouts_and_nested_fields_match_typescript() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/struct-collision-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-struct-collision-oracle.json"
     ))
     .unwrap();
     let alpha = RecCompact1 {

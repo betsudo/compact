@@ -1,0 +1,15 @@
+{
+  "format": "compact-ledger9-reducer-capture-binding/v2",
+  "kind": "enum-map",
+  "source_sha256": "fa3d21da3db95d995d88dacb9f0d282bd2a0d74e8f44d201e9998368ef766a1c",
+  "historical_ledger9_binding_sha256": "59823224dcbcf81a7181367bbf29ec2411149cfcf02120293ae64e8926114732",
+  "compact_runtime": "0.18.0",
+  "onchain_runtime": "4.0.1",
+  "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
+  "runtime_builtins_sha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+  "runtime_source_sha256": "1708969060e889380a8b19f5254e7a83d1edf1474474bd79c7b89b50cf3f0a27",
+  "runtime_closure_sha256": "2353d6f149316c99e67dadb55a34cf397a129cfc4d9f3c87ff304d8f62b10799",
+  "generated_javascript_sha256": "084535dfb836774bc79a73b8e6b26f426133151c1543dc919bd728aa7e597af0",
+  "capture_script_sha256": "57896f2796a13a6f78207c478b197c1ffe933b39fc04fdb8d83b680dd053f97b",
+  "capture_sha256": "7cb5013b1f54d975eca59320741928107c6aab06d2c6eacc4064dbbb3ef9c573"
+}

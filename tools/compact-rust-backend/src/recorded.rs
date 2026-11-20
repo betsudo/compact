@@ -84,6 +84,7 @@ mod effect_plan;
 pub(crate) use effect_plan::functional_items::{
     FunctionalSources, render_contract as render_functional_contract,
 };
+pub(crate) use effect_plan::map_cell_type;
 #[cfg(test)]
 mod effectful_migration_tests;
 #[cfg(test)]
@@ -282,7 +283,21 @@ fn recordable_cell_type(ty: &Type) -> bool {
             !elements.is_empty() && elements.len() <= 8 && elements.iter().all(recordable_cell_type)
         }
         Type::Vector { element, .. } => recordable_cell_type(element),
-        Type::Unit | Type::OpaqueString | Type::OpaqueBytes | Type::LedgerMap { .. } => false,
+        Type::Unit
+        | Type::OpaqueString
+        | Type::OpaqueBytes
+        | Type::Secp256k1Base
+        | Type::Secp256r1Base
+        | Type::Curve25519Base
+        | Type::Secp256k1Scalar
+        | Type::JubjubScalar
+        | Type::Secp256r1Scalar
+        | Type::Curve25519Scalar
+        | Type::Secp256k1Point
+        | Type::Secp256r1Point
+        | Type::Curve25519Point
+        | Type::LedgerMap { .. }
+        | Type::LedgerMerkle { .. } => false,
     }
 }
 

@@ -133,7 +133,13 @@ impl ControlSink for NativeSink<'_> {
             CheckedControl::Sequence { steps, value } => {
                 let statements = steps
                     .into_iter()
-                    .flat_map(|step| step.into_views().1)
+                    .flat_map(|step| match step {
+                        NativeFragment::Unit { statements, .. } => statements,
+                        value => {
+                            let value = value.into_expression();
+                            vec![syn::parse_quote!(let _ = #value;)]
+                        }
+                    })
                     .collect();
                 super::fragment::sequence(statements, value)
             }

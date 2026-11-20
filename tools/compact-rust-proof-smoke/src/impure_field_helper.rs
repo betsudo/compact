@@ -15,6 +15,7 @@
 
 //! Prove a typed internal Field helper whose pure result precedes one Cell read.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_call_arg_declared_type_fixture::ledger_contract as contract;
 use compact_rust_call_arg_declared_type_fixture::pure_circuits;
@@ -73,6 +74,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("typed Field helper impureConst proved and applied through ledger-8");
+    println!("typed Field helper impureConst proved and applied through Ledger 9");
     Ok(())
 }

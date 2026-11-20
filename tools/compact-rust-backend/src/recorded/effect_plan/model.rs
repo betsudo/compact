@@ -15,7 +15,8 @@
 
 //! Typed SSA values and ordered blocks. No Rust syntax or profile counters.
 use super::declarations::Declarations;
-use crate::ir::Type;
+use crate::ir::{KeccakEncoding, Type};
+use crate::pure_semantics::arithmetic::Secp256k1Unary;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Value {
@@ -103,10 +104,14 @@ pub(super) enum Literal {
     WideUnsigned([u8; 32]),
     Bytes(Vec<u8>),
 }
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub(super) enum Conversion {
     Coerce,
     UnsignedCast,
+    JubjubCast,
+    EnumCast,
+    Secp256k1BytesCast,
+    FixedBytes(crate::pure_semantics::conversion::FixedBytesConversion),
 }
 #[derive(Clone, Debug)]
 pub(super) enum Operation {
@@ -164,12 +169,40 @@ pub(super) enum Operation {
     OwnPublicKey,
     /// Ordered official VM observation of the current contract address.
     KernelSelf,
+    KernelBalance {
+        token: Value,
+    },
+    KernelBalanceLessThan {
+        token: Value,
+        amount: Value,
+    },
+    KernelBalanceGreaterThan {
+        token: Value,
+        amount: Value,
+    },
+    EmitShieldedSpend(Value),
+    EmitShieldedBurn(Value),
+    EmitShieldedMint(Value),
+    EmitShieldedReceive(Value),
+    EmitUnshieldedSpend(Value),
+    EmitUnshieldedReceive(Value),
+    EmitUnshieldedMint(Value),
+    EmitUnshieldedBurn(Value),
+    EmitMisc(Value),
+    EmitPaused(Value),
+    EmitUnpaused(Value),
     KernelClaim {
         kind: crate::ir::KernelClaimKind,
         value: Value,
     },
     KernelMintShielded {
         domain: Value,
+        amount: Value,
+    },
+    KernelUnshieldedEffect {
+        kind: crate::ir::KernelUnshieldedEffectKind,
+        key: Value,
+        recipient: Option<Value>,
         amount: Value,
     },
     /// The ledger8 commitment signature qualified by this rollout is a Bytes32 pair.
@@ -181,7 +214,8 @@ pub(super) enum Operation {
     FieldToBytes32(Value),
     /// Persistent FAB hashing of independently checked fixed aligned values.
     PersistentHash(Value),
-    Keccak256(Value),
+    Keccak256(Value, KeccakEncoding),
+    Sha512(Value),
     HashToCurve(Value),
     /// Official ledger8 digest/field conversions and transient FAB operations.
     DegradeToTransient(Value),
@@ -196,6 +230,10 @@ pub(super) enum Operation {
     Subtract(Value, Value),
     /// Modular multiplication in the official Field domain.
     Multiply(Value, Value),
+    Secp256k1Unary {
+        kind: Secp256k1Unary,
+        value: Value,
+    },
     /// Checked small unsigned arithmetic; operand and result bounds are independent.
     UnsignedAdd(Value, Value),
     UnsignedSubtract(Value, Value),
@@ -265,6 +303,21 @@ pub(super) enum Operation {
         key: Value,
     },
     MapLookup {
+        slot: MapSlot,
+        key: Value,
+    },
+    NestedMapLookup {
+        slot: MapSlot,
+        outer: Value,
+        inner: Value,
+    },
+    NestedMapInsert {
+        slot: MapSlot,
+        outer: Value,
+        inner: Value,
+        value: Value,
+    },
+    MapInitChild {
         slot: MapSlot,
         key: Value,
     },

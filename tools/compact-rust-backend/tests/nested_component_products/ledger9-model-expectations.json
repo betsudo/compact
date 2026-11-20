@@ -1,0 +1,103 @@
+{
+  "format": "compact-nested-component-products-model-expectations/v2",
+  "circuits": [
+    {
+      "source": "original",
+      "circuit": "run",
+      "k": 9,
+      "proof_required": true,
+      "rows": 384
+    },
+    {
+      "source": "family",
+      "circuit": "parameter",
+      "k": 8,
+      "proof_required": true,
+      "rows": 138
+    },
+    {
+      "source": "family",
+      "circuit": "helper",
+      "k": 8,
+      "proof_required": true,
+      "rows": 138
+    },
+    {
+      "source": "family",
+      "circuit": "local",
+      "k": 8,
+      "proof_required": true,
+      "rows": 138
+    },
+    {
+      "source": "family",
+      "circuit": "checked_helper",
+      "k": 8,
+      "proof_required": true,
+      "rows": 166
+    },
+    {
+      "source": "family",
+      "circuit": "witness_before",
+      "k": 7,
+      "proof_required": true,
+      "rows": 94
+    },
+    {
+      "source": "family",
+      "circuit": "witness_after",
+      "k": 7,
+      "proof_required": true,
+      "rows": 94
+    },
+    {
+      "source": "family",
+      "circuit": "branch",
+      "k": 8,
+      "proof_required": true,
+      "rows": 217
+    },
+    {
+      "source": "family",
+      "circuit": "deep",
+      "k": 8,
+      "proof_required": true,
+      "rows": 163
+    },
+    {
+      "source": "family",
+      "circuit": "boolean_field",
+      "k": 8,
+      "proof_required": true,
+      "rows": 132
+    },
+    {
+      "source": "family",
+      "circuit": "empty",
+      "k": 6,
+      "proof_required": true,
+      "rows": 35
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_empty",
+      "k": 7,
+      "proof_required": true,
+      "rows": 86
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_single",
+      "k": 8,
+      "proof_required": true,
+      "rows": 138
+    },
+    {
+      "source": "family",
+      "circuit": "field_identity",
+      "k": 8,
+      "proof_required": true,
+      "rows": 134
+    }
+  ]
+}

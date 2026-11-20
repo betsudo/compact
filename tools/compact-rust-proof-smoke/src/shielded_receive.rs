@@ -14,11 +14,20 @@
 // limitations under the License.
 
 //! Prove the unchanged receiveShielded wrapper and apply its exact zero output.
+use super::local_v3_application as v3;
+use super::positional_transaction::verify_separately;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
-use compact_rust_shielded_receive_oracle_fixture::{ledger_contract as contract, types};
+use compact_rust_shielded_receive_oracle_fixture::{
+    GENERATED_RUST, ledger_contract as contract, types,
+};
+use midnight_base_crypto::hash::persistent_hash;
 use midnight_compact_runtime as runtime;
+use midnight_ledger::test_utilities::TestState;
 use midnight_zswap::{Offer, Output};
 use runtime::transaction::{OfferBackedObservedState, ZswapIntentError};
+
+pub(super) const NAME: &str = "accept";
 
 pub(super) fn observed(
     address: runtime::ledger::ContractAddress,
@@ -56,29 +65,97 @@ fn validate_source_ir(bytes: &[u8]) -> Result<(), Box<dyn Error>> {
 
 /// Bind the complete source, including the renamed export and helper bodies,
 /// before any of the receive scenarios reads deployment or proving artifacts.
-pub(super) fn ensure_source_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
-    validate_source_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)
+fn ensure_source_artifacts(root: &Path) -> Result<(), Box<dyn Error>> {
+    validate_source_ir(&std::fs::read(root.join("contract/compact-rust-ir.json"))?)?;
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("shielded receive requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    if std::fs::read(root.join("contract/lib.rs"))? != GENERATED_RUST {
+        return Err("shielded receive generated Rust differs from the linked source".into());
+    }
+    // The original and renamed exports have identical geometry and keys.
+    for circuit in [NAME, "accept_renamed"] {
+        check_artifact(
+            root,
+            &format!("zkir/{circuit}.zkir"),
+            "e5b73fed8a46125b9f82fb73fe81f505e56608d6b8e964fda3a7b45354338abe",
+        )?;
+        check_artifact(
+            root,
+            &format!("zkir/{circuit}.bzkir"),
+            "279f546efeeb025b9405ed94d7d1c9a2891be1bd5af4ab20d1b2d16541771ddd",
+        )?;
+    }
+    for circuit in [NAME, "accept_renamed"] {
+        check_artifact(
+            root,
+            &format!("keys/{circuit}.verifier"),
+            "0876bb6aefb6dbc5af390757df9901a5e3df473a403f1638c12f2a9f9eb37d29",
+        )?;
+    }
+    Ok(())
+}
+
+fn check_artifact(root: &Path, path: &str, expected: &str) -> Result<(), Box<dyn Error>> {
+    if hex::encode(persistent_hash(&std::fs::read(root.join(path))?).0) != expected {
+        return Err(format!("shielded receive source/proof artifact differs: {path}").into());
+    }
+    Ok(())
+}
+
+pub(super) struct FundedReceive {
+    pub(super) deploy: ContractDeploy<DefaultDB>,
+    pub(super) verifier: VerifierKey,
+    pub(super) state: TestState<DefaultDB>,
+}
+
+pub(super) fn deploy_funded(
+    root: &Path,
+    stem: &str,
+    rng: &mut StdRng,
+) -> Result<FundedReceive, Box<dyn Error>> {
+    ensure_source_artifacts(root)?;
+    let (ir, verifier, operation) = v3::operation(root, NAME, 13)?;
+    if ir.model().rows() != 5_898 {
+        return Err("shielded receive v3 row count differs".into());
+    }
+    let initial = contract::initial_state(ConstructorContext::new(()))?;
+    let deploy = v3::deploy(initial.ledger_state.get_ref().clone(), NAME, operation, rng);
+    let mut state = fee_funded_state_with_utxos(rng, 2)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let resolver = fee_resolver(root, NAME)?;
+    v3::apply_funded_deployment(root, stem, &deploy, &mut state, rng, &executor, &resolver)?;
+    Ok(FundedReceive {
+        deploy,
+        verifier,
+        state,
+    })
+}
+
+pub(super) fn check_received_output(
+    ledger: &LedgerState<DefaultDB>,
+    commitment: runtime::ledger::CoinCommitment,
+    index: u64,
+) -> Result<(), Box<dyn Error>> {
+    if ledger.zswap.first_free != index + 1
+        || ledger.zswap.coin_coms.index(index).map(|(hash, _)| hash) != Some(commitment.0)
+    {
+        return Err("shielded receive applied output commitment or index differs".into());
+    }
+    Ok(())
 }
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    ensure_source_artifacts(root)?;
     let mut rng = StdRng::seed_from_u64(0x0195_0000);
-    let initial = contract::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(
-        root,
-        "accept",
-        initial.ledger_state.get_ref().clone(),
-        &mut rng,
-    )?;
+    let stem = "shielded-receive-zero";
+    let FundedReceive {
+        deploy,
+        verifier,
+        mut state,
+    } = deploy_funded(root, stem, &mut rng)?;
     let address = deploy.address();
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/accept.verifier"),
-    )?))?;
-    let mut state = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    state.ledger.contract = state
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
     let generated = contract::Contract::default();
     let zero = coin(1, 0);
     let zero_info = runtime::ledger::coin_info_from_compact(zero.nonce, zero.color, 0);
@@ -136,23 +213,26 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         .recording()
         .accept_call(wide_bound.observed(), (), wide)?;
     let wide_prepared = wide_bound.prepare(wide_call, verifier.clone(), Fr::from(0))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
+    let wide_stem = "shielded-receive-wide";
+    v3::prove_standalone(
         root,
-        "accept",
+        NAME,
+        wide_stem,
         wide_prepared.prototype(),
         &verifier,
+        None,
     )?;
-    let _updated = super::composite_zswap::apply_bound(
+    verify_separately(root, NAME, wide_stem)?;
+    let updated = v3::prove_and_apply_offer(
         root,
-        "accept",
+        (NAME, stem),
         prepared,
-        state,
-        rng.clone(),
+        &mut state,
+        &mut rng,
         &verifier,
-        commitment,
-        0,
-        address,
+        deploy.initial_state.data.get_ref(),
     )?;
+    check_received_output(&updated, commitment, 0)?;
 
     // A wallet-funded receive has an external input. Exact contract-owned
     // intent policy must reject it, even when its output is the right contract

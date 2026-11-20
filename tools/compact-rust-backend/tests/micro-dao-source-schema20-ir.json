@@ -1561,7 +1561,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 67,
+        "line": 77,
         "column": 1
       }
     },
@@ -1733,7 +1733,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 83,
+        "line": 93,
         "column": 1
       }
     },
@@ -1785,7 +1785,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 116,
+        "line": 126,
         "column": 1
       }
     },
@@ -1881,7 +1881,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 121,
+        "line": 131,
         "column": 1
       }
     },
@@ -1939,7 +1939,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 143,
+        "line": 153,
         "column": 1
       }
     },
@@ -2073,7 +2073,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 236,
+        "line": 246,
         "column": 1
       }
     },
@@ -2219,7 +2219,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 240,
+        "line": 250,
         "column": 1
       }
     },
@@ -2468,7 +2468,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 252,
+        "line": 262,
         "column": 1
       }
     },
@@ -2636,7 +2636,7 @@
       },
       "source": {
         "file": "standard-library.compact",
-        "line": 265,
+        "line": 275,
         "column": 1
       }
     },
@@ -3501,7 +3501,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 125,
+        "line": 135,
         "column": 1
       }
     },
@@ -3773,7 +3773,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 155,
+        "line": 165,
         "column": 1
       }
     },
@@ -5114,7 +5114,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 161,
+        "line": 171,
         "column": 1
       }
     },
@@ -5440,7 +5440,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 199,
+        "line": 209,
         "column": 1
       }
     },
@@ -6209,7 +6209,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 207,
+        "line": 217,
         "column": 1
       }
     },
@@ -6443,7 +6443,7 @@
       "internal": true,
       "source": {
         "file": "standard-library.compact",
-        "line": 229,
+        "line": 239,
         "column": 1
       }
     },

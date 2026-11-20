@@ -24,6 +24,8 @@ import copy
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import sys
@@ -279,7 +281,7 @@ def main():
                     "rust",
                     "--target",
                     "ts",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
                     "--rust-require-recording",
                     "--skip-zk",
                     source,
@@ -287,7 +289,8 @@ def main():
                 ],
             )
             independent = output / "independent" / role
-            run(role + "-independent", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", source, independent])
+            run(role + "-independent", [scheme, "--emit-rust-ir", "--feature-zkir-v3",
+                                         "--skip-ts", "--skip-zk", source, independent])
             for name in ["compact-rust-ir.json", "compact-rust-origins.raw.json"]:
                 require(
                     (target / "contract" / name).read_bytes()
@@ -392,7 +395,7 @@ def main():
                 + json.dumps(str(sdk))
                 + ',features=["ledger-transaction"]}\n'
             )
-            (consumer / "Cargo.toml").write_text(manifest)
+            (consumer / "Cargo.toml").write_text(with_pinned_patches(manifest, ROOT))
             metadata = run(role + "-resolve", ["cargo", "metadata", "--offline", "--format-version=1"], cwd=consumer)
             check_lock(consumer / "Cargo.lock", metadata, root, allowed, [consumer, sdk])
             env["COMPACT_CONSTRUCTOR_ROLE"] = role
@@ -581,7 +584,7 @@ def main():
                     compiler,
                     "--target",
                     "rust",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
                     "--rust-require-recording",
                     "--skip-zk",
                     source,

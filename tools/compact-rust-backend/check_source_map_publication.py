@@ -219,9 +219,9 @@ def main():
             destination.parent.mkdir(parents=True, exist_ok=True)
             require(not destination.exists(), "publication destination is not fresh")
             if lane == "scheme":
-                command = [scheme, "--emit-rust-ir", "--skip-zk"]
+                command = [scheme, "--emit-rust-ir", "--feature-zkir-v3", "--skip-zk"]
             elif lane == "combined":
-                command = [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"]
+                command = [compiler, "--target", "rust", "--target", "ts", "--skip-zk", "--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording"]
             else:
                 command = [standalone]
             if root is not None:

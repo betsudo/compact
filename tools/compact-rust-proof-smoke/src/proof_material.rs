@@ -19,7 +19,6 @@ use std::{collections::BTreeSet, error::Error};
 
 use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
 use midnight_ledger::dust::DUST_EXPECTED_FILES;
-use midnight_serialize::tagged_deserialize;
 use midnight_zkir::IrSource;
 use midnight_zswap::ZSWAP_EXPECTED_FILES;
 use serde_json::json;
@@ -57,7 +56,7 @@ async fn prepare(verify_only: bool, requested_k: BTreeSet<u8>) -> Result<(), Box
         if name.ends_with(".bzkir") {
             // This is the upstream cost model used by key generation, applied
             // only after the provider has checked the pinned IR digest.
-            let ir: IrSource = tagged_deserialize(&mut file)?;
+            let ir = IrSource::load_from_tagged(&mut file)?;
             let k = ir.model().k();
             sizes.insert(k);
             asset["k"] = json!(k);

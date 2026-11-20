@@ -16,29 +16,25 @@
 //! Exact witnessed SDK proof and funded default-strict application.
 //! Constructor-state insertion and fee funding are privileged fixture setup.
 use contract::{ledger_contract as api, runtime as rt};
-use midnight_base_crypto::{
-    data_provider::{FetchMode, MidnightDataProvider, OutputMode},
-    signatures::Signature,
-    time::Timestamp,
-};
+use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
 use midnight_compact_testkit::ProofLab;
 use midnight_ledger::{
     construct::{ContractCallExt, ContractCallPrototype},
     dust::{DUST_EXPECTED_FILES, DustResolver},
     prove::Resolver as LedgerResolver,
-    semantics::{TransactionContext, TransactionResult},
+    semantics::TransactionResult,
     structure::{
-        ContractDeploy, INITIAL_PARAMETERS, Intent, ProofPreimageMarker, ProofPreimageVersioned,
-        Transaction,
+        ContractDeploy, Intent, ProofPreimageMarker, ProofPreimageVersioned, ProofVersioned,
+        Signature, Transaction,
     },
-    test_utilities::TestState,
+    test_utilities::{TestState, tx_prove},
     verify::WellFormedStrictness,
 };
-use midnight_onchain_runtime::context::BlockContext;
 use midnight_onchain_state::state::{
-    ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf,
+    ContractMaintenanceAuthority, ContractOperation, ContractState, EntryPointBuf, IrBuf,
 };
-use midnight_serialize::{tagged_deserialize, tagged_serialize};
+use midnight_serialize::{Deserializable, Tagged, tagged_deserialize, tagged_serialize};
+use midnight_storage::arena::Sp;
 use midnight_storage::storage::HashMap;
 use midnight_transient_crypto::{
     commitment::PedersenRandomness,
@@ -46,10 +42,11 @@ use midnight_transient_crypto::{
     fab::AlignedValueExt,
     hash::transient_commit,
     proofs::{
-        KeyLocation, PARAMS_VERIFIER, ProofPreimage, ProvingKeyMaterial, ProvingProvider, Resolver,
-        VerifierKey,
+        KeyLocation, PARAMS_VERIFIER, Proof, ProofPreimage, ProverKey, ProvingKeyMaterial,
+        Resolver, VerifierKey, Zkir,
     },
 };
+use midnight_zkir::IrSource;
 use midnight_zswap::prove::ZswapResolver;
 use rand::{Rng, SeedableRng, rngs::StdRng};
 use rt::{
@@ -59,13 +56,14 @@ use rt::{
     ledger::DefaultDB,
     transaction::{
         CallSpec, EncodedSizeLimit, Observation, ObservedContractState, PrepareCallError,
-        prepare_call,
+        RecordedCall, prepare_call,
     },
 };
 use std::{
     cell::RefCell,
     error::Error,
-    fs, io,
+    fs,
+    io::{self, Cursor},
     path::{Path, PathBuf},
 };
 
@@ -128,16 +126,24 @@ fn call_preimage(call: &ContractCallPrototype<DefaultDB>) -> Result<ProofPreimag
         _ => Err("unsupported proof version".into()),
     }
 }
-fn public_inputs(p: &ProofPreimage) -> Result<Vec<Fr>, Box<dyn Error>> {
-    // Exact pinned upstream protocol for this unconditional source. Provider.check
-    // below rejects skip-bearing executions; this is not a general PI interpreter.
-    let mut inputs = vec![
-        p.binding_input,
-        p.communications_commitment.ok_or("missing commitment")?.0,
-    ];
-    inputs.extend(p.public_transcript_inputs.iter().copied());
-    Ok(inputs)
+fn read_tagged<T: Deserializable + Tagged>(path: &Path) -> Result<T, Box<dyn Error>> {
+    let bytes = fs::read(path)?;
+    let mut reader = Cursor::new(&bytes);
+    let value = tagged_deserialize(&mut reader)?;
+    if reader.position() != bytes.len() as u64 {
+        return Err(format!("trailing bytes in {}", path.display()).into());
+    }
+    Ok(value)
 }
+
+fn verify_standalone(root: &Path, out: &Path) -> Result<(), Box<dyn Error>> {
+    let verifier: VerifierKey = read_tagged(&root.join("keys/apply_offset.verifier"))?;
+    let proof = Proof(fs::read(out.join("standalone.proof"))?);
+    let inputs: Vec<Fr> = read_tagged(&out.join("standalone.inputs"))?;
+    verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
+    Ok(())
+}
+
 fn assert_same_call(
     actual: &ContractCallPrototype<DefaultDB>,
     expected: &ContractCallPrototype<DefaultDB>,
@@ -179,26 +185,30 @@ fn assert_same_call(
     assert_eq!(key_location, &expected.key_location);
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
-    let root = PathBuf::from(
-        std::env::args_os()
-            .nth(1)
-            .ok_or("missing generated directory")?,
-    );
-    let out = PathBuf::from(
-        std::env::args_os()
-            .nth(2)
-            .ok_or("missing output directory")?,
-    );
-    fs::create_dir(&out)?;
-    let verifier_bytes = fs::read(root.join("keys/apply_offset.verifier"))?;
-    let verifier: VerifierKey = tagged_deserialize(&mut verifier_bytes.as_slice())?;
+fn prove_and_apply(root: PathBuf, out: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("witnessed SDK requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    fs::create_dir(out)?;
+    let verifier_path = root.join("keys/apply_offset.verifier");
+    let verifier_bytes = fs::read(&verifier_path)?;
+    let verifier: VerifierKey = read_tagged(&verifier_path)?;
+    let prover: ProverKey<IrSource> = read_tagged(&root.join("keys/apply_offset.prover"))?;
+    let ir = IrSource::load(fs::File::open(root.join("zkir/apply_offset.zkir"))?)?;
+    let binary_ir = fs::read(root.join("zkir/apply_offset.bzkir"))?;
+    let mut expected_ir = Vec::new();
+    tagged_serialize(&ir, &mut expected_ir)?;
+    assert_eq!(binary_ir, expected_ir);
+    assert_eq!(ir.k(), 7);
+    assert!(ir.do_communications_commitment);
     let mut rng = StdRng::seed_from_u64(0x6680_0042);
     let initial = api::initial_state(ConstructorContext::new(7_u64))?;
-    let operations = HashMap::new().insert(
-        EntryPointBuf(NAME.as_bytes().to_vec()),
-        ContractOperation::new(Some(verifier.clone())),
+    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
+    let operation = ContractOperation::new(
+        Some(verifier.clone()),
+        Some(Sp::new(IrBuf::from(binary_ir))),
     );
+    let operations = HashMap::new().insert(entry.clone(), operation.clone());
     let initial_contract = ContractState::new(
         initial.ledger_state.get_ref().clone(),
         operations,
@@ -210,10 +220,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     // are declared setup, not a proved constructor/deployment or wallet lifecycle.
     std::env::var("MIDNIGHT_LEDGER_TEST_STATIC_DIR")?;
     let mut state: TestState<DefaultDB> = TestState::new(&mut rng);
-    tokio::runtime::Builder::new_current_thread()
+    let executor = tokio::runtime::Builder::new_current_thread()
         .enable_all()
-        .build()?
-        .block_on(state.give_fee_token(&mut rng, 1));
+        .build()?;
+    executor.block_on(state.give_fee_token(&mut rng, 1));
     state.ledger.contract = state
         .ledger
         .contract
@@ -284,10 +294,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         recorded.execution.context.private_state,
     ];
     assert_eq!(contract::ledger_slots::cell.inspect(&expected)?, value);
-    let prepared = prepare_call(
-        recorded,
-        CallSpec::new(NAME, verifier.clone(), value, communication_randomness),
-    )?;
+    let prepared = RecordedCall::new(&observed, recorded, NAME, value)
+        .prepare(verifier.clone(), communication_randomness)?;
+    assert_eq!(prepared.op, operation);
     let generated = api::Contract::from(Answers::default());
     let ordinary = generated
         .recording()
@@ -317,14 +326,20 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(midnight_compact_testkit::ProofError::Decode(_))
     ));
     let preimage = call_preimage(&prepared)?;
-    let provider = lab.provider(StdRng::seed_from_u64(0x6680_5052));
-    let skips = futures_executor::block_on(provider.check(&preimage))?;
-    assert!(
-        skips.iter().all(Option::is_none),
-        "this selected source must have no skipped public inputs"
+    let skips = ir.check(&preimage)?;
+    assert_eq!(skips, vec![None; 6]);
+    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
+    let (proof, inputs, proved_skips) =
+        futures_executor::block_on(ir.prove(rand::rngs::OsRng, &params, prover, &preimage))?;
+    assert_eq!(proved_skips, skips);
+    assert_eq!(inputs[0], preimage.binding_input);
+    assert_eq!(
+        inputs[1],
+        preimage
+            .communications_commitment
+            .ok_or("missing commitment")?
+            .0
     );
-    let proof = futures_executor::block_on(provider.prove(&preimage, None))?;
-    let inputs = public_inputs(&preimage)?;
     verifier.verify(&PARAMS_VERIFIER, &proof, inputs.iter().copied())?;
     let mut changed_binding = inputs.clone();
     changed_binding[0] = changed_binding[0] + Fr::from(1_u64);
@@ -350,15 +365,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             && slot.value.0.len() == replacement.value.0.len();
         *slot = replacement;
         let bad = call_preimage(&changed)?;
-        let bad_inputs = public_inputs(&bad)?;
+        let mut bad_inputs = inputs.clone();
+        bad_inputs[1] = bad
+            .communications_commitment
+            .ok_or("missing changed commitment")?
+            .0;
         assert_ne!(inputs[1], bad_inputs[1]);
         let rejected = verifier
             .verify(&PARAMS_VERIFIER, &proof, bad_inputs.into_iter())
             .is_err();
         assert!(rejected);
         changed_communication_rejected.push(rejected);
-        let checked =
-            futures_executor::block_on(lab.provider(StdRng::seed_from_u64(7)).check(&bad));
+        let checked = ir.check(&bad);
         // A witness has no algebraic promise to return its argument. Input 43
         // with witness/output 42 remains a valid *different* statement; only the
         // old proof must fail its changed communication commitment.
@@ -374,11 +392,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         assert!(!changed_private.private_transcript.is_empty());
         changed_private.private_transcript[0] =
             changed_private.private_transcript[0] + Fr::from(1_u64);
-        futures_executor::block_on(
-            lab.provider(StdRng::seed_from_u64(8))
-                .check(&changed_private),
-        )
-        .is_err()
+        ir.check(&changed_private).is_err()
     };
     assert!(changed_private_witness_rejected);
     let mut changed_proof = proof.clone();
@@ -396,34 +410,42 @@ fn main() -> Result<(), Box<dyn Error>> {
         verifier_bytes
     );
     let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(state.time.to_secs() + 3600))
+        Intent::empty(&mut rng, state.time + state.ledger.parameters.global_ttl)
             .add_call::<ProofPreimage>(prepared);
     let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let fee_lab = ProofLab::new(
-        fee_resolver(&root)?,
-        MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?,
-    );
-    let proven = futures_executor::block_on(tx.prove(
-        fee_lab.provider(StdRng::seed_from_u64(0x6680_5458)),
-        &INITIAL_PARAMETERS.cost_model.runtime_cost_model,
-    ))?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x6680_5345));
     let resolver = fee_resolver(&root)?;
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(state.balance_tx(rng, sealed, &resolver))?;
+    let proven = executor
+        .block_on(tx_prove(
+            StdRng::from_rng(rand::rngs::OsRng)?,
+            &tx,
+            &resolver,
+        ))
+        .map_err(|error| format!("contract proving failed: {error:?}"))?;
+    let sealed = proven.seal(StdRng::seed_from_u64(0x6680_5345));
+    let sealed = executor.block_on(state.balance_tx(rng, sealed, &resolver))?;
+    let mut calls = sealed.calls();
+    let (_, call) = calls.next().ok_or("missing funded contract call")?;
+    assert!(calls.next().is_none());
+    let ProofVersioned::V3(tx_proof) = &call.proof else {
+        return Err("expected transaction-bound v3 proof".into());
+    };
+    assert_ne!(tx_proof.0, proof.0);
+    let dust_spends = sealed
+        .intents()
+        .filter_map(|(_, intent)| intent.dust_actions)
+        .map(|actions| {
+            actions
+                .spends
+                .iter()
+                .filter(|spend| !spend.proof.0.is_empty() && spend.v_fee > 0)
+                .count()
+        })
+        .sum::<usize>();
+    assert_eq!(dust_spends, 1);
     let verified =
         sealed.well_formed(&state.ledger, WellFormedStrictness::default(), state.time)?;
-    let context = TransactionContext {
-        ref_state: state.ledger.clone(),
-        block_context: BlockContext {
-            tblock: state.time,
-            last_block_time: state.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
+    let mut context = state.context();
+    context.block_context.last_block_time = state.time;
     let (updated, result) = state.ledger.apply(&verified, &context);
     assert!(
         matches!(result, TransactionResult::Success(_)),
@@ -434,10 +456,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         .get(&address)
         .ok_or("contract missing after apply")?;
     assert_eq!(actual.data.get_ref(), &expected);
-    let context = TransactionContext {
-        ref_state: updated.clone(),
-        ..context
-    };
+    assert_eq!(actual.operations.get(&entry).as_deref(), Some(&operation));
+    context.ref_state = updated.clone();
     let (replayed, result) = updated.apply(&verified, &context);
     let replay_refusal = match result {
         TransactionResult::Failure(
@@ -449,6 +469,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     let replay_unchanged = replayed == updated;
     assert!(replay_unchanged);
+    let mut updated_bytes = Vec::new();
+    let mut replayed_bytes = Vec::new();
+    tagged_serialize(&updated, &mut updated_bytes)?;
+    tagged_serialize(&replayed, &mut replayed_bytes)?;
+    assert_eq!(replayed_bytes, updated_bytes);
     let mut transaction = Vec::new();
     tagged_serialize(&sealed, &mut transaction)?;
     let mut final_state = Vec::new();
@@ -459,10 +484,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     tagged_serialize(&expected, &mut expected_data)?;
     let final_cell = contract::ledger_slots::cell.inspect(actual.data.get_ref())?;
     fs::write(out.join("standalone.proof"), &proof.0)?;
+    let mut public_inputs = Vec::new();
+    tagged_serialize(&inputs, &mut public_inputs)?;
+    fs::write(out.join("standalone.inputs"), public_inputs)?;
+    fs::write(out.join("transaction-bound.proof"), &tx_proof.0)?;
     fs::write(out.join("applied-transaction.bin"), &transaction)?;
     let receipt = serde_json::json!({
         "status":"passed", "standalone_proof_bytes":proof.0.len(),
         "transaction_bytes":transaction.len(),
+        "transaction_proof_version":3,
+        "transaction_proof_bytes":tx_proof.0.len(),
+        "funded_dust_spends":dust_spends,
         "proof_relationship":"separate standalone proof and independently proved funded transaction",
         "changed_binding_rejected":changed_binding_rejected,
         "changed_input_rejected":changed_communication_rejected[0],
@@ -490,4 +522,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     )?;
     println!("{receipt}");
     Ok(())
+}
+
+fn main() -> Result<(), Box<dyn Error>> {
+    let arguments = std::env::args_os().skip(1).collect::<Vec<_>>();
+    match arguments.as_slice() {
+        [root, out] => prove_and_apply(PathBuf::from(root), Path::new(out)),
+        [mode, root, out] if mode == "--verify" => {
+            verify_standalone(Path::new(root), Path::new(out))
+        }
+        _ => Err("usage: functional-sdk-proof [--verify] GENERATED PROOF_OUTPUT".into()),
+    }
 }

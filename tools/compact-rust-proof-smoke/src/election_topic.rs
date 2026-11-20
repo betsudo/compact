@@ -14,6 +14,7 @@
 // limitations under the License.
 
 //! Prove the original election authority and phase guarded optional topic write.
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_election_oracle_fixture::ledger_contract as contract;
 use compact_rust_election_oracle_fixture::types::{MaybeCompact1, PermissibleVotes, PrivateState};
@@ -134,7 +135,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let prepared = generated
         .recording()
         .set_topic_call(&observed, 10_u64, topic.clone())?
-        .prepare(verifier.clone(), Fr::from(0_u64))?;
+        .prepare(verifier, Fr::from(0_u64))?;
     if format!("{manual:?}") != format!("{prepared:?}") {
         return Err("typed topic call differs from manual recording".into());
     }
@@ -147,18 +148,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     if !stored.is_some || stored.value != topic {
         return Err("expected optional topic state differs".into());
     }
-    kernel_shielded_effects::prove_and_verify_call(root, "set_topic", &prepared, &verifier)?;
-    opaque_public::apply_funded(
-        root,
-        "set_topic",
-        prepared,
-        deploy,
-        &expected_state,
-        rng,
-        587,
-    )?;
+    check_transaction(root, "set_topic", deploy, prepared, &mut rng, |state| {
+        if state.data.get_ref() != &expected_state {
+            return Err("election set_topic applied unexpected public state".into());
+        }
+        Ok(())
+    })?;
     println!(
-        "election topic: authority/phase guarded Unicode write proved, changed binding rejected, default-strict funded ledger8 application passed; constructor state supplied, deployment not proved"
+        "election topic: authority/phase guarded Unicode write proved and applied through Ledger 9"
     );
     Ok(())
 }
@@ -229,7 +226,7 @@ pub(super) fn advance(root: &Path) -> Result<(), Box<dyn Error>> {
         let prepared = generated
             .recording()
             .advance_call(&observed, private)?
-            .prepare(verifier.clone(), Fr::from(0_u64))?;
+            .prepare(verifier, Fr::from(0_u64))?;
         if format!("{manual:?}") != format!("{prepared:?}") {
             return Err("typed advance call differs from manual recording".into());
         }
@@ -244,18 +241,14 @@ pub(super) fn advance(root: &Path) -> Result<(), Box<dyn Error>> {
         {
             return Err("expected phase or optional topic changed".into());
         }
-        kernel_shielded_effects::prove_and_verify_call(root, "advance", &prepared, &verifier)?;
-        opaque_public::apply_funded(
-            root,
-            "advance",
-            prepared,
-            deploy,
-            &expected_state,
-            rng,
-            588 + step as u64,
-        )?;
+        check_transaction(root, "advance", deploy, prepared, &mut rng, |state| {
+            if state.data.get_ref() != &expected_state {
+                return Err("election advance applied unexpected public state".into());
+            }
+            Ok(())
+        })?;
         println!(
-            "election advance transition {step}: proof verified, changed binding rejected, default-strict funded ledger8 application passed; constructor and seeded prior state supplied, deployment not proved"
+            "election advance transition {step}: proof verified and funded default-strict Ledger 9 application passed"
         );
     }
     Ok(())
@@ -310,7 +303,7 @@ impl Witnesses<u64> for LedgerWitness {
         key: runtime::FixedBytes<32>,
     ) -> (u64, MaybeCompact1) {
         self.calls.borrow_mut().push("path");
-        // The view dereferences to the local ledger8 tree inspection API.
+        // The view dereferences to the Ledger 9 tree inspection API.
         // It does not issue a metered VM query, matching the TS snapshot oracle.
         let path = context
             .ledger
@@ -399,7 +392,7 @@ pub(super) fn add_voter(root: &Path) -> Result<(), Box<dyn Error>> {
         let prepared = generated
             .recording()
             .add_voter_call(&observed, private, pk)?
-            .prepare(verifier.clone(), Fr::from(0_u64))?;
+            .prepare(verifier, Fr::from(0_u64))?;
         if format!("{manual:?}") != format!("{prepared:?}")
             || *observed_witness.calls.borrow() != ["path", "secret"]
         {
@@ -415,18 +408,14 @@ pub(super) fn add_voter(root: &Path) -> Result<(), Box<dyn Error>> {
         {
             return Err("expected voter path or index changed".into());
         }
-        kernel_shielded_effects::prove_and_verify_call(root, "add_voter", &prepared, &verifier)?;
-        opaque_public::apply_funded(
-            root,
-            "add_voter",
-            prepared,
-            deploy,
-            &expected_state,
-            rng,
-            589 + u64::from(value),
-        )?;
+        check_transaction(root, "add_voter", deploy, prepared, &mut rng, |state| {
+            if state.data.get_ref() != &expected_state {
+                return Err("election add_voter applied unexpected public state".into());
+            }
+            Ok(())
+        })?;
         println!(
-            "election voter {value}: proof verified, changed binding rejected, default-strict funded ledger8 application passed; constructor and seeded prior state supplied, deployment not proved"
+            "election voter {value}: proof verified and funded default-strict Ledger 9 application passed"
         );
     }
     Ok(())

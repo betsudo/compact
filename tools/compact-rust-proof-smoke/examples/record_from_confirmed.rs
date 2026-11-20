@@ -26,7 +26,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use compact_rust_counter_fixture::ledger_contract as counter_contract;
 use futures_executor::block_on;
 use midnight_base_crypto::data_provider::{FetchMode, MidnightDataProvider, OutputMode};
-use midnight_base_crypto::signatures::Signature;
 use midnight_base_crypto::time::Timestamp;
 use midnight_compact_runtime::context::CircuitContext;
 use midnight_compact_runtime::ledger::{
@@ -36,6 +35,7 @@ use midnight_compact_runtime::transaction::{
     Observation, ObservedContractState, decode_verifier_key,
 };
 use midnight_ledger::semantics::{TransactionContext, TransactionResult};
+use midnight_ledger::structure::Signature;
 use midnight_ledger::structure::{
     INITIAL_PARAMETERS, Intent, LedgerState, ProofMarker, ProofPreimageMarker, Transaction,
 };

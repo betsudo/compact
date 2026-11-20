@@ -28,10 +28,10 @@ import check_unit_mutation_initializers_proof as gate
 
 
 def completed():
-    return {"format": "compact-unit-mutation-initializers-proof/v2", "status": "passed",
+    return {"format": "compact-unit-mutation-initializers-proof/v3", "status": "passed",
             "constructor_execution_proved": False, "unselected_branch_proved": False,
             "prestate_setup_proved": False, "all_exports_proved": False,
-            "calls": [{"circuit": circuit, "key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_bytes": 120,
+            "calls": [{"circuit": circuit, "key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_proof_bytes": 3824, "transaction_proof_version": 3, "positive_fee_dust_spends": 1, "transaction_bytes": 120,
                        "standalone_proof":f"unit-initializers-{index}.proof",
                        "applied_transaction":f"unit-initializers-{index}-transaction.bin",
                        "transaction_proof_relationship":"independently proved",
@@ -107,7 +107,7 @@ class ProofReceiptTests(unittest.TestCase):
                     execute.assert_not_called()
                 receipt = json.loads(report.read_text())
                 if name == "proof":
-                    self.assertEqual(receipt["format"], "compact-unit-mutation-initializers-proof-gate/v2")
+                    self.assertEqual(receipt["format"], "compact-unit-mutation-initializers-proof-gate/v3")
                 self.assertEqual(receipt["status"], "failed")
                 self.assertTrue(receipt["source_dirty"])
                 self.assertEqual(receipt["error"], "clean source checkout required")

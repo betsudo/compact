@@ -1,0 +1,117 @@
+{
+  "format": "compact-outer-vector-product-model-expectations/v2",
+  "circuits": [
+    {
+      "source": "original",
+      "circuit": "run",
+      "k": 7,
+      "proof_required": true,
+      "rows": 84
+    },
+    {
+      "source": "family",
+      "circuit": "parameter",
+      "k": 8,
+      "proof_required": true,
+      "rows": 134
+    },
+    {
+      "source": "family",
+      "circuit": "helper",
+      "k": 8,
+      "proof_required": true,
+      "rows": 134
+    },
+    {
+      "source": "family",
+      "circuit": "local",
+      "k": 8,
+      "proof_required": true,
+      "rows": 134
+    },
+    {
+      "source": "family",
+      "circuit": "checked_helper",
+      "k": 8,
+      "proof_required": true,
+      "rows": 154
+    },
+    {
+      "source": "family",
+      "circuit": "witness_before",
+      "k": 7,
+      "proof_required": true,
+      "rows": 90
+    },
+    {
+      "source": "family",
+      "circuit": "witness_after",
+      "k": 7,
+      "proof_required": true,
+      "rows": 90
+    },
+    {
+      "source": "family",
+      "circuit": "branch",
+      "k": 8,
+      "proof_required": true,
+      "rows": 209
+    },
+    {
+      "source": "family",
+      "circuit": "deep",
+      "k": 7,
+      "proof_required": true,
+      "rows": 111
+    },
+    {
+      "source": "family",
+      "circuit": "boolean_field",
+      "k": 7,
+      "proof_required": true,
+      "rows": 107
+    },
+    {
+      "source": "family",
+      "circuit": "empty",
+      "k": 6,
+      "proof_required": true,
+      "rows": 35
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_empty",
+      "k": 7,
+      "proof_required": true,
+      "rows": 84
+    },
+    {
+      "source": "family",
+      "circuit": "tuple_single",
+      "k": 7,
+      "proof_required": true,
+      "rows": 84
+    },
+    {
+      "source": "family",
+      "circuit": "field_identity",
+      "k": 7,
+      "proof_required": true,
+      "rows": 107
+    },
+    {
+      "source": "family",
+      "circuit": "empty_leaf",
+      "k": 7,
+      "proof_required": true,
+      "rows": 84
+    },
+    {
+      "source": "family",
+      "circuit": "last_child",
+      "k": 7,
+      "proof_required": true,
+      "rows": 109
+    }
+  ]
+}

@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -205,7 +207,7 @@ def main():
         for alias, source in SOURCES.items():
             destination = output / alias
             run("compile-" + alias, [compiler, "--target", "rust", "--skip-zk",
-                "--rust-functional-ledger8", "--rust-require-recording",
+                "--rust-functional-ledger9", "--rust-require-recording",
                 "--rust-runtime-root", ROOT, source, destination])
             check_manifest(destination)
             manifest = tomllib.loads((destination / "contract/Cargo.toml").read_text())
@@ -320,7 +322,7 @@ def main():
         for alias, dependency in dependencies.items():
             text.append(alias + ' = { package = ' + json.dumps(dependency["package"])
                         + ', path = ' + json.dumps(dependency["path"]) + ' }')
-        (consumer / "Cargo.toml").write_text("\n".join(text) + "\n")
+        (consumer / "Cargo.toml").write_text(with_pinned_patches("\n".join(text) + "\n", ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         local_manifests["functional-effect-consumer"] = (consumer / "Cargo.toml").resolve()
         local_versions["functional-effect-consumer"] = "0.0.0"

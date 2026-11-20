@@ -1,12 +1,32 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 //! Shared two-branch proof scenario; adapters select their actual generated crate.
-//! Every run uses the existing trace preparation and official ledger proof gates.
+//! Each branch uses the exact installed v3 operation and funded ledger validation.
+use super::kernel_shielded_effects::InputMutation;
+use super::local_v3_application as v3;
 use super::*;
 use midnight_compact_runtime::CompactError;
 use midnight_compact_runtime::context::{CircuitContext, CircuitResult};
+use midnight_compact_runtime::transaction::RecordedCall;
+
+const CIRCUIT: &str = "choose";
+const CASES: [(bool, u64, u64, u64, &str); 2] = [
+    (false, 9, 0, 0, "choose-unprimed"),
+    (true, 8, 109, 1, "choose-primed"),
+];
 
 pub(super) trait ChooseScenario {
     fn initial_context() -> Result<CircuitContext<u64>, CompactError>;
@@ -25,11 +45,23 @@ pub(super) trait ChooseScenario {
     ) -> Result<ContractCallPrototype<DefaultDB>, Box<dyn Error>>;
 }
 
-pub(super) fn run<S: ChooseScenario>(root: &Path, label: &str) -> Result<(), Box<dyn Error>> {
-    for (index, primed, next, expected, private) in
-        [(0, false, 9_u64, 0_u64, 0_u64), (1, true, 8, 109, 1)]
-    {
-        let mut rng = StdRng::seed_from_u64(0x0182_0000 + index);
+pub(super) fn run<S: ChooseScenario>(root: &Path, verify: bool) -> Result<(), Box<dyn Error>> {
+    let (ir, verifier, operation) = v3::operation(root, CIRCUIT, 7)?;
+    if ir.model().rows() != 107 {
+        return Err("effectful choose v3 row count differs".into());
+    }
+    if verify {
+        for (_, _, _, _, stem) in CASES {
+            v3::verify_standalone(root, stem, &verifier)?;
+            println!("{stem}: separate v3 verification passed and corrupted proof was refused");
+        }
+        return Ok(());
+    }
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("effectful choose proof requires local proving".into());
+    }
+    for (index, (primed, next, expected, private, stem)) in CASES.into_iter().enumerate() {
+        let mut rng = StdRng::seed_from_u64(0x0182_0000 + index as u64);
         let initial = S::initial_context()?;
         let state = if primed {
             S::native(initial, Fr::from(9_u64))?
@@ -41,7 +73,7 @@ pub(super) fn run<S: ChooseScenario>(root: &Path, label: &str) -> Result<(), Box
         } else {
             initial.query.state.get_ref().clone()
         };
-        let deploy = make_deploy(root, "choose", state, &mut rng)?;
+        let deploy = v3::deploy(state, CIRCUIT, operation.clone(), &mut rng);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -64,27 +96,35 @@ pub(super) fn run<S: ChooseScenario>(root: &Path, label: &str) -> Result<(), Box
             || recorded.execution.context.query.effects != native.context.query.effects
         {
             return Err(
-                format!("{label}: branch result, state, gas, effects or witness mismatch").into(),
+                format!("{stem}: branch result, state, gas, effects or witness mismatch").into(),
             );
         }
         let expected_state = native.context.query.state.get_ref().clone();
-        let manual = check_generated_trace(root, "choose", recorded, Fr::from(next))?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/choose.verifier"),
-        )?))?;
-        let prepared = S::prepared(&observed, Fr::from(next), verifier)?;
+        let manual = RecordedCall::new(&observed, recorded, CIRCUIT, Fr::from(next))
+            .prepare(verifier.clone(), Fr::from(0_u64))?;
+        let prepared = S::prepared(&observed, Fr::from(next), verifier.clone())?;
         if format!("{manual:?}") != format!("{prepared:?}") {
-            return Err(format!("{label}: observed call differs from direct recording").into());
+            return Err(format!("{stem}: observed call differs from direct recording").into());
         }
-        check_transaction(root, "choose", deploy, prepared, &mut rng, |state| {
-            if state.data.get_ref() != &expected_state {
-                return Err(format!("{label}: branch ledger application changed state").into());
-            }
-            Ok(())
-        })?;
-        println!(
-            "{label} branch {index} proved, verified, and ledger-applied under shared unbalanced smoke policy"
-        );
+        let changed_input = AlignedValue::from(Fr::from(next + 1));
+        // The primed branch never reads `next`. Its preimage still checks,
+        // while the proof must refuse any changed communication commitment.
+        let mutation = if primed {
+            InputMutation::Unused(changed_input)
+        } else {
+            InputMutation::Used(changed_input)
+        };
+        let proof =
+            v3::prove_standalone(root, CIRCUIT, stem, &prepared, &verifier, Some(mutation))?;
+        v3::apply_after_deployment(
+            root,
+            CIRCUIT,
+            stem,
+            prepared,
+            deploy,
+            &expected_state,
+            &proof,
+        )?;
     }
     Ok(())
 }

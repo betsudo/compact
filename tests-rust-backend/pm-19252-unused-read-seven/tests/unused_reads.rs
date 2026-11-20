@@ -32,12 +32,12 @@ use runtime::{
 fn state_hex(state: StateValue<DefaultDB>, kind: &str) -> String {
     let mut operations = HashMap::new().insert(
         EntryPointBuf(b"test".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     if kind != "seven" {
         operations = operations.insert(
             EntryPointBuf(b"test1".to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -116,7 +116,7 @@ fn check(
 #[test]
 fn discarded_addition_still_records_the_original_cell_read() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/unused-field-read-seven.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-seven.json"
     ))
     .unwrap();
     let context = || {
@@ -137,11 +137,15 @@ fn unused_public_and_private_cells_preserve_zero_and_populated_reads() {
     for (kind, raw) in [
         (
             "eight-a",
-            include_str!("../../../runtime-rs/tests/fixtures/unused-field-read-eight-a.json"),
+            include_str!(
+                "../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-a.json"
+            ),
         ),
         (
             "eight-b",
-            include_str!("../../../runtime-rs/tests/fixtures/unused-field-read-eight-b.json"),
+            include_str!(
+                "../../../runtime-rs/tests/fixtures/ledger9-unused-field-read-eight-b.json"
+            ),
         ),
     ] {
         let oracle: serde_json::Value = serde_json::from_str(raw).unwrap();

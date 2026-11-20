@@ -130,7 +130,8 @@ fn compare(lab: &mut ContractLab<u64>, row: &Value) {
 #[test]
 fn fifteen_existing_alias_cases_match_recording_from_independent_ts_prestate() {
     // These are captured prestates, not a claim of on-chain deployment history.
-    let capture: Value = serde_json::from_str(include_str!("../oracle/lifecycle.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9/lifecycle.json")).unwrap();
     let mut count = 0;
     for scenario in capture["scenarios"].as_array().unwrap() {
         for row in scenario["steps"]
@@ -152,7 +153,7 @@ fn fifteen_existing_alias_cases_match_recording_from_independent_ts_prestate() {
 #[test]
 fn original_constructor_alias_cycle_keeps_failures_uncommitted() {
     let capture: Value =
-        serde_json::from_str(include_str!("../oracle/alias-lifecycle.json")).unwrap();
+        serde_json::from_str(include_str!("../oracle/ledger9/alias-lifecycle.json")).unwrap();
     let scenario = &capture["scenarios"][0];
     let constructor =
         c::initial_state(ConstructorContext::new(0u64), &Witness::new(json!({}))).unwrap();

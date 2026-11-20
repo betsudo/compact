@@ -18,6 +18,7 @@ import copy
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 import did_primitive_reducer_gate as gate
@@ -37,6 +38,157 @@ class EvidenceTests(unittest.TestCase):
 
     def test_complete_rows_pass(self):
         gate.validate_summary(self.good,self.row)
+
+    def test_current_summary_requires_v3_funding_separate_verification_and_corruption_refusal(self):
+        with self.assertRaises(gate.common.GateError):
+            gate.validate_summary(self.good, self.row, require_v3=True)
+        current = copy.deepcopy(self.good)
+        current["format"] = "compact-did-primitive-reducer-proof/v2"
+        for row in current["calls"]:
+            row.update(transaction_proof_bytes=10, transaction_proof_version=3,
+                       funded_dust_spends=1, separate_verification=True, corrupt_proof_rejected=True)
+        gate.validate_summary(current, self.row, require_v3=True)
+        for field, bad in (("transaction_proof_version", 2), ("funded_dust_spends", True),
+                           ("separate_verification", False), ("corrupt_proof_rejected", False)):
+            changed = copy.deepcopy(current)
+            changed["calls"][0][field] = bad
+            with self.subTest(field=field), self.assertRaises(gate.common.GateError):
+                gate.validate_summary(changed, self.row, require_v3=True)
+
+    def test_historical_capture_requires_exact_ledger9_bytes_and_frozen_source(self):
+        fixture = "tests-rust-backend/did-point-digest-reducer"
+        oracle = gate.ROOT / fixture / "oracle"
+        with tempfile.TemporaryDirectory() as temp:
+            self.assertEqual(set(gate.validate_historical_capture(fixture)),
+                             {str(oracle / name) for name in
+                              ("ledger9-binding.json", "ledger9-cases.json", "cases.json",
+                               "reviewed-rust-binding.json")} |
+                             {str(source) for source, _ in gate.FROZEN_LEDGER9_RUNTIME.values()})
+            frozen = gate.FROZEN_LEDGER9_RUNTIME['runtime/src/built-ins.ts']
+            changed_source = Path(temp) / 'changed-built-ins.ts'
+            changed_source.write_text('not the reviewed source')
+            with patch.dict(gate.FROZEN_LEDGER9_RUNTIME,
+                            {'runtime/src/built-ins.ts': (changed_source, frozen[1])}):
+                with self.assertRaisesRegex(gate.common.GateError, 'reducer capture source changed'):
+                    gate.validate_historical_capture(fixture)
+            with patch.object(gate.common, 'sha256', side_effect=lambda path:
+                              'changed' if Path(path) == oracle / 'ledger9-cases.json' else
+                              __import__('hashlib').sha256(Path(path).read_bytes()).hexdigest()):
+                with self.assertRaisesRegex(gate.common.GateError, "exact reviewed Ledger 9 bytes"):
+                    gate.validate_historical_capture(fixture)
+
+    def test_retained_capture_records_preserve_all_nine_historical_case_sets(self):
+        count = 0
+        for row in gate.reviewed_rows():
+            oracle = gate.ROOT / row['fixture'] / 'oracle'
+            binding = gate.read_json(oracle / 'ledger9-runtime0.18-binding.json')
+            capture = gate.read_json(oracle / 'ledger9-runtime0.18-cases.json')
+            historical = gate.read_json(oracle / 'ledger9-cases.json')
+            with self.subTest(kind=row['kind']):
+                expected = dict(binding, source_sha256=gate.common.sha256(gate.ROOT / row['source']),
+                    capture_script_sha256=gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT),
+                    historical_ledger9_binding_sha256=gate.common.sha256(oracle / 'ledger9-binding.json'),
+                    capture_sha256=gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
+                gate.validate_current_capture_record(binding, expected, capture, historical)
+                self.assertEqual(binding['kind'], row['kind'])
+                self.assertEqual(binding['compact_runtime'], '0.18.0')
+                self.assertEqual(binding['source_sha256'],
+                                 gate.common.sha256(gate.ROOT / row['source']))
+                self.assertEqual(binding['capture_script_sha256'],
+                                 gate.common.sha256(gate.CURRENT_CAPTURE_SCRIPT))
+                self.assertEqual(binding['historical_ledger9_binding_sha256'],
+                                 gate.common.sha256(oracle / 'ledger9-binding.json'))
+                self.assertEqual(binding['capture_sha256'],
+                                 gate.common.sha256(oracle / 'ledger9-runtime0.18-cases.json'))
+                for provenance in capture['provenance']:
+                    relative = gate.reviewed.relative(provenance['path'])
+                    frozen = gate.FROZEN_RUNTIME018_GENERATED.get(str(relative))
+                    source = frozen[0] if frozen else gate.ROOT / relative
+                    if frozen:
+                        self.assertEqual(provenance['sha256'], frozen[1])
+                    self.assertEqual(provenance['sha256'], gate.common.sha256(source),
+                                     f"{row['kind']}: {relative}")
+                changed = binding.copy()
+                changed['generated_javascript_sha256'] = 'changed'
+                with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
+                    gate.validate_current_capture_record(changed, expected, capture, historical)
+                changed = copy.deepcopy(capture)
+                changed['cases'][0]['result'] = 'changed'
+                with self.assertRaisesRegex(gate.common.GateError, 'retained behavior'):
+                    gate.validate_current_capture_record(binding, expected, changed, historical)
+            count += len(capture['cases'])
+        self.assertEqual(count, 55)
+
+    def test_changed_runtime_source_cannot_reuse_retained_capture(self):
+        row = gate.reviewed_rows()[0]
+        oracle = gate.ROOT / row['fixture'] / 'oracle'
+        binding = gate.read_json(oracle / 'ledger9-runtime0.18-binding.json')
+        capture = gate.read_json(oracle / 'ledger9-runtime0.18-cases.json')
+        historical = gate.read_json(oracle / 'ledger9-cases.json')
+        live = dict(binding, runtime_source_sha256=gate.runtime_source_hash())
+        self.assertNotEqual(binding['runtime_source_sha256'], live['runtime_source_sha256'])
+        with self.assertRaisesRegex(gate.common.GateError, 'binding differs'):
+            gate.validate_current_capture_record(binding, live, capture, historical)
+        for name, (source, expected_sha) in gate.FROZEN_RUNTIME018_GENERATED.items():
+            self.assertEqual(gate.common.sha256(source), expected_sha)
+            self.assertNotEqual(gate.common.sha256(gate.ROOT / name), expected_sha)
+
+    def test_runtime_closure_hash_covers_dist_lock_and_nested_dependencies_without_store_prefix(self):
+        def make_runtime(root):
+            runtime = root / 'runtime'
+            (runtime / 'dist').mkdir(parents=True)
+            (runtime / 'dist/index.js').write_text('export const v = 1;')
+            (runtime / 'package.json').write_text(json.dumps({'name':'runtime','dependencies':{'outer':'1'}}))
+            (runtime / 'package-lock.json').write_text('{}')
+            outer = runtime / 'node_modules/outer'
+            outer.mkdir(parents=True)
+            (outer / 'package.json').write_text(json.dumps({'name':'outer','dependencies':{'nested':'1'}}))
+            (outer / 'index.js').write_text('outer')
+            nested = outer / 'node_modules/nested'
+            nested.mkdir(parents=True)
+            (nested / 'package.json').write_text(json.dumps({'name':'nested'}))
+            (nested / 'index.js').write_text('nested')
+            return runtime, nested
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime, nested = make_runtime(root / 'first')
+            other, _ = make_runtime(root / 'second')
+            baseline = gate.runtime_closure_hash(runtime)
+            self.assertEqual(baseline, gate.runtime_closure_hash(other))
+            for path in (runtime / 'dist/index.js', runtime / 'package-lock.json',
+                         nested / 'index.js'):
+                with self.subTest(path=path):
+                    original = path.read_text()
+                    path.write_text(original + 'changed')
+                    self.assertNotEqual(baseline, gate.runtime_closure_hash(runtime))
+                    path.write_text(original)
+            (nested / 'package.json').unlink()
+            with self.assertRaisesRegex(gate.common.GateError, 'dependency missing'):
+                gate.runtime_closure_hash(runtime)
+
+    def test_current_runtime_path_requires_matching_source_and_nix_package(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source = root / 'runtime/package.json'
+            source.parent.mkdir()
+            package = root / 'nix-out/lib/node_modules/@midnight-ntwrk/compact-runtime/package.json'
+            package.parent.mkdir(parents=True)
+            (package.parent / 'dist').mkdir()
+            (package.parent / 'dist/built-ins.js').write_text('builtins')
+            metadata = {'name':'@midnight-ntwrk/compact-runtime','version':'0.18.0',
+                        'dependencies':{'@midnightntwrk/onchain-runtime-v4':'4.0.1'}}
+            source.write_text(json.dumps(metadata))
+            package.write_text(json.dumps(metadata))
+            result = SimpleNamespace(returncode=0, stdout=str(root / 'nix-out'))
+            with patch.object(gate, 'ROOT', root), patch.object(gate.subprocess, 'run', return_value=result):
+                self.assertEqual(gate.current_runtime_package(), package.parent.resolve())
+                package.write_text(json.dumps(dict(metadata, version='0.17.0')))
+                with self.assertRaisesRegex(gate.common.GateError, 'differs from source'):
+                    gate.current_runtime_package()
+                package.write_text(json.dumps(metadata))
+                source.write_text(json.dumps(dict(metadata, version='0.19.0')))
+                with self.assertRaisesRegex(gate.common.GateError, 'differs from source'):
+                    gate.current_runtime_package()
 
     def test_missing_duplicate_extra_or_wrong_operation_refuse(self):
         for change in ('missing','duplicate','extra','reordered','operation'):
@@ -69,6 +221,9 @@ class EvidenceTests(unittest.TestCase):
     def test_failed_command_retains_failed_receipt_and_no_completed_rows(self):
         with tempfile.TemporaryDirectory() as temp:
             root=Path(temp);out=root/'gate'
+            (root/'package.json').write_text('{}')
+            (root/'dist').mkdir()
+            (root/'dist/built-ins.js').write_text('')
             frozen_tool = root / 'frozen'
             frozen_tool.write_text('stub tool snapshot')
             row={**self.row,'package':'fixture'}
@@ -77,6 +232,8 @@ class EvidenceTests(unittest.TestCase):
                  patch.object(gate,'source_inventory',return_value={}), \
                  patch.object(gate.ledger_static,'FIXTURE_HASHES',{}), \
                  patch.object(gate.shutil,'which',return_value='/usr/bin/true'), \
+                 patch.object(gate,'current_runtime_package',return_value=root), \
+                 patch.object(gate,'current_runtime_identity',return_value={'runtime_source_sha256':'source','runtime_closure_sha256':'closure'}), \
                  patch.object(gate.common,'git_head',return_value='frozen'), \
                  patch.object(gate.common,'stable_copy',return_value={'snapshot':str(frozen_tool),'sha256':'hash'}), \
                  patch.object(gate.common,'run',side_effect=failed):

@@ -26,7 +26,7 @@ use midnight_storage::storage::HashMap;
 fn exact_aliases_oracle_initial_state_matches_typescript() {
     let _: compact_rust_aliases_oracle_fixture::Tag = Default::default();
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/aliases-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-aliases-oracle.json"
     ))
     .unwrap();
     assert!(oracle["operations"].as_array().unwrap().is_empty());

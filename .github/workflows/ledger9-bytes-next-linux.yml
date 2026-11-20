@@ -1,0 +1,263 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Ledger 9 Bytes next originals / native Linux
+
+on:
+  push:
+    branches:
+      - 'codex/ledger9-bytes-next-linux/*'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact 40-character commit SHA selected for this qualification
+        type: string
+        required: true
+
+permissions: {}
+env:
+  RUSTUP_TOOLCHAIN: 1.99.0
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  PYTHONDONTWRITEBYTECODE: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-preflight:
+    name: Exact signed source and gate graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Require explicitly selected exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == push ]]; then
+            test "$SOURCE_REF" = "refs/heads/codex/ledger9-bytes-next-linux/$SOURCE_SHA"
+            EXPECTED_SHA="$SOURCE_SHA"
+          else
+            test "$EVENT_NAME" = workflow_dispatch
+          fi
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$SOURCE_SHA"
+      - name: Checkout exact source and pinned upstream history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Refuse source, SDK, or workflow drift
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e^{commit}'
+          git log -1 --format=%B | grep -q '^Signed-off-by: '
+          git log -1 --format=%B | grep -q '^Assisted-by: AI$'
+          python3 -B .github/scripts/test_compiler_closure.py
+          python3 -B .github/scripts/test_bytes_next_linux_workflow.py
+          python3 -B - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools/compact-rust-backend')
+          from check_release_packages import compatibility_record
+          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.1'
+          assert json.loads(Path('runtime/package.json').read_text())['version'] == '0.18.0'
+          PY
+
+  compiler-linux:
+    needs: source-preflight
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+      export-shell: true
+
+  bytes-next-semantics:
+    name: Original Bytes next generated TS/Rust parity
+    needs: [source-preflight, compiler-linux]
+    if: ${{ !cancelled() && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require successful same-run compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          COMPILER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          SHELL_ARTIFACT: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$PRODUCER_RESULT" = success
+          test -n "$COMPILER_ARTIFACT"
+          test -n "$SHELL_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+      - name: Checkout exact source and pinned upstream history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/bytes-next-compiler-material.zip"
+          compiler=$(python3 -B .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/bytes-next-compiler-material.zip" \
+            --directory "$RUNNER_TEMP/bytes-next-imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+      - name: Import authenticated same-run compiler shell
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+      - name: Setup locked Rust 1.99 toolchain
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+      - name: Setup Python for semantic gates
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+      - name: Restore locked Cargo downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+      - name: Resolve exact-head Runtime 0.18 and compiler recipe
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          cargo fetch --locked
+          nix build --no-link .#runtime.package
+          runtime_store=$(nix eval --offline --raw .#runtime.package.outPath)
+          runtime="$runtime_store/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          test -f "$runtime/dist/index.js"
+          test "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$runtime/package.json")" = 0.18.0
+          printf 'BYTES_NEXT_RUNTIME=%s\n' "$runtime" >> "$GITHUB_ENV"
+          printf 'BYTES_NEXT_CARGO_TARGET=%s/bytes-next-shared-cargo-target\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          python3 -B tools/compact-rust-backend/record_compiler_recipe.py \
+            --compiler "$COMPACTC" --output "$RUNNER_TEMP/bytes-next-compiler-recipe"
+      - name: Run four original semantic gates serially
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/bytes-next-semantic-evidence"
+          mkdir -p "$BYTES_NEXT_CARGO_TARGET"
+          for gate in manual_witness fold loops foreign_opaque_field; do
+            arguments=(--compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/bytes-next-compiler-recipe/receipt.json" \
+              --output "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate")
+            arguments+=(--ts-runtime "$BYTES_NEXT_RUNTIME" \
+              --cargo-target "$BYTES_NEXT_CARGO_TARGET")
+            if [[ "$gate" == foreign_opaque_field ]]; then
+              checker=tools/compact-rust-backend/check_upstream_ledger9_foreign_opaque_field.py
+            else
+              checker="tools/compact-rust-backend/check_upstream_ledger9_bytes_$gate.py"
+            fi
+            env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+              python3 -X faulthandler -u \
+              "$checker" "${arguments[@]}" \
+              | tee "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate.stdout.log"
+            python3 -B .github/scripts/verify_bytes_next_linux_receipts.py \
+              --case "$gate" \
+              --receipt "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate/receipt.json" \
+              --gate-log "$RUNNER_TEMP/bytes-next-semantic-evidence/$gate.stdout.log" \
+              --source-sha "$SOURCE_SHA" --compiler "$COMPACTC" \
+              --compiler-recipe "$RUNNER_TEMP/bytes-next-compiler-recipe/receipt.json" \
+              --runtime "$BYTES_NEXT_RUNTIME"
+          done
+          python3 -B .github/scripts/verify_bytes_next_linux_receipts.py \
+            --all "$RUNNER_TEMP/bytes-next-semantic-evidence" \
+            --source-sha "$SOURCE_SHA" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/bytes-next-compiler-recipe/receipt.json" \
+            --runtime "$BYTES_NEXT_RUNTIME" \
+            --summary "$RUNNER_TEMP/bytes-next-semantic-evidence/summary.json"
+      - name: Upload exact-head bytes-next qualification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger9-bytes-next-linux-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/bytes-next-compiler-recipe/
+            ${{ runner.temp }}/bytes-next-semantic-evidence/
+          if-no-files-found: warn
+          retention-days: 14
+
+  complete:
+    name: Ledger 9 Bytes next native Linux qualification
+    runs-on: ubuntu-latest
+    needs: [source-preflight, compiler-linux, bytes-next-semantics]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every bytes-next qualification owner
+        env:
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          BYTES_NEXT_RESULT: ${{ needs.bytes-next-semantics.result }}
+        run: |
+          set -euo pipefail
+          test "$PREFLIGHT_RESULT" = success
+          test "$PRODUCER_RESULT" = success
+          test "$BYTES_NEXT_RESULT" = success

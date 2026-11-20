@@ -15,6 +15,7 @@
 
 //! Source-bound removal from supplied constructor and native Insert state.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use asset_record_write::manual::TimestampWitness;
 use compact_rust_asset_registry_oracle_fixture::ledger_contract as asset;
@@ -132,18 +133,20 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/removeRecord.verifier"),
     )?))?;
-    let prepared = call.prepare(verifier.clone(), Fr::from(0_u64))?;
+    let prepared = call.prepare(verifier, Fr::from(0_u64))?;
     if prepared.input != input || prepared.output != AlignedValue::from(()) {
         return Err("asset removal declared input/Unit output differs".into());
     }
     if format!("{direct:?}") != format!("{prepared:?}") {
         return Err("asset removal observed/direct preparation differs".into());
     }
-    kernel_shielded_effects::prove_and_verify_call(root, CIRCUIT, &prepared, &verifier)?;
-    opaque_public::apply_funded(root, CIRCUIT, prepared, deploy, &expected_state, rng, 601)?;
-    println!(
-        "asset removal: source-bound native/recorded/observed/manual/replay, verified proof and changed-binding refusal, default-strict funded ledger-8 application; constructor and native Insert supplied, deployment and seed not proved"
-    );
+    check_transaction(root, CIRCUIT, deploy, prepared, &mut rng, |state| {
+        if state.data.get_ref() != &expected_state {
+            return Err("applied asset state differs from native execution".into());
+        }
+        Ok(())
+    })?;
+    println!("asset removal: funded default-strict Ledger 9 application passed");
     Ok(())
 }
 

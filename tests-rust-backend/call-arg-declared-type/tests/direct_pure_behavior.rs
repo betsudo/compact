@@ -25,7 +25,7 @@ fn field(v: &Value) -> Field {
 #[test]
 fn seven_pure_exports_have_direct_independent_typescript_results() {
     let capture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/direct-call-registry.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-direct-call-registry.json"
     ))
     .unwrap();
     let rows = capture["cases"]

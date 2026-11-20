@@ -52,6 +52,20 @@ class ProofReceiptTests(unittest.TestCase):
             with self.subTest(case=case), self.assertRaises(gate.common.GateError):
                 gate.validate_proof_summary(data, expected_case=other)
 
+    def test_live_ledger9_result_requires_v3_and_funded_transaction(self):
+        summary = completed()
+        summary.update(format=gate.V3_PROOF_RESULT_FORMAT, source_case="did/valid",
+                       timestamp_witness="200", transaction_proof_version=3,
+                       funded_dust_spends=1, transaction_proof_bytes=100)
+        gate.validate_proof_summary(summary, expected_case="did/valid", require_v3=True)
+        for field, value in [("format", gate.PROOF_RESULT_FORMAT),
+                             ("transaction_proof_version", 2),
+                             ("transaction_proof_version", 3.0),
+                             ("funded_dust_spends", True), ("transaction_proof_bytes", 0)]:
+            with self.subTest(field=field, value=value), self.assertRaises(gate.common.GateError):
+                gate.validate_proof_summary(dict(summary, **{field: value}),
+                                            expected_case="did/valid", require_v3=True)
+
     def test_historical_receipt_is_not_current_case_evidence(self):
         for case in gate.CASES:
             with self.subTest(case=case), self.assertRaises(gate.common.GateError):
@@ -95,6 +109,17 @@ class ProofReceiptTests(unittest.TestCase):
             data=completed(); data[field]=value
             with self.subTest(field=field), self.assertRaises(gate.common.GateError):
                 gate.validate_proof_summary(data)
+
+    def test_ledger9_proof_refuses_external_prover_before_generation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "gate"
+            args = SimpleNamespace(output=output)
+            with patch.dict(gate.os.environ, {"MIDNIGHT_PROOF_SERVER": "http://localhost:9"}), patch.object(
+                    gate, "require_clean_source"), patch.object(gate.common, "run") as execute:
+                self.assertEqual(gate.run(args), 1)
+                execute.assert_not_called()
+            self.assertEqual(gate.json.loads((output / "receipt.json").read_text())["error"],
+                             "DID proof gate requires local proving")
 
     def test_both_gate_entries_refuse_dirty_source_before_generation(self):
         import check_did_functional_lifecycle as api

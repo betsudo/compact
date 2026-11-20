@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "issue": 729,
+  "baseline_commit": "55789242e1b513fe45c318c8626ee15dc9b56737",
+  "scope": "Three historical traversal patterns ignore the new Keccak encoding field. The complete predecessor sources remain byte-reconstructible.",
+  "predecessor_manifest": {
+    "path": "fold-expression-enum-661.json",
+    "sha256": "fcb487313efc00ce6931ba0e57c41daf63f56f6060a01de916ff1a5a558e8b15"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "previous_sha256": "b5948c1c427a8f9b3c0d35e1c814aa2532ff1328ca943f0d66c67ee99028a4e9",
+      "current_sha256": "ecb2be8c0db117ee3047a86b07f058bbab1e015361524f07dfaa60f1a79c0949",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Keccak256 { value, .. }\n",
+          "previous": "        | Expr::Keccak256 { value }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "previous_sha256": "127e8328040e711a4ddda81565ff73b321224dec26e0b3ef5916405db384b613",
+      "current_sha256": "ca9b77aabba38248b075c217c2e9ea85d3ee0ee80d9ad94da5792d356e8746a7",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Keccak256 { value, .. }\n",
+          "previous": "        | Expr::Keccak256 { value }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "previous_sha256": "933f8774dd847c56335dc250be141d6bba57fc837529c1febdb78d3de01c6b0f",
+      "current_sha256": "0ec00994c74fd44ed9b361e7f75e988b2146cdcffa6e3f75709566449b555ac6",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Keccak256 { value, .. }\n",
+          "previous": "        | Expr::Keccak256 { value }\n"
+        }
+      ]
+    }
+  }
+}

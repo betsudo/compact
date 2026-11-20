@@ -13,17 +13,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Source-bound Map count before and after mutation through the ordinary prover.
+//! Source-bound Map count before and after mutation with Ledger 9 v3 proofs.
+use super::local_v3_application::{self as v3, write_new};
 use super::*;
 use compact_rust_map_size_expression_source_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
 };
 use midnight_compact_runtime::{self as r, BoundedUint, Field};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 
 const IR: &str =
     include_str!("../../../tests-rust-backend/map-size-expression-source/original-ir.json");
 const NAME: &str = "put";
+macro_rules! linked_program {
+    ($index:literal) => {
+        include_bytes!(concat!(
+            "../../../tests-rust-backend/map-size-expression-source/checked-programs/program-",
+            stringify!($index),
+            ".json"
+        ))
+    };
+}
+const PROGRAMS: [&[u8]; 8] = [
+    linked_program!(0),
+    linked_program!(1),
+    linked_program!(2),
+    linked_program!(3),
+    linked_program!(4),
+    linked_program!(5),
+    linked_program!(6),
+    linked_program!(7),
+];
 type Count = BoundedUint<{ u64::MAX as u128 }>;
 fn count(value: u64) -> Count {
     Count::new(value as u128).unwrap()
@@ -40,13 +61,21 @@ impl c::TryWitnesses<u64> for UnusedWitness {
     }
 }
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err(
+            "Ledger 9 Map proof requires local proving without MIDNIGHT_PROOF_SERVER".into(),
+        );
+    }
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         IR,
     )?;
+    v3::validate_programs(root, &PROGRAMS)?;
     if root.join("map-size-proof-result.json").exists() {
         return Err("Map size proof result already exists".into());
     }
+    let (ir, verifier, operation) = v3::operation(root, NAME, 7)?;
+    let entry = EntryPointBuf(NAME.as_bytes().to_vec());
     let mut rows = Vec::new();
     for (index, key_id) in [1_u64, 2].into_iter().enumerate() {
         let key = Field::from(key_id);
@@ -58,7 +87,12 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         };
         let mut rng = StdRng::seed_from_u64(0x0610_0000 + index as u64);
         let initial = c::initial_state(ConstructorContext::new(7_u64))?;
-        let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+        let contract = ContractState::new(
+            initial.ledger_state.get_ref().clone(),
+            HashMap::new().insert(entry.clone(), operation.clone()),
+            ContractMaintenanceAuthority::default(),
+        );
+        let deploy = ContractDeploy::new(&mut rng, contract);
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -106,25 +140,34 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             return Err("Map mutation state or recording differs".into());
         }
         let expected_state = native.context.query.state.get_ref().clone();
-        let prepared = check_generated_trace(root, NAME, functional, (key, value))?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/put.verifier"),
-        )?))?;
+        let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+        let prepared = r::transaction::RecordedCall::new(&observed, functional, NAME, (key, value))
+            .prepare(verifier.clone(), randomness)?;
         let facade = c::Contract::from(UnusedWitness);
         let ordinary = facade
             .recording()
             .put_call(&observed, 7, key, value)?
-            .prepare(verifier.clone(), Fr::from(0_u64))?;
+            .prepare(verifier.clone(), randomness)?;
         if format!("{prepared:?}") != format!("{ordinary:?}") {
             return Err("functional Map preparation differs from ordinary observed call".into());
         }
-        let proof_bytes = prove(root, index, &prepared, &verifier)?;
-        apply(root, index, prepared, deploy, &expected_state, rng)?;
-        rows.push(serde_json::json!({"key":key_id,"before":1,"after":key_id,"proof_bytes":proof_bytes,
+        let proof = prove(root, index, &prepared, &verifier, &ir)?;
+        let transaction_proof_bytes = v3::apply(
+            root,
+            NAME,
+            &format!("map-size-{index}"),
+            prepared,
+            deploy,
+            &expected_state,
+            &proof,
+        )?;
+        rows.push(serde_json::json!({"key":key_id,"before":1,"after":key_id,"proof_bytes":proof.0.len(),
+            "transaction_proof_bytes":transaction_proof_bytes,"transaction_proof_version":3,
+            "transaction_proof_distinct":true,"positive_fee_dust_spends":1,
             "changed_binding_rejected":true,"changed_result_rejected":true,"changed_result_same_geometry":true,
             "strict_application":"default","replay_refusal":"IntentAlreadyExists","replay_unchanged":true}));
     }
-    let result = serde_json::json!({"format":"compact-map-size-expression-proof/v1","status":"passed",
+    let result = serde_json::json!({"format":"compact-map-size-expression-proof/v2","status":"passed",
         "scope":"two fresh scalar-Map read/mutate/count functional-derived call proofs and funded default-strict local transactions",
         "constructor_execution_proved":false,"nested_adt_proved":false,"calls":rows});
     write_new(
@@ -134,13 +177,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     println!("{result}");
     Ok(())
 }
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
+
+pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
+    let verifier = v3::read_verifier(root, NAME)?;
+    for index in 0..2 {
+        v3::verify_standalone(root, &format!("map-size-{index}"), &verifier)?;
+        println!("Map size {index}: separate v3 verification passed; corrupt proof refused");
+    }
+    Ok(())
 }
 
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
@@ -155,23 +199,21 @@ fn prove(
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected map-size proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("zkir/put.bzkir"),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join("keys/put.prover"),
     )?))?;
-    let checked = preimage.check(&ir)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
+    let checked = preimage.check(ir)?;
+    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -230,99 +272,21 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed map-size proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("map-size IR accepted changed result".into());
     }
     write_new(root.join(format!("map-size-{index}.proof")), &proof.0)?;
     let mut bytes = Vec::new();
     tagged_serialize(preimage.as_ref(), &mut bytes)?;
     write_new(root.join(format!("map-size-{index}.preimage")), &bytes)?;
+    bytes.clear();
+    tagged_serialize(&inputs, &mut bytes)?;
+    write_new(root.join(format!("map-size-{index}.inputs")), &bytes)?;
     println!(
         "map-size {index}: {}-byte proof verified; changed binding/result refused",
         proof.0.len()
     );
-    Ok(proof.0.len())
-}
-
-fn apply(
-    root: &Path,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<(), Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0610_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0610_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    write_new(
-        root.join(format!("map-size-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("map-size strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("map-size contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("map-size applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(
-            format!("map-size replay refused incorrectly or mutated ledger: {result:?}").into(),
-        );
-    }
-    let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
-    write_new(root.join(format!("map-size-{index}-state.bin")), &bytes)?;
-    println!("map-size {index}: funded default-strict apply; replay refused without mutation");
-    Ok(())
+    Ok(proof)
 }
 
 #[cfg(test)]

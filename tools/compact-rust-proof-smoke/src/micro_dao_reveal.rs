@@ -13,10 +13,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //! Original source reveal from explicit prior-state fixtures, not funded setup.
+use super::local_v3_application as v3;
 use super::micro_dao_reveal_support as support;
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_test_center_micro_dao_fixture::{ledger_contract as c, ledger_slots as slots};
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    super::micro_dao_token::validate_artifacts(root, "vote_reveal")?;
     for (i, (ballot, round)) in [(true, 0u64), (false, 7u64)].into_iter().enumerate() {
         let seeded = support::seeded(round, ballot, Some(round))?;
         let private = seeded.private_state.clone();
@@ -56,9 +59,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         let expected = native.context.query.state.get_ref().clone();
         let manual = check_generated_trace(root, "vote_reveal", recorded, ())?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join("keys/vote_reveal.verifier"),
-        )?))?;
+        let verifier = v3::read_verifier(root, "vote_reveal")?;
         let generated = c::Contract::from(support::Witness::new(round, support::Mode::Normal));
         let prepared = generated
             .recording()
@@ -96,7 +97,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             Ok(())
         })?;
         println!(
-            "original microDAO.vote_reveal ballot={ballot} round={round} proved, verified and ledger-applied; applied-state duplicate rejected; prior-state fixture and shared unbalanced smoke policy, no funded setup claim"
+            "original microDAO.vote_reveal ballot={ballot} round={round} preserved tally and round from an explicit prior state; applied-state duplicate rejected"
         );
     }
     Ok(())

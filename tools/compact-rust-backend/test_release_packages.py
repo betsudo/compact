@@ -24,6 +24,7 @@ from pathlib import Path
 import shutil
 import tarfile
 import tempfile
+import tomllib
 import unittest
 from unittest.mock import patch
 
@@ -53,6 +54,13 @@ class ReleaseInspectionTests(unittest.TestCase):
         context.start()
         self.addCleanup(context.stop)
 
+    def test_archive_rehearsal_uses_validated_source_selectors(self):
+        compatibility = release.compatibility_record()
+        rendered = tomllib.loads(release.archive_source_patches(compatibility))
+        self.assertEqual(rendered["patch"]["crates-io"], compatibility["ledger_git_sources"])
+        self.assertIn("midnight-curves", rendered["patch"]["crates-io"])
+        self.assertEqual(rendered["patch"]["crates-io"]["midnight-zkir-v3"]["package"], "midnight-zkir")
+
     def archive(self, dependency="=0.2.0", record=True):
         name = "midnight-compact-runtime"
         path = self.packages / f"{name}-0.2.0.crate"
@@ -71,7 +79,7 @@ class ReleaseInspectionTests(unittest.TestCase):
         return path
 
     def test_current_pair_and_external_target_archive(self):
-        self.assertEqual(release.compatibility_record()["runtime_abi"], 53)
+        self.assertEqual(release.compatibility_record()["runtime_abi"], 54)
         path = self.archive()
         receipt = release.inspect_package("midnight-compact-runtime")
         self.assertEqual(receipt["archive"], str(path))
@@ -99,30 +107,50 @@ class ReleaseInspectionTests(unittest.TestCase):
 
     def test_stale_source_record_refused(self):
         path = self.root / "runtime-rs/compatibility.json"
-        path.write_text(path.read_text().replace('"runtime_abi": 53', '"runtime_abi": 49'))
+        record = json.loads(path.read_text())
+        record["runtime_abi"] -= 1
+        path.write_text(json.dumps(record))
         with self.assertRaisesRegex(RuntimeError, "differs from compiler"):
             release.compatibility_record()
 
     def test_mixed_manifest_graph_refused(self):
         path = self.root / "runtime-rs/Cargo.toml"
-        path.write_text(path.read_text().replace('midnight-onchain-vm = { version = "=3.1.2"', 'midnight-onchain-vm = { version = "=4.0.0"'))
+        original = path.read_text()
+        declaration = 'midnight-onchain-vm = { version = "=4.0.1"'
+        self.assertIn(declaration, original)
+        path.write_text(original.replace(declaration, declaration.replace("4.0.1", "4.0.0")))
         with self.assertRaisesRegex(RuntimeError, "midnight-onchain-vm"):
             release.compatibility_record()
 
-    def test_alternate_git_source_cannot_hide_behind_equal_versions(self):
+    def test_alternate_source_cannot_hide_behind_equal_versions(self):
         path = self.root / "runtime-rs/Cargo.toml"
         original = path.read_text()
-        for before, after in (
-            ('b5d3e965a18e4cac17fac4f38446fc55c524439a', '0' * 40),
-            ('https://github.com/midnightntwrk/midnight-ledger', 'https://invalid.example/ledger'),
-            ('rev = "b5d3e965a18e4cac17fac4f38446fc55c524439a"', 'branch = "ledger-8"'),
+        declaration = (
+            'midnight-onchain-vm = { version = "=4.0.1", '
+            'git = "https://github.com/betsudo/midnight-ledger", '
+            'rev = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6" }'
+        )
+        self.assertIn(declaration, original)
+        for changed in (
+            declaration.replace("betsudo/midnight-ledger", "invalid/example"),
+            declaration.replace("6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6", "0" * 40),
+            declaration[:-2] + ', branch = "ledger-9" }',
+            declaration[:-2] + ', registry = "unselected" }',
         ):
-            with self.subTest(after=after):
-                self.assertIn(before, original)
-                path.write_text(original.replace(before, after))
-                with self.assertRaisesRegex(RuntimeError, "dependency mismatch"):
+            with self.subTest(declaration=changed):
+                path.write_text(original.replace(declaration, changed))
+                with self.assertRaisesRegex(RuntimeError, "dependency mismatch: midnight-onchain-vm"):
                     release.compatibility_record()
         path.write_text(original)
+
+    def test_runtime_source_patch_version_must_match_declared_dependency(self):
+        for relative in ("runtime-rs/compatibility.json", "tools/compact-rust-backend/src/compatibility.json"):
+            path = self.root / relative
+            record = json.loads(path.read_text())
+            record["ledger_git_sources"]["midnight-transient-crypto"]["version"] = "=3.0.1"
+            path.write_text(json.dumps(record))
+        with self.assertRaisesRegex(RuntimeError, "dependency mismatch: midnight-transient-crypto"):
+            release.compatibility_record()
 
     def test_missing_packaged_record_refused(self):
         self.archive(record=False)

@@ -46,7 +46,7 @@ use compact_rust_backend::{
 use serde_json::Value;
 use toml_edit::{Array, DocumentMut, InlineTable, Item, Table, Value as TomlValue, value};
 
-const TARGET_HELP: &str = "\n  --target <ts|rust> selects contract code. Repeat to emit both.\n    With no --target, TypeScript remains the default. Rust emits a standalone\n    contract/Cargo.toml, source, capability report, and matching runtime crates.\n    ZKIR and keys are independent.\n  --rust-require-recording rejects proof-required exported circuits without both\n    replayable recording and typed observed-call APIs.\n  --rust-runtime-root <path> uses one shared runtime source root for generated\n    Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.\n  --rust-runtime-registry pins the compiler's matching runtime package version\n    without copying runtime sources. That version must be published to build.\n";
+const TARGET_HELP: &str = "\n  --target <ts|rust> selects contract code. Repeat to emit both.\n    With no --target, TypeScript remains the default. Rust emits a standalone\n    contract/Cargo.toml, source, capability report, and matching runtime crates.\n    ZKIR and keys are independent.\n  --rust-functional-ledger9 also emits checked functional programs for the source runtime.\n  --rust-require-recording rejects proof-required exported circuits without both\n    replayable recording and typed observed-call APIs.\n  --rust-runtime-root <path> uses one shared runtime source root for generated\n    Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.\n";
 
 #[derive(Default)]
 struct Targets {
@@ -56,7 +56,7 @@ struct Targets {
     runtime_root: Option<PathBuf>,
     runtime_registry: bool,
     require_recording: bool,
-    functional_ledger8: bool,
+    functional_ledger9: bool,
     provenance_warn: bool,
     provenance_acknowledgements: Option<PathBuf>,
 }
@@ -117,17 +117,22 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
             continue;
         }
         if argument == "--rust-functional-ledger8" {
-            if targets.functional_ledger8 {
-                return Err("--rust-functional-ledger8 may be given only once".into());
+            return Err(
+                "--rust-functional-ledger8 requires the Ledger 8 compiler and runtime".into(),
+            );
+        }
+        if argument == "--rust-functional-ledger9" {
+            if targets.functional_ledger9 {
+                return Err("--rust-functional-ledger9 may be given only once".into());
             }
-            targets.functional_ledger8 = true;
+            targets.functional_ledger9 = true;
             continue;
         }
         if argument
             .to_str()
-            .is_some_and(|arg| arg.starts_with("--rust-functional-ledger8="))
+            .is_some_and(|arg| arg.starts_with("--rust-functional-ledger9="))
         {
-            return Err("--rust-functional-ledger8 takes no value".into());
+            return Err("--rust-functional-ledger9 takes no value".into());
         }
         if argument == "--rust" {
             legacy_rust = true;
@@ -234,8 +239,8 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     if targets.require_recording && !targets.rust {
         return Err("--rust-require-recording requires --target rust".into());
     }
-    if targets.functional_ledger8 && !targets.rust {
-        return Err("--rust-functional-ledger8 requires --target rust".into());
+    if targets.functional_ledger9 && !targets.rust {
+        return Err("--rust-functional-ledger9 requires --target rust".into());
     }
     if targets.provenance_warn && !targets.rust {
         return Err("--rust-transient-provenance requires --target rust".into());
@@ -243,9 +248,9 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     if targets.provenance_acknowledgements.is_some() && !targets.provenance_warn {
         return Err("--rust-transient-provenance-acknowledgements requires --rust-transient-provenance=warn".into());
     }
-    if targets.functional_ledger8 && targets.runtime_registry {
+    if targets.functional_ledger9 && targets.runtime_registry {
         return Err(
-            "--rust-functional-ledger8 requires a source runtime with the experimental feature"
+            "--rust-functional-ledger9 requires a source runtime with the experimental feature"
                 .into(),
         );
     }
@@ -345,6 +350,26 @@ fn crate_manifest(source: &Path, runtime: RuntimeDependency<'_>) -> Result<Strin
     transaction_feature.push("midnight-compact-runtime/ledger-transaction");
     features["ledger-transaction"] = Item::Value(TomlValue::Array(transaction_feature));
     document["features"] = Item::Table(features);
+
+    let sources = compatibility::required().ledger_git_sources;
+    if !sources.is_empty() {
+        let mut crates_io = Table::new();
+        for (package, source) in sources {
+            let mut patch = InlineTable::new();
+            patch.insert("git", TomlValue::from(source.git));
+            patch.insert("rev", TomlValue::from(source.rev));
+            if let Some(package) = source.package {
+                patch.insert("package", TomlValue::from(package));
+            }
+            if let Some(version) = source.version {
+                patch.insert("version", TomlValue::from(version));
+            }
+            crates_io[&package] = Item::Value(TomlValue::InlineTable(patch));
+        }
+        let mut patches = Table::new();
+        patches["crates-io"] = Item::Table(crates_io);
+        document["patch"] = Item::Table(patches);
+    }
     Ok(document.to_string())
 }
 
@@ -489,6 +514,9 @@ fn write_functional_assets(
 
 fn run() -> Result<i32, Box<dyn Error>> {
     let (targets, mut args) = select_targets(env::args_os().skip(1).collect())?;
+    if targets.rust && !args.iter().any(|arg| arg == "--feature-zkir-v3") {
+        args.insert(0, "--feature-zkir-v3".into());
+    }
     let compiler = scheme_compiler()?;
     let first_query = args.iter().find(|arg| {
         *arg == "--help"
@@ -507,9 +535,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
         io::Write::write_all(&mut io::stderr(), &output.stderr)?;
         if output.status.success() {
             print!("{TARGET_HELP}");
-            println!(
-                "  --rust-functional-ledger8 adds experimental immutable checked programs.\n    Requires --target rust and a source runtime; unsupported effects are refused."
-            );
+            println!("  The Ledger 9 Rust target uses ZKIR v3 and a source runtime.");
             println!(
                 "  --rust-transient-provenance=warn emits bounded advisory warnings for\n    known transient hash/commit flows into persistent hash/commit sinks.\n    An absence of warnings does not certify stability.\n  --rust-transient-provenance-acknowledgements <json> marks exact routes\n    acknowledged; requires --rust-transient-provenance=warn."
             );
@@ -539,20 +565,30 @@ fn run() -> Result<i32, Box<dyn Error>> {
     // Fail before staging or frontend execution. An explicitly selected invalid
     // root is never replaced with installed or checkout sources.
     let selected = compatibility::validate_root(&selected_root)?;
+    if targets.runtime_registry {
+        return Err("the Ledger 9 Rust runtime requires a source root or bundled sources".into());
+    }
     let shared_runtime = selected.runtime_path();
     let source = PathBuf::from(args[args.len() - 2].clone());
     let output = PathBuf::from(args[args.len() - 1].clone());
     let staging = StagedOutput::new(&output)?;
     // The invocation owns an exclusive child inside our existing locked stage.
     args.truncate(args.len() - 2);
+    // Resolve sibling contracts beside the requested output directory.
+    let dependency_directory = StagedOutput::output_parent(&output);
     if !targets.ts {
         args.push(OsString::from("--skip-ts"));
     }
-    let artifacts = match ConfiguredFrontend::new(compiler.as_os_str()).invoke(FrontendRequest {
-        source: source.clone(),
-        arguments: args,
-        stage_parent: staging.path().to_path_buf(),
-    }) {
+    let artifacts = match ConfiguredFrontend::new(compiler.as_os_str())
+        .with_environment(
+            "COMPACT_INTERNAL_CONTRACT_DEPENDENCY_DIRECTORY",
+            dependency_directory.as_os_str(),
+        )
+        .invoke(FrontendRequest {
+            source: source.clone(),
+            arguments: args,
+            stage_parent: staging.path().to_path_buf(),
+        }) {
         Ok(artifacts) => artifacts,
         Err(FrontendError::ProcessExit { code }) => return Ok(code.unwrap_or(1)),
         Err(error) => return Err(error.into()),
@@ -576,9 +612,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
         // Keep the existing public recording predicate and error formatting below.
         require_recording: false,
     };
-    let issued = if targets.functional_ledger8 {
+    let issued = if targets.functional_ledger9 {
         artifacts
-            .render_functional_ledger8(options)
+            .render_functional_ledger9(options)
             .map_err(|error| Box::new(error) as Box<dyn Error>)
     } else {
         artifacts
@@ -692,7 +728,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
         serde_json::to_vec_pretty(&metadata)?,
     )?;
     let mut manifest = crate_manifest(&source, runtime)?;
-    if targets.functional_ledger8 {
+    if targets.functional_ledger9 {
         let mut document = manifest.parse::<DocumentMut>()?;
         let mut features = Array::new();
         features.push("experimental-functional");
@@ -1224,6 +1260,26 @@ mod tests {
             document["lints"]["clippy"]["bool_comparison"].as_str(),
             Some("allow")
         );
+        let sources = compact_rust_backend::compatibility::required().ledger_git_sources;
+        for (package, source) in sources {
+            let patch = &document["patch"]["crates-io"][&package];
+            assert_eq!(
+                patch.get("git").and_then(toml_edit::Item::as_str),
+                Some(source.git.as_str())
+            );
+            assert_eq!(
+                patch.get("rev").and_then(toml_edit::Item::as_str),
+                Some(source.rev.as_str())
+            );
+            assert_eq!(
+                patch.get("package").and_then(toml_edit::Item::as_str),
+                source.package.as_deref()
+            );
+            assert_eq!(
+                patch.get("version").and_then(toml_edit::Item::as_str),
+                source.version.as_deref()
+            );
+        }
     }
 
     #[test]
@@ -1235,39 +1291,43 @@ mod tests {
     }
 
     #[test]
-    fn functional_ledger8_is_explicit_and_requires_source_runtime() {
+    fn functional_ledger9_is_explicit_and_requires_source_runtime() {
         let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
         let (targets, forwarded) = parse(&[
             "--target=rust",
-            "--rust-functional-ledger8",
+            "--rust-functional-ledger9",
             "in.compact",
             "out",
         ])
         .unwrap();
-        assert!(targets.functional_ledger8);
+        assert!(targets.functional_ledger9);
         assert!(
             !forwarded
                 .iter()
-                .any(|arg| arg == "--rust-functional-ledger8")
+                .any(|arg| arg == "--rust-functional-ledger9")
         );
         for (args, expected) in [
-            (vec!["--rust-functional-ledger8"], "requires --target rust"),
             (
-                vec!["--target=rust", "--rust-functional-ledger8=true"],
+                vec!["--target=rust", "--rust-functional-ledger8"],
+                "requires the Ledger 8 compiler and runtime",
+            ),
+            (vec!["--rust-functional-ledger9"], "requires --target rust"),
+            (
+                vec!["--target=rust", "--rust-functional-ledger9=true"],
                 "takes no value",
             ),
             (
                 vec![
                     "--target=rust",
-                    "--rust-functional-ledger8",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
+                    "--rust-functional-ledger9",
                 ],
                 "only once",
             ),
             (
                 vec![
                     "--target=rust",
-                    "--rust-functional-ledger8",
+                    "--rust-functional-ledger9",
                     "--rust-runtime-registry",
                 ],
                 "source runtime",
@@ -1275,6 +1335,6 @@ mod tests {
         ] {
             assert!(matches!(parse(&args), Err(message) if message.contains(expected)));
         }
-        assert!(!parse(&["--target=rust"]).unwrap().0.functional_ledger8);
+        assert!(!parse(&["--target=rust"]).unwrap().0.functional_ledger9);
     }
 }

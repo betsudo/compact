@@ -31,7 +31,7 @@ use runtime::ledger::{ContractAddress, DefaultDB, StateValue};
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"recordArea".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -85,7 +85,7 @@ fn normalized_ops(mut value: serde_json::Value) -> serde_json::Value {
 #[test]
 fn exact_widening_arithmetic_oracle_matches_typescript_boundaries() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/widening-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-widening-arith-oracle.json"
     ))
     .unwrap();
     let byte = runtime::BoundedUint::<255>::new(255).unwrap();
@@ -145,7 +145,7 @@ fn exact_widening_arithmetic_oracle_matches_typescript_boundaries() {
 #[test]
 fn recorded_unsigned_pure_call_preserves_counter_trace_and_gas() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/widening-arith-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-widening-arith-oracle.json"
     ))
     .unwrap();
     let mut native_context = initial_state(ConstructorContext::new(()))

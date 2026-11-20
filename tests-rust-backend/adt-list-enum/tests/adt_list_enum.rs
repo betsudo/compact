@@ -26,7 +26,7 @@ use runtime::ledger::{ContractAddress, DefaultDB, StateValue};
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations = HashMap::new().insert(
         EntryPointBuf(b"test".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
     let mut bytes = Vec::new();
@@ -84,7 +84,7 @@ fn shape(operations: &impl serde::Serialize) -> serde_json::Value {
 #[test]
 fn list_enum_recording_matches_typescript_and_replays() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/adt-list-enum.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-adt-list-enum.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(())).unwrap();

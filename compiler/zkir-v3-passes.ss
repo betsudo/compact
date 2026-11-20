@@ -77,21 +77,104 @@
                   (cons (make-private-input var-name primitive-type) instr*)))
               instr* var-name* primitive-type*))))
 
+      ;; Compact's field representation puts the high byte before the low
+      ;; 31 bytes. The ZKIR split instruction returns the low limb first.
+      (define (emit-persistent-hash src high low alignment* input* instr*)
+        (let-values ([(alignment* input* instr*) (ledger-alignment src alignment* input* instr*)])
+          (let ([bytes (make-temp-id src 'hash-bytes)])
+            (with-output-language (Lzkir Instruction)
+              (cons*
+                `(bytes32_into_low_high ,low ,high ,bytes)
+                `(persistent_hash ,bytes (,alignment* ...) ,input* ...)
+                instr*)))))
+
+      (define jubjub-scalar-order
+        #x0e7db4ea6533afa906673b0101343b00a6682093ccc81082d0970e5ed6f72cb7)
+
+      (define (emit-canonical-jubjub-scalar src test scalar native instr*)
+        (with-output-language (Lzkir Instruction)
+          ;; The conversion reduces modulo the scalar order. Require a canonical
+          ;; operand for multiplication. A guarded-off call uses zero without
+          ;; constraining the original operand.
+          (let ([canonical (make-temp-id src 'canonical-scalar)])
+            (let-values ([(native instr*)
+                          (if (eq? test 1)
+                              (values native instr*)
+                              (let ([active (make-temp-id src 'active-scalar)])
+                                (values active
+                                  (cons `(cond_select ,active ,test ,native 0) instr*))))])
+              (cons*
+                `(jubjub_scalar_from_native ,scalar ,native)
+                `(assert ,canonical)
+                `(less_than ,canonical ,native ,jubjub-scalar-order ,(integer-length jubjub-scalar-order))
+                instr*)))))
+
+      (define (emit-point-coordinate src test base-type point x y instr*)
+        (with-output-language (Lzkir Instruction)
+          (if (eqv? test 1)
+              (cons `(into_coordinates ,x ,y ,point) instr*)
+              (let*-values ([(generator-x generator-y)
+                             (case base-type
+                               [("Base<Secp256k1>")
+                                (values #x79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798
+                                        #x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8)]
+                               [("Base<Secp256r1>")
+                                (values #x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296
+                                        #x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5)]
+                               [else (assert cannot-happen)])]
+                            [(x-high x-low) (div-and-mod generator-x (expt 2 248))]
+                            [(y-high y-low) (div-and-mod generator-y (expt 2 248))])
+                (let ([x-bytes (make-temp-id src 'generator-x-bytes)]
+                      [y-bytes (make-temp-id src 'generator-y-bytes)]
+                      [gx (make-temp-id src 'generator-x)]
+                      [gy (make-temp-id src 'generator-y)]
+                      [generator (make-temp-id src 'generator)]
+                      [active (make-temp-id src 'active-coordinate-input)])
+                  ;; Coordinate extraction is eager. On an inactive branch use the
+                  ;; fixed, finite generator of the same curve in place of the actual point.
+                  (cons*
+                    `(into_coordinates ,x ,y ,active)
+                    `(cond_select ,active ,test ,point ,generator)
+                    `(from_coordinates ,generator ,gx ,gy)
+                    `(from_bytes ,base-type ,gy ,y-bytes)
+                    `(bytes_from_natives ,y-bytes 32 ,y-low ,y-high)
+                    `(from_bytes ,base-type ,gx ,x-bytes)
+                    `(bytes_from_natives ,x-bytes 32 ,x-low ,x-high)
+                    instr*))))))
+
       (define (make-native name arg*)
         ;; Get the list of alignment atoms for a 0-based arg index.
         (define (arg->alignment arg* index)
           (nanopass-case (Lflattened Argument) (list-ref arg* index)
             [(argument (,var-name ...) (ty (,alignment* ...) (,primitive-type* ...)))
              alignment*]))
+        (define (emit-inverse src test outp inp instr*)
+          (with-output-language (Lzkir Instruction)
+            (if (eqv? test 1)
+                (cons `(inv ,outp ,inp) instr*)
+                (let ([field-type
+                       (nanopass-case (Lflattened Argument) (car arg*)
+                         [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type)))
+                          (type->string primitive-type)])]
+                      [one-bytes (make-temp-id src 'one-bytes)]
+                      [one (make-temp-id src 'one)]
+                      [active (make-temp-id src 'active-inverse-input)])
+                  ;; The VM evaluates inv eagerly. Only an active zero is an error.
+                  (cons*
+                    `(inv ,outp ,active)
+                    `(cond_select ,active ,test ,inp ,one)
+                    `(from_bytes ,field-type ,one ,one-bytes)
+                    `(to_bytes ,one-bytes 1)
+                    instr*)))))
         (lambda (var-name* src test triv* instr*)
           (with-output-language (Lzkir Instruction)
             ;; Generally assume that the arity is correct here.
             (case name
               [(constructJubjubPoint)
-               (cons `(decode "Point<Jubjub>" ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+               (cons `(from_coordinates ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(degradeToTransient)
                (cons `(copy ,(car var-name*) ,(cadr triv*)) instr*)]
-              [(ecAdd)
+              [(ecAdd secp256k1Add secp256r1Add curve25519Add)
                (assert (= (length var-name*) 1))
                (cons `(add ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
               [(ecNeg)
@@ -100,34 +183,77 @@
                      [tmp-y (make-temp-id src 'y)]
                      [tmp-neg-x (make-temp-id src 'neg)])
                  (cons*
-                   `(decode "Point<Jubjub>" ,(car var-name*) ,tmp-neg-x ,tmp-y)
+                   `(from_coordinates ,(car var-name*) ,tmp-neg-x ,tmp-y)
                    `(neg ,tmp-neg-x ,tmp-x)
-                   `(encode ,tmp-x ,tmp-y ,(car triv*))
+                   `(encode (,tmp-x ,tmp-y) ,(car triv*))
                    instr*))]
               [(ecMul)
                (assert (= (length var-name*) 1))
-               (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons `(ec_mul ,(car var-name*) ,(car triv*) ,scalar)
+                   (emit-canonical-jubjub-scalar src test scalar (cadr triv*) instr*)))]
               [(ecMulGenerator)
                (assert (= (length var-name*) 1))
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons `(ec_mul_generator ,(car var-name*) ,scalar)
+                   (emit-canonical-jubjub-scalar src test scalar (car triv*) instr*)))]
+              [(ecMulJubjubScalar secp256k1Mul secp256r1Mul curve25519Mul)
+               (cons `(ec_mul ,(car var-name*) ,(car triv*) ,(cadr triv*)) instr*)]
+              [(ecMulGeneratorJubjubScalar secp256k1MulGenerator secp256r1MulGenerator curve25519MulGenerator)
                (cons `(ec_mul_generator ,(car var-name*) ,(car triv*)) instr*)]
               [(jubjubScalarFromNative)
                (assert (= (length var-name*) 1))
-               (cons `(decode "Scalar<Jubjub>" ,(car var-name*) ,(car triv*)) instr*)]
+               ;; The Compact reduction returns a Field.
+               (let ([scalar (make-temp-id src 'scalar)])
+                 (cons*
+                   `(encode (,(car var-name*)) ,scalar)
+                   `(jubjub_scalar_from_native ,scalar ,(car triv*))
+                   instr*))]
               [(hashToCurve)
                (assert (= (length var-name*) 1))
                (cons `(hash_to_curve ,(car var-name*) ,triv* ...) instr*)]
+              [(neg)
+               (cons `(neg ,(car var-name*) ,(car triv*)) instr*)]
+              [(inv)
+               (emit-inverse src test (car var-name*) (car triv*) instr*)]
+              [(curve25519PointX)
+               (let ([y (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,(car var-name*) ,y ,(car triv*)) instr*))]
+              [(secp256k1PointX secp256r1PointX)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointX) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (car var-name*) (make-temp-id src 'ignore) instr*)]
+              [(curve25519PointY)
+               (let ([x (make-temp-id src 'ignore)])
+                 (cons `(into_coordinates ,x ,(car var-name*) ,(car triv*)) instr*))]
+              [(secp256k1PointY secp256r1PointY)
+               (emit-point-coordinate src test
+                 (if (eq? name 'secp256k1PointY) "Base<Secp256k1>" "Base<Secp256r1>")
+                 (car triv*) (make-temp-id src 'ignore) (car var-name*) instr*)]
               [(jubjubPointX)
                (assert (= (length var-name*) 1))
-               (cons `(encode ,(car var-name*) ,(make-temp-id src 'ingore) ,(car triv*)) instr*)]
+               (cons `(encode (,(car var-name*) ,(make-temp-id src 'ingore)) ,(car triv*)) instr*)]
               [(jubjubPointY)
                (assert (= (length var-name*) 1))
-               (cons `(encode ,(make-temp-id src 'ignore) ,(car var-name*) ,(car triv*)) instr*)]
+               (cons `(encode (,(make-temp-id src 'ignore) ,(car var-name*)) ,(car triv*)) instr*)]
               [(keccak256)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)])
-                 (cons `(keccak256 ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,triv* ...)
-                   instr*))]
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes32_into_low_high ,(cadr var-name*) ,(car var-name*) ,bytes)
+                     `(keccak256 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
+              [(sha512)
+               (assert (= (length var-name*) 3))
+               (let-values ([(alignment* input* instr*)
+                             (ledger-alignment src (arg->alignment arg* 0) triv* instr*)])
+                 (let ([bytes (make-temp-id src 'hash-bytes)])
+                   (cons*
+                     `(bytes_into_natives (,(reverse var-name*) ...) ,bytes)
+                     `(sha512 ,bytes (,alignment* ...) ,input* ...)
+                     instr*)))]
               [(persistentCommit)
                (assert (= (length var-name*) 2))
                ;; The two source arguments are swapped for the persistent_hash gate.  We assume
@@ -136,15 +262,11 @@
                (let ([var* (syntax-case triv* ()
                              [(a ... b c) #'(b c a ...)])]
                      [alignment* (append (arg->alignment arg* 1) (arg->alignment arg* 0))])
-                 (cons `(persistent_hash ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,var* ...)
-                   instr*))]
+                 (emit-persistent-hash src (car var-name*) (cadr var-name*) alignment* var* instr*))]
               [(persistentHash)
                (assert (= (length var-name*) 2))
-               (let ([alignment* (arg->alignment arg* 0)])
-                 (cons `(persistent_hash ,(car var-name*) ,(cadr var-name*)
-                          (,alignment* ...) ,triv* ...)
-                   instr*))]
+               (emit-persistent-hash src (car var-name*) (cadr var-name*)
+                 (arg->alignment arg* 0) triv* instr*)]
               [(transientCommit)
                (assert (= (length var-name*) 1))
                ;; The last input needs to be moved first.
@@ -177,7 +299,21 @@
            (hashtable-set! callable-ht function-name
              (if (eq? (native-entry-class native-entry) 'witness)
                  (make-witness alignment* primitive-type*)
-                 (make-native (id-sym function-name) arg*)))]
+                 (make-native
+                   (case (native-entry-function native-entry)
+                     [("__compactRuntime.secp256k1Add") 'secp256k1Add]
+                     [("__compactRuntime.secp256r1Add") 'secp256r1Add]
+                     [("__compactRuntime.curve25519Add") 'curve25519Add]
+                     [("__compactRuntime.ecMulJubjubScalar") 'ecMulJubjubScalar]
+                     [("__compactRuntime.ecMulGeneratorJubjubScalar") 'ecMulGeneratorJubjubScalar]
+                     [("__compactRuntime.secp256k1Mul") 'secp256k1Mul]
+                     [("__compactRuntime.secp256r1Mul") 'secp256r1Mul]
+                     [("__compactRuntime.curve25519Mul") 'curve25519Mul]
+                     [("__compactRuntime.secp256k1MulGenerator") 'secp256k1MulGenerator]
+                     [("__compactRuntime.secp256r1MulGenerator") 'secp256r1MulGenerator]
+                     [("__compactRuntime.curve25519MulGenerator") 'curve25519MulGenerator]
+                     [else (id-sym function-name)])
+                   arg*)))]
           [else (void)]))
 
       ;; ==== Impact Assembler ====
@@ -196,13 +332,77 @@
 
       (define zkir-instr* (make-parameter '()))
 
-      (define (jubjub-point-alignment? alignment*)
-        (and (= (length alignment*) 1)
-             (nanopass-case (Lflattened Alignment) (car alignment*)
-               [(anative ,opaque-type)
-                (assert (string=? opaque-type "JubjubPoint"))
-                #t]
-               [else #f])))
+      (define (native-alignment? atom)
+        (nanopass-case (Lflattened Alignment) atom
+          [(anative ,opaque-type) #t]
+          [else #f]))
+
+      ;; A typed ZKIR operand may occupy multiple ledger alignment atoms.
+      ;; Walk them together so nested values retain their ledger encoding.
+      (define (ledger-alignment src alignment* input* instr*)
+        (define (input-count atom)
+          (nanopass-case (Lflattened Alignment) atom
+            [(abytes ,nat) (ceiling (/ nat (field-bytes)))]
+            [else 1]))
+        (cond
+          [(not (exists native-alignment? alignment*)) (values alignment* input* instr*)]
+          [(not (= (apply + (map input-count alignment*)) (length input*)))
+           (source-errorf src "cannot encode a native ledger value with this field alignment")]
+          [else
+           (let loop ([alignment* alignment*] [input* input*] [instr* instr*]
+                      [encoded-alignment* '()] [encoded-input* '()])
+             (if (null? alignment*)
+                 (values (reverse encoded-alignment*) (reverse encoded-input*) instr*)
+                 (let ([atom (car alignment*)])
+                   (nanopass-case (Lflattened Alignment) atom
+                     [(anative ,opaque-type)
+                      (guard (string=? opaque-type "JubjubScalar"))
+                      (let ([field (make-temp-id src 'scalar-field)])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons `(afield) encoded-alignment*))
+                          (cons field encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (guard (string=? opaque-type "Curve25519Point"))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 4))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (guard (foreign-point-base opaque-type))
+                      (let ([field* (maplr (lambda (ignored) (make-temp-id src 'pt)) (make-list 5))])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,field* ...) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) encoded-alignment*))
+                          (append (reverse field*) encoded-input*)))]
+                     [(anative ,opaque-type)
+                      (let* ([prefix (if (string=? opaque-type "JubjubPoint") 'pt 'limb)]
+                             [low (make-temp-id src prefix)]
+                             [high (make-temp-id src prefix)])
+                        (loop (cdr alignment*) (cdr input*)
+                          (with-output-language (Lzkir Instruction)
+                            (cons `(encode (,low ,high) ,(car input*)) instr*))
+                          (with-output-language (Lflattened Alignment)
+                            (case opaque-type
+                              [("JubjubPoint") (cons* `(afield) `(afield) encoded-alignment*)]
+                              [("Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base")
+                               (cons* `(abytes 8) `(abytes 24) encoded-alignment*)]
+                              [("Curve25519Scalar")
+                               (cons* `(abytes 7) `(abytes 26) encoded-alignment*)]
+                              [else (assert cannot-happen)]))
+                          (cons* high low encoded-input*)))]
+                     [else
+                      (let ([count (input-count atom)])
+                        (loop (cdr alignment*) (list-tail input* count) instr*
+                          (cons atom encoded-alignment*)
+                          (append (reverse (list-head input* count)) encoded-input*)))]))))]))
 
       ;; Encode a VM operand, collecting codes in reverse.
       (define (assemble-operand-acc code* rand)
@@ -224,22 +424,64 @@
           (with-output-language (Lzkir Instruction)
             (let ([hash0 (make-temp-id default-src 'hash)]
                   [hash1 (make-temp-id default-src 'hash)])
-              (zkir-instr*
-                (cons `(persistent_hash ,hash0 ,hash1 (,alignment* ...) ,var* ...)
-                  (zkir-instr*)))
+              (let-values ([(alignment* var* instr*)
+                            (ledger-alignment default-src alignment* var* (zkir-instr*))])
+                (zkir-instr*
+                  (emit-persistent-hash default-src hash0 hash1 alignment* var* instr*)))
               ;; Note that the operand encoding (1 32 hash0 hash1) is reversed.
               (cons* hash1 hash0 32 1 code*))))
-        ;; The number of zeros and alignment for the default value of an Lflattened type.
+        ;; Encode a Compact default in the same layout as a ledger operand.
         (define (default-for type)
           (nanopass-case (Lflattened Type) type
             [(ty (,alignment* ...) (,primitive-type* ...))
-             (let ([count (fold-left
-                            (lambda (count atom)
-                              (nanopass-case (Lflattened Alignment) atom
-                                [(abytes ,nat) (+ count (ceiling (/ nat (field-bytes))))]
-                                [else (1+ count)]))
-                            0 alignment*)])
-               (values count alignment*))]))
+             (let loop ([atom* alignment*] [alignment* '()] [input* '()])
+               (if (null? atom*)
+                   (values (reverse input*) (reverse alignment*))
+                   (let ([atom (car atom*)])
+                     (nanopass-case (Lflattened Alignment) atom
+                       [(anative ,opaque-type)
+                        (cond
+                          [(string=? opaque-type "Curve25519Point")
+                           (let-values ([(high low) (div-and-mod (foreign-field-max "Curve25519Base") (expt 2 192))])
+                             (loop (cdr atom*)
+                               (with-output-language (Lflattened Alignment)
+                                 (cons* `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                               (cons* 0 0 high low input*)))]
+                          [(foreign-point-base opaque-type) =>
+                           (lambda (base)
+                             ;; The identity has two zero coordinates and a native field flag.
+                             (let-values ([(high low) (div-and-mod (foreign-field-max base) (expt 2 192))])
+                               (loop (cdr atom*)
+                                 (with-output-language (Lflattened Alignment)
+                                   (cons* `(afield) `(abytes 8) `(abytes 24) `(abytes 8) `(abytes 24) alignment*))
+                                 (cons* 1 high low high low input*))))]
+                          [(string=? opaque-type "JubjubScalar")
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons `(afield) alignment*))
+                             (cons 0 input*))]
+                          [(foreign-field-max opaque-type) =>
+                           (lambda (maximum)
+                             ;; Zero is represented by modulus minus one on the ledger.
+                             (let* ([scalar? (string=? opaque-type "Curve25519Scalar")]
+                                    [low-bits (if scalar? 204 192)]
+                                    [low-bytes (if scalar? 26 24)]
+                                    [high-bytes (if scalar? 7 8)])
+                               (let-values ([(high low) (div-and-mod maximum (expt 2 low-bits))])
+                                 (loop (cdr atom*)
+                                   (with-output-language (Lflattened Alignment)
+                                     (cons* `(abytes ,high-bytes) `(abytes ,low-bytes) alignment*))
+                                   (cons* high low input*)))))]
+                          [else
+                           (assert (string=? opaque-type "JubjubPoint"))
+                           (loop (cdr atom*)
+                             (with-output-language (Lflattened Alignment)
+                               (cons* `(afield) `(afield) alignment*))
+                             (cons* 1 0 input*))])]
+                       [(abytes ,nat)
+                        (loop (cdr atom*) (cons atom alignment*)
+                          (append (make-list (ceiling (/ nat (field-bytes))) 0) input*))]
+                       [else (loop (cdr atom*) (cons atom alignment*) (cons 0 input*))]))))]))
 
         ;; Operands can be one of:
         ;;   - zkir-val, typed Lzkir outputs consisting of a list of
@@ -248,12 +490,15 @@
         ;;   - VMop, whose datatype definition is in vm.ss
         (cond
           [(zkir-val? rand)
-           (let ([code* (fold-left (lambda (code* a)
-                                     (cons (assemble-alignment-atom a) code*))
-                          (cons (length (zkir-val-alignment* rand)) code*)
-                          (zkir-val-alignment* rand))])
-             (fold-left (lambda (code* var) (cons var code*))
-               code* (zkir-val-input* rand)))]
+           (let-values ([(alignment* input* instr*)
+                         (ledger-alignment default-src
+                           (zkir-val-alignment* rand)
+                           (zkir-val-input* rand)
+                           (zkir-instr*))])
+             (zkir-instr* instr*)
+             (append (reverse input*)
+                     (map assemble-alignment-atom (reverse alignment*))
+                     (cons (length alignment*) code*)))]
           [(not (VMop? rand)) (cons rand code*)]
           [else
             (VMop-case rand
@@ -283,9 +528,9 @@
                                (outer (cdr op*) (+ count len) alignment* (append var* tail))
                                (inner (1- i) (cdr tail) (cons (car tail) alignment*))))))))]
               [(VMnull type)
-               (let-values ([(count alignment*) (default-for type)])
+               (let-values ([(input* alignment*) (default-for type)])
                  ;; Encoding in code* is in reversed order.
-                 (append (make-list count 0)
+                 (append (reverse input*)
                    (map assemble-alignment-atom (reverse alignment*))
                    (cons (length alignment*) code*)))]
               [(VMmax-sizeof type)
@@ -293,8 +538,7 @@
                ;; in sync with the Rust version.
                ;; This code is a version of the ZKIR v2 implementation, simplified by standard
                ;; call-by-value reasoning.
-               (nanopass-case (Lflattened Type) type
-                 [(ty (,alignment* ...) (,primitive-type* ...))
+               (let-values ([(input* alignment*) (default-for type)])
                   (cons (if (null? alignment*)
                             2
                             (fold-left
@@ -308,7 +552,7 @@
                                     [else 34])))
                               (1+ (ceiling (/ (integer-length (length alignment*)) 8)))
                               alignment*))
-                    code*)])]
+                    code*))]
               [(VMvalue->int x)
                (let ([var* (zkir-val-input* x)])
                  (assert (and (list? var*) (= 1 (length var*))))
@@ -347,9 +591,7 @@
                         (values (zkir-val-input* val) (zkir-val-alignment* val))]
                        [(VMop? val)
                         (VMop-case val
-                          [(VMnull type)
-                           (let-values ([(count alignment*) (default-for type)])
-                             (values (make-list count 0) alignment*))]
+                          [(VMnull type) (default-for type)]
                           [else (assert cannot-happen)])]
                        [else (assert cannot-happen)])])
                  (let-values ([(sep-val sep-length) (domain-separator "mdn:lh")])
@@ -360,17 +602,7 @@
                      code*)))]
               [(VMstate-value-null) (cons 0 code*)]
               [(VMstate-value-cell val)
-               ;; Special handling of ZKIR native types.
-               (if (and (zkir-val? val)
-                        (jubjub-point-alignment? (zkir-val-alignment* val)))
-                   (with-output-language (Lzkir Instruction)
-                     (let* ([pt0 (make-temp-id default-src 'pt)]
-                            [pt1 (make-temp-id default-src 'pt)])
-                       (zkir-instr*
-                         (cons `(encode ,pt0 ,pt1 ,(car (zkir-val-input* val)))
-                           (zkir-instr*)))
-                       (cons* pt1 pt0 -2 -2 2 1 code*)))
-                   (assemble-operand-acc (cons 1 code*) val))]
+               (assemble-operand-acc (cons 1 code*) val)]
               [(VMstate-value-ADT val type)
                (or (nanopass-case (Lflattened Type) type
                      [(ty (,alignment* ...) ((tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...))))
@@ -389,8 +621,8 @@
               [(VMstate-value-merkle-tree nat key* val*)
                (fold-left assemble-operand-acc
                  (fold-left assemble-operand-acc
-                   ;; Tag with length(key*) << 8 | combine(nat, 4)
-                   (cons (fxlogor (fxsll (length key*) 8) (combine nat 4)) code*)
+                   ;; Ledger StateValue tag, eight-bit tree depth, then entry count.
+                   (cons (fxlogor 4 (fxsll nat 4) (fxsll (length key*) 12)) code*)
                    key*)
                  val*)]
               [(VMstate-value-array val*)
@@ -428,7 +660,7 @@
            (assert cannot-happen)]))
 
       ;; Map an impact instruction to a list of ZKIR Impact operands.
-      (define (assemble1 impact-instr test-val alignment* var-name*)
+      (define (assemble1 impact-instr test-val primitive-type* alignment* var-name*)
         (define (suppress? rand)
           (and (VMop? rand)
                (VMop-case rand [(VMsuppress) #t] [else #f])))
@@ -448,6 +680,7 @@
             [("size") (list #x04)]
 
             ;; neg --> 0x08
+            [("log") (list #x09)]
             [("neg") (list #x08)]
 
             ;; root --> 0x0a
@@ -459,36 +692,23 @@
             ;; popeq  --> 0x0c result
             ;; popeqc --> 0x0d result
             [("popeq")
-             (let-values
-                 ([(alignment var-name*)
-                   (with-output-language (Lzkir Instruction)
-                     ;; Special handling of ZKIR native types.
-                     (if (jubjub-point-alignment? alignment*)
-                         (let* ([pt0 (make-temp-id default-src 'pt)]
-                                [pt1 (make-temp-id default-src 'pt)])
-                           (zkir-instr*
-                             (cons*
-                               `(encode ,pt0 ,pt1 ,(car var-name*))
-                               (if (eq? test-val 1)
-                                   `(public_input "Point<Jubjub>" ,(car var-name*))
-                                   `(public_input "Point<Jubjub>" ,(car var-name*) ,test-val))
-                               (zkir-instr*)))
-                           (values (list -2 -2) (list pt0 pt1)))
-                         (begin
-                           (for-each (lambda (var-name)
-                                       (zkir-instr*
-                                         (cons
-                                           ;; A case duplicated from ZKIR v2.
-                                           (if (eq? test-val 1)
-                                               `(public_input "Scalar<BLS12-381>" ,var-name)
-                                               `(public_input "Scalar<BLS12-381>" ,var-name ,test-val))
-                                           (zkir-instr*))))
-                             var-name*)
-                           (values (map assemble-alignment-atom alignment*) var-name*))))])
+             (with-output-language (Lzkir Instruction)
+               (for-each
+                 (lambda (var-name primitive-type)
+                   (let ([type (type->string primitive-type)])
+                     (zkir-instr*
+                       (cons (if (eq? test-val 1)
+                                 `(public_input ,type ,var-name)
+                                 `(public_input ,type ,var-name ,test-val))
+                         (zkir-instr*)))))
+                 var-name* primitive-type*))
+             (let-values ([(alignment* var-name* instr*)
+                           (ledger-alignment default-src alignment* var-name* (zkir-instr*))])
+               (zkir-instr* instr*)
                (cons*
                  (if (cdr (assoc "cached" rands)) #xd #xc)
-                 (length alignment)
-                 (append alignment var-name*)))]
+                 (length alignment*)
+                 (append (map assemble-alignment-atom alignment*) var-name*)))]
 
             ;; addi --> 0x0e state
             [("addi")
@@ -571,12 +791,18 @@
              (zkir-field-rep? (car code*))
              (<= #xc (car code*) #xd)))
 
-      (define (assemble test-val alignment* var-name* src path env vm-code instr*)
+      (define (assemble test-val primitive-type* alignment* var-name* src path env vm-code instr*)
         (parameterize ([zkir-instr* instr*])
-          (let* ([code (expand-vm-code src path #f env (vm-code-code vm-code))]
-                 [op** (map (lambda (c) (assemble1 c test-val alignment* var-name*)) code)])
-            (with-output-language (Lzkir Instruction)
-              (cons `(impact ,test-val ,(apply append op**) ...) (zkir-instr*))))))
+          (for-each
+            (lambda (instruction)
+              (let ([operands (assemble1 instruction test-val primitive-type* alignment* var-name*)])
+                ;; The Ledger 9 prover consumes one skip entry per transcript
+                ;; operation. Suppressed operations have no transcript entry.
+                (unless (null? operands)
+                  (with-output-language (Lzkir Instruction)
+                    (zkir-instr* (cons `(impact ,test-val ,operands ...) (zkir-instr*)))))))
+            (expand-vm-code src path #f env (vm-code-code vm-code)))
+          (zkir-instr*)))
 
       ;; ==== Per-circuit state ====
       (define default-src)
@@ -621,13 +847,27 @@
                 [(argument (,var-name* ...) (ty (,alignment* ...) (,primitive-type* ...)))
                  (values (append var-name* name*) (append primitive-type* type*))]))))
 
+      (define (foreign-zkir-type name)
+        (case name
+          [("JubjubScalar") "Scalar<Jubjub>"]
+          [("Secp256k1Base") "Base<Secp256k1>"]
+          [("Secp256k1Scalar") "Scalar<Secp256k1>"]
+          [("Secp256r1Base") "Base<Secp256r1>"]
+          [("Secp256r1Scalar") "Scalar<Secp256r1>"]
+          [("Curve25519Base") "Base<Curve25519>"]
+          [("Curve25519Scalar") "Scalar<Curve25519>"]
+          [("Secp256k1Point") "Point<Secp256k1>"]
+          [("Secp256r1Point") "Point<Secp256r1>"]
+          [("Curve25519Point") "Point<Curve25519>"]
+          [else #f]))
+
       (define (type->string primitive-type)
         (nanopass-case (Lflattened Primitive-Type) primitive-type
           [(tfield) "Scalar<BLS12-381>"]
           [(tfield ,nat) "Scalar<BLS12-381>"]
           [(topaque ,opaque-type) (guard (string=? opaque-type "JubjubPoint"))
            "Point<Jubjub>"]
-          [(topaque ,opaque-type) "Scalar<BLS12-381>"]
+          [(topaque ,opaque-type) (or (foreign-zkir-type opaque-type) "Scalar<BLS12-381>")]
           [else (assert cannot-happen)]))
       )
 
@@ -691,9 +931,55 @@
       [(= ,test (,var-name* ...) (contract-call ,src ,elt-name (,triv ,primitive-type) ,triv* ...))
        (source-errorf src "cross-contract calls are not yet supported")]
       [(= ,test (,var-name) (default ,opaque-type))
-       (assert (string=? opaque-type "JubjubPoint"))
        (with-output-language (Lzkir Instruction)
-         (cons `(decode "Point<Jubjub>" ,var-name 0 1) instr*))]
+         (cond
+           [(foreign-point-base opaque-type)
+            (let ([bytes (make-temp-id default-src 'bytes)]
+                  [scalar (make-temp-id default-src 'scalar)]
+                  [scalar-type (case opaque-type
+                                 [("Secp256k1Point") "Scalar<Secp256k1>"]
+                                 [("Secp256r1Point") "Scalar<Secp256r1>"]
+                                 [("Curve25519Point") "Scalar<Curve25519>"]
+                                 [else (assert cannot-happen)])])
+              (cons* `(ec_mul_generator ,var-name ,scalar)
+                     `(from_bytes ,scalar-type ,scalar ,bytes)
+                     `(to_bytes ,bytes 0)
+                     instr*))]
+           [(string=? opaque-type "JubjubScalar")
+            (cons `(jubjub_scalar_from_native ,var-name 0) instr*)]
+           [(foreign-zkir-type opaque-type) =>
+            (lambda (zkir-type)
+              (let ([bytes (make-temp-id default-src 'bytes)])
+                (cons* `(from_bytes ,zkir-type ,var-name ,bytes) `(to_bytes ,bytes 0) instr*)))]
+           [else
+            (assert (string=? opaque-type "JubjubPoint"))
+            (cons `(from_coordinates ,var-name 0 1) instr*)]))]
+      [(= ,test (,var-name) (jubjub-cast ,src ,opaque-type ,triv))
+       (with-output-language (Lzkir Instruction)
+         (cons (case opaque-type
+                 [("Field") `(encode (,var-name) ,triv)]
+                 [("JubjubScalar") `(jubjub_scalar_from_native ,var-name ,triv)])
+           instr*))]
+      [(= ,test (,var-name1 ,var-name2) (secp256k1-bytes-cast ,src ,opaque-type ,triv))
+       (guard (string=? opaque-type "Bytes<32>"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons* `(bytes_into_natives (,var-name2 ,var-name1) ,bytes) `(to_bytes ,bytes ,triv) instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes ,(assert (foreign-zkir-type opaque-type)) ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 32 ,triv2 ,triv1)
+             instr*)))]
+      [(= ,test (,var-name) (secp256k1-bytes-cast ,src ,opaque-type ,triv1 ,triv2 ,triv3))
+       (guard (string=? opaque-type "Curve25519Scalar"))
+       (with-output-language (Lzkir Instruction)
+         (let ([bytes (make-temp-id src 'bytes)])
+           (cons*
+             `(from_bytes "Scalar<Curve25519>" ,var-name ,bytes)
+             `(bytes_from_natives ,bytes 64 ,triv3 ,triv2 ,triv1)
+             instr*)))]
       [(= ,test (,var-name0 ,var-name1) (field->bytes ,src ,len ,triv))
        ;; TODO(kmillikin): this needs to respect test because `constrain_bits` can fail.
        ;; NB: missing-guard-workarounds now implements a workaround that ensures
@@ -721,6 +1007,18 @@
                (let ([quo (make-temp-id default-src 'quo)])
                  (loop (cdr var-name*) quo
                    (cons `(div_mod_power_of_two ,quo ,(car var-name*) ,var ,8) instr*))))))]
+      [(emit-log ,src ,nat ,len ,test ,triv* ...)
+       (let* ([alignment* (with-output-language (Lflattened Alignment) (list `(abytes ,len)))]
+              [env (list (cons 'payload (make-zkir-val alignment* triv*)))]
+              [vm-code (with-syntax ([tag (datum->syntax #'push nat)])
+                         (make-vm-code
+                           #'((push [storage #f]
+                                  [value (state-value 'array
+                                           ((state-value 'cell (align 1 4))
+                                            (state-value 'cell (align tag 1))
+                                            (state-value 'cell payload)))])
+                              (log))))])
+         (assemble test '() '() '() src '() env vm-code instr*))]
       [(= ,test (,var-name* ...) (public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...)
                              ,src^ ,adt-op ,triv* ...))
        (nanopass-case (Lflattened ADT-Op) adt-op
@@ -752,7 +1050,7 @@
                              (outer (cdr type*) (cdr formal*) triv*
                                (cons (cons (car formal*) (make-zkir-val alignment* var*))
                                  env)))])))])
-            (assemble test alignment* var-name* src (map Path-Element path-elt*) env vm-code
+            (assemble test primitive-type* alignment* var-name* src (map Path-Element path-elt*) env vm-code
               instr*))])]
       [(= ,test ,var-name ,single)
        (Single single var-name instr*)]
@@ -764,6 +1062,14 @@
         (assert cannot-happen)])
 
     (Single : Single (ir var-name instr*) -> * (instr*)
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,opaque-type ,triv1 ,triv2)
+       (with-output-language (Lzkir Instruction)
+         (case arithmetic-op
+           [(+) (cons `(add ,var-name ,triv1 ,triv2) instr*)]
+           [(-) (let ([neg (make-temp-id src 'neg)])
+                  (cons* `(add ,var-name ,triv1 ,neg) `(neg ,neg ,triv2) instr*))]
+           [(*) (cons `(mul ,var-name ,triv1 ,triv2) instr*)]
+           [else (assert cannot-happen)]))]
       [(+ ,mbits ,triv0 ,triv1)
        (with-output-language (Lzkir Instruction)
          (cons `(add ,var-name ,triv0 ,triv1) instr*))]
@@ -912,6 +1218,14 @@
        `((op . "add") (output . ,outp) (a . ,inp0) (b . ,inp1))]
       [(assert ,[* inp])
        `((op . "assert") (cond . ,inp))]
+      [(bytes32_into_low_high ,outp0 ,outp1 ,[* inp])
+       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
+         `((op . "bytes32_into_low_high") (bytes . ,inp) (outputs . ,(vector outp0 outp1))))]
+      [(bytes_from_natives ,[* outp] ,imm ,[* inp*] ...)
+       `((op . "bytes_from_natives") (output . ,outp) (len . ,imm) (inputs . ,(list->vector inp*)))]
+      [(bytes_into_natives (,outp* ...) ,[* inp])
+       (let ([outp* (maplr Output outp*)])
+         `((op . "bytes_into_natives") (outputs . ,(list->vector outp*)) (bytes . ,inp)))]
       [(cond_select ,[* outp] ,[* inp0] ,[* inp1] ,[* inp2])
        `((op . "cond_select") (output . ,outp) (bit . ,inp0) (a . ,inp1) (b . ,inp2))]
       [(constrain_bits ,[* inp] ,imm)
@@ -922,8 +1236,6 @@
        `((op . "constrain_to_boolean") (val . ,inp))]
       [(copy ,[* outp] ,[* inp])
        `((op . "copy") (output . ,outp) (val . ,inp))]
-      [(decode ,zkir-type ,[* outp] ,[* inp*] ...)
-       `((op . "decode") (type . ,zkir-type) (output . ,outp) (inputs . ,(list->vector inp*)))]
       [(div_mod_power_of_two ,outp0 ,outp1 ,[* inp] ,imm)
        (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
          `((op . "div_mod_power_of_two") (outputs . ,(vector outp0 outp1)) (val . ,inp)
@@ -932,15 +1244,27 @@
        `((op . "ec_mul") (output . ,outp) (a . ,inp0) (scalar . ,inp1))]
       [(ec_mul_generator ,[* outp] ,[* inp])
        `((op . "ec_mul_generator") (output . ,outp) (scalar . ,inp))]
-      [(encode ,outp0 ,outp1 ,[* inp])
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "encode") (outputs . ,(vector outp0 outp1)) (input . ,inp)))]
+      [(encode (,outp* ...) ,[* inp])
+       `((op . "encode") (outputs . ,(list->vector (map Output outp*))) (input . ,inp))]
+      [(from_bytes ,zkir-type ,[* outp] ,[* inp])
+       `((op . "from_bytes") (type . ,zkir-type) (output . ,outp) (bytes . ,inp))]
+      [(from_coordinates ,[* outp] ,[* inp0] ,[* inp1])
+       `((op . "from_coordinates") (output . ,outp) (inputs . ,(vector inp0 inp1)))]
       [(hash_to_curve ,[* outp] ,[* inp*] ...)
        `((op . "hash_to_curve") (output . ,outp) (inputs . ,(list->vector inp*)))]
-      [(keccak256 ,outp0 ,outp1 (,alignment* ...) ,[* inp*] ...)
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "keccak256") (outputs . ,(vector outp0 outp1))
-           (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*))))]
+      [(into_coordinates ,outp0 ,outp1 ,[* inp])
+       (let* ([x (Output outp0)] [y (Output outp1)])
+         `((op . "into_coordinates") (point . ,inp) (outputs . ,(vector x y))))]
+      [(inv ,[* outp] ,[* inp])
+       `((op . "inv") (output . ,outp) (a . ,inp))]
+      [(jubjub_scalar_from_native ,[* outp] ,[* inp])
+       `((op . "jubjub_scalar_from_native") (output . ,outp) (native . ,inp))]
+      [(keccak256 ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "keccak256") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
+      [(sha512 ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "sha512") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(less_than ,[* outp] ,[* inp0] ,[* inp1] ,imm)
        `((op . "less_than") (output . ,outp) (a . ,inp0) (b . ,inp1) (bits . ,imm))]
       [(mul ,[* outp] ,[* inp0] ,[* inp1])
@@ -949,10 +1273,9 @@
        `((op . "neg") (output . ,outp) (a . ,inp))]
       [(output ,[* inp*] ...)
        `((op . "output") (vals . ,(list->vector inp*)))]
-      [(persistent_hash ,outp0 ,outp1 (,alignment* ...) ,[* inp*] ...)
-       (let* ([outp0 (Output outp0)] [outp1 (Output outp1)])
-         `((op . "persistent_hash") (outputs . ,(vector outp0 outp1))
-           (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*))))]
+      [(persistent_hash ,[* outp] (,alignment* ...) ,[* inp*] ...)
+       `((op . "persistent_hash") (output . ,outp)
+         (alignment . ,(alignment->vector alignment*)) (inputs . ,(list->vector inp*)))]
       [(private_input ,zkir-type ,[* outp])
        ;; Kind of warty: rather than a literal true guard or making it truly optional by leaving it
        ;; out of the JSON representation, ZKIR wants to put a JSON null value there.
@@ -972,6 +1295,8 @@
          (bits . ,imm))]
       [(test_eq ,[* outp] ,[* inp0] ,[* inp1])
        `((op . "test_eq") (output . ,outp) (a . ,inp0) (b . ,inp1))]
+      [(to_bytes ,[* outp] ,[* inp])
+       `((op . "to_bytes") (output . ,outp) (input . ,inp))]
       [(transient_hash ,[* outp] ,[* inp*] ...)
        `((op . "transient_hash") (output . ,outp) (inputs . ,(list->vector inp*)))])
     (Input : Input (ir) -> * (json)

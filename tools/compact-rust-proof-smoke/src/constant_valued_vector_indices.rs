@@ -19,4 +19,21 @@ const SOURCE_LABEL: &str = "constant-valued-vector-indices";
 const IR: &str = include_str!(
     "../../../tests-rust-backend/constant-valued-vector-indices-source/original-ir.json"
 );
+const PROGRAMS: [&[u8]; 5] = [
+    include_bytes!(
+        "../../../tests-rust-backend/constant-valued-vector-indices-source/checked-programs/program-0.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-valued-vector-indices-source/checked-programs/program-1.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-valued-vector-indices-source/checked-programs/program-2.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-valued-vector-indices-source/checked-programs/program-3.json"
+    ),
+    include_bytes!(
+        "../../../tests-rust-backend/constant-valued-vector-indices-source/checked-programs/program-4.json"
+    ),
+];
 include!("vector_projection_protocol.rs");

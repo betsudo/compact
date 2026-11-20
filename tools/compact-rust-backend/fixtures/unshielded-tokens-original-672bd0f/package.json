@@ -1,0 +1,16 @@
+{
+  "name": "ledger9-original-unshielded-mints",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@midnight-ntwrk/compact-runtime": "file:./compact-runtime-0.21.0.tgz",
+    "@midnightntwrk/onchain-runtime-v4": "file:./onchain-runtime-v4-4.0.1.tgz"
+  },
+  "devDependencies": {
+    "vitest": "4.1.11",
+    "typescript": "6.0.2"
+  }
+}

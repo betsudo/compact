@@ -41,6 +41,17 @@ RETAINED_SOURCE_COPIES = {
         '6fb741f1171b87312d8e9e0815c148e7d2f010cfcecfefd135f819a5d26df07c'),
 }
 
+# This host-only release script is the exact pinned upstream source. Its
+# upstream copyright holder differs from this repository's header template;
+# changing those bytes would break the original-source identity assertion.
+# The exception is confined to this path and digest, not to shell scripts or
+# copyright names in general.
+RETAINED_PINNED_ORIGINALS = {
+    'scripts/read-version.sh': (
+        '672bd0f226f47a7d036c5c074ce71fbe1af1925e',
+        '31eac9e602ec4b28c3ac28cd9519a190cf1ef6157844eadc93dca4375ff3e874'),
+}
+
 
 def base_contents(root, base, names):
     # Resolve paths once, then read unique blobs in one process. Filenames never
@@ -167,6 +178,11 @@ def classify(root, base, missing):
                     and current_authority.read_bytes() == current):
                 retained.append(dict(row, authority=source, reason='pinned exact historical source copy'))
                 continue
+        pinned = RETAINED_PINNED_ORIGINALS.get(name)
+        if pinned is not None and not path.is_symlink() and row['sha256'] == pinned[1]:
+            retained.append(dict(row, authority=f'{pinned[0]}:{name}',
+                                 reason='pinned exact upstream host script'))
+            continue
         violations.append(row)
     return dict(scope='PR header regressions; not full-tree license compliance', base_commit=base,
                 missing_full_headers=len(missing), inherited_unchanged=inherited, retained_source_copies=retained,

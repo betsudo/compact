@@ -17,7 +17,7 @@
 use super::{
     declarations::Declarations,
     functional::{
-        Capability, FunctionalProgram, Ledger8Target, OriginEvidence, SourceAuthority, SourceSite,
+        Capability, FunctionalProgram, Ledger9Target, OriginEvidence, SourceAuthority, SourceSite,
     },
     model::*,
 };
@@ -225,7 +225,7 @@ fn vector_fold_multi_input_effectful_body_has_one_owned_loop_and_static_inventor
             column: 1,
         });
         let projected =
-            FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
         for capability in [
             Capability::VectorFold,
             Capability::CellRead,
@@ -331,7 +331,7 @@ fn vector_fold_unit_accumulator_is_not_an_empty_tuple_payload() {
         column: 1,
     });
     let projected =
-        FunctionalProgram::project(&checked, &authority, Ledger8Target::PINNED).unwrap();
+        FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED).unwrap();
     super::functional_render::render(&projected).unwrap();
     let mut forged = plan;
     let Operation::VectorFold { body, .. } = &mut forged.body.bindings[0].operation else {

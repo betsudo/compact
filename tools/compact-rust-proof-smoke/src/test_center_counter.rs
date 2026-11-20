@@ -15,8 +15,10 @@
 
 //! Prove and apply the original test-center Counter's ordered public/private effects.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_test_center_counter_fixture::ledger_contract as contract;
+use midnight_base_crypto::hash::persistent_hash;
 
 struct AdvancingWitness;
 
@@ -32,6 +34,26 @@ impl contract::Witnesses<u64> for AdvancingWitness {
 }
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    for (path, expected) in [
+        (
+            "contract/compact-rust-ir.json",
+            "0a649c2ab82955c45e0d75640732246c839b75fb4c4a7c85b1d827c64197a4e6",
+        ),
+        (
+            "contract/lib.rs",
+            "796517c4f63d33370cb41a3ea60d8120387767b9cea454151a1ee73872eda627",
+        ),
+        (
+            "zkir/increment.zkir",
+            "56ab0643bca927981a73605c349d8f6c437019136007ad59dcf8e929a57b7923",
+        ),
+    ] {
+        if hex::encode(persistent_hash(&std::fs::read(root.join(path))?).0) != expected {
+            return Err(
+                format!("test-center Counter source/proof artifact differs: {path}").into(),
+            );
+        }
+    }
     let mut rng = StdRng::seed_from_u64(0x0107_434f_554e_5445);
     let initial = contract::initial_state(ConstructorContext::new(7_u64))?;
     let deploy = make_deploy(
@@ -87,6 +109,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("test-center Counter Unit witness proof verified and applied through ledger-8");
+    println!("test-center Counter Unit witness proof verified and applied through Ledger 9");
     Ok(())
 }

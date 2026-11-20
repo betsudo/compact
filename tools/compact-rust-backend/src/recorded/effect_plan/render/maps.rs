@@ -24,6 +24,22 @@ pub(super) fn render(
     let (slot, arguments, method): (_, Vec<syn::Expr>, _) = match &binding.operation {
         Operation::MapMember { slot, key } => (slot, vec![value(key)], "record_member"),
         Operation::MapLookup { slot, key } => (slot, vec![value(key)], "record_lookup"),
+        Operation::NestedMapLookup { slot, outer, inner } => (
+            slot,
+            vec![value(outer), value(inner)],
+            "record_lookup_child",
+        ),
+        Operation::NestedMapInsert {
+            slot,
+            outer,
+            inner,
+            value: input,
+        } => (
+            slot,
+            vec![value(outer), value(inner), value(input)],
+            "record_insert_child",
+        ),
+        Operation::MapInitChild { slot, key } => (slot, vec![value(key)], "record_init_child"),
         Operation::MapInsert {
             slot,
             key,
@@ -53,6 +69,7 @@ pub(super) fn render(
         }
         Operation::MapMember { .. }
         | Operation::MapLookup { .. }
+        | Operation::NestedMapLookup { .. }
         | Operation::MapIsEmpty { .. } => {
             steps.push(syn::parse_quote!(let (frame, #output): (_, #ty) = crate::ledger_slots::#slot.#method(frame #(, #arguments)*)?;));
         }

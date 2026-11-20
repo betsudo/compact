@@ -1,0 +1,66 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger point: Secp256r1Point;"
+      "export circuit test0(pt: Secp256r1Point): Secp256r1Point {"
+      "  point = disclose(pt);"
+      "  return point;"
+      "}"
+      "export circuit test1(): [Secp256r1Base, Secp256r1Base] {"
+      "  const pt = point;"
+      "  return [secp256r1PointX(pt), secp256r1PointY(pt)];"
+      "}"
+      )
+    (pass-returns reduce-to-zkir
+      (program
+        (circuit (test0) ((%pt.0 "Point<Secp256r1>"))
+          ("Point<Secp256r1>")
+          (encode (%fld.1 %fld.2 %fld.3 %fld.4 %fld.5) %pt.0)
+          (impact 1 16 1 1 1 0)
+          (impact 1 17 1 5 24 8 24 8 -2 %fld.1 %fld.2 %fld.3 %fld.4
+            %fld.5)
+          (impact 1 145)
+          (public_input "Point<Secp256r1>" %t.6)
+          (encode (%fld.7 %fld.8 %fld.9 %fld.10 %fld.11) %t.6)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 5 24 8 24 8 -2 %fld.7 %fld.8 %fld.9 %fld.10
+            %fld.11)
+          (output %t.6))
+        (circuit (test1) ()
+          ("Base<Secp256r1>" "Base<Secp256r1>")
+          (public_input "Point<Secp256r1>" %pt.12)
+          (encode (%fld.13 %fld.14 %fld.15 %fld.16 %fld.17) %pt.12)
+          (impact 1 48)
+          (impact 1 80 1 1 0)
+          (impact 1 12 5 24 8 24 8 -2 %fld.13 %fld.14 %fld.15 %fld.16
+            %fld.17)
+          (into_coordinates %t.18 %ignore.19 %pt.12)
+          (into_coordinates %ignore.20 %t.21 %pt.12)
+          (output %t.18 %t.21))))
+    (stage-javascript
+      '("test('Secp256r1Point round tripping through the ledger', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  // The point at X=0."
+        "  var pt = {"
+        "      x: 0x0n,"
+        "      y: 0x66485c780e2f83d72433bd5d84a06bb6541c2af31dae871728bf856a174f93f4n,"
+        "      identity: false,"
+        "  };"
+        "  var r = await contract.circuits.test0(context, pt);"
+        "  expect(r.result).toEqual(pt);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).point).toEqual(pt);"
+        "  expect((await contract.circuits.test1(r.context)).result).toEqual([pt.x, pt.y]);"
+        "  // The point G."
+        "  pt = {"
+        "      x: 0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296n,"
+        "      y: 0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5n,"
+        "      identity: false,"
+        "  };"
+        "  r = await contract.circuits.test0(context, pt);"
+        "  expect(r.result).toEqual(pt);"
+        "  expect(contractCode.ledger(r.context.callContext.currentQueryContext.state).point).toEqual(pt);"
+        "  expect((await contract.circuits.test1(r.context)).result).toEqual([pt.x, pt.y]);"
+        "});"
+        ))
+    )

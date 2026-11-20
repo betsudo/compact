@@ -1,0 +1,19 @@
+  ;; The nested-point hashing from LFDT-Minokawa/compact issue #608.
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "ledger hash: Bytes<32>;"
+      "export circuit test(pt0: Secp256r1Point, pt1: Secp256r1Point): [] {"
+      "  hash = disclose(keccak256<[Secp256r1Point, Secp256r1Point]>([pt0, pt1]));"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('Issue 608 for secp256r1', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  const p0 = runtime.secp256r1MulGenerator(5n);"
+        "  const p1 = runtime.secp256r1MulGenerator(7n);"
+        "  await contract.circuits.test(context, p0, p1);"
+        "});"
+        ))
+    )

@@ -14,9 +14,15 @@
 // limitations under the License.
 
 //! Genuine wallet funding → same-call receive/transient spend → full user output.
+use super::local_v3_application as v3;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_transient_receive_send_oracle_fixture::{ledger_contract as c, types};
 use midnight_compact_runtime as runtime;
+use midnight_ledger::{
+    error::TransactionProvingError,
+    test_utilities::{ClientProvingError, tx_prove},
+};
 use midnight_zswap::{Offer, Output, Transient};
 use runtime::transaction::{
     ContractTransientCoins, OfferBackedObservedState, OfferBindingOptions,
@@ -24,22 +30,40 @@ use runtime::transaction::{
 };
 
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    // Pair the complete source fixture before keys, wallet setup or deployment.
-    // This checks input pairing, not authenticated proving-key provenance.
+    const NAME: &str = "receive_then_send";
+    const STEM: &str = "transient-receive-send";
+    // Bind the original compiler output and immutable verifier before wallet setup.
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_transient_receive_send_oracle_fixture::RETAINED_IR,
     )?;
-    const NAME: &str = "receive_then_send";
+    v3::validate_pinned_artifacts(
+        root,
+        include_str!(
+            "../../compact-rust-backend/tests/transient-receive-send-ledger9-artifacts.json"
+        ),
+    )?;
+    let (ir, verifier, operation) = v3::operation(root, NAME, 15)?;
+    if ir.model().rows() != 23_344 {
+        return Err("transient receive/send v3 row count differs".into());
+    }
     let mut rng = StdRng::seed_from_u64(0x0204_5052);
     let initial = c::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        NAME,
+        operation,
+        &mut rng,
+    );
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fees.ledger.contract = fees
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
+    let mut fees = fee_funded_state_with_utxos(&mut rng, 2)?;
+    let resolver = fee_resolver(root, NAME)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    v3::apply_funded_deployment(
+        root, STEM, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let coin = types::ShieldedCoinInfo {
         nonce: FixedBytes::new([3; 32]),
         color: FixedBytes::new([2; 32]),
@@ -66,7 +90,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     let seed: Offer<ProofPreimage, DefaultDB> =
         Offer::new(vec![], seed_outputs, vec![]).ok_or("empty genesis seed")?;
     let (seeded, _) = fees.ledger.zswap.try_apply(&seed, None)?;
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
     assert!(start > 1);
@@ -227,23 +253,14 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         replay_context.query(raw.public.verify_ops(), None, &native.context.cost_model)?;
     assert_eq!(independent.context.state, native.context.query.state);
     assert_eq!(independent.context.effects, native.context.query.effects);
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/receive_then_send.verifier"),
-    )?))?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
     // Constructor success is not proof validity: wrong singleton index1
     // constructs an upstream preimage, but the actual transaction prover must
     // reject it despite unchanged commitment/nullifier/public singleton root.
     let wrong =
         Transient::new_from_contract_owned_output(&mut rng, &info.qualify(1), None, received)?;
+    assert_eq!(wrong.coin_com, transient.coin_com);
+    assert_eq!(wrong.nullifier, transient.nullifier);
     let mut wrong_offer = offer.clone();
     wrong_offer.transient = vec![wrong.clone()].into_iter().collect();
     let wrong_bound =
@@ -255,67 +272,38 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         recipient,
     )?;
     let wrong_tx = wrong_bound
-        .prepare(wrong_call, verifier, Fr::from(0))?
+        .prepare(wrong_call, verifier.clone(), Fr::from(0))?
         .into_transaction(
             &mut rng,
             "local-test",
             Timestamp::from_secs(fees.time.to_secs() + 3600),
         );
-    let wrong_provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0204_4241),
-        resolver: &resolver,
-        params: &params,
-    };
-    let rejected = futures_executor::block_on(wrong_tx.prove(
-        wrong_provider,
-        &INITIAL_PARAMETERS.cost_model.runtime_cost_model,
+    let rejected = executor.block_on(tx_prove(
+        StdRng::seed_from_u64(0x0204_4241),
+        &wrong_tx,
+        &resolver,
     ));
     let failure = rejected
         .err()
         .ok_or("invalid transient singleton private path unexpectedly proved")?;
     let diagnostic = format!("{failure:?}");
     assert!(
-        diagnostic.contains("Public transcript input mismatch for input 13;"),
+        matches!(
+            failure,
+            ClientProvingError::Local(TransactionProvingError::Proving(_))
+        ) && diagnostic.contains("Public transcript input mismatch for input 13;"),
         "unexpected failure instead of singleton Merkle-root constraint: {diagnostic}"
     );
     println!("malformed singleton-index1 proving rejection: {diagnostic}");
-    let tx = prepared.into_transaction(
+    let updated = v3::prove_and_apply_offer(
+        root,
+        (NAME, STEM),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0204_5052),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        &verifier,
+        native.context.query.state.get_ref(),
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0204_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), fees.time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: fees.time,
-            last_block_time: fees.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = ledger.apply(&verified, &context);
-    assert!(
-        matches!(result, TransactionResult::Success(_)),
-        "{result:?}"
-    );
-    assert_eq!(
-        updated.contract.get(&address).unwrap().data,
-        native.context.query.state
-    );
     assert_eq!(updated.zswap.first_free, start + 2);
     assert_eq!(
         updated.zswap.coin_coms.index(start).unwrap().0,

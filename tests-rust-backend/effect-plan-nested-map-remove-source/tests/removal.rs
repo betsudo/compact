@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #![cfg(feature = "ledger-transaction")]
 use compact_rust_effect_plan_nested_map_remove_source_fixture::{
     ledger_contract as c, ledger_slots as slots, runtime as r,
@@ -37,7 +49,7 @@ fn source_generated_removal_matches_typescript_and_preserves_nested_siblings() {
         let key: VerifierKey = StdRng::seed_from_u64(602).r#gen();
         let operations = midnight_storage::storage::HashMap::new().insert(
             EntryPointBuf(b"remove".to_vec()),
-            ContractOperation::new(Some(key.clone())),
+            ContractOperation::new(Some(key.clone()), None),
         );
         // Supplied nested state uses official ledger nodes; no nested-value
         // scalar codec or generated nested insertion is assumed.

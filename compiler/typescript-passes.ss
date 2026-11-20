@@ -20,14 +20,20 @@
   (import (except (chezscheme) errorf)
           (utils)
           (datatype)
+          (only (config-params) feature-zkir-v3 ts-runtime-profile emit-verifier-key-metadata compile-contract-statements)
           (nanopass)
           (langs)
           (pass-helpers)
           (natives)
+          (field)
           (runtime-version)
           (ledger)
           (vm)
           (sourcemaps))
+
+  (define (released-runtime?) (eq? (ts-runtime-profile) 'released-0.21.0))
+  (define (ledger9-runtime-shape?)
+    (or (released-runtime?) (and (feature-zkir-v3) (compile-contract-statements))))
 
   (define-pass prepare-for-typescript : Lnodisclose (ir) -> Ltypescript ()
     (definitions
@@ -173,7 +179,7 @@
           (let ([ldescriptor* (reverse rdescriptor*)])
             (values (map car ldescriptor*) (map cdr ldescriptor*))))))
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,[contract-type*] ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (fluid-let ([program-src src])
          (let ([pelt* (map Program-Element pelt*)])
            ; FIXME: assuming we get only (align <value> 1) or (align <value> 8).
@@ -191,7 +197,7 @@
              (with-output-language (Ltypescript Type)
                `(tunsigned ,src ,(- (expt 2 128) 1))))
            (let-values ([(descriptor-id* type*) (get-descriptors)])
-             `(program ,src ((,export-name* ,name*) ...)
+             `(program ,src (,contract-type* ...) ((,export-name* ,name*) ...)
                 (type-descriptors ,descriptor-table (,descriptor-id* ,type*) ...)
                 ,pelt* ...))))])
     (Program-Element : Program-Element (ir) -> Program-Element ()
@@ -316,12 +322,24 @@
            "CompactError"
            "typeError"
            "assert"
+           "convertBytesToSecp256k1Field"
+           "convertBytesToSecp256r1Field"
+           "convertBytesToCurve25519Field"
+           "convertNumericToJubjubScalar"
            "convertFieldToBytes"
+           "convertBigintToBytes"
            "convertBytesToField"
            "convertBytesToUint"
            "addField"
            "subField"
            "mulField"
+           "secp256k1BaseAdd" "secp256k1BaseSub" "secp256k1BaseMul"
+           "secp256k1ScalarAdd" "secp256k1ScalarSub" "secp256k1ScalarMul"
+           "secp256r1BaseAdd" "secp256r1BaseSub" "secp256r1BaseMul"
+           "secp256r1ScalarAdd" "secp256r1ScalarSub" "secp256r1ScalarMul"
+           "curve25519BaseAdd" "curve25519BaseSub" "curve25519BaseMul"
+           "curve25519ScalarAdd" "curve25519ScalarSub" "curve25519ScalarMul"
+           "decodeContractAddress" "crossContractCall"
            ))
       (define (compact-stdlib name)
         (unless (member name compact-stdlib-entries)
@@ -454,6 +472,16 @@
           [(XPelt-type-definition src type-name export-name tvar-name* type) #f]
           [(XPelt-public-ledger pl-array lconstructor external-names) #f]
           [(XPelt-ledger-kernel) #f]))
+      ;; Tracks which functions have async wrappers in the generated JS.
+      ;; Only impure circuits are async (because their bodies
+      ;; may contain `await __compactRuntime.crossContractCall(...)`). Witnesses,
+      ;; native circuits, and native witnesses all have synchronous wrappers, so
+      ;; their call sites don't need `await`.
+      (define function-async-ht (make-eq-hashtable))
+      (define (mark-function-async! function-name)
+        (eq-hashtable-set! function-async-ht function-name #t))
+      (define (function-async? function-name)
+        (and (ledger9-runtime-shape?) (eq-hashtable-ref function-async-ht function-name #f)))
 
       (module (descriptor-table type->maybe-descriptor-name type->descriptor-name)
         (define descriptor-table #f)
@@ -799,9 +827,7 @@
               contract-name))
       (define (get-contract-dependencies)
         (define (contract-info-filename contract-name)
-          (format "~a/~a/compiler/contract-info.json"
-            (path-parent (target-directory))
-            contract-name))
+          (contract-info-pathname contract-name))
         (define (malformed msg contract-name . args)
           (external-errorf "malformed contract-info file ~a for ~s: ~a; try recompiling ~a"
                            (contract-info-filename contract-name)
@@ -843,6 +869,12 @@
           [else type]))
 
       (define (print-contract.d.ts src xpelt* uname*)
+        ;; Every entry in `Circuits`, `ImpureCircuits`, and `ProvableCircuits` is an async wrapper
+        (define (circuit-result-type type)
+          (make-Qconcat
+            (if (ledger9-runtime-shape?) "Promise<" "")
+            "__compactRuntime.CircuitResults<PS, " (Type type) ">"
+            (if (ledger9-runtime-shape?) ">" "")))
         (define (print-exported-impure-circuit-declaration do-me?)
           (lambda (xpelt uname)
             (XPelt-case xpelt
@@ -860,7 +892,7 @@
                              "context: __compactRuntime.CircuitContext<PS>"
                              (map Typed-Argument arg*))
                            "): "
-                           "__compactRuntime.CircuitResults<PS, " (Type type) ">"
+                           (circuit-result-type type)
                            ";")))
                      (newline))
                    external-name*))]
@@ -900,7 +932,7 @@
                              "context: __compactRuntime.CircuitContext<PS>"
                              (map Typed-Argument arg*))
                            "): "
-                           "__compactRuntime.CircuitResults<PS, " (Type type) ">"
+                           (circuit-result-type type)
                            ";")))
                      (newline)))
                  external-name*)]
@@ -1133,7 +1165,10 @@
                                            ": "
                                            (Type type))]))
                                     arg*))
-                        "): __compactRuntime.ConstructorResult<PS>;"))
+                        ;; initialState is async too because it can call impure circuits
+                        (if (ledger9-runtime-shape?)
+                            "): Promise<__compactRuntime.ConstructorResult<PS>>;"
+                            "): __compactRuntime.ConstructorResult<PS>;")))
                     (newline))])]
               [else (loop (cdr xpelt*))])))
         (parameterize ([current-output-port (get-target-port 'contract.d.ts)])
@@ -1183,12 +1218,16 @@
               (newline)
               (display-string "export declare function ledger(state: __compactRuntime.StateValue | __compactRuntime.ChargedState): Ledger;\n")
               (display-string "export declare const pureCircuits: PureCircuits;\n")
+              (when (emit-verifier-key-metadata)
+                (display-string "export declare const expectedVk: Record<string, string>;\n"))
+              (display-string "export declare const circuitSignatures: __compactRuntime.CircuitSignatures;\n")
+              (display-string "export declare const declaredInterfaces: __compactRuntime.DeclaredInterfaces;\n")
               ))))
 
       (module (print-contract.js)
         (define (print-contract-header)
           (display-string "import * as __compactRuntime from '@midnight-ntwrk/compact-runtime';\n")
-          (printf "__compactRuntime.checkRuntimeVersion('~a');\n" runtime-version-string)
+          (printf "__compactRuntime.checkRuntimeVersion('~a');\n" (selected-runtime-version-string))
           (display-string "\n"))
 
         (define (print-contract-descriptors src descriptor-id* type*)
@@ -1272,6 +1311,16 @@
                      [("string") (format "__compactRuntime.CompactTypeOpaqueString")]
                      [("Uint8Array") (format "__compactRuntime.CompactTypeOpaqueUint8Array")]
                      [("JubjubPoint") (format "__compactRuntime.CompactTypeJubjubPoint")]
+                     [("JubjubScalar") "__compactRuntime.CompactTypeJubjubScalar"]
+                     [("Secp256k1Point") "__compactRuntime.CompactTypeSecp256k1Point"]
+                     [("Secp256r1Point") "__compactRuntime.CompactTypeSecp256r1Point"]
+                     [("Curve25519Point") "__compactRuntime.CompactTypeCurve25519Point"]
+                     [("Secp256k1Base") "__compactRuntime.CompactTypeSecp256k1Base"]
+                     [("Secp256k1Scalar") "__compactRuntime.CompactTypeSecp256k1Scalar"]
+                     [("Secp256r1Base") "__compactRuntime.CompactTypeSecp256r1Base"]
+                     [("Secp256r1Scalar") "__compactRuntime.CompactTypeSecp256r1Scalar"]
+                     [("Curve25519Base") "__compactRuntime.CompactTypeCurve25519Base"]
+                     [("Curve25519Scalar") "__compactRuntime.CompactTypeCurve25519Scalar"]
                      ; FIXME: what should happen with other opaque types?
                      [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                   [(tvector ,src ,len ,type)
@@ -1352,7 +1401,28 @@
                     [(tfield ,src) (format "typeof(~a) === 'bigint' && ~:*~a >= 0 && ~:*~a <= __compactRuntime.MAX_FIELD" var)]
                     [(tunsigned ,src ,nat) (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= ~dn" var nat)]
                     [(tbytes ,src ,len) (format "~a.buffer instanceof ArrayBuffer && ~:*~a.BYTES_PER_ELEMENT === 1 && ~:*~a.length === ~s" var len)]
-                    [(topaque ,src ,opaque-type) "true"]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256k1Point"))
+                     (format "__compactRuntime.isValidSecp256k1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Secp256r1Point"))
+                     (format "__compactRuntime.isValidSecp256r1Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (string=? opaque-type "Curve25519Point"))
+                     (format "__compactRuntime.isValidCurve25519Point(~a)" var)]
+                    [(topaque ,src ,opaque-type)
+                     (let ([max (case opaque-type
+                                  [("JubjubScalar") "MAX_JUBJUB_SCALAR"]
+                                  [("Secp256k1Base") "MAX_SECP256K1_BASE"]
+                                  [("Secp256k1Scalar") "MAX_SECP256K1_SCALAR"]
+                                  [("Secp256r1Base") "MAX_SECP256R1_BASE"]
+                                  [("Secp256r1Scalar") "MAX_SECP256R1_SCALAR"]
+                                  [("Curve25519Base") "MAX_CURVE25519_BASE"]
+                                  [("Curve25519Scalar") "MAX_CURVE25519_SCALAR"]
+                                  [else #f])])
+                       (if max
+                           (format "typeof(~a) === 'bigint' && ~:*~a >= 0n && ~:*~a <= __compactRuntime.~a" var max)
+                           "true"))]
                     [(tvector ,src ,len ,type)
                      (format "Array.isArray(~a) && ~:*~a.length === ~d && ~2:*~a.every((t) => ~*~a)"
                              var len (typeof type "t"))]
@@ -1379,7 +1449,8 @@
                 [(tboolean ,src) "Boolean"]
                 [(tfield ,src) "Field"]
                 [(tunsigned ,src ,nat) (format "Uint<0..~d>" (+ nat 1))]
-                [(topaque ,src ,opaque-type) (format "Opaque<~s>" opaque-type)]
+                [(topaque ,src ,opaque-type)
+                 (if (foreign-native-type? opaque-type) opaque-type (format "Opaque<~s>" opaque-type))]
                 [(tunknown) "Unknown"]
                 [(tvector ,src ,len ,type) (format "Vector<~s, ~a>" len (format-type type))]
                 [(tbytes ,src ,len) (format "Bytes<~s>" len)]
@@ -1441,7 +1512,9 @@
                 2 (make-Qconcat
                     "if (!("
                     ; we don't insist on currentPrivateState being defined
-                    (format "typeof(~a) === 'object' && ~:*~a.currentQueryContext != undefined" var)
+                    (if (ledger9-runtime-shape?)
+                        (format "typeof(~a) === 'object' && ~:*~a.callContext.currentQueryContext != undefined" var)
+                        (format "typeof(~a) === 'object' && ~:*~a.currentQueryContext != undefined" var))
                     ")) {"
                     2 (compact-stdlib "typeError")
                     "("
@@ -1575,7 +1648,7 @@
                              (map (lambda (external-name)
                                     (apply make-Qconcat/src src
                                       (make-Qconcat/src (id-src internal-id) external-name)
-                                      (format ": (...~a) => {" args)
+                                      (format (if (ledger9-runtime-shape?) ": async (...~a) => {" ": (...~a) => {") args)
                                       2 (make-Qconcat
                                           (format "if (~a.length !== ~d) {" args nargs)
                                           2 (format "throw new ~a(`~a: expected ~d argument~:*~p (as invoked from Typescript), received ${~a.length}`);"
@@ -1588,8 +1661,9 @@
                                         (context-type-check src external-name contextOrig
                                           (argument-type-checks src external-name 1 (map arg->id arg*) (map arg->type arg*)
                                             (list
-                                              ; Shallow clone context to ensure no-one else has a reference to it
-                                              2 (format "const context = { ...~a, gasCost: __compactRuntime.emptyRunningCost() };" contextOrig)
+                                              2 (if (ledger9-runtime-shape?)
+                                                    (format "const context = __compactRuntime.copyCircuitContext(~a);" contextOrig)
+                                                    (format "const context = { ...~a, gasCost: __compactRuntime.emptyRunningCost() };" contextOrig))
                                               2 "const partialProofData = {"
                                               4 (make-Qconcat
                                                   "input: {"
@@ -1638,7 +1712,7 @@
                                               4 "publicTranscript: [],"
                                               4 "privateTranscriptOutputs: []"
                                               2 "};"
-                                              2 (format "const ~a = this." result)
+                                              2 (format (if (ledger9-runtime-shape?) "const ~a = await this." "const ~a = this.") result)
                                                 uname "("
                                                 (apply (make-Qsep ",") "context" "partialProofData" q-formal*)
                                                 ");"
@@ -1651,11 +1725,14 @@
                                                                   (format "~a.alignment()" descriptor-name?)
                                                                   "[]")
                                                 " };"
+                                              (if (ledger9-runtime-shape?)
+                                                  (make-Qconcat 2 "__compactRuntime.finalizeCallProofData(context, partialProofData);")
+                                                  "")
                                               2 "return { "
                                                 "result: " result ", "
                                                 "context: " "context" ", "
-                                                "proofData: " "partialProofData" ", "
-                                                "gasCost: " "context.gasCost"
+                                                (if (ledger9-runtime-shape?) "" "proofData: partialProofData, ")
+                                                "gasCost: " (if (ledger9-runtime-shape?) "context.callContext.currentGasCost" "context.gasCost")
                                                 " };"
                                               0 "}"))))))
                                   external-name*)
@@ -1663,8 +1740,10 @@
                        (with-local-unique-names
                          (let ([args (format-internal-binding unique-local-name (make-temp-id src 'args))])
                            (append
+                             ;; Pure circuit wrappers on `this.circuits` are still declared async
                              (map (lambda (external-name)
                                     (make-Qconcat/src src
+                                      (if (ledger9-runtime-shape?) "async " "")
                                       (make-Qconcat/src (id-src internal-id) external-name)
                                       (format "(context, ...~a) {" args)
                                       2 (format "return { result: pureCircuits.~a(...~a), context };" external-name args)
@@ -1884,7 +1963,9 @@
                         2 "const state = stateOrChargedState instanceof __compactRuntime.StateValue ? stateOrChargedState : stateOrChargedState.state;"
                         2 "const chargedState = stateOrChargedState instanceof __compactRuntime.StateValue ? new __compactRuntime.ChargedState(stateOrChargedState) : stateOrChargedState;"
                         2 "const context = {"
-                        4 "currentQueryContext: new __compactRuntime.QueryContext(chargedState, __compactRuntime.dummyContractAddress()),"
+                        4 (if (ledger9-runtime-shape?)
+                              "callContext: { currentQueryContext: new __compactRuntime.QueryContext(chargedState, __compactRuntime.dummyContractAddress()), currentGasCost: __compactRuntime.emptyRunningCost() },"
+                              "currentQueryContext: new __compactRuntime.QueryContext(chargedState, __compactRuntime.dummyContractAddress()),")
                         4 "costModel: __compactRuntime.CostModel.initialCostModel()"
                         2 "};"
                         2 "const partialProofData = {"
@@ -1975,7 +2056,7 @@
                                   2 "}"
                                   k)))
                           (apply make-Qconcat/src src
-                                 (format "initialState(...~a) {" args)
+                                 (format (if (ledger9-runtime-shape?) "async initialState(...~a) {" "initialState(...~a) {") args)
                                  2 (format "if (~a.length !== ~d) {" args nargs)
                                  4 (format "throw new __compactRuntime.CompactError(`Contract state constructor: expected ~d argument~:*~p (as invoked from Typescript), received ${~a.length}`);" nargs args)
                                  2 "}"
@@ -1998,7 +2079,9 @@
                                              (ledger-initializers src state pl-array
                                                (set-operations state xpelt0*
                                                  (cons*
-                                                   2 (format "const context = __compactRuntime.createCircuitContext(__compactRuntime.dummyContractAddress(), ~a.initialZswapLocalState.coinPublicKey, ~a.data, ~a.initialPrivateState);" constructorContext state constructorContext)
+                                                   2 (if (ledger9-runtime-shape?)
+                                                         (format "const context = __compactRuntime.createCircuitContext({circuitId: 'constructor', contractAddress: __compactRuntime.dummyContractAddress(), coinPublicKeyOrZswapState: ~a.initialZswapLocalState.coinPublicKey, contractState: ~a.data, privateState: ~a.initialPrivateState});" constructorContext state constructorContext)
+                                                         (format "const context = __compactRuntime.createCircuitContext(__compactRuntime.dummyContractAddress(), ~a.initialZswapLocalState.coinPublicKey, ~a.data, ~a.initialPrivateState);" constructorContext state constructorContext))
                                                    2 "const partialProofData = {"
                                                    4 "input: { value: [], alignment: [] },"
                                                    4 "output: undefined,"
@@ -2008,11 +2091,11 @@
                                                    (ledger-reset-to-default src pl-array
                                                      (list
                                                        2 (Stmt stmt #f #f)
-                                                       2 (format "~a.data = new __compactRuntime.ChargedState(context.currentQueryContext.state.state);" state)
+                                                       2 (format (if (ledger9-runtime-shape?) "~a.data = new __compactRuntime.ChargedState(context.callContext.currentQueryContext.state.state);" "~a.data = new __compactRuntime.ChargedState(context.currentQueryContext.state.state);") state)
                                                        2 "return {"
                                                        4 (format "currentContractState: ~a," state)
-                                                       4 "currentPrivateState: context.currentPrivateState,"
-                                                       4 "currentZswapLocalState: context.currentZswapLocalState"
+                                                       4 (if (ledger9-runtime-shape?) "currentPrivateState: context.callContext.currentPrivateState," "currentPrivateState: context.currentPrivateState,")
+                                                       4 (if (ledger9-runtime-shape?) "currentZswapLocalState: context.callContext.currentZswapLocalState" "currentZswapLocalState: context.currentZswapLocalState")
                                                        2 "}"
                                                        0 "}")))))))))))))))
                     (newline)])]
@@ -2025,7 +2108,8 @@
                   (let ([q-formal* (map make-Qformal! arg*)])
                     (make-Qconcat/src src
                       (make-Qconcat
-                        (make-Qconcat/src (id-src internal-id) (format "~a" uname))
+                        (make-Qconcat/src (id-src internal-id)
+                          (if (or pure? (not (ledger9-runtime-shape?))) (format "~a" uname) (format "async ~a" uname)))
                         "("
                         (make-Qargs pure? q-formal*)
                         ")"
@@ -2073,7 +2157,13 @@
                       0 "{")
                     2 (format "const ~a = " result)
                     (make-Qconcat
-                      (native-entry-function native-entry)
+                      (let ([runtime-name (native-entry-function native-entry)])
+                        (case runtime-name
+                          [("__compactRuntime.ecMulJubjubScalar") "__compactRuntime.ecMul"]
+                          [("__compactRuntime.ecMulGeneratorJubjubScalar") "__compactRuntime.ecMulGenerator"]
+                          [("__compactRuntime.keccak256")
+                           (if (feature-zkir-v3) "__compactRuntime.keccak256Aligned" runtime-name)]
+                          [else runtime-name]))
                       "("
                       (apply (make-Qsep ",")
                              (fold-right
@@ -2122,14 +2212,16 @@
                         (make-Qargs #f q-formal*)
                         ")"
                         0 "{")
-                      2 (format "const ~a = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);" witnessContext)
+                      2 (format (if (ledger9-runtime-shape?)
+                                    "const ~a = __compactRuntime.createWitnessContext(ledger(context.callContext.currentQueryContext.state), context.callContext.currentPrivateState, context.callContext.currentQueryContext.address);"
+                                    "const ~a = __compactRuntime.createWitnessContext(ledger(context.currentQueryContext.state), context.currentPrivateState, context.currentQueryContext.address);") witnessContext)
                       2 (format "const [~a, ~a] = " nextPrivateState result)
                       "this.witnesses."
                       (make-Qconcat/src (id-src internal-id) external-name)
                       "("
                       (apply (make-Qsep ",") witnessContext q-formal*)
                       ");"
-                      2 (format "context.currentPrivateState = ~a;" nextPrivateState)
+                      2 (format (if (ledger9-runtime-shape?) "context.callContext.currentPrivateState = ~a;" "context.currentPrivateState = ~a;") nextPrivateState)
                       (result-type-check src external-name type result
                         (list
                           2 "partialProofData.privateTranscriptOutputs.push({"
@@ -2164,7 +2256,9 @@
                   (display-string "}\n")
                   (print-contract-ledger src xpelt* uname*)
                   (display-string "const _emptyContext = {\n")
-                  (display-string "  currentQueryContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress())\n")
+                  (display-string (if (ledger9-runtime-shape?)
+                                      "  callContext: { currentQueryContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress()), currentGasCost: __compactRuntime.emptyRunningCost() }\n"
+                                      "  currentQueryContext: new __compactRuntime.QueryContext(new __compactRuntime.ContractState().data, __compactRuntime.dummyContractAddress())\n"))
                   (display-string "};\n")
                   (print-Q 0
                     (make-Qconcat
@@ -2183,6 +2277,135 @@
                           (list 2 (build-exported-pure-circuits xpelt* uname*) 0 "};"))))
                   (newline))))))
 
+        ;; Match the pinned compiler's machine-readable circuit signature
+        ;; representation.  The current frontend still represents foreign
+        ;; fields and points as named opaques, so recognize those leaves here.
+        (define (signature-comma-separated value*)
+          (if (null? value*) "" (format "~a~{, ~a~}" (car value*) (cdr value*))))
+
+        (define (format-signature-key name)
+          (let ([literal (format-javascript-string name)])
+            (if (string=? name "__proto__") (format "[~a]" literal) literal)))
+
+        (define (format-signature-sequence value*)
+          (cond
+            [(null? value*) "{tag: 'Tuple', types: []}"]
+            [(andmap (lambda (value) (string=? value (car value*))) (cdr value*))
+             (format "{tag: 'Vector', length: ~d, type: ~a}" (length value*) (car value*))]
+            [else (format "{tag: 'Tuple', types: [~a]}" (signature-comma-separated value*))]))
+
+        (define (format-interface-descriptor elt-name* type** type*)
+          (format "{~a}"
+            (signature-comma-separated
+              (map (lambda (elt-name arg-type* result-type)
+                     (format "~a: {argumentTypes: [~a], resultType: ~a}"
+                       (format-signature-key (symbol->string elt-name))
+                       (signature-comma-separated (map format-signature-type arg-type*))
+                       (format-signature-type result-type)))
+                   elt-name* type** type*))))
+
+        (define (format-signature-type type)
+          (nanopass-case (Ltypescript Type) type
+            [(tboolean ,src) "{tag: 'Boolean'}"]
+            [(tfield ,src) "{tag: 'Field'}"]
+            [(tunsigned ,src ,nat)
+             (format "{tag: 'Uint', maxval: ~a}" (format-javascript-string (number->string nat)))]
+            [(tbytes ,src ,len) (format "{tag: 'Bytes', length: ~d}" len)]
+            [(topaque ,src ,opaque-type)
+             (if (foreign-native-type? opaque-type)
+                 (format "{tag: ~a}" (format-javascript-string opaque-type))
+                 (format "{tag: 'Opaque', tsType: ~a}" (format-javascript-string opaque-type)))]
+            [(tvector ,src ,len ,type)
+             (if (zero? len)
+                 "{tag: 'Tuple', types: []}"
+                 (format "{tag: 'Vector', length: ~d, type: ~a}"
+                   len (format-signature-type type)))]
+            [(ttuple ,src ,type* ...)
+             (format-signature-sequence (map format-signature-type type*))]
+            [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
+             (format "{tag: 'Struct', name: ~a, elements: [~a]}"
+               (format-javascript-string (symbol->string struct-name))
+               (signature-comma-separated
+                 (map (lambda (elt-name type)
+                        (format "{name: ~a, type: ~a}"
+                          (format-javascript-string (symbol->string elt-name))
+                          (format-signature-type type)))
+                      elt-name* type*)))]
+            [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
+             (format "{tag: 'Enum', name: ~a, elements: [~a]}"
+               (format-javascript-string (symbol->string enum-name))
+               (signature-comma-separated
+                 (map (lambda (name) (format-javascript-string (symbol->string name)))
+                      (cons elt-name elt-name*))))]
+            [(talias ,src ,nominal? ,type-name ,type)
+             (cond
+               [(and nominal? (eq? type-name 'JubjubPoint) (stdlib-src? src))
+                "{tag: 'JubjubPoint'}"]
+               [nominal?
+                (format "{tag: 'Alias', name: ~a, type: ~a}"
+                  (format-javascript-string (symbol->string type-name))
+                  (format-signature-type type))]
+               [else (format-signature-type type)])]
+            [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+             (format "{tag: 'Contract', name: ~a, circuits: ~a}"
+               (format-javascript-string (symbol->string contract-name))
+               (format-interface-descriptor elt-name* type** type*))]
+            [(tadt ,src ,adt-name ([,adt-formal* ,adt-arg*] ...) ,vm-expr (,adt-op* ...) (,adt-rt-op* ...))
+             (assert cannot-happen)]
+            [(tunknown) (assert cannot-happen)]))
+
+        (define (print-circuit-signatures xpelt*)
+          (display-string "export const circuitSignatures = {\n")
+          (display-string "  __proto__: null,\n")
+          (for-each
+            (lambda (xpelt)
+              (XPelt-case xpelt
+                [(XPelt-exported-circuit src internal-id arg* type stmt external-name* pure?)
+                 (for-each
+                   (lambda (external-name)
+                     (printf "  ~a: {pure: ~a, provable: ~a, argumentTypes: [~a], resultType: ~a},\n"
+                       (format-signature-key external-name)
+                       (if pure? "true" "false")
+                       (if (memq (string->symbol external-name) (proof-circuit-names))
+                           "true" "false")
+                       (signature-comma-separated
+                         (map (lambda (arg)
+                                (nanopass-case (Ltypescript Argument) arg
+                                  [(,var-name ,type) (format-signature-type type)]))
+                              arg*))
+                       (format-signature-type type)))
+                   external-name*)]
+                [else (void)]))
+            xpelt*)
+          (display-string "};\n\n"))
+
+        (define (print-expected-vk)
+          (display-string "export const expectedVk = {\n")
+          (display-string "  __proto__: null,\n")
+          (for-each
+            (lambda (pair)
+              (printf "  ~a: ~a,\n"
+                (format-signature-key (car pair))
+                (format-javascript-string (cdr pair))))
+            (verifier-key-hashes))
+          (display-string "};\n\n"))
+
+        (define (print-declared-interfaces contract-type*)
+          (if (null? contract-type*)
+              (display-string "export const declaredInterfaces = { __proto__: null };\n\n")
+              (begin
+                (display-string "export const declaredInterfaces = {\n")
+                (display-string "  __proto__: null,\n")
+                (for-each
+                  (lambda (type)
+                    (nanopass-case (Ltypescript Contract-Type) type
+                      [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+                       (printf "  ~a: ~a,\n"
+                         (format-signature-key (symbol->string contract-name))
+                         (format-interface-descriptor elt-name* type** type*))]))
+                  contract-type*)
+                (display-string "};\n\n"))))
+
         (define (print-exported-types xpelt*)
           (for-each
             (lambda (xpelt)
@@ -2190,6 +2413,12 @@
                 [(XPelt-type-definition src type-name export-name tvar-name* type)
                  (nanopass-case (Ltypescript Type) type
                    [(tenum ,src ,enum-name ,elt-name ,elt-name* ...)
+                    (when (and (emit-verifier-key-metadata) (eq? export-name 'expectedVk))
+                      (source-errorf src "exported enum name expectedVk conflicts with generated verifier metadata export"))
+                    (when (eq? export-name 'circuitSignatures)
+                      (source-errorf src "exported enum name circuitSignatures conflicts with generated circuit metadata export"))
+                    (when (eq? export-name 'declaredInterfaces)
+                      (source-errorf src "exported enum name declaredInterfaces conflicts with generated interface metadata export"))
                     (printf "export var ~a;\n" export-name)
                     (printf "(function (~a) {\n" export-name)
                     (let ([elt-name* (cons elt-name elt-name*)])
@@ -2365,7 +2594,7 @@
         (define (print-contract-footer)
           (display-string "//# sourceMappingURL=index.js.map\n"))
 
-        (define (print-contract.js src descriptor-id* type* xpelt* uname*)
+        (define (print-contract.js src contract-type* descriptor-id* type* xpelt* uname*)
           (parameterize ([current-output-port (get-target-port 'contract.js)])
             (fluid-let ([sourcemap-tracker (make-sourcemap-tracker)])
               (let-values ([(contract-dependency* contract-has-witness-ht) (get-contract-dependencies)])
@@ -2373,6 +2602,9 @@
                 (print-exported-types xpelt*)
                 (print-contract-descriptors src descriptor-id* type*)
                 (print-contract-class src xpelt* uname*)
+                (when (emit-verifier-key-metadata) (print-expected-vk))
+                (print-circuit-signatures xpelt*)
+                (print-declared-interfaces contract-type*)
                 (for-each print-contract-reference-locations xpelt*)
                 (print-contract-footer)
                 (record-sourcemap-eof! sourcemap-tracker (port-position (current-output-port)))
@@ -2582,12 +2814,12 @@
           [else #f]))
       )
     (Program : Program (ir) -> Program ()
-      [(program ,src ((,export-name* ,name*) ...) (type-descriptors ,descriptor-table^ (,descriptor-id* ,type*) ...) ,pelt* ...)
+      [(program ,src (,contract-type* ...) ((,export-name* ,name*) ...) (type-descriptors ,descriptor-table^ (,descriptor-id* ,type*) ...) ,pelt* ...)
        (let* ([xpelt* (maplr (lambda (x) (Program-Element x (map cons export-name* name*))) pelt*)]
               [uname* (maplr xpelt->uname xpelt*)])
          (print-contract.d.ts src xpelt* uname*)
          (fluid-let ([descriptor-table descriptor-table^])
-           (print-contract.js src descriptor-id* type* xpelt* uname*)))
+           (print-contract.js src contract-type* descriptor-id* type* xpelt* uname*)))
        ir])
     (Program-Element : Program-Element (ir export-alist) -> * (xpelt)
       (definitions
@@ -2600,6 +2832,8 @@
             '()
             export-alist)))
       [(circuit ,src ,function-name (,arg* ...) ,type ,stmt)
+       (when (and (ledger9-runtime-shape?) (not (id-pure? function-name)))
+         (mark-function-async! function-name))
        (if (id-exported? function-name)
            (let ([external-name* (external-names function-name)])
              (XPelt-exported-circuit src function-name arg* type stmt external-name* (id-pure? function-name)))
@@ -2714,7 +2948,12 @@
             (with-output-to-string
               (lambda ()
                 (let f ([type type] [i 0] [indent 4])
-                  (nanopass-case (Ltypescript Type) (de-alias type)
+                  (nanopass-case (Ltypescript Type) (subst-tcontract (de-alias type))
+                    [(topaque ,src ,opaque-type) (guard (string=? opaque-type "Uint8Array"))
+                     (print-indent indent)
+                     (printf "if (x~s.length !== y~:*~s.length) { return false; }\n" i)
+                     (print-indent indent)
+                     (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
                     [(tbytes ,src ,len)
                      (print-indent indent)
                      (printf "if (!x~s.every((x, i) => y~:*~s[i] === x)) { return false; }\n" i)]
@@ -2760,7 +2999,12 @@
                        elt-name*
                        type*)]
                     [(topaque ,src ,opaque-type)
-                     (guard (string=? opaque-type "JubjubPoint"))
+                     (guard (and (foreign-point-base opaque-type) (not (string=? opaque-type "Curve25519Point"))))
+                     (print-indent indent)
+                     (printf "if (x~s.identity !== y~s.identity || (!x~s.identity && (x~s.x !== y~s.x || x~s.y !== y~s.y))) { return false; }\n"
+                             i i i i i i i)]
+                    [(topaque ,src ,opaque-type)
+                     (guard (member opaque-type '("JubjubPoint" "Curve25519Point")))
                      (for-each
                        (lambda (elt-name)
                          (print-indent indent)
@@ -2800,8 +3044,6 @@
       [(default ,src ,type)
        (let default-value ([type type])
          (let ([type (de-alias type)])
-           ; even though tstruct is substituted for tcontract, we will never generate a default value
-           ; for a tcontract since that would be caught earlier. so this substitution is safe.
            (let ([type (subst-tcontract type)])
              (nanopass-case (Ltypescript Type) type
                [(tboolean ,src) "false"]
@@ -2815,6 +3057,9 @@
                   [("string") "''"]
                   [("Uint8Array") "new Uint8Array(0)"]
                   [("JubjubPoint") "({x: 0n, y: 1n})"]
+                  [("Curve25519Point") "({x: 0n, y: 1n})"]
+                  [("Secp256k1Point" "Secp256r1Point") "({x: 0n, y: 0n, identity: true})"]
+                  [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "0n"]
                   ; FIXME: what should happen with other opaque types?
                   [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
                [(tvector ,src ,len ,type)
@@ -2907,6 +3152,23 @@
            (format "((e, i) => e.slice(i, i+~d))(" len)
            ((make-Qsep ",") expr (make-Qconcat "Number(" index ")"))
            ")"))]
+      [(secp256k1-arithmetic ,src ,arithmetic-op ,type
+                             ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1]
+                             ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
+       (let ([stem (nanopass-case (Ltypescript Type) type
+                     [(topaque ,src^ ,opaque-type)
+                      (case opaque-type
+                        [("Secp256k1Base") "secp256k1Base"]
+                        [("Secp256k1Scalar") "secp256k1Scalar"]
+                        [("Secp256r1Base") "secp256r1Base"]
+                        [("Secp256r1Scalar") "secp256r1Scalar"]
+                        [("Curve25519Base") "curve25519Base"]
+                        [("Curve25519Scalar") "curve25519Scalar"]
+                        [else (assert cannot-happen)])]
+                     [else (assert cannot-happen)])]
+             [suffix (case arithmetic-op [(+) "Add"] [(-) "Sub"] [(*) "Mul"] [else (assert cannot-happen)])])
+         (parenthesize level (precedence call)
+           (make-Qconcat (compact-stdlib (string-append stem suffix)) "(" ((make-Qsep ",") expr1 expr2) ")")))]
       [(+ ,src ,mbits ,[Expr : expr1 (precedence add1 comma) outer-pure? -> * expr1] ,[Expr : expr2 (precedence add1 comma) outer-pure? -> * expr2])
        (guard (not mbits))
        (parenthesize level (precedence call)
@@ -2959,7 +3221,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -2982,7 +3245,8 @@
        (if (nanopass-case (Ltypescript Type) (de-alias type)
              [(tboolean ,src) #t]
              [(tfield ,src) #t]
-             [(topaque ,src ,opaque-type) (not (string=? opaque-type "JubjubPoint"))]
+             [(topaque ,src ,opaque-type)
+              (not (or (member opaque-type '("Uint8Array" "JubjubPoint")) (foreign-point-base opaque-type)))]
              [(tenum ,src ,enum-name ,elt-name ,elt-name* ...) #t]
              [else #f])
            (parenthesize level (precedence ==)
@@ -3008,15 +3272,21 @@
        (let ([mapper-name (unique-global-name "mapper")]
              [pure? (nanopass-case (Ltypescript Function) fun0
                       [(fref ,src ,function-name) (id-pure? function-name)]
-                      [else outer-pure?])])
+                      [else outer-pure?])]
+             [async? (and (ledger9-runtime-shape?)
+                          (nanopass-case (Ltypescript Function) fun0
+                            [(fref ,src ,function-name) (function-async? function-name)]
+                            [else (not outer-pure?)]))])
          (set! helper*
            (cons
              (let ([i+ (enumerate (cons expr expr*))])
-               (format "  ~a(~@[~*context, partialProofData, ~]f, ~{~a~^, ~}) {\n    let a = [];\n    for (let i = 0; i < ~a; i++) { a[i] = f(~@[~*context, partialProofData, ~]~{~a~^, ~}); }\n    return a;\n  }\n"
+               (format "  ~a~a(~@[~*context, partialProofData, ~]f, ~{~a~^, ~}) {\n    let a = [];\n    for (let i = 0; i < ~a; i++) { a[i] = ~af(~@[~*context, partialProofData, ~]~{~a~^, ~}); }\n    return a;\n  }\n"
+                 (if async? "async " "")
                  mapper-name
                  (not pure?)
                  (map (lambda (i) (format "a~s" i)) i+)
                  len
+                 (if async? "await " "")
                  (not pure?)
                  (map (lambda (i byte-ref?)
                         (let ([ref (format "a~d[i]" i)])
@@ -3024,21 +3294,25 @@
                       i+
                       (cons byte-ref? byte-ref?*))))
              helper*))
-         (parenthesize level (precedence call)
-           (make-Qconcat
-             "this."
-             mapper-name
-             "("
-             (make-Qargs pure?
-               (cons*
-                 (nanopass-case (Ltypescript Function) fun0
-                   [(fref ,src ,function-name)
-                    (let ([args (format-internal-binding unique-local-name (make-temp-id src 'args))])
-                      (make-Qconcat "(..." args ") =>" 2 fun "(..." args ")"))]
-                   [else fun])
-                 expr
-                 expr*))
-             ")")))]
+         (let ([call-q
+                (make-Qconcat
+                  "this."
+                  mapper-name
+                  "("
+                  (make-Qargs pure?
+                    (cons*
+                      (nanopass-case (Ltypescript Function) fun0
+                        [(fref ,src ,function-name)
+                         (let ([args (format-internal-binding unique-local-name (make-temp-id src 'args))])
+                           (make-Qconcat "(..." args ") =>" 2 fun "(..." args ")"))]
+                        [else fun])
+                      expr
+                      expr*))
+                  ")")])
+           (if async?
+               (parenthesize level (precedence not)
+                 (make-Qconcat "await " call-q))
+               (parenthesize level (precedence call) call-q))))]
       [(fold ,src ,len ,[Function : fun0 outer-pure? -> * fun]
              (,[Expr : expr0 (precedence add1 comma) outer-pure? -> * expr0] ,type)
              ,[Map-Argument : map-arg (precedence add1 comma) outer-pure? -> * expr byte-ref?]
@@ -3047,15 +3321,21 @@
        (let ([folder-name (unique-global-name "folder")]
              [pure? (nanopass-case (Ltypescript Function) fun0
                       [(fref ,src ,function-name) (id-pure? function-name)]
-                      [else outer-pure?])])
+                      [else outer-pure?])]
+             [async? (and (ledger9-runtime-shape?)
+                          (nanopass-case (Ltypescript Function) fun0
+                            [(fref ,src ,function-name) (function-async? function-name)]
+                            [else (not outer-pure?)]))])
          (set! helper*
            (cons
              (let ([i+ (enumerate (cons expr expr*))])
-               (format "  ~a(~@[~*context, partialProofData, ~]f, x, ~{~a~^, ~}) {\n    for (let i = 0; i < ~a; i++) { x = f(~@[~*context, partialProofData, ~]x, ~{~a~^, ~}); }\n    return x;\n  }\n"
+               (format "  ~a~a(~@[~*context, partialProofData, ~]f, x, ~{~a~^, ~}) {\n    for (let i = 0; i < ~a; i++) { x = ~af(~@[~*context, partialProofData, ~]x, ~{~a~^, ~}); }\n    return x;\n  }\n"
+                 (if async? "async " "")
                  folder-name
                  (not pure?)
                  (map (lambda (i) (format "a~s" i)) i+)
                  len
+                 (if async? "await " "")
                  (not pure?)
                  (map (lambda (i byte-ref?)
                         (let ([ref (format "a~d[i]" i)])
@@ -3063,29 +3343,41 @@
                       i+
                       (cons byte-ref? byte-ref?*))))
              helper*))
-         (parenthesize level (precedence call)
-           (make-Qconcat
-             "this."
-             folder-name
-             "("
-             (make-Qargs pure?
-               (cons*
-                 (nanopass-case (Ltypescript Function) fun0
-                   [(fref ,src ,function-name)
-                    (let ([args (format-internal-binding unique-local-name (make-temp-id src 'args))])
-                      (make-Qconcat "(..." args ") =>" 2 fun "(..." args ")"))]
-                   [else fun])
-                 expr0
-                 expr
-                 expr*))
-             ")")))]
+         (let ([call-q
+                (make-Qconcat
+                  "this."
+                  folder-name
+                  "("
+                  (make-Qargs pure?
+                    (cons*
+                      (nanopass-case (Ltypescript Function) fun0
+                        [(fref ,src ,function-name)
+                         (let ([args (format-internal-binding unique-local-name (make-temp-id src 'args))])
+                           (make-Qconcat "(..." args ") =>" 2 fun "(..." args ")"))]
+                        [else fun])
+                      expr0
+                      expr
+                      expr*))
+                  ")")])
+           (if async?
+               (parenthesize level (precedence not)
+                 (make-Qconcat "await " call-q))
+               (parenthesize level (precedence call) call-q))))]
       [(call ,src ,function-name ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
-       (parenthesize level (precedence call)
-         (make-Qconcat
-           (format-function-reference src function-name)
-           "("
-           (make-Qargs (id-pure? function-name) expr*)
-           ")"))]
+       (if (function-async? function-name)
+           (parenthesize level (precedence not)
+             (make-Qconcat
+               "await "
+               (format-function-reference src function-name)
+               "("
+               (make-Qargs (id-pure? function-name) expr*)
+               ")"))
+           (parenthesize level (precedence call)
+             (make-Qconcat
+               (format-function-reference src function-name)
+               "("
+               (make-Qargs (id-pure? function-name) expr*)
+               ")")))]
       [(new ,src ,type ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (nanopass-case (Ltypescript Type) (de-alias type)
          [(tstruct ,src ,struct-name (,elt-name* ,type*) ...)
@@ -3118,10 +3410,35 @@
              expr
              (format-javascript-string mesg))
            ")"))]
+      [(jubjub-cast ,src ,type ,expr)
+       (nanopass-case (Ltypescript Type) type
+         [(tfield ,src) (Expr expr level outer-pure?)]
+         [(topaque ,src ,opaque-type)
+          (parenthesize level (precedence call)
+            (make-Qconcat (compact-stdlib "convertNumericToJubjubScalar") "("
+              (Expr expr (precedence add1 comma) outer-pure?) ")"))])]
+      [(secp256k1-bytes-cast ,src ,type ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (parenthesize level (precedence call)
+         (nanopass-case (Ltypescript Type) (de-alias type)
+           [(tbytes ,src^ ,len)
+            (make-Qconcat (compact-stdlib (if (ledger9-runtime-shape?) "convertBigintToBytes" "convertFieldToBytes")) "(32, " expr ", "
+              (format-javascript-string (format-source-object src)) ")")]
+           [(topaque ,src^ ,opaque-type)
+            (let-values ([(convert maximum)
+                          (case opaque-type
+                            [("Secp256k1Base") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_BASE")]
+                            [("Secp256k1Scalar") (values "convertBytesToSecp256k1Field" "MAX_SECP256K1_SCALAR")]
+                            [("Secp256r1Base") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_BASE")]
+                            [("Secp256r1Scalar") (values "convertBytesToSecp256r1Field" "MAX_SECP256R1_SCALAR")]
+                            [("Curve25519Base") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_BASE")]
+                            [("Curve25519Scalar") (values "convertBytesToCurve25519Field" "MAX_CURVE25519_SCALAR")]
+                            [else (assert cannot-happen)])])
+              (make-Qconcat (compact-stdlib convert) "(__compactRuntime." maximum ", " expr ")"))]
+           [else (assert cannot-happen)]))]
       [(field->bytes ,src ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
        (parenthesize level (precedence call)
          (make-Qconcat
-           (compact-stdlib "convertFieldToBytes")
+           (compact-stdlib (if (ledger9-runtime-shape?) "convertBigintToBytes" "convertFieldToBytes"))
            "("
            ((make-Qsep ",") (format "~d" len) expr (format "'~a'" (format-source-object src)))
            ")"))]
@@ -3130,15 +3447,19 @@
          (nanopass-case (Ltypescript Type) (de-alias type)
            [(tfield ,src^)
             (make-Qconcat
-              (compact-stdlib "convertBytesToField")
+              (compact-stdlib (if (ledger9-runtime-shape?) "convertBytesToUint" "convertBytesToField"))
               "("
-              ((make-Qsep ",") (format "~d" len) expr (format "'~a'" (format-source-object src)))
+              (if (ledger9-runtime-shape?)
+                  ((make-Qsep ",") (format "~dn" (max-field)) (format "~d" len) expr "'Field'" (format "'~a'" (format-source-object src)))
+                  ((make-Qsep ",") (format "~d" len) expr (format "'~a'" (format-source-object src))))
               ")")]
            [(tunsigned ,src^ ,nat^)
             (make-Qconcat
               (compact-stdlib "convertBytesToUint")
               "("
-              ((make-Qsep ",") (format "~dn" nat^) (format "~d" len) expr (format "'~a'" (format-source-object src)))
+              (if (ledger9-runtime-shape?)
+                  ((make-Qsep ",") (format "~dn" nat^) (format "~d" len) expr (format "'Uint<~d>'" nat^) (format "'~a'" (format-source-object src)))
+                  ((make-Qsep ",") (format "~dn" nat^) (format "~d" len) expr (format "'~a'" (format-source-object src))))
               ")")]
            [else (assert cannot-happen)]))]
       [(vector->bytes ,src ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
@@ -3210,26 +3531,64 @@
       [(safe-cast ,src ,type ,type^ ,expr)
        ; no checks needed for safe casts
        (Expr expr level outer-pure?)]
+      [(emit-log ,src ,nat ,len ,[Expr : expr (precedence add1 comma) outer-pure? -> * expr])
+       (make-Qconcat
+         (case nat
+           [(0) "__compactRuntime.emitShieldedSpend"]
+           [(1) "__compactRuntime.emitShieldedReceive"]
+           [(2) "__compactRuntime.emitShieldedMint"]
+           [(3) "__compactRuntime.emitShieldedBurn"]
+           [(4) "__compactRuntime.emitUnshieldedSpend"]
+           [(5) "__compactRuntime.emitUnshieldedReceive"]
+           [(6) "__compactRuntime.emitUnshieldedMint"]
+           [(7) "__compactRuntime.emitUnshieldedBurn"]
+           [(8) "__compactRuntime.emitPaused"]
+           [(9) "__compactRuntime.emitUnpaused"]
+           [(10) "__compactRuntime.emitMisc"]
+           [else (assert cannot-happen)])
+         "(context, partialProofData, " expr ")")]
       [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
        (nanopass-case (Ltypescript ADT-Op) adt-op
          [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
           ; this should be caught by ledger meta-type checks or by propagate-ledger-paths
           (when (public-adt? type) (source-errorf src "incomplete reference to nested ADT"))
-          (let ([descriptor-name? (and (eq? op-class 'read) (type->maybe-descriptor-name type))])
+          (let ([descriptor-name? (and (eq? op-class 'read)
+                                       (type->maybe-descriptor-name (subst-tcontract type)))])
             (let ([q (construct-query src path-elt* adt-formal* adt-arg* adt-op expr*)])
-              (nanopass-case (Ltypescript Type) (de-alias type)
-                [(tcontract ,src ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
-                 (assert not-implemented)]
-                [else
-                 (if descriptor-name?
-                     (make-Qconcat
-                       descriptor-name?
-                       ".fromValue("
-                       q
-                       ".value)")
-                     q)])))])]
+              (if descriptor-name?
+                  (make-Qconcat descriptor-name? ".fromValue(" q ".value)")
+                  q)))])]
       [(contract-call ,src ,elt-name (,[Expr : expr (precedence add1 comma) outer-pure? -> * expr] ,type) ,[Expr : expr* (precedence add1 comma) outer-pure? -> * expr*] ...)
-       (source-errorf src "contract types are not yet implemented")])
+       (unless (and (feature-zkir-v3) (compile-contract-statements))
+         (source-errorf src "contract types are not yet implemented"))
+       (when outer-pure?
+         (internal-errorf 'print-typescript "cross-contract call in pure circuit"))
+       (nanopass-case (Ltypescript Type) (de-alias type)
+         [(tcontract ,src^ ,contract-name (,elt-name* ,pure-dcl* (,type** ...) ,type*) ...)
+          (unless (memq elt-name elt-name*)
+            (internal-errorf 'print-typescript
+              "contract-call references unknown circuit ~s on contract ~s"
+              elt-name contract-name))
+          (let ([interface-name (format-javascript-string (symbol->string contract-name))]
+                [callee-address
+                 (make-Qconcat
+                   (format "~a((" (compact-stdlib "decodeContractAddress"))
+                   expr
+                   ").bytes)")])
+            (parenthesize level (precedence not)
+              (make-Qconcat
+                (format "await ~a({" (compact-stdlib "crossContractCall"))
+                1 ((make-Qsep ",")
+                   "context"
+                   (format "interfaceName: ~a" interface-name)
+                   (format "declaration: declaredInterfaces[~a]" interface-name)
+                   (format "calleeCircuitId: ~a" (format-javascript-string (symbol->string elt-name)))
+                   (make-Qconcat "calleeAddress: " callee-address)
+                   "partialProofData"
+                   (make-Qconcat "args: [" (apply (make-Qsep ",") expr*) "]"))
+                0 "})")))]
+         [else
+          (source-errorf src "internal: contract-call type is not a tcontract")])])
     (Map-Argument : Map-Argument (ir level outer-pure?) -> * (Q byte-ref?)
       [(,[Expr : expr (precedence add1 comma) outer-pure? -> * expr] ,type ,type^)
        (values
@@ -3244,7 +3603,7 @@
          (make-Qconcat
            "("
            (make-Qconcat
-             "("
+             (if (or outer-pure? (not (ledger9-runtime-shape?))) "(" "async (")
              (make-Qargs outer-pure? q-formal*)
              ") =>"
              0 "{"
@@ -3329,6 +3688,10 @@
        (case opaque-type
          [("string" "Uint8Array") opaque-type]
          [("JubjubPoint") "__compactRuntime.JubjubPoint"]
+         [("Secp256k1Point") "__compactRuntime.Secp256k1Point"]
+         [("Secp256r1Point") "__compactRuntime.Secp256r1Point"]
+         [("Curve25519Point") "__compactRuntime.Curve25519Point"]
+         [("JubjubScalar" "Secp256k1Base" "Secp256k1Scalar" "Secp256r1Base" "Secp256r1Scalar" "Curve25519Base" "Curve25519Scalar") "bigint"]
          ;; FIXME: what should happen with other opaque types?
          [else (source-errorf src "opaque type ~a is not supported" opaque-type)])]
       [(tvector ,src ,len ,[Type : type -> * type])

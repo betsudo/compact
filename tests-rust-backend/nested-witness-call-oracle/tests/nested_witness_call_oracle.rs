@@ -115,7 +115,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["outer", "outerValue", "outerValue2", "outerValueExpr"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -127,7 +127,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn nested_witness_call_preserves_state_and_transcript_order() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-witness-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-witness-call-oracle.json"
     ))
     .unwrap();
     let initial = initial_state(ConstructorContext::new(7_u64)).unwrap();
@@ -167,7 +167,7 @@ fn nested_witness_call_preserves_state_and_transcript_order() {
 #[test]
 fn recorded_nested_expressions_match_typescript_and_replay() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-witness-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-witness-call-oracle.json"
     ))
     .unwrap();
     let context = initial_state(ConstructorContext::new(7_u64))
@@ -258,7 +258,7 @@ fn recorded_value_helper_propagates_witness_rejection() {
 #[test]
 fn parameterized_value_helper_preserves_argument_order_and_verify_program() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-witness-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-witness-call-oracle.json"
     ))
     .unwrap();
     let native_context = initial_state(ConstructorContext::new(7_u64))
@@ -341,7 +341,7 @@ fn parameterized_value_helper_preserves_argument_order_and_verify_program() {
 #[test]
 fn expression_nested_value_helper_matches_typescript_and_replays() {
     let reference: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/nested-witness-call-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-nested-witness-call-oracle.json"
     ))
     .unwrap();
 

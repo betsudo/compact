@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_test_center_bboard_fixture::ledger_contract as contract;
 use midnight_compact_runtime as runtime;
@@ -71,30 +72,12 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         if format!("{manual:?}") != format!("{prepared:?}") {
             return Err("post observed-call mismatch".into());
         }
-        if index == 0 {
-            // Explicit pre-call contract snapshot; the shared helper funds Dust
-            // separately and applies the call under default ledger strictness.
-            opaque_public::apply_funded(
-                root,
-                "post",
-                prepared,
-                deploy,
-                &expected,
-                rng.clone(),
-                0x5600,
-            )?;
-            println!(
-                "bboard empty-message post: funded default-strict ledger-8 application passed"
-            );
-        } else {
-            check_transaction(root, "post", deploy, prepared, &mut rng, |applied| {
-                if applied.data.get_ref() != &expected {
-                    return Err("post applied state mismatch".into());
-                }
-                Ok(())
-            })?;
-            println!("bboard Unicode post: relaxed-balancing diagnostic application passed");
-        }
+        check_transaction(root, "post", deploy, prepared, &mut rng, |applied| {
+            if applied.data.get_ref() != &expected {
+                return Err("post applied state mismatch".into());
+            }
+            Ok(())
+        })?;
         seeded = support::rehydrate(native.context);
         let private = seeded.private_state;
         let deploy = make_deploy(
@@ -154,7 +137,7 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         })?;
         seeded = support::rehydrate(native.context);
         println!(
-            "bboard cycle {index}: take_down proof and relaxed-balancing diagnostic application passed"
+            "bboard cycle {index}: post and take_down proofs and funded default-strict Ledger 9 applications passed"
         );
     }
     Ok(())

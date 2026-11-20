@@ -36,7 +36,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     .fold(HashMap::new(), |map, name| {
         map.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
     });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -145,7 +145,7 @@ fn compare<T: Clone + Into<AlignedValue>>(
 #[test]
 fn direct_composite_helpers_order_and_selected_reads_match_typescript() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/field-observation-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-field-observation-oracle.json"
     ))
     .unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 23);

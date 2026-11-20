@@ -22,7 +22,7 @@ pub(super) fn inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         include_bytes!("../../compact-rust-backend/tests/constructor_vector_operands/sources.json"),
         14,
         42,
-        "compact-constructor-vector-model-inventory/v1",
+        "compact-constructor-vector-model-inventory/v2",
     )
 }
 
@@ -32,7 +32,7 @@ pub(super) fn equality_inventory(root: &Path) -> Result<(), Box<dyn Error>> {
         include_bytes!("../../compact-rust-backend/tests/constructor_equality/sources.json"),
         8,
         24,
-        "compact-constructor-equality-model-inventory/v1",
+        "compact-constructor-equality-model-inventory/v2",
     )
 }
 
@@ -44,7 +44,7 @@ pub(super) fn equality_boundaries_inventory(root: &Path) -> Result<(), Box<dyn E
         ),
         8,
         24,
-        "compact-constructor-equality-boundaries-model-inventory/v1",
+        "compact-constructor-equality-boundaries-model-inventory/v2",
     )
 }
 
@@ -56,7 +56,7 @@ pub(super) fn tuple_equality_inventory(root: &Path) -> Result<(), Box<dyn Error>
         ),
         16,
         48,
-        "compact-constructor-tuple-equality-model-inventory/v1",
+        "compact-constructor-tuple-equality-model-inventory/v2",
     )
 }
 
@@ -162,14 +162,17 @@ fn observe(
             let name = entry.as_str().ok_or("invalid constructor export name")?;
             let path = directory.join(format!("{name}.zkir"));
             let bytes = std::fs::read(&path)?;
-            let ir = IrSource::load(BufReader::new(std::io::Cursor::new(&bytes)))?;
-            let k = ir.model().k();
+            let ir =
+                midnight_zkir_v3::IrSource::load(BufReader::new(std::io::Cursor::new(&bytes)))?;
+            let model = ir.model();
+            let k = model.k();
             if std::fs::read(&path)? != bytes {
                 return Err("constructor model bytes changed during observation".into());
             }
             rows.push(
-                serde_json::json!({"source":role,"circuit":name,"k":k,"zkir_bytes":bytes.len(),
-                "proof_required":true,"within_tiny_automatic_cap":k<=8,"selected_for_proof":false}),
+                serde_json::json!({"source":role,"circuit":name,"k":k,"rows":model.rows(),
+                "zkir_bytes":bytes.len(),"proof_required":true,"within_tiny_automatic_cap":k<=8,
+                "selected_for_proof":false}),
             );
         }
     }

@@ -26,6 +26,8 @@ import argparse
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import shutil
 import subprocess
 import time
@@ -187,7 +189,7 @@ def main():
         def execute(label, command, expected=0):
             return run(spec["name"] + "-" + label, command, expected)
         generated = output / "cases" / spec["name"] / "generated"
-        execute("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger8",
+        execute("generate-sdk", [compiler, "--target", "rust", "--skip-zk", "--rust-functional-ledger9",
             "--rust-require-recording", "--rust-runtime-root", ROOT, spec["source"].relative_to(ROOT), generated])
         independent = output / "cases" / spec["name"] / "independent"
         execute("independent-ir", [scheme, "--emit-rust-ir", "--skip-ts", "--skip-zk", spec["source"].relative_to(ROOT), independent])
@@ -213,7 +215,7 @@ def main():
         (consumer / "src/bin").mkdir(parents=True)
         shutil.copyfile(spec["fixtures"] / "consumer.rs", consumer / "consumer.rs")
         cm = consumer / "Cargo.toml"
-        cm.write_text('[workspace]\n[package]\nname="nested-product-request-field-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\ncandidate={package=' + json.dumps(package) + ',path=' + json.dumps(str(manifest.parent)) + ',features=["ledger-transaction"]}\n')
+        cm.write_text(with_pinned_patches('[workspace]\n[package]\nname="nested-product-request-field-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\ncandidate={package=' + json.dumps(package) + ',path=' + json.dumps(str(manifest.parent)) + ',features=["ledger-transaction"]}\n', ROOT))
         bind(p for p in consumer.rglob("*.rs"))
         resolve(cm, spec["name"] + "-consumer-lock")
         result = execute("four-route-test", ["cargo", "test", "--locked", "--offline", "--manifest-path", cm, "--lib"])

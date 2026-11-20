@@ -170,7 +170,7 @@ def qualify(output, fixtures, compiler, environment, run, lock, bind, digest, re
             folder = output / "source-refusals" / (name + "-" + lane)
             command = ([compiler.with_name("compactc-scheme"), "--emit-rust-ir", "--skip-ts", "--skip-zk"]
                        if lane == "ir" else [compiler, "--target", lane, "--skip-zk"] +
-                       (["--rust-runtime-root", ROOT, "--rust-functional-ledger8", "--rust-require-recording"] if lane == "rust" else []))
+                       (["--rust-runtime-root", ROOT, "--rust-functional-ledger9", "--rust-require-recording"] if lane == "rust" else []))
             label = name + "-" + lane + "-scope"
             expected = spec["lanes"][lane]
             stdout = run(label, [*command, source, folder], expected_exit=expected["exit"])
@@ -204,7 +204,7 @@ def qualify(output, fixtures, compiler, environment, run, lock, bind, digest, re
         bind(source)
         generated = folder / "generated"
         run(name + "-mutant-generate", [compiler, "--target", "rust", "--skip-zk", "--rust-runtime-root", ROOT,
-            "--rust-functional-ledger8", "--rust-require-recording", source, generated])
+            "--rust-functional-ledger9", "--rust-require-recording", source, generated])
         snapshot = {str(p.relative_to(generated)): digest(p) for p in generated.rglob("*") if p.is_file()}
         for path in snapshot:
             bind(generated / path)

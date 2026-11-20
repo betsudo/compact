@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "3de7907495cf58af98752fe9fca5a5818f73238537784bbd44daff6e8bb09c40"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "8090b47c1c56cd369c1e2189567db5ce8cee065c86a5b10ae80fd58e0070e6f4",
+      "previous_sha256": "f08bdae7a016beeeb4a5380246b1e0aa55458bac771930587c49ef2c1480cdb2",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EnumCast { value, .. }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "60eb20581e9d3b8fdf0fc16586dd49275eb7234b9b7812979b51926ff2290e2e",
+      "previous_sha256": "aa5d1224acd68e7e606bba4939ebc58a97ed23d94b71f972026c300e2044abaf",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty }\n            | Expr::EnumCast { value, ty } => {\n",
+          "previous": "        Expr::Coerce { value, ty } | Expr::JubjubCast { value, ty } | Expr::Secp256k1BytesCast { value, ty } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "ef4ebf06b1ea480e6ad0056c9701cadf4b6972b963d71ed57cd636a9eba8886c",
+      "previous_sha256": "5a5f76ff7d0c345b9f2a3db5587946464d99c0b108cabd3539a0afb2dab03435",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EnumCast { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "1dd96c0136331a6f1fba7726d2a3ed1a5b62652ebe3a37b8f92f60a3c11ba144",
+      "previous_sha256": "b7e903236e525c7bb1e2112b5e41bacfb77d5760497c34934e5ea51c1ea47876",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EnumCast { .. }\n",
+          "previous": ""
+        }
+      ]
+    }
+  }
+}

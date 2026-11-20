@@ -413,7 +413,9 @@ circuit hashToCurve<T>(value: T): JubjubPoint;
 Verifies a Schnorr signature over the JubJub embedded curve. Takes a message
 as a vector of `N` field elements, a [`JubjubSchnorrSignature`](#jubjubschnorrsignature),
 and a verification key (a [`JubjubPoint`](#nativepoint) on the embedded curve).
-Returns true if the signature is valid; false if the signature does not verify.
+The identity point (the default `JubjubPoint`) fails an assertion because
+it makes the verification equation independent of the message. For other
+keys, the circuit returns true for a valid signature and false for an invalid one.
 
 To actually enforce that a signature is valid in a Compact circuit, use an
 `assert` that the result is true.
@@ -424,17 +426,6 @@ circuit jubjubSchnorrVerify<#N>(
           signature: JubjubSchnorrSignature,
           pk: JubjubPoint
           ): Boolean;
-```
-
-### `jubjubSchnorrVerify`
-
-Verifies a Schnorr signature over the JubJub embedded curve. Takes a message
-as a vector of `n` field elements, a [`JubjubSchnorrSignature`](#jubjubschnorrsignature),
-and a verification key (a [`JubjubPoint`](#nativepoint) on the embedded curve).
-Asserts that the signature is valid; fails if the signature does not verify.
-
-```compact
-circuit jubjubSchnorrVerify<#n>(msg: Vector<n, Field>, signature: JubjubSchnorrSignature, vk: JubjubPoint): [];
 ```
 
 ### `merkleTreePathRoot`

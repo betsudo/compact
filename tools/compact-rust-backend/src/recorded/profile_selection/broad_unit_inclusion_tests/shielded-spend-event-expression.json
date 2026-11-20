@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "16626bbcfeecb3ec6fc44039d7b3c71fe425fe4a6b4383f78c590d9cb79f1c07"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "5c1c31df5a37b431867a631937628546fff3dde61c60f0b4214aecc4325fbaf1",
+      "previous_sha256": "811b4056d31400b8a777655119f0e2773053b52eddf56ab77e812a987d259fff",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::KernelClaim { value, .. } => visit(value),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "922b57c3d81da99e1a43190a3ce69e12bec05bfe52b46940743d9173002a49fc",
+      "previous_sha256": "ec7531c98b47f2daa1a23b273d67a286b1165f37ab3e910ea7d40e599c0c010e",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::KernelClaim { value, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "8033307d69e412ee25845c28c186d0649cd5c50e127f4e723f8d39ad1b882a13",
+      "previous_sha256": "81115fa64f9b55bfa5dc0cb002476435af6f4c2b42b90c650aa67236cb265405",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::KernelClaim { .. }\n        | Expr::EmitShieldedSpend { .. }\n        | Expr::KernelMintShielded { .. }\n",
+          "previous": "        | Expr::KernelClaim { .. }\n        | Expr::KernelMintShielded { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "0b4196908db831ab111e6a8f3fbc01b09971d61665723188f2d04e7e7b43b002",
+      "previous_sha256": "836144b05027ccd2e5e216c3e8552a9d3079f6ae12a43366bca52fc15e14bbc4",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::KernelClaim { .. }\n        | Expr::EmitShieldedSpend { .. }\n        | Expr::KernelMintShielded { .. }\n",
+          "previous": "        | Expr::KernelClaim { .. }\n        | Expr::KernelMintShielded { .. }\n"
+        }
+      ]
+    }
+  }
+}

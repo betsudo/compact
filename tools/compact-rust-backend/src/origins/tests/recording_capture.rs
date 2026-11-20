@@ -1,3 +1,18 @@
+// This file is part of Compact.
+// Copyright (C) 2026 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 #![cfg(unix)]
 //! Native-IR controls retained by existing checked recording tests. Fake process
 //! issuance/binding is exercised; this is not genuine frontend source acceptance.
@@ -16,6 +31,64 @@ fn opaque_commit() -> Value {
         "opening":{"kind":"bytes_literal","bytes":vec![0u8;32]}}),
         json!({"kind":"bytes","length":32}),
     )
+}
+
+#[test]
+fn keccak_encoding_binds_to_the_raw_ir_and_selects_the_generated_helper() {
+    let legacy_expr = json!({
+        "kind": "keccak256",
+        "value": {"kind": "bytes_literal", "bytes": [1, 0]}
+    });
+    let result = json!({"kind": "bytes", "length": 32});
+    let mut legacy_metadata = Vec::new();
+    for (encoding, helper) in [
+        (None, "runtime::keccak256("),
+        (Some("normalized_atoms"), "runtime::keccak256("),
+        (Some("aligned"), "runtime::keccak256_aligned("),
+    ] {
+        let mut expr = legacy_expr.clone();
+        if let Some(encoding) = encoding {
+            expr["encoding"] = json!(encoding);
+        }
+        let ir = fixture::pure(expr, result.clone());
+        let seed = Sandbox::new(&ir, None, None, 0);
+        let metadata = fixture::metadata(&ir, &seed.source, false);
+        let sandbox = Sandbox::new(&ir, Some(&metadata), None, 0);
+        let rendered = sandbox.invoke().render(RenderOptions::default()).unwrap();
+        assert!(rendered.rendered().source.contains(helper));
+        assert!(matches!(rendered.metadata(), MetadataStatus::Available(_)));
+        rendered.finish_metadata().unwrap();
+        if encoding.is_none() {
+            legacy_metadata = metadata;
+        }
+        if encoding == Some("aligned") {
+            let stale = Sandbox::new(&ir, Some(&legacy_metadata), None, 0);
+            let rendered = stale.invoke().render(RenderOptions::default()).unwrap();
+            assert!(matches!(rendered.metadata(), MetadataStatus::Invalid(_)));
+            assert!(rendered.finish_metadata().is_err());
+        }
+    }
+
+    let mut invalid = legacy_expr;
+    invalid["encoding"] = json!("unqualified");
+    assert!(serde_json::from_value::<crate::ir::Expr>(invalid).is_err());
+}
+
+#[test]
+fn aligned_keccak_rejects_opaque_ir_during_native_semantics() {
+    let ir = fixture::pure(
+        json!({"kind": "keccak256", "encoding": "aligned", "value": {
+            "kind": "default", "ty": {"kind": "opaque_string"}
+        }}),
+        json!({"kind": "bytes", "length": 32}),
+    );
+    let contract = serde_json::from_value::<Contract>(ir).unwrap();
+    assert!(matches!(
+        crate::render_with_capabilities(&contract),
+        Err(crate::RenderError::UnsupportedOpaqueHashInput {
+            operation: "keccak256"
+        })
+    ));
 }
 
 #[test]

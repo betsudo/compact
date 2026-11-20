@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "eb79ee55e81cc182afa496b12a235a88083867f7",
+  "scope": "Reverse only typed child Map variants in retained historical source owners.",
+  "predecessor_manifest": {
+    "path": "jubjub-scalar-cast-expression.json",
+    "sha256": "efd83beeb5ea8735b50220ac676f889c29b85e37b4c06dd1d8c4c1c81a94bd7d"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "811b4056d31400b8a777655119f0e2773053b52eddf56ab77e812a987d259fff",
+      "previous_sha256": "a83e2d200e689350e0e50db70bdea2043f35bcf713d6ec9562bee76839ac854c",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapInitChild { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_calls_named(value, name),\n        StateAction::Assert { condition, .. } => expression_calls_named(condition, name),\n        StateAction::NestedMapInsert {\n            inner,\n            value,\n            outer,\n            ..\n        } => {\n            expression_calls_named(inner, name)\n                || expression_calls_named(value, name)\n                || expression_calls_named(outer, name)\n        }\n        StateAction::MapInsert { key, value, .. } => {\n            expression_calls_named(key, name) || expression_calls_named(value, name)\n        }\n        StateAction::SetInsertCoin {\n",
+          "previous": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_calls_named(value, name),\n        StateAction::Assert { condition, .. } => expression_calls_named(condition, name),\n        StateAction::MapInsert { key, value, .. } => {\n            expression_calls_named(key, name) || expression_calls_named(value, name)\n        }\n        StateAction::SetInsertCoin {\n"
+        },
+        {
+          "current": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapInitChild { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_contains_native_witness(value),\n        StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {\n            arguments.iter().any(expression_contains_native_witness)\n        }\n        StateAction::Assert { condition, .. } => expression_contains_native_witness(condition),\n        StateAction::NestedMapInsert {\n            inner,\n            value,\n            outer,\n            ..\n        } => {\n            expression_contains_native_witness(inner)\n                || expression_contains_native_witness(value)\n                || expression_contains_native_witness(outer)\n        }\n        StateAction::MapInsert { key, value, .. } => {\n            expression_contains_native_witness(key) || expression_contains_native_witness(value)\n        }\n        StateAction::SetInsertCoin {\n",
+          "previous": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_contains_native_witness(value),\n        StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {\n            arguments.iter().any(expression_contains_native_witness)\n        }\n        StateAction::Assert { condition, .. } => expression_contains_native_witness(condition),\n        StateAction::MapInsert { key, value, .. } => {\n            expression_contains_native_witness(key) || expression_contains_native_witness(value)\n        }\n        StateAction::SetInsertCoin {\n"
+        },
+        {
+          "current": "        Expr::Let { bindings, body } => {\n            bindings.iter().any(|binding| visit(&binding.value)) || visit(body)\n        }\n        Expr::Sequence { steps, value } => steps.iter().any(visit) || visit(value),\n        Expr::NestedMapLookup { inner, outer, .. } => visit(inner) || visit(outer),\n        Expr::UnsignedCast { value, .. }\n        | Expr::FieldCast { value }\n        | Expr::VectorToBytes { value, .. }\n        | Expr::BytesToVector { value, .. }\n",
+          "previous": "        Expr::Let { bindings, body } => {\n            bindings.iter().any(|binding| visit(&binding.value)) || visit(body)\n        }\n        Expr::Sequence { steps, value } => steps.iter().any(visit) || visit(value),\n        Expr::UnsignedCast { value, .. }\n        | Expr::FieldCast { value }\n        | Expr::VectorToBytes { value, .. }\n        | Expr::BytesToVector { value, .. }\n"
+        },
+        {
+          "current": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapInitChild { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_contains_witness(value),\n        StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {\n            arguments.iter().any(expression_contains_witness)\n        }\n",
+          "previous": "        | StateAction::HistoricMerkleInsertIndexDefault {\n            position: value, ..\n        }\n        | StateAction::MapInsertDefault { key: value, .. }\n        | StateAction::MapRemove { key: value, .. } => expression_contains_witness(value),\n        StateAction::PureCall { arguments, .. } | StateAction::CircuitCall { arguments, .. } => {\n            arguments.iter().any(expression_contains_witness)\n        }\n"
+        },
+        {
+          "current": "            bindings\n                .iter()\n                .any(|binding| expression_contains_witness(&binding.value))\n                || action_contains_witness(action)\n        }\n        StateAction::NestedMapInsert {\n            inner,\n            value,\n            outer,\n            ..\n        } => {\n            expression_contains_witness(inner)\n                || expression_contains_witness(value)\n                || expression_contains_witness(outer)\n        }\n        StateAction::MapInsert { key, value, .. } => {\n            expression_contains_witness(key) || expression_contains_witness(value)\n        }\n",
+          "previous": "            bindings\n                .iter()\n                .any(|binding| expression_contains_witness(&binding.value))\n                || action_contains_witness(action)\n        }\n        StateAction::MapInsert { key, value, .. } => {\n            expression_contains_witness(key) || expression_contains_witness(value)\n        }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "ec7531c98b47f2daa1a23b273d67a286b1165f37ab3e910ea7d40e599c0c010e",
+      "previous_sha256": "09c4ab741e09d6e73237df2477e6029280e36a4e5e0b06572c3024053be39b21",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::SetMember { value, .. }\n        | Expr::CounterLessThan {\n            threshold: value, ..\n        } => collect_expression_types(value, structs, enums, origins)?,\n        Expr::NestedMapLookup { inner, outer, .. } => {\n            collect_expression_types(inner, structs, enums, origins)?;\n            collect_expression_types(outer, structs, enums, origins)?;\n        }\n        Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {\n            collect_expression_types(key, structs, enums, origins)?\n        }\n        Expr::MerkleCheckRoot { root, .. } | Expr::HistoricMerkleCheckRoot { root, .. } => {\n",
+          "previous": "        Expr::SetMember { value, .. }\n        | Expr::CounterLessThan {\n            threshold: value, ..\n        } => collect_expression_types(value, structs, enums, origins)?,\n        Expr::MapMember { key, .. } | Expr::MapLookup { key, .. } => {\n            collect_expression_types(key, structs, enums, origins)?\n        }\n        Expr::MerkleCheckRoot { root, .. } | Expr::HistoricMerkleCheckRoot { root, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "81115fa64f9b55bfa5dc0cb002476435af6f4c2b42b90c650aa67236cb265405",
+      "previous_sha256": "31e4e0a3bc65b0ddb99641e7ba83cf53fa93392f202a5efb9d1add527d3e4204",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::NativeWitnessCall { .. }\n        | Expr::SetMember { .. }\n        | Expr::MapMember { .. }\n        | Expr::MapLookup { .. }\n        | Expr::NestedMapLookup { .. }\n        | Expr::MerkleCheckRoot { .. }\n        | Expr::HistoricMerkleCheckRoot { .. }\n        | Expr::SetIsEmpty { .. }\n        | Expr::SetSize { .. }\n",
+          "previous": "        | Expr::NativeWitnessCall { .. }\n        | Expr::SetMember { .. }\n        | Expr::MapMember { .. }\n        | Expr::MapLookup { .. }\n        | Expr::MerkleCheckRoot { .. }\n        | Expr::HistoricMerkleCheckRoot { .. }\n        | Expr::SetIsEmpty { .. }\n        | Expr::SetSize { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "836144b05027ccd2e5e216c3e8552a9d3079f6ae12a43366bca52fc15e14bbc4",
+      "previous_sha256": "83944814208a921f6ea7fe1bd27ed6bc6ff6b1ac80822a939d5aec05ffb4445b",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::NativeWitnessCall { .. }\n        | Expr::SetMember { .. }\n        | Expr::MapMember { .. }\n        | Expr::MapLookup { .. }\n        | Expr::NestedMapLookup { .. }\n        | Expr::ListLength { .. }\n        | Expr::ListIsEmpty { .. }\n        | Expr::ListHead { .. }\n        | Expr::MerkleCheckRoot { .. }\n",
+          "previous": "        | Expr::NativeWitnessCall { .. }\n        | Expr::SetMember { .. }\n        | Expr::MapMember { .. }\n        | Expr::MapLookup { .. }\n        | Expr::ListLength { .. }\n        | Expr::ListIsEmpty { .. }\n        | Expr::ListHead { .. }\n        | Expr::MerkleCheckRoot { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/typed_plan.rs": {
+      "current_sha256": "46b7d8953732ca34af1fa238484b6c0427cea546c59cfd94052b4052cd0ef940",
+      "previous_sha256": "fe7584e81ba9c616c04e3c5fb248596bfb3ff14ac37c6b414bdb68df9ecf6966",
+      "predecessor_reconstruction": [
+        {
+          "current": "            | Expr::CellRead { .. }\n            | Expr::SetMember { .. }\n            | Expr::MapMember { .. }\n            | Expr::MapLookup { .. }\n            | Expr::NestedMapLookup { .. }\n            | Expr::SetSize { .. }\n            | Expr::SetIsEmpty { .. }\n            | Expr::HistoricMerkleCheckRoot { .. }\n            | Expr::MerkleCheckRoot { .. } => self.observation_expression(expression, scope, steps),\n",
+          "previous": "            | Expr::CellRead { .. }\n            | Expr::SetMember { .. }\n            | Expr::MapMember { .. }\n            | Expr::MapLookup { .. }\n            | Expr::SetSize { .. }\n            | Expr::SetIsEmpty { .. }\n            | Expr::HistoricMerkleCheckRoot { .. }\n            | Expr::MerkleCheckRoot { .. } => self.observation_expression(expression, scope, steps),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/typed_plan/composition/relation_root_preflight.rs": {
+      "current_sha256": "1a0a03cabe277e1cc6422bde269de42901a09dccf7078f573f4e27842d2d3fa6",
+      "previous_sha256": "b6b5c282b6cca3e2d1c26faed94924268b82c732608d392c7f63e4c0df2436f8",
+      "predecessor_reconstruction": [
+        {
+          "current": "            | StateAction::HistoricMerkleInsertIndexDefault {\n                position: value, ..\n            }\n            | StateAction::MapInsertDefault { key: value, .. }\n            | StateAction::MapInitChild { key: value, .. }\n            | StateAction::MapRemove { key: value, .. } => expression(value, called),\n            StateAction::Assert { condition, .. } => expression(condition, called),\n            StateAction::NestedMapInsert {\n                inner,\n                value,\n                outer,\n                ..\n            } => {\n                for operand in [inner, value, outer] {\n                    expression(operand, called);\n                }\n            }\n            StateAction::MapInsert { key, value, .. } => {\n                expression(key, called);\n                expression(value, called);\n            }\n",
+          "previous": "            | StateAction::HistoricMerkleInsertIndexDefault {\n                position: value, ..\n            }\n            | StateAction::MapInsertDefault { key: value, .. }\n            | StateAction::MapRemove { key: value, .. } => expression(value, called),\n            StateAction::Assert { condition, .. } => expression(condition, called),\n            StateAction::MapInsert { key, value, .. } => {\n                expression(key, called);\n                expression(value, called);\n            }\n"
+        }
+      ]
+    }
+  }
+}

@@ -39,18 +39,181 @@ pub(super) fn try_run(
     let selector = first?.to_str()?;
     let asset = AssetProof::from_selector(first);
     match (selector, asset) {
+        #[cfg(all(feature = "if-empty-else-proof", compact_if_empty_else_generated))]
+        ("--if-empty-else-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("if/empty_else_branch proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected if/empty_else_branch proof argument".into());
+            }
+            crate::if_empty_else_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "if-branches-set-insert-proof",
+            compact_if_branches_set_insert_generated
+        ))]
+        ("--if-branches-set-insert-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("if/branches_write_ledger proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected if/branches_write_ledger proof argument".into());
+            }
+            crate::if_branches_set_insert_proof::run(std::path::Path::new(&root))
+        })()),
+        ("--positional-baseline-verify", _) => {
+            Some(super::positional_suite::verify_baseline(arguments))
+        }
+        ("--positional-call-verify", _) => Some(super::positional_transaction::verify(arguments)),
+        #[cfg(all(
+            feature = "for-generic-bound-proof",
+            compact_for_generic_bound_generated
+        ))]
+        ("--for-generic-bound-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("for/generic_bound proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected for/generic_bound proof argument".into());
+            }
+            crate::for_generic_bound_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "import-ledger-field-proof",
+            compact_import_ledger_field_generated
+        ))]
+        ("--import-ledger-field-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("import/ledger_field proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected import/ledger_field proof argument".into());
+            }
+            crate::import_ledger_field_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "bytes-indexed-access-proof",
+            compact_bytes_indexed_access_generated
+        ))]
+        ("--bytes-indexed-access-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("Bytes indexed access proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected Bytes indexed access proof argument".into());
+            }
+            crate::bytes_indexed_access_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "bytes-large-reconstruction-proof",
+            compact_bytes_large_reconstruction_generated
+        ))]
+        ("--bytes-large-reconstruction-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("slow Bytes reconstruction proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected slow Bytes reconstruction proof argument".into());
+            }
+            crate::bytes_large_reconstruction_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "keyword-constructor-parameters-proof",
+            compact_keyword_constructor_parameters_generated
+        ))]
+        ("--keyword-constructor-parameters-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("constructor/parameters proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected constructor/parameters proof argument".into());
+            }
+            crate::keyword_constructor_parameters_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(feature = "keyword-disclose-proof", compact_keyword_disclose_generated))]
+        ("--keyword-disclose-proof", _) => Some((|| {
+            let root = arguments.next().ok_or("disclose proof root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected disclose proof argument".into());
+            }
+            crate::keyword_disclose_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            any(feature = "bytes-equality-proof", feature = "bytes-slice-proof"),
+            compact_bytes_remaining_proof_generated
+        ))]
+        ("--bytes-remaining-proof", _) => Some((|| {
+            let root = arguments.next().ok_or("Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected Bytes proof argument".into());
+            }
+            crate::bytes_remaining_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            any(
+                feature = "bytes-fold-boolean-proof",
+                feature = "bytes-loop-empty-proof"
+            ),
+            compact_bytes_next_proof_generated
+        ))]
+        ("--bytes-next-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("next Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected next Bytes proof argument".into());
+            }
+            crate::bytes_next_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            any(
+                feature = "bytes-fold-conditional-proof",
+                feature = "bytes-fold-summation-proof",
+                feature = "bytes-loop-spread-proof",
+                feature = "bytes-loop-iteration-proof",
+                feature = "bytes-manual-update-proof"
+            ),
+            compact_bytes_next_remaining_proof_generated
+        ))]
+        ("--bytes-next-remaining-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("remaining Bytes proof output root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected remaining Bytes proof argument".into());
+            }
+            crate::bytes_next_remaining_proof::run(std::path::Path::new(&root))
+        })()),
         ("--constant-vector-projection", _) => {
             Some(collections::constant_vector_projection(arguments))
         }
         ("--constant-valued-vector-indices", _) => {
             Some(collections::constant_valued_vector_indices(arguments))
         }
-        ("--field-return-wrappers", _) => Some(collections::field_return_wrappers(arguments)),
-        ("--unit-mutation-initializers", _) => {
-            Some(collections::unit_mutation_initializers(arguments))
+        ("--vector-projection-verify", _) => Some(collections::vector_projection_verify(arguments)),
+        ("--field-return-wrappers-verify", _) => {
+            Some(collections::field_return_wrappers(arguments, true))
         }
-        ("--tuple-return-wrappers", _) => Some(collections::tuple_return_wrappers(arguments)),
+        ("--field-return-wrappers", _) => {
+            Some(collections::field_return_wrappers(arguments, false))
+        }
+        ("--unit-mutation-initializers-verify", _) => {
+            Some(collections::unit_mutation_initializers(arguments, true))
+        }
+        ("--unit-mutation-initializers", _) => {
+            Some(collections::unit_mutation_initializers(arguments, false))
+        }
+        ("--tuple-return-wrappers-verify", _) => {
+            Some(collections::tuple_return_wrappers(arguments, true))
+        }
+        ("--tuple-return-wrappers", _) => {
+            Some(collections::tuple_return_wrappers(arguments, false))
+        }
         ("--map-size-expression", _) => Some(collections::map_size_expression(arguments)),
+        ("--map-size-expression-verify", _) => {
+            Some(collections::map_size_expression_verify(arguments))
+        }
         #[cfg(all(
             feature = "fold-vector-result-widening",
             compact_fold_vector_result_generated
@@ -259,20 +422,29 @@ pub(super) fn try_run(
             feature = "vector-component-products",
             compact_vector_component_products_generated
         ))]
-        ("--vector-component-products" | "--vector-component-products-models", _) => Some((|| {
+        (
+            "--vector-component-products"
+            | "--vector-component-products-models"
+            | "--vector-component-products-verify",
+            _,
+        ) => Some((|| {
             let root = arguments
                 .next()
                 .ok_or("proof command requires a complete generated root")?;
             if arguments.next().is_some() {
                 return Err("unexpected proof command argument".into());
             }
-            if selector == "--vector-component-products-models" {
-                crate::vector_component_products::models(std::path::Path::new(&root))
-            } else {
-                crate::vector_component_products::run(std::path::Path::new(&root))
+            let root = std::path::Path::new(&root);
+            match selector {
+                "--vector-component-products-models" => {
+                    crate::vector_component_products::models(root)
+                }
+                "--vector-component-products-verify" => {
+                    crate::vector_component_products::verify(root)
+                }
+                _ => crate::vector_component_products::run(root),
             }
-        })(
-        )),
+        })()),
         #[cfg(all(
             feature = "nested-component-products",
             compact_nested_component_products_generated
@@ -280,7 +452,8 @@ pub(super) fn try_run(
         (
             "--nested-component-products"
             | "--nested-component-products-models"
-            | "--nested-component-products-inventory",
+            | "--nested-component-products-inventory"
+            | "--nested-component-products-verify",
             _,
         ) => Some((|| {
             let root = arguments
@@ -297,6 +470,9 @@ pub(super) fn try_run(
                 "--nested-component-products-models" => {
                     crate::nested_component_products::models(root)
                 }
+                "--nested-component-products-verify" => {
+                    crate::nested_component_products::verify(root)
+                }
                 _ => crate::nested_component_products::run(root),
             }
         })()),
@@ -304,15 +480,26 @@ pub(super) fn try_run(
             feature = "outer-vector-product-proofs",
             compact_outer_vector_product_generated
         ))]
-        ("--outer-vector-product" | "--outer-vector-product-models", _) => Some((|| {
+        (
+            "--outer-vector-product"
+            | "--outer-vector-product-models"
+            | "--outer-vector-product-verify",
+            _,
+        ) => Some((|| {
             let root = arguments
                 .next()
-                .ok_or("component Vector proof command requires a complete root")?;
-            if selector == "--outer-vector-product-models" {
+                .ok_or("outer Vector proof command requires a complete root")?;
+            let root = std::path::Path::new(&root);
+            if selector == "--outer-vector-product-verify" {
+                if arguments.next().is_some() {
+                    return Err("unexpected verification argument".into());
+                }
+                crate::outer_vector_product_proofs::verify(root)
+            } else if selector == "--outer-vector-product-models" {
                 if arguments.next().is_some() {
                     return Err("unexpected selected models argument".into());
                 }
-                crate::outer_vector_product_proofs::models(std::path::Path::new(&root))
+                crate::outer_vector_product_proofs::models(root)
             } else {
                 let ts = arguments
                     .next()
@@ -320,10 +507,7 @@ pub(super) fn try_run(
                 if arguments.next().is_some() {
                     return Err("unexpected proof argument".into());
                 }
-                crate::outer_vector_product_proofs::run(
-                    std::path::Path::new(&root),
-                    std::path::Path::new(&ts),
-                )
+                crate::outer_vector_product_proofs::run(root, std::path::Path::new(&ts))
             }
         })()),
         #[cfg(feature = "constructor-vector-models")]
@@ -392,15 +576,26 @@ pub(super) fn try_run(
             feature = "component-product-vector-widening",
             compact_component_product_vector_generated
         ))]
-        ("--component-product-vector" | "--component-product-vector-models", _) => Some((|| {
+        (
+            "--component-product-vector"
+            | "--component-product-vector-models"
+            | "--component-product-vector-verify",
+            _,
+        ) => Some((|| {
             let root = arguments
                 .next()
                 .ok_or("component Vector proof command requires a complete root")?;
-            if selector == "--component-product-vector-models" {
+            let root = std::path::Path::new(&root);
+            if selector == "--component-product-vector-verify" {
+                if arguments.next().is_some() {
+                    return Err("unexpected verification argument".into());
+                }
+                crate::component_product_vector_widening::verify(root)
+            } else if selector == "--component-product-vector-models" {
                 if arguments.next().is_some() {
                     return Err("unexpected selected models argument".into());
                 }
-                crate::component_product_vector_widening::models(std::path::Path::new(&root))
+                crate::component_product_vector_widening::models(root)
             } else {
                 let ts = arguments
                     .next()
@@ -408,14 +603,11 @@ pub(super) fn try_run(
                 if arguments.next().is_some() {
                     return Err("unexpected proof argument".into());
                 }
-                crate::component_product_vector_widening::run(
-                    std::path::Path::new(&root),
-                    std::path::Path::new(&ts),
-                )
+                crate::component_product_vector_widening::run(root, std::path::Path::new(&ts))
             }
-        })(
-        )),
-        ("--direct-fold", _) => Some(collections::direct_fold(arguments)),
+        })()),
+        ("--direct-fold", _) => Some(collections::direct_fold(arguments, false)),
+        ("--direct-fold-verify", _) => Some(collections::direct_fold(arguments, true)),
         ("--prepare-proof-material", _) => Some(material::prepare_proof_material(arguments)),
         ("--js-counter-trace", _) => Some((|| {
             let root = arguments
@@ -489,6 +681,138 @@ pub(super) fn try_run(
         ("--observational-shielded", _) => Some(shielded::observational_shielded(arguments)),
         ("--wallet-funded-receive", _) => Some(shielded::wallet_funded_receive(arguments)),
         ("--kernel-shielded-effects", _) => Some(shielded::kernel_shielded_effects(arguments)),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--unshielded-original-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("unshielded original artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected unshielded original proof argument".into());
+            }
+            super::unshielded_original_proof::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-mint-self-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded mint artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded mint proof argument".into());
+            }
+            super::shielded_original_mint_self::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-mint-contract-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded mint artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded mint proof argument".into());
+            }
+            super::shielded_original_mint_contract::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-mint-user-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded user mint artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded user mint proof argument".into());
+            }
+            super::shielded_original_mint_user::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-send-self-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded self send artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded self send proof argument".into());
+            }
+            super::shielded_original_send_self::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-send-contract-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded contract send artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded contract send proof argument".into());
+            }
+            super::shielded_original_send_contract::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-send-user-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded user send artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded user send proof argument".into());
+            }
+            super::shielded_original_send_user::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-immediate-self-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded immediate self artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded immediate self proof argument".into());
+            }
+            super::shielded_original_immediate_self::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-immediate-user-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded immediate user artifact root required")?;
+            if arguments.next().is_some() {
+                return Err("unexpected original shielded immediate user proof argument".into());
+            }
+            super::shielded_original_immediate_user::run(std::path::Path::new(&root))
+        })()),
+        #[cfg(all(
+            feature = "unshielded-original-proof",
+            compact_unshielded_original_generated
+        ))]
+        ("--shielded-original-immediate-contract-proof", _) => Some((|| {
+            let root = arguments
+                .next()
+                .ok_or("original shielded immediate contract artifact root required")?;
+            if arguments.next().is_some() {
+                return Err(
+                    "unexpected original shielded immediate contract proof argument".into(),
+                );
+            }
+            super::shielded_original_immediate_contract::run(std::path::Path::new(&root))
+        })()),
         ("--qualified-coin-set", _) => Some(shielded::qualified_coin_set(arguments)),
         ("--qualified-coin-set-chunked", _) => {
             Some(shielded::qualified_coin_set_chunked(arguments))
@@ -513,10 +837,12 @@ pub(super) fn try_run(
         ("--unused-field-reads", _) => Some(expressions::unused_field_reads(arguments)),
         ("--let-return", _) => Some(expressions::let_return(arguments)),
         ("--field-to-bytes32", _) => Some(expressions::field_to_bytes32(arguments)),
-        ("--literal-bytes-field", _) => Some(expressions::literal_bytes_field(arguments)),
-        ("--literal-bytes-field-strict", _) => {
-            Some(expressions::literal_bytes_field_strict(arguments))
-        }
+        (
+            "--literal-bytes-field"
+            | "--literal-bytes-field-strict"
+            | "--literal-bytes-field-verify",
+            _,
+        ) => Some(expressions::literal_bytes_field(arguments, selector)),
         ("--coracle-start", _) => Some(contracts::coracle_start(arguments)),
         ("--coracle-concede", _) => Some(contracts::coracle_concede(arguments)),
         ("--coracle-withdraw", _) => Some(contracts::coracle_withdraw(arguments)),
@@ -536,6 +862,9 @@ pub(super) fn try_run(
         ("--did-digest-reducer", _) => Some(identity::did_digest_reducer(arguments)),
         ("--did-digest-verification", _) => Some(identity::did_digest_verification(arguments)),
         ("--did-deactivate", _) => Some(identity::did_deactivate(arguments)),
+        ("--did-functional-lifecycle-verify", _) => {
+            Some(identity::did_functional_lifecycle_verify(arguments))
+        }
         ("--did-functional-lifecycle", _) => Some(identity::did_functional_lifecycle(
             arguments,
             crate::did_functional_lifecycle::Case::Valid,
@@ -555,16 +884,20 @@ pub(super) fn try_run(
         ("--micro-dao-reveal", _) => Some(contracts::micro_dao_reveal(arguments)),
         ("--micro-dao-token", _) => Some(contracts::micro_dao_token(arguments)),
         ("--composite-zswap", _) => Some(shielded::composite_zswap(arguments)),
-        ("--field-observation", _) => Some(expressions::field_observation(arguments)),
+        ("--field-observation", _) => Some(expressions::field_observation(arguments, false)),
+        ("--field-observation-verify", _) => Some(expressions::field_observation(arguments, true)),
         ("--opaque-public", _) => Some(expressions::opaque_public(arguments)),
         ("--opaque-cell-input", _) => Some(expressions::opaque_cell_input(arguments)),
         ("--owned-witness-inputs", _) => Some(expressions::owned_witness_inputs(arguments)),
         ("--public-products", _) => Some(expressions::public_products(arguments)),
         ("--wide-add", _) => Some(expressions::wide_add(arguments)),
         ("--wide-zero", _) => Some(expressions::wide_zero(arguments)),
+        ("--wide-zero-verify", _) => Some(expressions::wide_zero_verify(arguments)),
         ("--wide-casts", _) => Some(expressions::wide_casts(arguments)),
-        ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments)),
-        ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments)),
+        ("--stateful-struct", _) => Some(recorded::stateful_struct(arguments, false)),
+        ("--stateful-struct-verify", _) => Some(recorded::stateful_struct(arguments, true)),
+        ("--stateful-assert", _) => Some(recorded::stateful_assert(arguments, false)),
+        ("--stateful-assert-verify", _) => Some(recorded::stateful_assert(arguments, true)),
         ("--effect-plan-unsigned-arithmetic", _) => {
             Some(recorded::effect_plan_unsigned_arithmetic(arguments))
         }
@@ -583,16 +916,26 @@ pub(super) fn try_run(
         ("--guarded-point-read", _) => Some(recorded::guarded_point_read(arguments)),
         ("--guarded-point-nested", _) => Some(recorded::guarded_point_nested(arguments)),
         ("--guarded-point-vm", _) => Some(recorded::guarded_point_vm(arguments)),
-        ("--effectful-return", _) => Some(recorded::effectful_return(arguments)),
-        ("--effect-plan-wide-source", _) => Some(recorded::effect_plan_wide_source(arguments)),
+        ("--effectful-return", _) => Some(recorded::effectful_return(arguments, false)),
+        ("--effectful-return-verify", _) => Some(recorded::effectful_return(arguments, true)),
+        ("--effect-plan-wide-source", _) => {
+            Some(recorded::effect_plan_wide_source(arguments, false))
+        }
+        ("--effect-plan-wide-source-verify", _) => {
+            Some(recorded::effect_plan_wide_source(arguments, true))
+        }
         #[cfg(feature = "experimental-recording-plan")]
         ("--effect-plan-prototype", _) => Some(recorded::effect_plan_prototype(arguments)),
         #[cfg(not(feature = "experimental-recording-plan"))]
         ("--effect-plan-prototype", _) => Some(Err(
             "--effect-plan-prototype requires the experimental-recording-plan Cargo feature".into(),
         )),
-        ("--root-let-action-return", _) => Some(recorded::root_let_action_return(arguments)),
-        ("--counter-less-than", _) => Some(recorded::counter_less_than(arguments)),
+        ("--root-let-action-return", _) => Some(recorded::root_let_action_return(arguments, false)),
+        ("--root-let-action-return-verify", _) => {
+            Some(recorded::root_let_action_return(arguments, true))
+        }
+        ("--counter-less-than", _) => Some(recorded::counter_less_than(arguments, false)),
+        ("--counter-less-than-verify", _) => Some(recorded::counter_less_than(arguments, true)),
         ("--pair-hash-cell", _) => Some(recorded::pair_hash_cell(arguments)),
         ("--stateful-pair-hash", _) => Some(recorded::stateful_pair_hash(arguments)),
         ("--boolean-pair-assert", _) => Some(expressions::boolean_pair_assert(arguments)),
@@ -711,6 +1054,11 @@ mod tests {
                 "usage: compact-rust-proof-smoke --constant-valued-vector-indices <proof-output>",
             ),
             (
+                "--vector-projection-verify",
+                1,
+                "usage: compact-rust-proof-smoke --vector-projection-verify <proof-output>",
+            ),
+            (
                 "--direct-fold",
                 2,
                 "usage: compact-rust-proof-smoke --direct-fold <case> <proof-output>",
@@ -734,6 +1082,11 @@ mod tests {
                 "--map-size-expression",
                 1,
                 "usage: compact-rust-proof-smoke --map-size-expression <proof-output>",
+            ),
+            (
+                "--map-size-expression-verify",
+                1,
+                "usage: compact-rust-proof-smoke --map-size-expression-verify <proof-output>",
             ),
             (
                 "--wide-add",

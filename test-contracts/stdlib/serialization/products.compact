@@ -1,0 +1,44 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+struct Pair { a: Boolean, b: Uint<8> }
+export circuit deserialize_tuple(x: Bytes<33>): [Boolean, Field] {
+  return deserialize<[Boolean, Field], 33>(x);
+}
+export circuit deserialize_uints(x: Bytes<7>): [Uint<8>, Uint<16>, Uint<32>] {
+  return deserialize<[Uint<8>, Uint<16>, Uint<32>], 7>(x);
+}
+export circuit deserialize_vector(x: Bytes<4>): Vector<4, Uint<8>> {
+  return deserialize<Vector<4, Uint<8>>, 4>(x);
+}
+export circuit deserialize_struct(p: Bytes<2>): Pair {
+  return deserialize<Pair, 2>(p);
+}
+export circuit deserialize_nested(x: Bytes<4>): Vector<2, [Boolean, Uint<8>]> {
+  return deserialize<Vector<2, [Boolean, Uint<8>]>, 4>(x);
+}
+new type Payload = [Boolean, Uint<16>];
+struct Nested { header: Payload, tail: Vector<2, [Boolean, Uint<8>]> }
+export circuit read_nested_alias(x: Bytes<8>): Nested {
+  return deserialize<Nested, 8>(x);
+}
+export circuit read_empty(x: Bytes<2>, valid: Boolean): Vector<0, Boolean> {
+  return deserialize<Vector<0, Boolean>, 2>(checked_bytes(x, valid));
+}
+circuit checked_bytes(x: Bytes<2>, valid: Boolean): Bytes<2> {
+  assert(valid, "checked empty input");
+  return x;
+}

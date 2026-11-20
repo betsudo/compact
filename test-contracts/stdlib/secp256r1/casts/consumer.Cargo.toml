@@ -1,0 +1,65 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#  	http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+[workspace]
+[package]
+name = "secp256r1-funded-casts"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+p256_sha256 = { package = "compact-contract-secp256r1-sha256-kat", path = "../../family-first/signature-suites/sha256/ts-rust/.build/contract" }
+p256_sequential = { package = "compact-contract-secp256r1-verify-sequential", path = "../../family-first/signature-suites/sequential/ts-rust/.build/contract", features = ["ledger-transaction"] }
+p256_ecdsa = { package = "compact-contract-upstream-ordinary", path = "../../family-first/ecdsa/upstream-ordinary/ts-rust/.build/contract", features = ["ledger-transaction"] }
+p256_wycheproof = { package = "compact-contract-secp256r1-ecdsa-verify", path = "../../family-first/ecdsa/wycheproof/ts-rust/.build/contract" }
+sha2 = "=0.10.9"
+point_witness = { package = "compact-contract-upstream-witness", path = "../../family-first/transport/upstream-witness/ts-rust/.build/contract", features = ["ledger-transaction"] }
+point_tuple_hash = { package = "compact-contract-upstream-hash608", path = "../../family-first/transport/upstream-hash608/ts-rust/.build/contract", features = ["ledger-transaction"] }
+group_computed = { package = "compact-contract-upstream-computed", path = "../../family-first/accessors/upstream-computed/ts-rust/.build/contract", features = ["ledger-transaction"] }
+group_guarded = { package = "compact-contract-guarded", path = "../../family-first/group/guarded/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_roundtrip = { package = "compact-contract-upstream-roundtrip", path = "../../family-first/point/upstream-roundtrip/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_direct = { package = "compact-contract-upstream-direct", path = "../../family-first/accessors/upstream-direct/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_ledger = { package = "compact-contract-upstream-ledger", path = "../../family-first/accessors/upstream-ledger/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_asserted = { package = "compact-contract-upstream-asserted", path = "../../family-first/accessors/upstream-asserted/ts-rust/.build/contract", features = ["ledger-transaction"] }
+accessor_guarded = { package = "compact-contract-guarded-writes", path = "../../family-first/accessors/guarded-writes/ts-rust/.build/contract", features = ["ledger-transaction"] }
+point_equality = { package = "compact-contract-upstream-equality", path = "../../family-first/point/upstream-equality/ts-rust/.build/contract", features = ["ledger-transaction"] }
+point_identity = { package = "compact-contract-upstream-identity", path = "../../family-first/point/upstream-identity/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unary_base = { package = "compact-contract-upstream-base", path = "../../family-first/unary/upstream-base/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unary_scalar = { package = "compact-contract-upstream-scalar", path = "../../family-first/unary/upstream-scalar/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unary_controls = { package = "compact-contract-unary-controls", path = "../../family-first/unary/unary-controls/ts-rust/.build/contract", features = ["ledger-transaction"] }
+arithmetic = { package = "compact-contract-arithmetic", path = "../../family-first/arithmetic/ts-rust/.build/contract", features = ["ledger-transaction"] }
+decode = { package = "compact-contract-decode", path = "../../family-first/casts/decode/ts-rust/.build/contract", features = ["ledger-transaction"] }
+encode = { package = "compact-contract-encode", path = "../../family-first/casts/encode/ts-rust/.build/contract", features = ["ledger-transaction"] }
+guarded_save = { package = "compact-contract-guarded-save", path = "../../family-first/casts/guarded-save/ts-rust/.build/contract", features = ["ledger-transaction"] }
+guarded_decode = { package = "compact-contract-guarded-decode", path = "../../family-first/casts/guarded-decode/ts-rust/.build/contract", features = ["ledger-transaction"] }
+guarded_encode = { package = "compact-contract-guarded-encode", path = "../../family-first/casts/guarded-encode/ts-rust/.build/contract", features = ["ledger-transaction"] }
+constant = { package = "compact-contract-constant", path = "../../family-first/casts/constant/ts-rust/.build/contract", features = ["ledger-transaction"] }
+unused = { package = "compact-contract-unused", path = "../../family-first/casts/unused/ts-rust/.build/contract", features = ["ledger-transaction"] }
+hex = "=0.4.3"
+serde_json = "1"
+midnight-base-crypto = "=1.1.1"
+midnight_ledger = { package = "midnight-ledger-v9", version = "=1.0.1", features = ["test-utilities", "proving"] }
+midnight-onchain-state = "=4.0.1"
+midnight-serialize = "=1.2.1"
+midnight-storage = "=3.0.0"
+midnight-transient-crypto = "=3.0.1"
+midnight-zkir = "=3.2.0"
+midnight-zswap = "=9.0.1"
+rand = "=0.8.6"
+tokio = { version = "=1.50.0", features = ["rt", "time", "net"] }
+
+[[bin]]
+name = "secp256r1-funded-casts"
+path = "main.rs"

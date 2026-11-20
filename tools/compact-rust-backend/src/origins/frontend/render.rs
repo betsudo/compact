@@ -210,7 +210,7 @@ fn render_selected<E: From<Box<NativeCompileFailure>>>(
             .iter()
             .any(|circuit| !circuit.internal)
         {
-            return Err(fail("functional ledger8 programs require an exported stateful circuit; pure-only contracts use the existing pure API".into()));
+            return Err(fail("functional Ledger 9 programs require an exported stateful circuit; pure-only contracts use the existing pure API".into()));
         }
         let sources = functional_sources::RetainedSources::new(
             &contract,

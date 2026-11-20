@@ -1,0 +1,287 @@
+# This file is part of Compact.
+# Copyright (C) 2026 Midnight Foundation
+# SPDX-License-Identifier: Apache-2.0
+name: Ledger 9 for keyword / native Linux
+
+on:
+  push:
+    branches:
+      - 'codex/ledger9-keyword-for-linux/*'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact 40-character commit SHA selected for this qualification
+        type: string
+        required: true
+
+permissions: {}
+env:
+  RUSTUP_TOOLCHAIN: 1.99.0
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 0
+  CARGO_PROFILE_TEST_DEBUG: 0
+  PYTHONDONTWRITEBYTECODE: 1
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-preflight:
+    name: Exact signed source and gate graph
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Require explicitly selected exact commit
+        env:
+          EXPECTED_SHA: ${{ inputs.expected_sha }}
+          SOURCE_SHA: ${{ github.sha }}
+          SOURCE_REF: ${{ github.ref }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$EVENT_NAME" == push ]]; then
+            test "$SOURCE_REF" = "refs/heads/codex/ledger9-keyword-for-linux/$SOURCE_SHA"
+            EXPECTED_SHA="$SOURCE_SHA"
+          else
+            test "$EVENT_NAME" = workflow_dispatch
+          fi
+          [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$EXPECTED_SHA" = "$SOURCE_SHA"
+      - name: Checkout exact source and pinned upstream history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Refuse source, SDK, or workflow drift
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          git cat-file -e '672bd0f226f47a7d036c5c074ce71fbe1af1925e^{commit}'
+          git log -1 --format=%B | grep -q '^Signed-off-by: '
+          git log -1 --format=%B | grep -q '^Assisted-by: AI$'
+          python3 -B .github/scripts/test_compiler_closure.py
+          python3 -B .github/scripts/test_keyword_for_linux_workflow.py
+          python3 -B - <<'PY'
+          import json, sys
+          from pathlib import Path
+          sys.path.insert(0, 'tools/compact-rust-backend')
+          from check_release_packages import compatibility_record
+          assert compatibility_record()['ledger_version'] == 'ledger-9.1.0.2'
+          assert json.loads(Path('runtime/package.json').read_text())['version'] == '0.18.0'
+          PY
+
+  compiler-linux:
+    needs: source-preflight
+    uses: ./.github/workflows/compiler-producer.yml
+    permissions:
+      contents: read
+    with:
+      system: x86_64-linux
+      export-shell: true
+
+  keyword-for:
+    name: Original for parity and funded proof
+    needs: [source-preflight, compiler-linux]
+    if: ${{ !cancelled() && needs.source-preflight.result == 'success' && needs.compiler-linux.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Require successful same-run compiler producer
+        env:
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          COMPILER_ARTIFACT: ${{ needs.compiler-linux.outputs.artifact-id }}
+          SHELL_ARTIFACT: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$PRODUCER_RESULT" = success
+          test -n "$COMPILER_ARTIFACT"
+          test -n "$SHELL_ARTIFACT"
+          test -n "$PRODUCER_ATTEMPT"
+      - name: Checkout exact source and pinned upstream history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Fetch pinned upstream comparison commit
+        run: git fetch --no-tags --depth=1 https://github.com/LFDT-Minokawa/compact.git 672bd0f226f47a7d036c5c074ce71fbe1af1925e
+      - name: Trust pinned public signing key
+        run: bash .github/scripts/trust_vector_source_key.sh
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix-cache
+        with:
+          attic_token: ${{ secrets.ATTIC_CACHE_TOKEN }}
+          free_disk: 'true'
+      - name: Import authenticated same-run compiler closure
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          SOURCE_SHA: ${{ github.sha }}
+          ARTIFACT_ID: ${{ needs.compiler-linux.outputs.artifact-id }}
+          PRODUCER_ATTEMPT: ${{ needs.compiler-linux.outputs.producer-attempt }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          gh api "repos/$REPOSITORY/actions/artifacts/$ARTIFACT_ID/zip" > "$RUNNER_TEMP/keyword-for-compiler-material.zip"
+          compiler=$(python3 -B .github/scripts/compiler_closure.py import \
+            --source-sha "$SOURCE_SHA" --system x86_64-linux \
+            --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT" \
+            --producer-attempt "$PRODUCER_ATTEMPT" \
+            --repository "$REPOSITORY" --artifact-id "$ARTIFACT_ID" \
+            --artifact-zip "$RUNNER_TEMP/keyword-for-compiler-material.zip" \
+            --directory "$RUNNER_TEMP/keyword-for-imported-compiler")
+          echo "COMPACTC=$compiler/bin/compactc" >> "$GITHUB_ENV"
+      - name: Import authenticated same-run compiler shell
+        uses: ./.github/actions/import-compiler-shell
+        with:
+          artifact-id: ${{ needs.compiler-linux.outputs.shell-artifact-id }}
+          producer-attempt: ${{ needs.compiler-linux.outputs.producer-attempt }}
+      - name: Setup locked Rust 1.99 toolchain
+        uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7 # stable (branch)
+        with:
+          toolchain: 1.99.0
+      - name: Setup Python for semantic gates
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+      - name: Restore locked Cargo downloads
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-rust-1.99.0-cargo-
+      - name: Bind exact runtime, compiler recipe and proof tools
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain)"
+          cargo fetch --locked
+          nix build --no-link .#runtime.package
+          runtime_store=$(nix eval --offline --raw .#runtime.package.outPath)
+          runtime="$runtime_store/lib/node_modules/@midnight-ntwrk/compact-runtime"
+          test -f "$runtime/dist/index.js"
+          test "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$runtime/package.json")" = 0.18.0
+          echo "KEYWORD_FOR_RUNTIME=$runtime" >> "$GITHUB_ENV"
+          echo "KEYWORD_FOR_CARGO_TARGET=$RUNNER_TEMP/keyword-for-cargo-target" >> "$GITHUB_ENV"
+          zkir="$(nix build --no-link --print-out-paths .#zkir-v3)/bin/zkir"
+          test -x "$zkir"
+          echo "KEYWORD_FOR_ZKIR=$zkir" >> "$GITHUB_ENV"
+          python3 -B tools/compact-rust-backend/record_compiler_recipe.py \
+            --compiler "$COMPACTC" --output "$RUNNER_TEMP/keyword-for-compiler-recipe"
+      - name: Run pinned original for parity and refusal controls
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$KEYWORD_FOR_CARGO_TARGET"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_for_keywords.py \
+            --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-for-compiler-recipe/receipt.json" \
+            --ts-runtime "$KEYWORD_FOR_RUNTIME" --cargo-target "$KEYWORD_FOR_CARGO_TARGET" \
+            --output "$RUNNER_TEMP/keyword-for-semantic" \
+            | tee "$RUNNER_TEMP/keyword-for-semantic.stdout.log"
+          python3 -B tools/compact-rust-backend/check_static_for_index_domain.py \
+            --compiler "$COMPACTC" --output "$RUNNER_TEMP/keyword-for-refusals" \
+            | tee "$RUNNER_TEMP/keyword-for-refusals.stdout.log"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            scheme --program compiler/test-rust-vector-indices.ss \
+            "$RUNNER_TEMP/keyword-for-occurrence-sources" \
+            | tee "$RUNNER_TEMP/keyword-for-occurrence.log"
+          python3 -B .github/scripts/verify_keyword_for_linux_receipts.py \
+            --semantic "$RUNNER_TEMP/keyword-for-semantic" \
+            --semantic-log "$RUNNER_TEMP/keyword-for-semantic.stdout.log" \
+            --refusals "$RUNNER_TEMP/keyword-for-refusals" \
+            --refusals-log "$RUNNER_TEMP/keyword-for-refusals.stdout.log" \
+            --occurrence-log "$RUNNER_TEMP/keyword-for-occurrence.log" \
+            --source-sha "$SOURCE_SHA" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-for-compiler-recipe/receipt.json" \
+            --runtime "$KEYWORD_FOR_RUNTIME" --zkir "$KEYWORD_FOR_ZKIR" \
+            --summary "$RUNNER_TEMP/keyword-for-semantic-summary.json"
+      - name: Prepare verified proof parameters
+        run: |
+          set -euo pipefail
+          export MIDNIGHT_PP="$RUNNER_TEMP/keyword-for-proof-parameters"
+          echo "MIDNIGHT_PP=$MIDNIGHT_PP" >> "$GITHUB_ENV"
+          CARGO_TARGET_DIR="$KEYWORD_FOR_CARGO_TARGET" cargo run --profile proof-checks --locked --offline -p compact-rust-proof-smoke -- \
+            --prepare-proof-material --parameter-k 6 --parameter-k 7 \
+            > "$RUNNER_TEMP/keyword-for-proof-material.json"
+      - name: Prove and fund pinned generic bound
+        env:
+          SOURCE_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+          env -u LD_LIBRARY_PATH nix develop .#compiler --command \
+            python3 -X faulthandler -u tools/compact-rust-backend/check_upstream_ledger9_for_generic_bound_proof.py \
+            --expected-source-sha "$SOURCE_SHA" \
+            --cargo-target "$KEYWORD_FOR_CARGO_TARGET" \
+            --grouped-gate "$RUNNER_TEMP/keyword-for-semantic" --zkir "$KEYWORD_FOR_ZKIR" \
+            --output "$RUNNER_TEMP/keyword-for-proof" \
+            | tee "$RUNNER_TEMP/keyword-for-proof.stdout.log"
+          python3 -B .github/scripts/verify_keyword_for_linux_receipts.py \
+            --semantic "$RUNNER_TEMP/keyword-for-semantic" \
+            --semantic-log "$RUNNER_TEMP/keyword-for-semantic.stdout.log" \
+            --refusals "$RUNNER_TEMP/keyword-for-refusals" \
+            --refusals-log "$RUNNER_TEMP/keyword-for-refusals.stdout.log" \
+            --occurrence-log "$RUNNER_TEMP/keyword-for-occurrence.log" \
+            --proof "$RUNNER_TEMP/keyword-for-proof" \
+            --proof-log "$RUNNER_TEMP/keyword-for-proof.stdout.log" \
+            --source-sha "$SOURCE_SHA" --compiler "$COMPACTC" \
+            --compiler-recipe "$RUNNER_TEMP/keyword-for-compiler-recipe/receipt.json" \
+            --runtime "$KEYWORD_FOR_RUNTIME" --zkir "$KEYWORD_FOR_ZKIR" \
+            --summary "$RUNNER_TEMP/keyword-for-complete-summary.json"
+      - name: Upload exact-head keyword for qualification evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ledger9-keyword-for-linux-${{ github.sha }}-attempt-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/keyword-for-compiler-recipe/
+            ${{ runner.temp }}/keyword-for-semantic/
+            ${{ runner.temp }}/keyword-for-refusals/
+            ${{ runner.temp }}/keyword-for-proof/
+            ${{ runner.temp }}/keyword-for-*.json
+            ${{ runner.temp }}/keyword-for-*.log
+          if-no-files-found: warn
+          retention-days: 14
+
+  complete:
+    name: Ledger 9 for keyword native Linux qualification
+    runs-on: ubuntu-latest
+    needs: [source-preflight, compiler-linux, keyword-for]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every for keyword qualification owner
+        env:
+          PREFLIGHT_RESULT: ${{ needs.source-preflight.result }}
+          PRODUCER_RESULT: ${{ needs.compiler-linux.result }}
+          KEYWORD_FOR_RESULT: ${{ needs.keyword-for.result }}
+        run: |
+          set -euo pipefail
+          test "$PREFLIGHT_RESULT" = success
+          test "$PRODUCER_RESULT" = success
+          test "$KEYWORD_FOR_RESULT" = success

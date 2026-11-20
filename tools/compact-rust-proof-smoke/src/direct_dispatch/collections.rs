@@ -443,6 +443,27 @@ pub(super) fn constant_valued_vector_indices(
     crate::constant_valued_vector_indices::run(Path::new(&root))
 }
 
+pub(super) fn vector_projection_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --vector-projection-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    let root = Path::new(&root);
+    let verifier = crate::local_v3_application::read_verifier(root, "witnessed")?;
+    for index in 0..2 {
+        crate::local_v3_application::verify_standalone(
+            root,
+            &format!("vector-{index}"),
+            &verifier,
+        )?;
+        println!("Vector {index}: separate v3 verification passed; corrupt proof refused");
+    }
+    Ok(())
+}
+
 /// Direct proof path for the genuine #610 Map size source.
 pub(super) fn map_size_expression(
     arguments: &mut impl Iterator<Item = OsString>,
@@ -455,33 +476,55 @@ pub(super) fn map_size_expression(
     crate::map_size_expression::run(Path::new(&root))
 }
 
+pub(super) fn map_size_expression_verify(
+    arguments: &mut impl Iterator<Item = OsString>,
+) -> Result<(), Box<dyn Error>> {
+    let usage = "usage: compact-rust-proof-smoke --map-size-expression-verify <proof-output>";
+    let root = arguments.next().ok_or(usage)?;
+    if arguments.next().is_some() {
+        return Err(usage.into());
+    }
+    crate::map_size_expression::verify(Path::new(&root))
+}
+
 /// Direct proof path for the genuine #516 Field wrapper source.
 pub(super) fn field_return_wrappers(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --field-return-wrappers <proof-output>";
     let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
         return Err(usage.into());
     }
-    crate::field_return_wrappers::run(Path::new(&root))
+    if verify {
+        crate::field_return_wrappers::verify(Path::new(&root))
+    } else {
+        crate::field_return_wrappers::run(Path::new(&root))
+    }
 }
 
 /// Direct proof path for the genuine #516 tuple wrapper source.
 pub(super) fn tuple_return_wrappers(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --tuple-return-wrappers <proof-output>";
     let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
         return Err(usage.into());
     }
-    crate::tuple_return_wrappers::run(Path::new(&root))
+    if verify {
+        crate::tuple_return_wrappers::verify(Path::new(&root))
+    } else {
+        crate::tuple_return_wrappers::run(Path::new(&root))
+    }
 }
 
 /// Direct proof path for the genuine #661 Fold sources.
 pub(super) fn direct_fold(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --direct-fold <case> <proof-output>";
     let case = arguments.next().ok_or(usage)?;
@@ -489,19 +532,29 @@ pub(super) fn direct_fold(
     if arguments.next().is_some() {
         return Err(usage.into());
     }
-    crate::direct_fold::run(case.to_str().ok_or(usage)?, Path::new(&root))
+    let case = case.to_str().ok_or(usage)?;
+    if verify {
+        crate::direct_fold::verify(case, Path::new(&root))
+    } else {
+        crate::direct_fold::run(case, Path::new(&root))
+    }
 }
 
 /// Direct proof path for the genuine ordered Unit initializer source.
 pub(super) fn unit_mutation_initializers(
     arguments: &mut impl Iterator<Item = OsString>,
+    verify: bool,
 ) -> Result<(), Box<dyn Error>> {
     let usage = "usage: compact-rust-proof-smoke --unit-mutation-initializers <proof-output>";
     let root = arguments.next().ok_or(usage)?;
     if arguments.next().is_some() {
         return Err(usage.into());
     }
-    crate::unit_mutation_initializers::run(Path::new(&root))
+    if verify {
+        crate::unit_mutation_initializers::verify(Path::new(&root))
+    } else {
+        crate::unit_mutation_initializers::run(Path::new(&root))
+    }
 }
 
 #[cfg(all(

@@ -11,13 +11,13 @@
   ],
   "author": "IOG",
   "license": "Apache-2.0",
-  "nixDependencies": [
-    "@midnight-ntwrk/zkir-v2",
-    "@midnight-ntwrk/zkir-v3"
-  ],
   "devDependencies": {
     "glob": "^13.0.6",
     "typescript": "^6.0.2",
     "vitest": "^4.1.2"
+  },
+  "dependencies": {
+    "@midnightntwrk/zkir-v2": "2.2.0",
+    "@midnightntwrk/zkir-v3": "3.2.0"
   }
 }

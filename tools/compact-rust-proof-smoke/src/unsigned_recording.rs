@@ -15,6 +15,7 @@
 
 //! Prove the typed wide unsigned cast and closed pure unsigned call slices.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_field_cast_uint128_fixture::ledger_contract as wide_cast;
 use compact_rust_widening_arith_oracle_fixture::ledger_contract as widening;
@@ -58,7 +59,7 @@ pub(super) fn wide_cast(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("wide unsigned Field cast proved and applied through ledger-8");
+    println!("wide unsigned Field cast proved and applied through Ledger 9");
     Ok(())
 }
 
@@ -101,6 +102,6 @@ pub(super) fn widening_call(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("closed pure unsigned call proved and applied through ledger-8");
+    println!("closed pure unsigned call proved and applied through Ledger 9");
     Ok(())
 }

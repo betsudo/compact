@@ -1,0 +1,15 @@
+{
+  "format": "compact-ledger9-reducer-capture-binding/v2",
+  "kind": "alias-digest",
+  "source_sha256": "a37c43c298b2f72e5cc28cf94c56ab4eaa4e16757d577acdf023be5f81f7a3c7",
+  "historical_ledger9_binding_sha256": "94a056384bcb74d735cbb752b096c45e08f72ad91a4146c28f4dbfdea4f15293",
+  "compact_runtime": "0.18.0",
+  "onchain_runtime": "4.0.1",
+  "runtime_package_sha256": "385aa8291589b5a0e8d1cd5bc4452e32f728061c4151d914546820da6622d5fe",
+  "runtime_builtins_sha256": "7e7116bb4129f485cd990bdfbf9246cef81b6dfc3dc1726006e7f202918439ab",
+  "runtime_source_sha256": "1708969060e889380a8b19f5254e7a83d1edf1474474bd79c7b89b50cf3f0a27",
+  "runtime_closure_sha256": "2353d6f149316c99e67dadb55a34cf397a129cfc4d9f3c87ff304d8f62b10799",
+  "generated_javascript_sha256": "60103bb15e0eb9e2af0fb058a3c14a250e6b7b3eacdae6ed04d9804270962f22",
+  "capture_script_sha256": "57896f2796a13a6f78207c478b197c1ffe933b39fc04fdb8d83b680dd053f97b",
+  "capture_sha256": "c17683e37c756e06ae5a22b8cb66d76fcfed06e9cd5506367d6c0bcb7873d480"
+}

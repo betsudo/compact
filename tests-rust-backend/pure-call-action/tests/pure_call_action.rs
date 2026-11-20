@@ -26,7 +26,7 @@ use midnight_storage::storage::HashMap;
 fn state_hex(state: StateValue<DefaultDB>) -> String {
     let operations: HashMap<EntryPointBuf, ContractOperation, DefaultDB> = HashMap::new().insert(
         EntryPointBuf(b"save".to_vec()),
-        ContractOperation::new(None),
+        ContractOperation::new(None, None),
     );
     let contract_state =
         ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -38,7 +38,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn pure_call_action_propagates_error_before_write_and_matches_success_state() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/pure-call-action.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-pure-call-action.json"
     ))
     .unwrap();
     let constructor = initial_state(ConstructorContext::new(())).unwrap();
@@ -61,7 +61,7 @@ fn pure_call_action_propagates_error_before_write_and_matches_success_state() {
 #[test]
 fn recorded_pure_assert_call_matches_typescript_success_and_failure() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/recorded-pure-assert.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-recorded-pure-assert.json"
     ))
     .unwrap();
     let success = &oracle["saveSuccess"];
@@ -178,7 +178,7 @@ fn recorded_pure_assert_call_matches_typescript_success_and_failure() {
 fn direct_pure_guard_accepts_nonzero_and_preserves_zero_error() {
     use compact_rust_pure_call_action_fixture::pure_circuits::require_positive;
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/pure-call-action.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-pure-call-action.json"
     ))
     .unwrap();
     require_positive(Field::from(7_u64)).unwrap();

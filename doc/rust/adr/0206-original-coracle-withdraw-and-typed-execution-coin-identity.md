@@ -164,6 +164,29 @@ Pending: generic/observed/offer identity preparation checks and mutation negativ
 
 ## ADR206 amendment proposal — explicit whole-fallible persistent offer placement
 
+### Ledger 9 migration
+
+Ledger 9's cost model places the unchanged checkpoint-free `withdraw` and
+blue `start` calls entirely in the guaranteed section under its automatic
+partition. These tests require the fallible boundary to exercise rollback of
+contract and Zswap effects while retaining guaranteed Dust and replay effects.
+Red `start` continues to use automatic guaranteed placement.
+
+Use `OfferBindingOptions::with_wholly_fallible_offer(segment)` to request this
+boundary before ledger call construction. The adapter gives the upstream
+partitioner a zero guarantee budget for that call. The upstream partitioner
+replays the same program with the same runtime cost model and constructs its
+transcript and gas. The adapter still rejects a guaranteed, mixed or empty
+partition, and verifies the replayed effects against the resulting transcript.
+The observed ledger parameters govern transaction fees and strict verification
+and application. Offer selection, segments, canonical allocation and exact
+proof preimages use the existing checks. The automatic
+`with_offer_placement(OfferPlacement::Fallible(segment))` option still rejects
+a guaranteed partition.
+
+The new request applies to a single complete offer bound against the observed
+ledger. It keeps Ledger 8's recorded acceptance in the historical scope below.
+
 ### Observed boundary
 The unchanged original Coracle withdraw call proves and verifies (4480 bytes, changed binding rejected), but default-strict ledger validation rejects `NullifiersNEClaimedNullifiers`: retained offer input nullifiers are in logical segment 0, whereas upstream partition placed the call claims in logical segment 1. The current `OfferBoundPreparedCall::into_transaction` always supplies `Some(offer)` as guaranteed coins and constructs its intent at1. Failure log: `${LOCAL_EVIDENCE}/compact-adr206-proof-first.log`.
 

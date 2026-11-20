@@ -23,10 +23,10 @@ import check_tuple_return_wrappers_proof as gate
 
 
 def completed():
-    return {"format": "compact-tuple-return-wrappers-proof/v2", "status": "passed",
+    return {"format": "compact-tuple-return-wrappers-proof/v3", "status": "passed",
             "constructor_execution_proved": False, "inferred_false_branch_proved": False,
             "mixed_false_branch_proved": False,
-            "calls": [{"circuit": circuit, "key": key, "before": 1, "after": after, "proof_bytes": 100,
+            "calls": [{"circuit": circuit, "key": key, "before": 1, "after": after, "proof_bytes": 100, "transaction_proof_bytes": 3824, "transaction_proof_version": 3, "positive_fee_dust_spends": 1,
                        "output_type": "uint8_field" if circuit == "mixed" else "field_field",
                        "fold_input": [1, 0] if circuit == "folded" else None,
                        "changed_result_same_geometry": True, "changed_binding_rejected": True,

@@ -86,7 +86,7 @@
           [else type])))
 
     (Program : Program (ir) -> Program ()
-      [(program ,src (,contract-name* ...) ((,export-name* ,name*) ...) ,pelt* ...)
+      [(program ,src (,contract-name* ...) (,contract-type* ...) ((,export-name* ,name*) ...) ,pelt* ...)
        (let ([op (get-target-port 'contract-info.json)])
          (print-json op
            (list
@@ -98,7 +98,7 @@
                language-version-string)
              (cons
                "runtime-version"
-               runtime-version-string)
+               (selected-runtime-version-string))
              (cons
                "circuits"
                (list->vector
@@ -215,9 +215,9 @@
          (cons "type-name" "Bytes")
          (cons "length" len))]
       [(topaque ,src ,opaque-type)
-       (list
-         (cons "type-name" "Opaque")
-         (cons "tsType" opaque-type))]
+       (if (foreign-native-type? opaque-type)
+           (list (cons "type-name" opaque-type))
+           (list (cons "type-name" "Opaque") (cons "tsType" opaque-type)))]
       [(tvector ,src ,len ,type)
        (list
          (cons "type-name" "Vector")

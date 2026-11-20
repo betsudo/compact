@@ -170,7 +170,7 @@ pub fn constructor_historic_merkle_tree<D: DB>(depth: u8) -> StateValue<D> {
     )
 }
 
-fn blank_historic_merkle_tree<D: DB>(depth: u8) -> StateValue<D> {
+pub(super) fn blank_historic_merkle_tree<D: DB>(depth: u8) -> StateValue<D> {
     let tree: MerkleTree<(), D> = MerkleTree::blank(depth).rehash();
     StateValue::Array(
         vec![

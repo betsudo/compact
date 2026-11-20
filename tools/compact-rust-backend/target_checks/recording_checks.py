@@ -21,9 +21,35 @@ acceptance assertions, failure order, and optional proof commands.
 """
 
 from collections.abc import Callable
+import hashlib
 import json
 from pathlib import Path
 from subprocess import CompletedProcess
+
+
+def prove_stateful_assert(
+    compiler: str,
+    output: Path,
+    *,
+    root: Path,
+    run: Callable[..., None],
+) -> None:
+    source = root / "examples/rust_backend/stateful_assert_oracle.compact"
+    pins = root / "tools/compact-rust-backend/tests/stateful-assert-ledger9-artifacts.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    for path, expected in json.loads(pins.read_text()).items():
+        actual = hashlib.sha256((output / path).read_bytes()).hexdigest()
+        if actual != expected:
+            raise ValueError(f"stateful assert artifact differs from the retained source: {path}")
+    keys = output / "keys"
+    keys.mkdir()
+    for name in ("checked", "unit_result"):
+        run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"),
+            str(keys / f"{name}.prover"), str(keys / f"{name}.verifier"))
+    for selector in ("--stateful-assert", "--stateful-assert-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
 
 
 def check_stateful_assert(
@@ -43,9 +69,7 @@ def check_stateful_assert(
         assert row["proof_required"] and row["recorded"] and row["observed_call"]
     run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-assert"))
     if proof_requested:
-        proof = base / "stateful-assert-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording", str(source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--stateful-assert", str(proof))
+        prove_stateful_assert(compiler, base / "stateful-assert-proof", root=root, run=run)
     original = base / "original-dao"
     run(compiler, "--target", "rust", "--skip-zk", str(root / "test-center/test-contracts/micro-dao.compact"), str(original))
     info = json.loads((original / "compiler/contract-info.json").read_text())
@@ -80,7 +104,7 @@ def check_terminal_lexical_return(
     if proof_requested:
         (output / "keys").mkdir(exist_ok=True)
         for name in ["two", "three", "nested", "observed"]:
-            run("zkir", "compile", str(output / f"zkir/{name}.zkir"), str(output / f"keys/{name}.prover"), str(output / f"keys/{name}.verifier"))
+            run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"), str(output / f"keys/{name}.prover"), str(output / f"keys/{name}.verifier"))
         run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--", "--terminal-lexical-return", str(output))
     print("terminal lexical returns: five proof-required recorded APIs; four new strict Dust proof cases when requested")
 
@@ -96,17 +120,58 @@ def check_field_observation(
     source = root / "examples/rust_backend/field_observation_oracle.compact"
     output = base / "field-observation"
     run(compiler, "--target", "rust", "--rust-require-recording",
-        *([] if proof_requested else ["--skip-zk"]), str(source), str(output))
+        "--skip-zk", str(source), str(output))
     report = json.loads((output / "contract/rust-capabilities.json").read_text())
-    assert {row["name"] for row in report["circuits"]} == {
+    names = {
         "direct", "snapshot", "via_field_helper", "via_snapshot_helper",
         "pair", "selected", "optional"}
+    assert {row["name"] for row in report["circuits"]} == names
     assert all(row["recorded"] and row["observed_call"] and row["proof_required"]
                for row in report["circuits"])
     if proof_requested:
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--field-observation", str(output))
+        keys = output / "keys"
+        zkir = output / "zkir"
+        if keys.exists() or {path.name for path in zkir.iterdir()} != {
+            f"{name}.zkir" for name in names
+        }:
+            raise ValueError("field observation preflight produced unexpected proof artifacts")
+        pins = root / "tools/compact-rust-backend/tests/field-observation-ledger9-artifacts.json"
+        for path, expected in json.loads(pins.read_text()).items():
+            if not path.startswith("keys/") and hashlib.sha256(
+                (output / path).read_bytes()
+            ).hexdigest() != expected:
+                raise ValueError(f"field observation artifact differs from the retained source: {path}")
+        run("zkir-v3", "compile-many", str(zkir), str(keys))
+        for selector in ("--field-observation", "--field-observation-verify"):
+            run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+                selector, str(output))
     print("Field observations compose into typed structs and scoped helpers; empty selected path refuses preparation")
+
+
+def prove_stateful_struct(
+    compiler: str,
+    output: Path,
+    *,
+    root: Path,
+    run: Callable[..., None],
+) -> None:
+    source = root / "examples/rust_backend/stateful_struct_oracle.compact"
+    retained = root / "tools/compact-rust-backend/tests/stateful-struct-schema20-ir.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((output / "contract/compact-rust-ir.json").read_text()),
+                        sort_keys=True)
+    keys = output / "keys"
+    if expected != actual or keys.exists():
+        raise ValueError("stateful struct source IR differs or preflight produced keys")
+    keys.mkdir()
+    for name in ("snapshot", "reverse", "nested"):
+        run("zkir-v3", "compile", str(output / f"zkir/{name}.zkir"),
+            str(keys / f"{name}.prover"), str(keys / f"{name}.verifier"))
+    for selector in ("--stateful-struct", "--stateful-struct-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
 
 
 def check_stateful_struct(
@@ -135,13 +200,35 @@ def check_stateful_struct(
     strict = capture([compiler, "--target", "rust", "--rust-require-recording", "--skip-zk", str(source), str(base / "strict-struct")], cwd=root, capture_output=True,text=True)
     assert strict.returncode == 0, strict.stderr
     if proof_requested:
-        proof = base / "stateful-struct-proof"
-        run(compiler,"--target","rust",str(source),str(proof))
-        run("cargo","run","--quiet","-p","compact-rust-proof-smoke","--","--stateful-struct",str(proof))
+        prove_stateful_struct(compiler, base / "stateful-struct-proof", root=root, run=run)
     original = capture([compiler, "--target", "rust", "--skip-zk", str(root / "test-center/test-contracts/micro-dao.compact"), str(base / "original-dao")], cwd=root, capture_output=True, text=True)
     assert original.returncode == 0, original.stderr
     assert (base / "original-dao/contract/lib.rs").is_file()
     print("ordered typed stateful structs admitted; original micro-dao emits native Rust")
+
+
+def prove_effectful_return(
+    compiler: str,
+    source: Path,
+    output: Path,
+    *,
+    run: Callable[..., None],
+) -> None:
+    retained = Path(__file__).resolve().parents[1] / "tests/effectful-return-schema20-ir.json"
+    run(compiler, "--target", "rust", "--rust-require-recording", "--skip-zk",
+        str(source), str(output))
+    expected = json.dumps(json.loads(retained.read_text()), sort_keys=True)
+    actual = json.dumps(json.loads((output / "contract/compact-rust-ir.json").read_text()),
+                        sort_keys=True)
+    keys = output / "keys"
+    if expected != actual or keys.exists():
+        raise ValueError("effectful return source IR differs or preflight produced keys")
+    keys.mkdir()
+    run("zkir-v3", "compile", str(output / "zkir/choose.zkir"),
+        str(keys / "choose.prover"), str(keys / "choose.verifier"))
+    for selector in ("--effectful-return", "--effectful-return-verify"):
+        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
+            selector, str(output))
 
 
 def check_effectful_return(
@@ -200,9 +287,7 @@ def check_effectful_return(
                    for row in existing_ir["stateful_circuits"])
     check_coracle_source(compiler, base)
     if proof_requested:
-        proof = base / "effectful-return-proof"
-        run(compiler, "--target", "rust", "--rust-require-recording",
-            str(effectful_return_source), str(proof))
-        run("cargo", "run", "--quiet", "-p", "compact-rust-proof-smoke", "--",
-            "--effectful-return", str(proof))
+        prove_effectful_return(
+            compiler, effectful_return_source, base / "effectful-return-proof", run=run,
+        )
     print("typed effectful Field returns record selected effects and scoped branch results")

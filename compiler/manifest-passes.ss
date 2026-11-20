@@ -14,7 +14,7 @@
 ;;; limitations under the License.
 
 (library (manifest-passes)
-  (export manifest-passes)
+  (export manifest-passes sha256-file)
   (import (except (chezscheme) errorf)
           (utils)
           (json)
@@ -24,35 +24,36 @@
           (langs)
           (pass-helpers))
 
+  ;; Manifest entries and generated verifier metadata hash the same physical bytes.
+  ;; A pathname is one POSIX argument, never executable shell text. Splitting
+  ;; a literal quote as '\'' preserves every other byte inside single quotes.
+  (define (shell-argument pathname)
+    (let-values ([(op get) (open-string-output-port)])
+      (put-char op #\')
+      (string-for-each
+        (lambda (c)
+          (if (char=? c #\')
+              (display "'\\''" op)
+              (put-char op c)))
+        pathname)
+      (put-char op #\')
+      (get)))
+  (define (sha256-file pathname)
+    (define (hex-digit? c)
+      (or (char<=? #\0 c #\9)
+          (char<=? #\a c #\f)
+          (char<=? #\A c #\F)))
+    (let-values ([(stdout stderr) (shell (format "exec sha256sum -b -z -- ~a" (shell-argument pathname)))])
+      (unless (string=? stderr "")
+        (external-errorf "attempt to invoke sha256sum failed with message ~a" stderr))
+      (unless (>= (string-length stdout) 64)
+        (external-errorf "unexpected output from sha256sum: ~a" stdout))
+      (let ([hash (substring stdout 0 64)])
+        (unless (andmap hex-digit? (string->list hash))
+          (external-errorf "unexpected output from sha256sum: ~a" stdout))
+        (string-downcase hash))))
   (define (save-manifest ir output-directory-pathname manifest-dir*)
     (define manifest-version-string "1")
-    ;; A pathname is one POSIX argument, never executable shell text. Splitting
-    ;; a literal quote as '\'' preserves every other byte inside single quotes.
-    (define (shell-argument pathname)
-      (let-values ([(op get) (open-string-output-port)])
-        (put-char op #\')
-        (string-for-each
-          (lambda (c)
-            (if (char=? c #\')
-                (display "'\\''" op)
-                (put-char op c)))
-          pathname)
-        (put-char op #\')
-        (get)))
-    (define (sha256-hash pathname)
-      (define (hex-digit? c)
-        (or (char<=? #\0 c #\9)
-            (char<=? #\a c #\f)
-            (char<=? #\A c #\F)))
-      (let-values ([(stdout stderr) (shell (format "exec sha256sum -b -z -- ~a" (shell-argument pathname)))])
-        (unless (string=? stderr "")
-          (external-errorf "attempt to invoke sha256sum failed with message ~a" stderr))
-        (unless (>= (string-length stdout) 64)
-          (external-errorf "unexpected output from sha256sum: ~a" stdout))
-        (let ([hash (substring stdout 0 64)])
-          (unless (andmap hex-digit? (string->list hash))
-            (external-errorf "unexpected output from sha256sum: ~a" stdout))
-          (string-downcase hash))))
     (define (file-entry root)
       (lambda (fn)
         (let ([pathname (format "~a/~a" root fn)])
@@ -61,7 +62,7 @@
             (list
               (cons "type" "file")
               (cons "size" (call-with-port (open-file-input-port pathname) port-length))
-              (cons "hash" (sha256-hash pathname)))))))
+              (cons "hash" (sha256-file pathname)))))))
     (define (dir-entry root)
       (lambda (fn)
         (let* ([pathname (format "~a/~a" root fn)]
@@ -90,7 +91,7 @@
             language-version-string)
           (cons
             "runtime-version"
-            runtime-version-string)
+            (selected-runtime-version-string))
           (map (dir-entry output-directory-pathname)
                (filter (lambda (fn) (file-exists? (format "~a/~a" output-directory-pathname fn))) manifest-dir*)))))
     ir)

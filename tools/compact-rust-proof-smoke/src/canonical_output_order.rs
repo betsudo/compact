@@ -13,13 +13,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //! Exact persistent allocation with both source/offer orderings and stored change.
+use super::local_v3_application as v3;
+use super::qualified_coin_funding::{fee_funded_state_with_utxos, fee_resolver};
 use super::*;
 use compact_rust_canonical_output_order_oracle_fixture::{ledger_contract as c, types};
+use midnight_base_crypto::hash::persistent_hash;
 use midnight_compact_runtime as runtime;
 use midnight_zswap::{Input, Offer, Output};
 use runtime::transaction::{
     OfferBackedObservedState, OfferBindingOptions, PersistentOutputAllocation,
 };
+use std::ffi::OsString;
+
+const NAME: &str = "distribute";
 
 fn compact_coin(coin: runtime::ledger::CoinInfo) -> types::ShieldedCoinInfo {
     types::ShieldedCoinInfo {
@@ -29,28 +35,79 @@ fn compact_coin(coin: runtime::ledger::CoinInfo) -> types::ShieldedCoinInfo {
     }
 }
 pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
-    // Pair the complete circuit input before key loading or deployment.
-    // Input identity alone does not authenticate proving-key provenance.
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         compact_rust_canonical_output_order_oracle_fixture::RETAINED_IR,
     )?;
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("canonical output order requires local proving".into());
+    }
+    let pins: std::collections::BTreeMap<&str, &str> = serde_json::from_str(include_str!(
+        "../../compact-rust-backend/tests/canonical-output-order-ledger9-artifacts.json"
+    ))?;
+    let mut raw_circuits = Vec::new();
+    for entry in std::fs::read_dir(root.join("zkir"))? {
+        let entry = entry?;
+        if Path::new(&entry.file_name())
+            .extension()
+            .is_some_and(|ext| ext == "zkir")
+        {
+            raw_circuits.push(entry.file_name());
+        }
+    }
+    raw_circuits.sort_unstable();
+    if raw_circuits
+        != [
+            OsString::from("distribute.zkir"),
+            OsString::from("read_coin.zkir"),
+        ]
+    {
+        return Err("canonical output order raw circuit inventory differs".into());
+    }
+    for (path, expected) in pins {
+        if hex::encode(persistent_hash(&std::fs::read(root.join(path))?).0) != expected {
+            return Err(
+                format!("canonical output order source/proof artifact differs: {path}").into(),
+            );
+        }
+    }
+    let (ir, verifier, operation) = v3::operation(root, NAME, 13)?;
+    if ir.model().rows() != 7_085 {
+        return Err("canonical output order v3 row count differs".into());
+    }
     for reversed in [false, true] {
-        run_order(root, reversed)?;
+        run_order(root, reversed, &verifier, &operation)?;
     }
     Ok(())
 }
-fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
-    const NAME: &str = "distribute";
+fn run_order(
+    root: &Path,
+    reversed: bool,
+    verifier: &VerifierKey,
+    operation: &ContractOperation,
+) -> Result<(), Box<dyn Error>> {
+    let stem = if reversed {
+        "canonical-output-reversed"
+    } else {
+        "canonical-output-source-order"
+    };
     let mut rng = StdRng::seed_from_u64(0x0205_0000 + u64::from(reversed));
     let initial = c::initial_state(ConstructorContext::new(()))?;
-    let deploy = make_deploy(root, NAME, initial.ledger_state.get_ref().clone(), &mut rng)?;
+    let deploy = v3::deploy(
+        initial.ledger_state.get_ref().clone(),
+        NAME,
+        operation.clone(),
+        &mut rng,
+    );
     let address = deploy.address();
-    let mut fees = super::qualified_coin_funding::fee_funded_state(&mut rng)?;
-    fees.ledger.contract = fees
-        .ledger
-        .contract
-        .insert(address, deploy.initial_state.clone());
+    let mut fees = fee_funded_state_with_utxos(&mut rng, 2)?;
+    let executor = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?;
+    let resolver = fee_resolver(root, NAME)?;
+    v3::apply_funded_deployment(
+        root, stem, &deploy, &mut fees, &mut rng, &executor, &resolver,
+    )?;
     let seed = runtime::ledger::coin_info_from_compact(
         FixedBytes::new([1; 32]),
         FixedBytes::new([2; 32]),
@@ -63,7 +120,9 @@ fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
         Offer::new(vec![], vec![seed_output], vec![]).unwrap();
     let (seeded, seed_indices) = fees.ledger.zswap.try_apply(&seed_offer, None)?;
     let seed_index = *seed_indices.get(&seed_com).unwrap();
-    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(seeded.post_block_update(fees.time));
+    fees.ledger.zswap = midnight_storage_core::arena::Sp::new(
+        seeded.post_block_update(fees.time, fees.ledger.parameters.global_ttl),
+    );
     let ledger = fees.ledger.clone();
     let start = ledger.zswap.first_free;
     assert!(start > 0);
@@ -230,16 +289,7 @@ fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
     assert_eq!(replay.context.state, native.context.query.state);
     assert_eq!(replay.context.effects, native.context.query.effects);
     let expected = native.context.query.state.get_ref().clone();
-    let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join("keys/distribute.verifier"),
-    )?))?;
     let prepared = bound.prepare(call, verifier.clone(), Fr::from(0u64))?;
-    super::kernel_shielded_effects::prove_and_verify_call(
-        root,
-        NAME,
-        prepared.prototype(),
-        &verifier,
-    )?;
     // The documented default remains exact-order; it must not be silently upgraded.
     let exact = OfferBackedObservedState::new(observe(), &ledger, offer.clone())?;
     let result = c::recorded::Contract.distribute_call(
@@ -262,45 +312,15 @@ fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
     } else {
         assert!(result.is_ok());
     }
-    let tx = prepared.into_transaction(
+    let updated = v3::prove_and_apply_offer(
+        root,
+        (NAME, stem),
+        prepared,
+        &mut fees,
         &mut rng,
-        "local-test",
-        Timestamp::from_secs(fees.time.to_secs() + 3600),
-    );
-    let resolver = super::qualified_coin_funding::fee_resolver(root, NAME)?;
-    let params = MidnightDataProvider::new(FetchMode::OnDemand, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0205_5052 + u64::from(reversed)),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
+        verifier,
+        &expected,
     )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0205_5345));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(fees.balance_tx(rng, sealed, &resolver))?;
-    let verified = sealed.well_formed(&ledger, WellFormedStrictness::default(), fees.time)?;
-    let context = TransactionContext {
-        ref_state: ledger.clone(),
-        block_context: BlockContext {
-            tblock: fees.time,
-            last_block_time: fees.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, outcome) = ledger.apply(&verified, &context);
-    assert!(
-        matches!(outcome, TransactionResult::Success(_)),
-        "{outcome:?}"
-    );
-    assert_eq!(
-        updated.contract.get(&address).unwrap().data.get_ref(),
-        &expected
-    );
     assert_eq!(updated.zswap.first_free, start + 2);
     assert_eq!(
         updated
@@ -330,7 +350,7 @@ fn run_order(root: &Path, reversed: bool) -> Result<(), Box<dyn Error>> {
         matches!(updated.zswap.try_apply(&offer,None),Err(midnight_zswap::error::TransactionInvalid::NullifierAlreadyPresent(found)) if found==nullifier)
     );
     println!(
-        "canonical reversed={reversed}: source sent/change at actual indices[{sent_index},{change_index}], progress{}, stored change{change_index}; funded42→17+25, separate Dust, default strict proof+apply and nullifier replay rejection passed",
+        "canonical reversed={reversed}: sent and change indices [{sent_index}, {change_index}], frontier {}, stored change index {change_index}; funded 42 → 17 + 25 and exact nullifier refusal",
         start + 2
     );
     Ok(())

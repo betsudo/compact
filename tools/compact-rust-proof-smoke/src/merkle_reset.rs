@@ -13,8 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Prove a populated plain-tree reset and apply it through ledger-8.
+//! Prove a populated plain-tree reset and apply it through Ledger 9.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use midnight_compact_runtime::ledger::ContractAddress;
 
@@ -70,6 +71,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("plain Merkle reset proved and applied through ledger-8");
+    println!("plain Merkle reset proved and applied through Ledger 9");
     Ok(())
 }

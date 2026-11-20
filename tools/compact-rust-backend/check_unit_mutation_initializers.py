@@ -26,6 +26,8 @@ import hashlib
 import json
 import os
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import re
 import shutil
 import subprocess
@@ -130,7 +132,7 @@ def main():
     try:
         require_clean_source(report)
         generated = output / "generated"
-        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        run("generate", [compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                          "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated])
         report["generated"] = generated_manifest_snapshot(generated)
         runtime = args.ts_runtime.resolve(strict=True)
@@ -193,7 +195,7 @@ def main():
                 destination = output / f"{name}-{target}-source"
                 command = [compiler, "--target", target, "--skip-zk"]
                 if target == "rust":
-                    command += ["--rust-functional-ledger8", "--rust-runtime-root", ROOT]
+                    command += ["--rust-functional-ledger9", "--rust-runtime-root", ROOT]
                 run(f"{name}-{target}-source", [*command, source, destination])
                 entry = destination / "contract" / ("index.js" if target == "ts" else "lib.rs")
                 if not entry.is_file() or not entry.stat().st_size:
@@ -219,7 +221,7 @@ def main():
             lines.extend(['[[bin]]', f'name="{name}"', f'path="src/bin/{name}.rs"',
                           f'required-features=["{name}"]'])
         manifest = consumer / "Cargo.toml"
-        manifest.write_text("\n".join(lines) + "\n")
+        manifest.write_text(with_pinned_patches("\n".join(lines) + "\n", ROOT))
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         metadata = json.loads(run("resolve", ["cargo", "metadata", "--offline", "--format-version", "1",
                                                "--manifest-path", manifest]).stdout)

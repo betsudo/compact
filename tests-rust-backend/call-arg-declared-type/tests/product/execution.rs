@@ -1,6 +1,18 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 use crate::{ledger_contract as c, ledger_slots as slots, runtime as r, types::CommitPayload};
 use midnight_onchain_state::state::{ContractOperation, EntryPointBuf};
 use midnight_serialize::{Deserializable, Serializable};
@@ -16,7 +28,7 @@ fn named_fixed_product_commitment_compiles_and_executes_in_all_lanes() {
     let key = VerifierKey::deserialize(&mut bytes.as_slice(), 0).unwrap();
     let operations = r::ledger::LedgerHashMap::new().insert(
         EntryPointBuf(b"commit_product".to_vec()),
-        ContractOperation::new(Some(key.clone())),
+        ContractOperation::new(Some(key.clone()), None),
     );
     let state = ObservedContractState::new(
         Default::default(),

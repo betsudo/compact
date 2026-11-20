@@ -83,6 +83,86 @@ pub(crate) fn unit_equality_result(ty: &Type, negated: bool) -> Option<bool> {
     matches!(ty, Type::Unit).then_some(!negated)
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) enum Secp256k1Unary {
+    Negate,
+    Invert,
+    PointX,
+    PointY,
+}
+
+impl Secp256k1Unary {
+    pub(crate) fn from_expression(expression: &Expr) -> Option<(Self, &Expr)> {
+        Some(match expression {
+            Expr::Secp256k1Neg { value } => (Self::Negate, value.as_ref()),
+            Expr::Secp256k1Inv { value } => (Self::Invert, value.as_ref()),
+            Expr::Secp256k1PointX { value } => (Self::PointX, value.as_ref()),
+            Expr::Secp256k1PointY { value } => (Self::PointY, value.as_ref()),
+            _ => return None,
+        })
+    }
+
+    pub(crate) fn result_type(self, operand: &Type) -> Result<Type, RenderError> {
+        match self {
+            Self::Negate | Self::Invert => {
+                // The serialized operation names predate the shared field support.
+                if matches!(
+                    operand,
+                    Type::Secp256k1Base
+                        | Type::Secp256k1Scalar
+                        | Type::Secp256r1Base
+                        | Type::Curve25519Base
+                        | Type::Secp256r1Scalar
+                        | Type::Curve25519Scalar
+                ) {
+                    Ok(operand.clone())
+                } else {
+                    Err(RenderError::ExpectedSecp256k1Field(operand.clone()))
+                }
+            }
+            Self::PointX | Self::PointY => match operand {
+                Type::Secp256k1Point => Ok(Type::Secp256k1Base),
+                Type::Secp256r1Point => Ok(Type::Secp256r1Base),
+                Type::Curve25519Point => Ok(Type::Curve25519Base),
+                actual => Err(RenderError::TypeMismatch {
+                    expected: Type::Secp256k1Point,
+                    actual: actual.clone(),
+                }),
+            },
+        }
+    }
+}
+
+pub(crate) fn check_field_arithmetic_operand(ty: &Type) -> Result<(), RenderError> {
+    if matches!(
+        ty,
+        Type::Field
+            | Type::Secp256k1Base
+            | Type::Secp256k1Scalar
+            | Type::Secp256r1Base
+            | Type::Curve25519Base
+            | Type::Secp256r1Scalar
+            | Type::Curve25519Scalar
+    ) {
+        return Ok(());
+    }
+    Err(RenderError::TypeMismatch {
+        expected: Type::Field,
+        actual: ty.clone(),
+    })
+}
+
+pub(crate) fn check_field_arithmetic_pair(left: &Type, right: &Type) -> Result<(), RenderError> {
+    check_field_arithmetic_operand(left)?;
+    if left != right {
+        return Err(RenderError::TypeMismatch {
+            expected: left.clone(),
+            actual: right.clone(),
+        });
+    }
+    Ok(())
+}
+
 pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
     source: ArithmeticSource<'_>,
     children: &mut C,
@@ -119,19 +199,8 @@ pub(crate) fn fold_arithmetic<S: ArithmeticSink, C: Children<S>>(
             )
         }
         ArithmeticSource::Field { kind, .. } => {
-            if left.ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: left.ty,
-                });
-            }
-            if right.ty != Type::Field {
-                return Err(RenderError::TypeMismatch {
-                    expected: Type::Field,
-                    actual: right.ty,
-                });
-            }
-            (ArithmeticFacts::Field(kind), Type::Field)
+            check_field_arithmetic_pair(&left.ty, &right.ty)?;
+            (ArithmeticFacts::Field(kind), left.ty)
         }
         ArithmeticSource::Equality { negated, .. } => {
             // Children supply bounded inferred types. Preserve exact derived

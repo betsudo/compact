@@ -36,10 +36,13 @@ impl<Private, D: DB> CircuitContext<Private, D> {
             zswap_state,
             circuit_zswap,
             coin_public_key,
+            events,
             cost_model,
             gas_limit,
         } = &self;
         let prior_query = query.clone();
+        // Local helpers may neither emit nor replace public events.
+        let prior_events = events.clone();
         let prior_zswap = zswap_state.clone();
         let prior_circuit_zswap = circuit_zswap.clone();
         // Same optional byte identity as own_coin_public_key().ok().
@@ -49,6 +52,7 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         let result = call(self)?;
         let next = &result.context;
         if !same_query(&prior_query, &next.query)
+            || prior_events != next.events
             || prior_circuit_zswap != next.circuit_zswap
             || !same_wallet(&prior_zswap, &next.zswap_state)
             || prior_coin_key != next.own_coin_public_key().ok()

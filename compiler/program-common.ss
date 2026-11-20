@@ -26,6 +26,7 @@
           (utils)
           (state-case)
           (compiler-version)
+          (config-params)
           (language-version)
           (ledger-version)
           (runtime-version))
@@ -46,10 +47,11 @@
              "~a\n"
              compiler-version-string))
 
-  (define (print-language-version)
-    (fprintf (current-output-port)
-             "~a\n"
-             language-version-string))
+  (define (print-language-version zkir-v3)
+    (parameterize ([feature-zkir-v3 zkir-v3])
+      (fprintf (current-output-port)
+               "~a\n"
+               language-version-string)))
 
   (define (print-runtime-version)
     (fprintf (current-output-port)

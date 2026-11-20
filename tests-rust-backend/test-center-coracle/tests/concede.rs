@@ -16,6 +16,8 @@
 #[path = "../support/guess.rs"]
 mod support;
 
+#[path = "../../support/ledger9_partition.rs"]
+mod ledger9_partition;
 use compact_rust_test_center_coracle_fixture::{
     ledger_contract as c, ledger_slots as slots, types,
 };
@@ -102,7 +104,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
             .fold(HashMap::new(), |m, n| {
                 m.insert(
                     EntryPointBuf(n.as_bytes().to_vec()),
-                    ContractOperation::new(None),
+                    ContractOperation::new(None, None),
                 )
             });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -185,7 +187,7 @@ fn context(row: &Value) -> CircuitContext<Private> {
 #[test]
 fn original_concede_native_matches_corrected_ts_on_seeded_game() {
     let fixture: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/coracle-concede.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-coracle-concede.json"
     ))
     .unwrap();
     for row in fixture["rows"].as_array().unwrap() {
@@ -342,6 +344,7 @@ fn original_concede_native_matches_corrected_ts_on_seeded_game() {
             );
             assert_eq!(sum.to_string(), row["queryCostSum"][dimension]);
         }
+        ledger9_partition::assert_partition(&recorded, row);
         assert_eq!(row["partition"][0]["programLength"], 42);
         assert!(row["partition"][1].is_null());
     }

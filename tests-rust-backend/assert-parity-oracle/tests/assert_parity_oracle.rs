@@ -31,7 +31,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     for name in ["trigger_ok", "trigger_fail", "ping"] {
         operations = operations.insert(
             EntryPointBuf(name.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         );
     }
     let contract_state =
@@ -44,7 +44,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
 #[test]
 fn exact_assertion_oracle_returns_errors_without_panicking() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/assert-parity-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-assert-parity-oracle.json"
     ))
     .unwrap();
     assert_eq!(require_true(true).unwrap(), oracle["pureTrue"]["ok"]);
@@ -81,7 +81,7 @@ fn exact_assertion_oracle_returns_errors_without_panicking() {
 #[test]
 fn recorded_boolean_pure_assert_matches_typescript_success_and_failure() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/recorded-pure-assert.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-recorded-pure-assert.json"
     ))
     .unwrap();
     let success = &oracle["triggerOk"];
@@ -245,7 +245,7 @@ fn assert_direct_trace(
 #[test]
 fn ping_is_executed_and_matches_independent_typescript_recording() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/oracle-direct-behavior.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-oracle-direct-behavior.json"
     ))
     .unwrap();
     let rows = oracle["stateful"]

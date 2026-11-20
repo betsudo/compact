@@ -26,6 +26,7 @@
 
 //! Prove an ordered Field witness Let whose formal is a typed Field vector.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_call_arg_declared_type_fixture::ledger_contract as contract;
 
@@ -105,6 +106,6 @@ fn run_named(root: &Path, bare: bool) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("typed vector witness {name} proved and applied through ledger-8");
+    println!("typed vector witness {name} proved and applied through Ledger 9");
     Ok(())
 }

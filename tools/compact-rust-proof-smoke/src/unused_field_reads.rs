@@ -14,6 +14,7 @@
 // limitations under the License.
 
 //! Prove original PM-19252 unit returns whose unused bindings still read state.
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use midnight_compact_runtime::ledger::ContractAddress;
 

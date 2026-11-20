@@ -14,12 +14,14 @@
 // limitations under the License.
 
 // Compile witness_cell_write with --skip-zk, link its generated contract to
-// this branch's runtime, then pass contract/index.js as the only argument.
+// its paired runtime. Pass contract/index.js and optionally the runtime entry.
 import { pathToFileURL } from 'node:url';
-import * as runtime from '../../../runtime/dist/index.js';
 
-const [contractPath] = process.argv.slice(2);
+const [contractPath, runtimePath] = process.argv.slice(2);
 if (!contractPath) throw new Error('expected contract/index.js');
+const runtime = runtimePath
+  ? await import(pathToFileURL(runtimePath).href)
+  : await import('../../../runtime/dist/index.js');
 const { Contract } = await import(pathToFileURL(contractPath).href);
 const queryCosts = [];
 const originalQuery = runtime.QueryContext.prototype.query;

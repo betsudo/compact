@@ -1,0 +1,27 @@
+// This file is part of Compact.
+// Copyright (C) 2025 Midnight Foundation
+// SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// 	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import CompactStandardLibrary;
+
+new type Word = Uint<129>;
+export circuit encode_word(x: Word): Bytes<20> { return serialize<Word, 20>(x); }
+export circuit decode_word(x: Bytes<20>): Word { return deserialize<Word, 20>(x); }
+export circuit encode_max(x: Uint<248>): Bytes<31> { return serialize<Uint<248>, 31>(x); }
+export circuit decode_max(x: Bytes<31>): Uint<248> { return deserialize<Uint<248>, 31>(x); }
+export circuit narrow(x: Uint<129>): Bytes<16> { return x as Bytes<16>; }
+export circuit direct(x: Bytes<33>): Uint<129> { return x as Uint<129>; }
+export circuit nested(x: [Boolean, Word]): Bytes<19> {
+  return serialize<[Boolean, Word], 19>(x);
+}

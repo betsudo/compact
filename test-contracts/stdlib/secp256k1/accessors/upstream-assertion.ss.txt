@@ -1,0 +1,27 @@
+  (test
+    '(
+      "import CompactStandardLibrary;"
+      "export ledger pt: Secp256k1Point;"
+      "export ledger x: Secp256k1Base;"
+      "export circuit storePoint(p: Secp256k1Point): [] {"
+      "  pt = disclose(p);"
+      "}"
+      "export circuit storeXChecked(): [] {"
+      "  assert(pt != default<Secp256k1Point>, 'the identity has no coordinates');"
+      "  x = secp256k1PointX(pt);"
+      "}"
+      )
+    (stage-javascript
+      '(
+        "test('Secp256k1Point accessors guarded by an assert', async () => {"
+        "  const [contract, context] = await startContract(contractCode, {}, 0);"
+        "  await expect(contract.circuits.storeXChecked(context))"
+        "      .rejects.toThrow(/the identity has no coordinates/);"
+        "  const G = runtime.secp256k1MulGenerator(1n);"
+        "  const stored = await contract.circuits.storePoint(context, G);"
+        "  const checked = await contract.circuits.storeXChecked(stored.context);"
+        "  const L = contractCode.ledger(checked.context.callContext.currentQueryContext.state);"
+        "  expect(L.x).toEqual(G.x);"
+        "});"
+        ))
+    )

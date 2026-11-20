@@ -128,7 +128,7 @@ fn check<T: PartialEq + std::fmt::Debug>(
 #[test]
 fn spend_records_current_and_historic_roots_recipient_bytes_and_ordered_private_effects() {
     let oracle: serde_json::Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/zerocash-spend.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-zerocash-spend.json"
     ))
     .unwrap();
     for expected in oracle["scenarios"].as_array().unwrap() {

@@ -36,7 +36,7 @@ pub mod types {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod pure_circuits {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
 }
 /// Typed descriptors for Compact ledger declarations.
 #[allow(non_upper_case_globals)]
@@ -47,7 +47,7 @@ pub mod ledger_slots {
 #[allow(non_snake_case, non_camel_case_types, unused_mut, unused_variables)]
 pub mod ledger_contract {
     use midnight_compact_runtime as runtime;
-    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 53);
+    const _: () = assert!(runtime::RUST_RUNTIME_ABI == 54);
     pub struct LedgerView<'a> {
         #[allow(dead_code)]
         state: &'a runtime::ledger::StateValue<runtime::ledger::DefaultDB>,
@@ -59,7 +59,7 @@ pub mod ledger_contract {
             crate::ledger_slots::active.witness_read(self.meter)
         }
     }
-    /// Read-only projection of an existing ledger-8 public state.
+    /// Read-only projection of the contract's public state.
     pub struct PublicStateView<'a, D: runtime::ledger::DB = runtime::ledger::DefaultDB> {
         state: &'a runtime::ledger::StateValue<D>,
     }
@@ -116,7 +116,7 @@ pub mod ledger_contract {
         let mut total_cost = runtime::context::RunningCost::default();
         let mut private_transcript_outputs = Vec::new();
         let mut context = context;
-        let __compact_value_0 = runtime::keccak256(__compact_param_0);
+        let __compact_value_0 = runtime::keccak256_aligned(__compact_param_0)?;
         let __compact_witness_meter_1 = runtime::context::WitnessReadMeter::new(&context);
         let (__compact_next_private_1, __compact_witness_1) =
             witnesses.expectedHash(context.witness_context_with(LedgerView {
@@ -230,7 +230,7 @@ pub mod ledger_contract {
             total_cost += __compact_witness_meter_0.gas_cost();
             context.private_state = __compact_next_private_0;
             private_transcript_outputs.push(runtime::fab::AlignedValue::from(__compact_witness_0));
-            runtime::keccak256(__compact_witness_0)
+            runtime::keccak256_aligned(__compact_witness_0)?
         } else {
             runtime::FixedBytes::<32>::new(
                 (runtime::Field::from(0u128))
@@ -286,7 +286,7 @@ pub mod ledger_contract {
             let frame = {
                 let __compact_effect_1: runtime::FixedBytes<32> = __compact_effect_0;
                 let __compact_effect_2: runtime::FixedBytes<32> =
-                    runtime::keccak256(__compact_effect_1);
+                    runtime::keccak256_aligned(__compact_effect_1)?;
                 let (frame, __compact_effect_3): (_, runtime::FixedBytes<32>) = frame
                     .try_witness_metered(|context, meter| {
                         witnesses.expectedHash(context.witness_context_with(super::LedgerView {
@@ -340,7 +340,7 @@ pub mod ledger_contract {
                 let frame = {
                     let __compact_effect_2: runtime::FixedBytes<32> = __compact_effect_0;
                     let __compact_effect_3: runtime::FixedBytes<32> =
-                        runtime::keccak256(__compact_effect_2);
+                        runtime::keccak256_aligned(__compact_effect_2)?;
                     let (frame, __compact_effect_4): (_, runtime::FixedBytes<32>) = frame
                         .try_witness_metered(|context, meter| {
                             witnesses.expectedHash(context.witness_context_with(
@@ -397,7 +397,7 @@ pub mod ledger_contract {
                         }))
                     })?;
                 let __compact_effect_2: runtime::FixedBytes<32> =
-                    runtime::keccak256(__compact_effect_1);
+                    runtime::keccak256_aligned(__compact_effect_1)?;
                 (frame, __compact_effect_2)
             } else {
                 let __compact_effect_3: runtime::Field = runtime::Field::from_le_bytes(&[

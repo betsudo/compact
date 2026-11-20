@@ -26,7 +26,10 @@ import {
   jubjubSchnorrSign,
   jubjubSchnorrVerify,
   jubjubSchnorrVerifyingKey,
+  ecAdd,
+  ecMul,
   ecMulGenerator,
+  reduceModJubjubOrder,
   CompactTypeField,
 } from '../src/index.js';
 
@@ -34,6 +37,25 @@ function littleEndian(value: bigint): Uint8Array {
   return Uint8Array.from({ length: 32 }, (_, i) => Number((value >> BigInt(8 * i)) & 255n));
 }
 afterEach(() => entropy.bytes.mockReset());
+
+describe('Compact multiplication scalar boundary', () => {
+  const generator = ecMulGenerator(1n);
+
+  test.each([-1n, q, q + 1n])('rejects noncanonical scalar %s', (scalar) => {
+    expect(() => ecMulGenerator(scalar)).toThrow(new RangeError('invalid Jubjub scalar'));
+    expect(() => ecMul(generator, scalar)).toThrow(new RangeError('invalid Jubjub scalar'));
+    expect(() => ecMul(ecMulGenerator(0n), scalar)).toThrow(new RangeError('invalid Jubjub scalar'));
+  });
+
+  test('accepts canonical endpoints and explicitly reduced operands', () => {
+    const identity = ecMulGenerator(0n);
+    const inverse = ecMulGenerator(q - 1n);
+    expect(ecAdd(inverse, generator)).toEqual(identity);
+    expect(ecMul(generator, q - 1n)).toEqual(inverse);
+    expect(ecMul(generator, reduceModJubjubOrder(q))).toEqual(identity);
+    expect(ecMulGenerator(reduceModJubjubOrder(q + 1n))).toEqual(generator);
+  });
+});
 
 describe('uniform JubJub scalar rejection sampling', () => {
   test.each([0n, q - 1n])('accepts scalar boundary %s', (value) => {

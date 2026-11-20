@@ -128,7 +128,7 @@ def run(args):
             common.run(list(map(str, argv)), name, output, receipt, env=env, stdout_path=stdout)
 
         generated = output / "generated"
-        execute([compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger8",
+        execute([compiler, "--target", "rust", "--target", "ts", "--rust-functional-ledger9",
                  "--rust-runtime-root", ROOT, "--skip-zk", SOURCE.relative_to(ROOT), generated], "generate-did")
         receipt["generated"] = generated_manifest_snapshot(generated)
         for name, retained in [("compact-rust-ir.json", "original-ir.json"),
@@ -165,10 +165,15 @@ def run(args):
                  generated / "contract/index.js", runtime, version], "live-typescript", capture)
         observations = json.loads(capture.read_text())
         did_rows = [row for row in observations["cases"] if row["source"] == "did"]
-        expected = json.loads((FIXTURE / "data/unit-composition.json").read_text())
-        require(expected["runtime_version"] == version and len(did_rows) == 12 and
+        expected = json.loads((FIXTURE / "data/ledger9-unit-composition.json").read_text())
+        require(expected["schema"] == "compact-did-functional-lifecycle-oracle/v2" and
+                expected["source_manifest"] == json.loads((SOURCE_ROOT / "source-manifest.json").read_text()) and
+                expected["runtime_version"] == "0.17.0" and
+                observations["qualification"]["runtime"]["version"] == version and len(did_rows) == 12 and
                 did_rows == expected["cases"], "complete live DID observations differ")
         receipt["typescript"] = {"capture_sha256": common.sha256(capture),
+                                  "runtime_version": version,
+                                  "oracle_runtime_version": expected["runtime_version"],
                                   "did_rows": 12, "all_rows": len(observations["cases"]),
                                   "rust_selected_ids": [row["id"] for row in did_rows],
                                   "success_route_executions": 8,
@@ -193,6 +198,10 @@ def run(args):
         for name in NEGATIVES:
             shutil.copyfile(CONTROLS / f"{name}.rs", consumer / f"{name}.rs")
             lines += ["[[bin]]", f'name="{name}"', f'path="{name}.rs"', f'required-features=["{name}"]']
+        generated_manifest = (generated / "contract/Cargo.toml").read_text()
+        patch = re.search(r"(?ms)^\[patch\.crates-io\]\n.*?(?=^\[|\Z)", generated_manifest)
+        require(patch is not None, "generated contract omitted its Cargo source patch table")
+        lines += ["", *patch.group(0).rstrip().splitlines()]
         manifest_path.write_text("\n".join(lines) + "\n")
         shutil.copyfile(ROOT / "Cargo.lock", consumer / "Cargo.lock")
         execute(["cargo", "metadata", "--offline", "--format-version", "1", "--manifest-path", manifest_path],

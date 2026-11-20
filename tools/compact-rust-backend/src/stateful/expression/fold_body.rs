@@ -137,7 +137,7 @@ fn locals<'a>(
 ) -> Result<HashMap<&'a str, (&'a Type, syn::Ident)>, RenderError> {
     let mut local = parameters.clone();
     for binding in bindings {
-        ident(&binding.name)?;
+        crate::pure_semantics::identifier::check_local_name(&binding.name)?;
         let (value, actual) = expression(
             &binding.value,
             &local,

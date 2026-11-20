@@ -28,6 +28,7 @@ import hashlib
 import json
 import os
 import re
+import shlex
 from pathlib import Path
 import shutil
 import subprocess
@@ -61,6 +62,55 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: file.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def depfile_prerequisites(raw, base):
+    """Read only prerequisites from the first Cargo Make dependency rule."""
+    logical = raw.replace("\\\n", "")
+    first_rule = next((line for line in logical.splitlines() if line.strip()), "")
+    _, separator, prerequisites = first_rule.partition(": ")
+    if not separator or not prerequisites:
+        raise GateError("invalid actual runner dependency rule")
+    paths = {str((Path(base) / name).resolve(strict=True)) for name in shlex.split(prerequisites)}
+    if not paths or not all(Path(name).is_file() for name in paths):
+        raise GateError("non-file runner prerequisite")
+    return paths
+
+
+def pin_runner_worktree_inputs(paths, root, target_dir, source_hashes, generated_hashes):
+    """Check depfile inputs against the prebuild map for their physical owner.
+
+    Cargo target outputs can reside below the checkout without being source
+    files. They must be pinned as build-generated inputs, not source hashes.
+    """
+    root = Path(root).resolve(strict=True)
+    target_dir = Path(target_dir).resolve(strict=True)
+    source_inputs = {}
+    generated_inputs = {}
+    for name in paths:
+        path = Path(name).resolve(strict=True)
+        if path.is_relative_to(target_dir):
+            generated_inputs[str(path)] = generated_hashes.get(str(path))
+        elif path.is_relative_to(root):
+            source_inputs[str(path)] = source_hashes.get(str(path))
+    for inventory in (source_inputs, generated_inputs):
+        if any(digest is None or sha256(Path(name)) != digest for name, digest in inventory.items()):
+            raise GateError("runner worktree dependency was not pinned before build")
+    return source_inputs, generated_inputs
+
+
+def validate_pinned_zkir_artifacts(generated: Path, manifest: Path) -> None:
+    """Bind the raw circuit roster and emitted library before external key generation."""
+    pins = json.loads(manifest.read_text())
+    if "contract/lib.rs" not in pins:
+        raise GateError(f"Ledger 9 generated library pin is absent from {manifest}")
+    expected = {name for name in pins if name.startswith("zkir/") and name.endswith(".zkir")}
+    actual = {f"zkir/{path.name}" for path in (generated / "zkir").glob("*.zkir")}
+    if not expected or expected != actual:
+        raise GateError(f"Ledger 9 raw circuit inventory differs from {manifest}")
+    for name, digest in pins.items():
+        if sha256(generated / name) != digest:
+            raise GateError(f"Ledger 9 artifact differs from the pinned fixture: {name}")
 
 
 def git_head() -> str:
@@ -453,13 +503,13 @@ def run_required_proof_gates(directory: Path, snapshot: Path, environment: dict,
         ("acc-jubjub-proofs", "acc_jubjub_gate.py", "acc-jubjub-proofs",
          "acc_jubjub_gate", "compact-acc-jubjub-gate/v1", "--output", "--target"),
         ("vector-projection-proofs", "check_constant_vector_projection_proof.py", "vector-projection-proofs",
-         "vector_projection_proof_gate", "compact-vector-projection-proof-gate/v1", "--output", "--target-dir"),
+         "vector_projection_proof_gate", "compact-vector-projection-proof-gate/v2", "--output", "--target-dir"),
         ("constant-valued-vector-index-proofs", "check_constant_vector_projection_proof.py", "constant-valued-vector-index-proofs",
-         "constant_valued_vector_index_proof_gate", "compact-vector-projection-proof-gate/v1", "--output", "--target-dir"),
+         "constant_valued_vector_index_proof_gate", "compact-vector-projection-proof-gate/v2", "--output", "--target-dir"),
         ("map-size-expression-proofs", "check_map_size_expression_proof.py", "map-size-expression-proofs",
-         "map_size_expression_proof_gate", "compact-map-size-expression-proof-gate/v1", "--output", "--target-dir"),
+         "map_size_expression_proof_gate", "compact-map-size-expression-proof-gate/v2", "--output", "--target-dir"),
         ("direct-fold-proofs", "check_direct_fold_proof.py", "direct-fold-proofs",
-         "direct_fold_proof_gate", "compact-direct-fold-proof-gate/v1", "--output", "--target-dir"),
+         "direct_fold_proof_gate", "compact-direct-fold-proof-gate/v2", "--output", "--target-dir"),
     )
     children = []
     for label, script, subdirectory, key, expected_format, output_flag, target_flag in gates:

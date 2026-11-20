@@ -15,6 +15,7 @@
 
 //! Proves an assertion guarded by an ordered private Boolean witness result.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_assert_witness_fixture::ledger_contract as contract;
 
@@ -100,6 +101,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
         }
         Ok(())
     })?;
-    println!("Boolean witness assertion proved and applied through ledger-8");
+    println!("Boolean witness assertion proved and applied through Ledger 9");
     Ok(())
 }

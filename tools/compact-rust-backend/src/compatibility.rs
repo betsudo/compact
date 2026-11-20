@@ -29,7 +29,7 @@ use sha2::{Digest, Sha256};
 use toml_edit::{DocumentMut, Item};
 
 /// Current minimum Rust version of generated consumers and their runtime pair.
-pub const RUST_VERSION: &str = "1.89";
+pub const RUST_VERSION: &str = "1.99";
 
 /// Version boundaries are independent: a milestone is not a package or ABI version.
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq, Serialize)]
@@ -55,6 +55,10 @@ pub struct Compatibility {
 pub struct GitSource {
     pub git: String,
     pub rev: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub package: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub version: Option<String>,
 }
 
 /// Compiler-owned requirements, included in both packaged and Nix backend builds.

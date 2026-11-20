@@ -40,7 +40,7 @@ fn state_hex(state: StateValue<DefaultDB>) -> String {
     .fold(HashMap::new(), |m, n| {
         m.insert(
             EntryPointBuf(n.as_bytes().to_vec()),
-            ContractOperation::new(None),
+            ContractOperation::new(None, None),
         )
     });
     let state = ContractState::new(state, operations, ContractMaintenanceAuthority::default());
@@ -140,11 +140,26 @@ fn check(out: CircuitResult<Private, ()>, row: &Value) {
         json!({"nonce":input.nonce.0.0,"color":input.type_.0.0,"value":input.value.to_string(),"mt_index":input.mt_index.to_string()}),
         row["plan"]["inputs"][0]
     );
+    let captured_indices = row["provisionalComIndices"].as_array().unwrap();
+    let actual_indices = &out.context.query.call_context.com_indices;
+    assert_eq!(actual_indices.iter().count(), plan.outputs().len());
+    assert_eq!(captured_indices.len(), plan.outputs().len());
     for (i, output) in plan.outputs().iter().enumerate() {
         assert_eq!(output.provisional_index, 2 + i as u64);
         assert_eq!(
             json!({"nonce":output.coin.nonce.0.0,"color":output.coin.type_.0.0,"value":output.coin.value.to_string()}),
             row["plan"]["outputs"][i]["coinInfo"]
+        );
+        let commitment = output.coin.commitment(&output.recipient);
+        let commitment_hex = hex::encode(commitment.0.0);
+        let captured = captured_indices
+            .iter()
+            .find(|entry| entry[0] == commitment_hex)
+            .expect("TypeScript captured the output commitment");
+        assert_eq!(output.provisional_index.to_string(), captured[1]);
+        assert_eq!(
+            actual_indices.get(&commitment),
+            Some(&output.provisional_index)
         );
     }
     assert!(
@@ -166,7 +181,7 @@ fn check(out: CircuitResult<Private, ()>, row: &Value) {
 #[test]
 fn original_vote_commit_native_recorded_matches_eighteen_independent_ts_cases() {
     let rows: Value = serde_json::from_str(include_str!(
-        "../../../runtime-rs/tests/fixtures/micro-dao-vote-commit.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-micro-dao-vote-commit.json"
     ))
     .unwrap();
     assert_eq!(rows.as_array().unwrap().len(), 18);

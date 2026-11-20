@@ -1,0 +1,47 @@
+{
+  "predecessor_manifest": {
+    "sha256": "1849c79092890dffccb1789b33fadf1b452f762e94b2cda2a5bbc14a37c342a8"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "e87d3d740fee398540baf5b7e864451157e9512fae3a0072206c091b0cdd6a8d",
+      "previous_sha256": "8a138f1f17817467ca0c1a68a7f9a6d2986102750ed2f9a8af06a2ca32a84c4f",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::KernelClaim { value, .. } => visit(value),\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::KernelClaim { value, .. } => visit(value),\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "bb831b8101c9a59f55202266c63b63522bc869d704868f3636b49ef7015552ff",
+      "previous_sha256": "bc6db9bcab56b4c5de1e54f5955607c5d9f4cc1842b68249c00f58f57521eb98",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::EmitUnshieldedSpend { value } | Expr::KernelClaim { value, .. } => {\n",
+          "previous": "        Expr::EmitShieldedSpend { value } | Expr::EmitShieldedBurn { value } | Expr::EmitShieldedMint { value } | Expr::EmitShieldedReceive { value } | Expr::KernelClaim { value, .. } => {\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "47cfc264e267f7a50599e04a396a73c01cd02e08220cb260793f0a19e9580d8c",
+      "previous_sha256": "ab9fe465f1abaf67106e3df8db29123628c5b7dd888126b02cd95c1b5c302cc9",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedReceive { .. }\n        | Expr::EmitUnshieldedSpend { .. }\n",
+          "previous": "        | Expr::EmitShieldedReceive { .. }\n"
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "230a12429b23bdd8a79e7d0ac53d546892c3ecf1d0d1341d54df8dbd45e4e80b",
+      "previous_sha256": "e0e9f5fdb7022752da77adff39bc2a316cf47f5c6137a2614bdbb4190b78d68f",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::EmitShieldedReceive { .. }\n        | Expr::EmitUnshieldedSpend { .. }\n",
+          "previous": "        | Expr::EmitShieldedReceive { .. }\n"
+        }
+      ]
+    }
+  }
+}

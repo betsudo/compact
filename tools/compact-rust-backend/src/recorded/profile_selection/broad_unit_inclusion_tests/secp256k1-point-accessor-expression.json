@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "ab5bf9e9856dfe84e6bed3dc353478bf2b0d7fae",
+  "scope": "Reverse only the new secp256k1 point accessor arms in exhaustive historical matchers.",
+  "predecessor_manifest": {
+    "path": "secp256k1-unary-expression.json",
+    "sha256": "fb7beda87e26b8eddf818f4b8a047e28307f24c52dcf910e55a534f05f9a96ad"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "6d9761aa642d7d64c6274f6ca7a48e9f58319f2a027f7da415d47257ee3ecd51",
+      "previous_sha256": "107b44a3aac5c7e38bfa470b75209a7888842f32b52aef58471e8c756437d3e8",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Secp256k1PointX { value }\n        | Expr::Secp256k1PointY { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "5b836cf72b9e5ac9a3b6e516c20a277b6d1e665c82659fc5aa7f8833b9dc46f5",
+      "previous_sha256": "d3f85b74747bd025a1337c1706880502c11a6473119e66e176475378a76bf91a",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Secp256k1PointX { value }\n        | Expr::Secp256k1PointY { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "a49cce075ecc33e9b2cce9353bd31db9cd6b79bb2ea1ed925f24bb5049de5feb",
+      "previous_sha256": "8727c72307b92ec1f2af8d7d9f6d921fb3b493781b73b0042606c01285a27d43",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::Secp256k1PointX { value }\n        | Expr::Secp256k1PointY { value }\n",
+          "previous": ""
+        }
+      ]
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "cd127a3b86d77fbccbaecda2494659bc597e9b4ceb63c515dfaf950389ce53d8",
+      "previous_sha256": "de85b94d87827df89fae11cb89d7a9cbc18c92ed301ee8a779c2436de85606a6",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::Secp256k1Neg { .. }\n        | Expr::Secp256k1Inv { .. }\n        | Expr::Secp256k1PointX { .. }\n        | Expr::Secp256k1PointY { .. } => Err(RenderError::EffectfulExpression),\n",
+          "previous": "        Expr::Secp256k1Neg { .. } | Expr::Secp256k1Inv { .. } => {\n            Err(RenderError::EffectfulExpression)\n        }\n"
+        }
+      ]
+    }
+  }
+}

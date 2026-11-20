@@ -21,7 +21,7 @@
     },
     {
       "source": "examples/zerocash.compact",
-      "rust_fixture": "tests-rust-backend/zerocash-oracle/lib.rs",
+      "rust_consumer": "tests-rust-backend/zerocash-oracle/lib.rs",
       "rust_fixture_source": "examples/rust_backend/zerocash_oracle.compact",
       "expected_ts": "success",
       "expected_rust": "success",

@@ -16,6 +16,7 @@
 
 """Adversarial identity, isolated-consumer and false-success gate controls."""
 import copy
+import hashlib
 import json
 import os
 import sys
@@ -44,6 +45,69 @@ class PassportControlTests(unittest.TestCase):
                        {"profile": "current", "rows": actual["rows"]}]:
             with self.subTest(capture=change), self.assertRaises(ValueError):
                 gate.compare_capture(change, expected, "current")
+
+    def test_runtime_018_reviewed_cohort_retains_all_202_historical_cases(self):
+        current = gate.ORACLE / "ledger9-runtime0.18.0"
+        historical = gate.ORACLE / "ledger9"
+        total = 0
+        for family in gate.FAMILIES:
+            name = f"branch-{family}-capture.json"
+            old = json.loads((historical / name).read_text())
+            new = json.loads((current / name).read_text())
+            upstream = json.loads((gate.ORACLE / f"upstream-{family}-capture.json").read_text())
+            self.assertEqual(old.pop("profile"), "branch-ledger9-runtime0.17.0-onchain4.0.1")
+            self.assertEqual(new.pop("profile"), "branch-ledger9-runtime0.18.0-onchain4.0.1")
+            upstream.pop("profile")
+            self.assertEqual(new, old, family)
+            self.assertEqual(new, upstream, family)
+            total += len(new.get("rows", []))
+        self.assertEqual(total, 202)
+
+    def test_current_reviewed_binding_rejects_capture_and_artifact_tampering(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            directory = root / "reviewed"
+            shutil.copytree(gate.ORACLE / "ledger9-runtime0.18.0", directory)
+            generated = root / "generated"
+            generated.mkdir()
+            files = {name: root / name for name in
+                     ("package.json", "source-manifest.json", "formatted.rs", "ledger8.json")}
+            files.update({name: generated / name for name in ("index.js", "compact-rust-ir.json")})
+            for name, path in files.items():
+                path.write_text(name)
+            binding_path = directory / "binding.json"
+            binding = json.loads(binding_path.read_text())
+            for key, name in (("runtime_package_sha256", "package.json"),
+                              ("source_manifest_sha256", "source-manifest.json"),
+                              ("generated_rust_sha256", "formatted.rs"),
+                              ("generated_javascript_sha256", "index.js"),
+                              ("generated_rust_ir_sha256", "compact-rust-ir.json"),
+                              ("ledger8_generated_rust_record_sha256", "ledger8.json")):
+                binding[key] = gate.digest(files[name])
+            binding_path.write_text(json.dumps(binding))
+            def validate():
+                return gate.reviewed_capture_binding(directory, files["package.json"],
+                    files["source-manifest.json"], generated, files["formatted.rs"],
+                    files["ledger8.json"], "0.18.0")
+            self.assertEqual(validate(), gate.digest(binding_path))
+            for field in binding.keys() - {"captures"}:
+                with self.subTest(binding_field=field):
+                    changed = dict(binding, **{field: "unverified"})
+                    binding_path.write_text(json.dumps(changed))
+                    with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                        validate()
+            binding_path.write_text(json.dumps(dict(binding, compiler_sha256="unverified")))
+            with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                validate()
+            binding_path.write_text(json.dumps(binding))
+            capture = directory / "branch-ts-capture.json"
+            capture.write_bytes(capture.read_bytes() + b" ")
+            with self.assertRaisesRegex(ValueError, "capture binding differs"):
+                validate()
+            shutil.copyfile(gate.ORACLE / "ledger9-runtime0.18.0/branch-ts-capture.json", capture)
+            files["index.js"].write_text("tampered")
+            with self.assertRaisesRegex(ValueError, "source/artifact binding differs"):
+                validate()
 
     def test_original_import_closure_rejects_missing_extra_or_changed_source(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -75,6 +139,9 @@ class PassportControlTests(unittest.TestCase):
             metadata = {"packages": [local, remote]}
             qualified = {("remote", "1.0.0", "registry+qualified"): "abc"}
             gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
+            with self.assertRaisesRegex(ValueError, "required native onchain packages"):
+                gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified,
+                                           [("midnight-onchain-runtime", "4.0.1", "registry+qualified")])
             for changed in [dict(local, manifest_path=str(root.parent / "Cargo.toml")),
                             dict(remote, version="2.0.0"), dict(remote, source="git+unapproved#other")]:
                 with self.subTest(package=changed), self.assertRaises(ValueError):
@@ -82,6 +149,64 @@ class PassportControlTests(unittest.TestCase):
             lock.write_text(lock.read_text().replace('checksum="abc"', 'checksum="other"'))
             with self.assertRaisesRegex(ValueError, "checksum differs"):
                 gate.validate_dependencies(metadata, lock, {manifest.resolve()}, qualified)
+
+    def test_passport_admission_stays_on_the_published_runtime_and_refuses_the_active_trial(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            runtime = root / "runtime-rs"
+            runtime.mkdir()
+            manifest = runtime / "Cargo.toml"
+            declared = (gate.ROOT / "runtime-rs/Cargo.toml").read_text()
+            manifest.write_text(declared)
+            shutil.copyfile(gate.ROOT / "runtime-rs/compatibility.json", runtime / "compatibility.json")
+            lock = root / "Cargo.lock"
+            lock.write_text((gate.ROOT / "Cargo.lock").read_text())
+            with patch.object(gate, "ROOT", root):
+                with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime cohort"):
+                    gate.ledger9_identity()
+            # Passport remains qualified only on its retained published cohort.
+            # Reconstruct that cohort locally so the positive and refusal controls
+            # stay live without silently migrating Passport with the DID runtime.
+            compatibility = json.loads((runtime / "compatibility.json").read_text())
+            compatibility["ledger_version"] = "ledger-9.1.0.1"
+            compatibility["ledger_dependencies"]["midnight-ledger-v9"] = "=1.0.1"
+            compatibility["ledger_git_sources"] = {}
+            (runtime / "compatibility.json").write_text(json.dumps(compatibility))
+            retained = declared.replace(
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6", optional = true }',
+                'midnight-ledger-v9 = { version = "=1.0.1", optional = true }').replace(
+                'midnight-ledger-v9 = { version = "=1.0.2", git = "https://github.com/betsudo/midnight-ledger", rev = "6fbc2e3900845a858f70eebf8a0deab1d4d3c0d6" }',
+                'midnight-ledger-v9 = "=1.0.1"')
+            for name in gate.RUST_ONCHAIN_PACKAGES:
+                retained = re.sub(
+                    rf'^{name} = \{{ version = "=4\.0\.1", git = "[^"]+", rev = "[0-9a-f]{{40}}" \}}$',
+                    f'{name} = {{ version = "=4.0.1" }}', retained, flags=re.M)
+            manifest.write_text(retained)
+            locked = 'version = 4\n'
+            for name, version in (("midnight-ledger-v9", "1.0.1"),
+                                  *((name, "4.0.1") for name in gate.RUST_ONCHAIN_PACKAGES)):
+                locked += (f'\n[[package]]\nname = "{name}"\nversion = "{version}"\n'
+                           'source = "registry+https://github.com/rust-lang/crates.io-index"\n'
+                           f'checksum = "{hashlib.sha256(name.encode()).hexdigest()}"\n')
+            lock.write_text(locked)
+            with patch.object(gate, "ROOT", root):
+                identities = gate.ledger9_identity()
+                self.assertEqual(identities["midnight-ledger-v9"]["version"], "1.0.1")
+                onchain = identities["midnight-onchain-runtime"]
+                self.assertEqual(onchain["version"], "4.0.1")
+                for changed in (locked.replace('name = "midnight-ledger-v9"', 'name = "midnight-ledger"'),
+                                locked.replace("registry+", "git+"),
+                                locked.replace(onchain["checksum"], "bad")):
+                    lock.write_text(changed)
+                    with self.assertRaisesRegex(ValueError, "registry lock identity"):
+                        gate.ledger9_identity()
+                lock.write_text(locked)
+                manifest.write_text(retained.replace("midnight-ledger-v9 =", "midnight-ledger ="))
+                with self.assertRaisesRegex(ValueError, "published Ledger 9 runtime"):
+                    gate.ledger9_identity()
+                manifest.write_text(retained.replace("=4.0.1", "=4.0.0"))
+                with self.assertRaisesRegex(ValueError, "native onchain pins"):
+                    gate.ledger9_identity()
 
     def test_refusal_requires_one_exact_type_error_and_real_failure(self):
         def result(code="E0308", exit_code=101):
@@ -127,7 +252,8 @@ class PassportControlTests(unittest.TestCase):
                 (root / "package.json").write_bytes((gate.ROOT / "runtime/package.json").read_bytes())
                 output = root / "result"
                 process = SimpleNamespace(returncode=0, stdout=reported, stderr="")
-                with patch.object(gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
+                with patch.dict(gate.os.environ, {"COMPACTC_SCHEME": ""}), patch.object(
+                        gate.subprocess, "check_output", side_effect=["head\n", ""]), patch.object(
                         gate, "bounded_command", return_value=process) as execute, patch.object(
                         gate.shutil, "which", return_value=str(compiler)):
                     with self.assertRaisesRegex(ValueError, "compiler version differs"):
@@ -158,6 +284,7 @@ class PassportControlTests(unittest.TestCase):
             original.write_text(raw)
             def formatter(label, command):
                 self.assertEqual(Path(command[-1]), copy)
+                self.assertEqual(command[-3:-1], ["--config-path", gate.FORMAT_CONFIG])
                 copy.write_text("fn original() { true }\n")
             self.assertEqual(gate.formatted_copy(original, copy, formatter), gate.digest(copy))
             self.assertEqual(original.read_text(), raw)
@@ -166,6 +293,17 @@ class PassportControlTests(unittest.TestCase):
                 original.write_text("changed original SDK\n")
             with self.assertRaisesRegex(ValueError, "changed the original"):
                 gate.formatted_copy(original, copy, corrupting_formatter)
+
+    @unittest.skipUnless(shutil.which("rustfmt"), "rustfmt required for the formatting control")
+    def test_formatting_ignores_output_directory_configuration(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, destination = root / "raw.rs", root / "formatted.rs"
+            source.write_text("fn sample(){\nlet x=1;\n}\n")
+            (root / "rustfmt.toml").write_text("hard_tabs = true\n")
+            gate.formatted_copy(source, destination,
+                                lambda _, cmd: subprocess.run(cmd, check=True, capture_output=True))
+            self.assertEqual(destination.read_text(), "fn sample() {\n    let x = 1;\n}\n")
 
     def test_original_oracle_pin_authority_cannot_silently_lose_an_entry(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -235,9 +373,11 @@ class PassportControlTests(unittest.TestCase):
         child = "import time;print('descendant ready',flush=True);time.sleep(10)"
         parent = "import subprocess,sys,time;subprocess.Popen([sys.executable,'-u','-c'," + repr(child) + "]);print('parent ready',flush=True);time.sleep(10)"
         started = time.monotonic()
-        with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3):
+        with patch.object(gate, "COMMAND_TIMEOUT_SECONDS", 0.3), patch.object(
+                gate.os, "killpg", wraps=gate.os.killpg) as kill_group:
             with self.assertRaises(subprocess.TimeoutExpired) as caught:
                 gate.bounded_command([sys.executable, "-u", "-c", parent], dict(os.environ))
+        kill_group.assert_called_once()
         self.assertIn("parent ready", caught.exception.stdout)
         self.assertIn("descendant ready", caught.exception.stdout)
         self.assertLess(time.monotonic() - started, 3, "descendant pipe remained live after timeout")

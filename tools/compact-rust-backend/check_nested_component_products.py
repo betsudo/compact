@@ -21,6 +21,8 @@ Always uses an absent output directory and unedited whole generated SDKs.
 """
 import argparse
 from pathlib import Path
+
+from consumer_cargo import with_pinned_patches
 import os, json, subprocess, time, hashlib, shutil, tomllib, datetime
 from check_stateful_product_vector_widening import reject_compiler_overrides, source_manifest_snapshot
 from check_passport_current_profile import bounded_command, cargo_target
@@ -148,7 +150,7 @@ def main():
         for spec in definitions:
             name = spec['source']
             root = O / 'generated' / name
-            run('generate-' + name, [C, '--target', 'rust', '--target', 'ts', '--skip-zk', '--rust-runtime-root', W, '--rust-functional-ledger8', '--rust-require-recording', spec['path'], root])
+            run('generate-' + name, [C, '--target', 'rust', '--target', 'ts', '--skip-zk', '--rust-runtime-root', W, '--rust-functional-ledger9', '--rust-require-recording', spec['path'], root])
             run('independent-' + name, [S, '--emit-rust-ir', '--skip-ts', '--skip-zk', spec['path'], O / 'independent' / name])
             require((root / 'contract/compact-rust-ir.json').read_bytes() == (O / 'independent' / name / 'contract/compact-rust-ir.json').read_bytes(), 'qualification invariant failed')
             caps = json.loads((root / 'contract/rust-capabilities.json').read_text())['circuits']
@@ -173,7 +175,7 @@ def main():
         (modules / 'compact-runtime').symlink_to(RT, target_is_directory=True)
         (O / 'package.json').write_text('{"type":"module"}\n')
         ts = O / 'ts-results.json'
-        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.16.102', '--output', ts])
+        run('fresh-ts', [NODE, F / 'capture.mjs', '--generated', O / 'generated', '--runtime', RT, '--version', '0.18.0', '--output', ts])
         r = json.loads(ts.read_text())
         require(r['status'] == 'passed' and len(r['rows']) == 24, 'qualification invariant failed')
         bound[str(ts)] = sha(ts)
@@ -182,7 +184,7 @@ def main():
         shutil.copyfile(F / 'consumer.rs', U / 'consumer.rs')
         shutil.copyfile(W / 'Cargo.lock', U / 'Cargo.lock')
         M = U / 'Cargo.toml'
-        M.write_text('[workspace]\n[package]\nname="nested-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(deps) + '\n')
+        M.write_text(with_pinned_patches('[workspace]\n[package]\nname="nested-component-products-consumer"\nversion="0.1.0"\nedition="2024"\n[lib]\npath="consumer.rs"\n[dependencies]\nserde_json="1"\n' + '\n'.join(deps) + '\n', ROOT))
         bound.update({str(p): sha(p) for p in [M, U / 'consumer.rs']})
         env['COMPACT_NESTED_COMPONENT_PRODUCTS_TS'] = str(ts)
         run('consumer-resolve', ['cargo', 'metadata', '--offline', '--manifest-path', M, '--format-version', '1'])

@@ -66,6 +66,11 @@ use crate::recording::RecordingFrame;
 #[derive(Clone, Copy, Debug)]
 pub struct MapNode<K, V>(PhantomData<fn() -> (K, V)>);
 
+/// A plain or historic Merkle tree nested in a Map. The marker has no
+/// `CellValue` codec; default insertion builds its declared ledger shape.
+#[derive(Clone, Copy, Debug)]
+pub struct MerkleNode<Leaf, const DEPTH: u8, const HISTORIC: bool>(PhantomData<fn() -> Leaf>);
+
 /// A compiler-declared Map with fixed key/value shape and a physical path.
 #[derive(Clone, Copy)]
 pub struct MapSlot<K, V> {
@@ -237,5 +242,96 @@ impl<K: CellValue, V: CellValue> MapSlot<K, V> {
         K: Clone,
     {
         frame.lookup_map(self.path, key)
+    }
+}
+
+impl<K: CellValue, I: CellValue, V> MapSlot<K, MapNode<I, V>> {
+    /// Replace the child at this key with an empty Map.
+    pub fn init_child<Private, D: DB>(
+        self,
+        context: CircuitContext<Private, D>,
+        key: K,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        context.apply_map_write(crate::ledger::map_init_child_program(self.path, key)?)
+    }
+
+    pub fn record_init_child<Private, D: DB>(
+        self,
+        frame: RecordingFrame<Private, D>,
+        key: K,
+    ) -> Result<RecordingFrame<Private, D>, CompactError> {
+        frame.apply_verify_program(crate::ledger::map_init_child_program(self.path, key)?)
+    }
+}
+
+impl<K: CellValue, I: CellValue, V: CellValue> MapSlot<K, MapNode<I, V>> {
+    pub fn lookup_child<Private, D: DB>(
+        self,
+        context: CircuitContext<Private, D>,
+        outer: K,
+        inner: I,
+    ) -> Result<CircuitResult<Private, V, D>, CompactError> {
+        context.lookup_map_child(self.path, outer, inner)
+    }
+
+    pub fn insert_child<Private, D: DB>(
+        self,
+        context: CircuitContext<Private, D>,
+        outer: K,
+        inner: I,
+        value: V,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        context.apply_map_write(crate::ledger::map_insert_child_program(
+            self.path, outer, inner, value,
+        )?)
+    }
+
+    pub fn record_lookup_child<Private, D: DB>(
+        self,
+        frame: RecordingFrame<Private, D>,
+        outer: K,
+        inner: I,
+    ) -> Result<(RecordingFrame<Private, D>, V), CompactError>
+    where
+        K: Clone,
+        I: Clone,
+    {
+        frame.lookup_map_child(self.path, outer, inner)
+    }
+
+    pub fn record_insert_child<Private, D: DB>(
+        self,
+        frame: RecordingFrame<Private, D>,
+        outer: K,
+        inner: I,
+        value: V,
+    ) -> Result<RecordingFrame<Private, D>, CompactError> {
+        frame.apply_verify_program(crate::ledger::map_insert_child_program(
+            self.path, outer, inner, value,
+        )?)
+    }
+}
+
+impl<K: CellValue, Leaf, const DEPTH: u8, const HISTORIC: bool>
+    MapSlot<K, MerkleNode<Leaf, DEPTH, HISTORIC>>
+{
+    pub fn insert_default<Private, D: DB>(
+        self,
+        context: CircuitContext<Private, D>,
+        key: K,
+    ) -> Result<CircuitResult<Private, (), D>, CompactError> {
+        context.apply_map_write(crate::ledger::map_insert_merkle_default_program(
+            self.path, key, DEPTH, HISTORIC,
+        )?)
+    }
+
+    pub fn record_insert_default<Private, D: DB>(
+        self,
+        frame: RecordingFrame<Private, D>,
+        key: K,
+    ) -> Result<RecordingFrame<Private, D>, CompactError> {
+        frame.apply_verify_program(crate::ledger::map_insert_merkle_default_program(
+            self.path, key, DEPTH, HISTORIC,
+        )?)
     }
 }

@@ -1,0 +1,8 @@
+{
+  "files": {
+    "test-contracts/primitives/vector/default/semantics/compile.pass.test.ts": "16bd80193bfe6493846325f8b1a59f9929e4059076d5a038b3fc1770b78b23a0",
+    "test-contracts/primitives/vector/default/semantics/runtime.pass.test.ts": "a7ef201c8febdcd2f2dc3a53665a4896da0c05b2be02230c260b2d38d8a3f549",
+    "test-contracts/primitives/vector/default/semantics/vector_default_semantics.compact": "ce7ef446e91df5a14ed75a1aff474895149b2a40e2b8a06af423a4f731d0ff79"
+  },
+  "upstream_commit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
+}

@@ -15,6 +15,7 @@
 
 //! Prove the exact mixed-width guard before the Counter-one VM continuation.
 
+use super::positional_transaction::{check_generated_trace, check_transaction, make_deploy};
 use super::*;
 use compact_rust_mixed_width_operand_oracle_fixture::ledger_contract as mixed;
 use midnight_compact_runtime::CompactError;
@@ -154,25 +155,21 @@ fn pinned_call(root: &Path, rng: &mut StdRng) -> Result<(), Box<dyn Error>> {
     }
     let manual = check_generated_trace(root, "recordPinned", recorded, (q, y))?;
     let verifier = verifier(root, "recordPinned")?;
-    let prepared = typed.prepare(verifier.clone(), Fr::from(0_u64))?;
+    let prepared = typed.prepare(verifier, Fr::from(0_u64))?;
     if prepared.input != AlignedValue::from((q, y)) || prepared.output != AlignedValue::from(()) {
         return Err("recordPinned changed original argument order or Unit output".into());
     }
     if format!("{manual:?}") != format!("{prepared:?}") {
         return Err("recordPinned observed call differs from direct recording".into());
     }
-    kernel_shielded_effects::prove_and_verify_call(root, "recordPinned", &prepared, &verifier)?;
-    opaque_public::apply_funded(
-        root,
-        "recordPinned",
-        prepared,
-        deploy,
-        &expected_state,
-        rng.clone(),
-        591,
-    )?;
+    check_transaction(root, "recordPinned", deploy, prepared, rng, |state| {
+        if state.data.get_ref() != &expected_state {
+            return Err("recordPinned applied unexpected public state".into());
+        }
+        Ok(())
+    })?;
     println!(
-        "recordPinned: mixed-width product guard, exact declared bindings, verified proof and changed-binding refusal, default-strict funded ledger-8 application; generated constructor state supplied, deployment not proved"
+        "recordPinned: exact declared bindings and funded default-strict Ledger 9 application passed"
     );
     Ok(())
 }

@@ -52,7 +52,8 @@ fn identity() -> ArtifactIdentity {
 }
 #[test]
 fn renamed_product_map_read_matches_independent_ts_for_success_and_failures() {
-    let capture: Value = serde_json::from_str(include_str!("../oracle/cases.json")).unwrap();
+    let capture: Value =
+        serde_json::from_str(include_str!("../oracle/ledger9-cases.json")).unwrap();
     assert_eq!(
         capture["format"],
         "compact-did-digest-read-reducer-capture/v1"

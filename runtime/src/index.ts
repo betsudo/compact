@@ -21,10 +21,48 @@ export * from './error.js';
 export * from './constants.js';
 export * from './zswap.js';
 export * from './constructor-context.js';
-export * from './circuit-context.js';
+// Keep internal callee-frame construction out of the generated module API.
+export {
+  isLedger9CircuitContext,
+  createCircuitContext,
+  copyCircuitContext,
+  assertCircuitQueryIdentity,
+  assertLiveCircuitCall,
+  finalizeCallProofData,
+  emptyRunningCost,
+  queryLedgerState,
+  emitShieldedSpend,
+  emitShieldedBurn,
+  emitShieldedMint,
+  emitShieldedReceive,
+  emitUnshieldedSpend,
+  emitUnshieldedReceive,
+  emitUnshieldedMint,
+  emitUnshieldedBurn,
+  emitMisc,
+  emitPaused,
+  emitUnpaused,
+} from './circuit-context.js';
+export type {
+  CircuitId,
+  LogEvent,
+  CallProofData,
+  CallProofDataTrace,
+  CircuitCallContext,
+  CrossContractInputs,
+  CircuitContext,
+  HostCircuitContextOptions,
+  CircuitResults,
+} from './circuit-context.js';
 export * from './proof-data.js';
 export * from './witness.js';
 export * from './contract-dependencies.js';
+export * from './interface-descriptor.js';
+export * from './conformance.js';
+export * from './module.js';
+export * from './module-resolution.js';
+export * from './providers.js';
+export * from './verifier-key-hash.js';
 export * from './utils.js';
 
 export {
@@ -110,7 +148,7 @@ export {
   StateValue,
   VmResults,
   VmStack,
-} from '@midnight-ntwrk/onchain-runtime-v3';
+} from '@midnightntwrk/onchain-runtime-v4';
 
 export {
   contractDependencies,

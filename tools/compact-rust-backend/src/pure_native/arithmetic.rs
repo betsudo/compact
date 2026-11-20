@@ -60,6 +60,14 @@ impl ArithmeticSink for NativeLeafSink {
                 } else {
                     syn::BinOp::Eq(syn::token::EqEq::default())
                 };
+                // A block or if at the start of a statement can end it before
+                // the comparison operator. Group the left operand explicitly.
+                let left = match left {
+                    syn::Expr::Block(_) | syn::Expr::If(_) | syn::Expr::Match(_) => {
+                        syn::parse_quote!((#left))
+                    }
+                    other => other,
+                };
                 syn::Expr::Binary(syn::ExprBinary {
                     attrs: vec![],
                     left: Box::new(left),

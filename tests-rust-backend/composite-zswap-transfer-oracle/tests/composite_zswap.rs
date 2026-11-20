@@ -155,7 +155,7 @@ macro_rules! recipient {
 #[test]
 fn original_planned_native_matches_zero_nonzero_recipients_and_private_order() {
     for row in rows(include_str!(
-        "../../../runtime-rs/tests/fixtures/planned-zswap-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-planned-zswap-oracle.json"
     )) {
         let mut ctx = planned::initial_state(ConstructorContext::new(initial_private(&row)))
             .unwrap()
@@ -179,7 +179,7 @@ fn original_planned_native_matches_zero_nonzero_recipients_and_private_order() {
 #[test]
 fn composite_transfer_native_matches_intent_kernel_and_witness_order() {
     for row in rows(include_str!(
-        "../../../runtime-rs/tests/fixtures/composite-zswap-transfer-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-composite-zswap-transfer-oracle.json"
     )) {
         let mut ctx = transfer::initial_state(ConstructorContext::new(initial_private(&row)))
             .unwrap()
@@ -237,7 +237,7 @@ fn check_recorded<T: Clone + Into<runtime::fab::AlignedValue>>(
 #[test]
 fn original_planned_recorded_matches_intent_unit_witnesses_kernel_and_replay() {
     for row in rows(include_str!(
-        "../../../runtime-rs/tests/fixtures/planned-zswap-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-planned-zswap-oracle.json"
     )) {
         let mut ctx = planned::initial_state(ConstructorContext::new(initial_private(&row)))
             .unwrap()
@@ -257,7 +257,7 @@ fn original_planned_recorded_matches_intent_unit_witnesses_kernel_and_replay() {
 #[test]
 fn composite_transfer_recorded_matches_all_unit_members_kernel_and_replay() {
     for row in rows(include_str!(
-        "../../../runtime-rs/tests/fixtures/composite-zswap-transfer-oracle.json"
+        "../../../runtime-rs/tests/fixtures/ledger9-composite-zswap-transfer-oracle.json"
     )) {
         let mut ctx = transfer::initial_state(ConstructorContext::new(initial_private(&row)))
             .unwrap()

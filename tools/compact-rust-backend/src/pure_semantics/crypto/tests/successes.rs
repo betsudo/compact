@@ -1,12 +1,23 @@
 // This file is part of Compact.
 // Copyright (C) 2026 Midnight Foundation
 // SPDX-License-Identifier: Apache-2.0
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//  	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
-//! All sixteen source variants really execute through a no-syntax consumer.
+//! All source variants really execute through a no-syntax consumer.
 use super::*;
 
 #[test]
-fn all_sixteen_operations_return_checked_types_and_visit_children_once() {
+fn all_operations_return_checked_types_and_visit_children_once() {
     let left = parameter("left");
     let right = parameter("right");
     for (source, lt, rt, expected, binary) in [
@@ -39,10 +50,17 @@ fn all_sixteen_operations_return_checked_types_and_visit_children_once() {
             true,
         ),
         (
-            CryptoSource::Keccak256(&left),
+            CryptoSource::Keccak256(&left, Default::default()),
             Type::Field,
             Type::Unit,
             Type::Bytes { length: 32 },
+            false,
+        ),
+        (
+            CryptoSource::Sha512(&left),
+            Type::Field,
+            Type::Unit,
+            Type::Bytes { length: 64 },
             false,
         ),
         (

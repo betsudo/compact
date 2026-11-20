@@ -14,16 +14,18 @@
 // limitations under the License.
 
 //! Source-bound Unit-initializer selected Set mutation through the ordinary prover.
+use super::local_v3_application::{self as v3, write_new};
 use super::*;
 use compact_rust_unit_mutation_initializers_source_fixture::{
     ledger_contract as c, ledger_slots as slots,
 };
 use midnight_compact_runtime::{self as r, Field};
-use midnight_transient_crypto::proofs::{ProverKey, Zkir};
+use midnight_transient_crypto::proofs::{Proof, ProverKey, Zkir};
+use midnight_zkir_v3::IrSource as IrSourceV3;
 
 const IR: &str =
     include_str!("../../../tests-rust-backend/unit-mutation-initializers-source/original-ir.json");
-const PROOF_RESULT_FORMAT: &str = "compact-unit-mutation-initializers-proof/v2";
+const PROOF_RESULT_FORMAT: &str = "compact-unit-mutation-initializers-proof/v3";
 struct UnusedWitness;
 impl c::TryWitnesses<u64> for UnusedWitness {
     fn point(
@@ -170,12 +172,38 @@ fn validate_programs(root: &Path) -> Result<(), Box<dyn Error>> {
     }
     Ok(())
 }
-pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+fn validate_source(root: &Path) -> Result<(), Box<dyn Error>> {
     counter_scenario::validate_ir(
         &std::fs::read(root.join("contract/compact-rust-ir.json"))?,
         IR,
     )?;
     validate_programs(root)?;
+    Ok(())
+}
+
+pub(super) fn verify(root: &Path) -> Result<(), Box<dyn Error>> {
+    validate_source(root)?;
+    for (index, name) in [
+        "conditional",
+        "conditional",
+        "statement_field",
+        "statement_field",
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let (_, verifier, _) = v3::operation(root, name, 7)?;
+        v3::verify_standalone(root, &format!("unit-initializers-{index}"), &verifier)?;
+        println!("{name}/{index}: standalone v3 proof verified and corruption refused");
+    }
+    Ok(())
+}
+
+pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
+    if std::env::var_os("MIDNIGHT_PROOF_SERVER").is_some() {
+        return Err("wrapper proof requires local proving without MIDNIGHT_PROOF_SERVER".into());
+    }
+    validate_source(root)?;
     if root.join("unit-initializers-proof-result.json").exists() {
         return Err("Unit initializer proof result already exists".into());
     }
@@ -201,12 +229,13 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             true,
             Field::from(5_u64),
         )?;
-        let deploy = make_deploy(
-            root,
-            name,
+        let (ir, verifier, operation) = v3::operation(root, name, 7)?;
+        let deploy = v3::deploy(
             seeded.context.query.state.get_ref().clone(),
+            name,
+            operation,
             &mut rng,
-        )?;
+        );
         let observed = ObservedContractState::new(
             deploy.address(),
             deploy.initial_state.clone(),
@@ -265,10 +294,9 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
             return Err("Unit initializer mutation state or recording differs".into());
         }
         let expected_state = native.context.query.state.get_ref().clone();
-        let prepared = check_generated_trace(root, name, functional, (true, key))?;
-        let verifier: VerifierKey = tagged_deserialize(&mut BufReader::new(File::open(
-            root.join(format!("keys/{name}.verifier")),
-        )?))?;
+        let randomness: Fr = rand::Rng::r#gen(&mut rand::rngs::OsRng);
+        let prepared = r::transaction::RecordedCall::new(&observed, functional, name, (true, key))
+            .prepare(verifier.clone(), randomness)?;
         let facade = c::Contract::from(UnusedWitness);
         let ordinary = match name {
             "conditional" => facade
@@ -279,16 +307,21 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
                 .statement_field_call(&observed, 7, true, key)?,
             _ => return Err("unqualified Unit initializer observed call".into()),
         }
-        .prepare(verifier.clone(), Fr::from(0_u64))?;
+        .prepare(verifier.clone(), randomness)?;
         if format!("{prepared:?}") != format!("{ordinary:?}") {
             return Err(
                 "functional Unit-initializer preparation differs from ordinary observed call"
                     .into(),
             );
         }
-        let proof_bytes = prove(root, name, index, &prepared, &verifier)?;
-        let transaction_bytes = apply(root, name, index, prepared, deploy, &expected_state, rng)?;
-        rows.push(serde_json::json!({"circuit":name,"key":key_id,"before":1,"after":expected_size,"proof_bytes":proof_bytes,"transaction_bytes":transaction_bytes,
+        let proof = prove(root, name, index, &prepared, &verifier, &ir)?;
+        let stem = format!("unit-initializers-{index}");
+        let transaction_proof_bytes =
+            v3::apply(root, name, &stem, prepared, deploy, &expected_state, &proof)?;
+        let transaction_bytes =
+            std::fs::metadata(root.join(format!("{stem}-transaction.bin")))?.len();
+        rows.push(serde_json::json!({"circuit":name,"key":key_id,"before":1,"after":expected_size,"proof_bytes":proof.0.len(),"transaction_proof_bytes":transaction_proof_bytes,
+            "transaction_proof_version":3,"positive_fee_dust_spends":1,"transaction_bytes":transaction_bytes,
             "standalone_proof":format!("unit-initializers-{index}.proof"),
             "applied_transaction":format!("unit-initializers-{index}-transaction.bin"),
             "transaction_proof_relationship":"independently proved",
@@ -306,15 +339,6 @@ pub(super) fn run(root: &Path) -> Result<(), Box<dyn Error>> {
     println!("{result}");
     Ok(())
 }
-fn write_new(path: impl AsRef<Path>, bytes: &[u8]) -> io::Result<()> {
-    use std::io::Write;
-    std::fs::OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(path)?
-        .write_all(bytes)
-}
-
 fn commitment(call: &ContractCallPrototype<DefaultDB>) -> Fr {
     let mut fields = Vec::new();
     call.input.value_only_field_repr(&mut fields);
@@ -328,23 +352,21 @@ fn prove(
     index: usize,
     call: &ContractCallPrototype<DefaultDB>,
     verifier: &VerifierKey,
-) -> Result<usize, Box<dyn Error>> {
+    ir: &IrSourceV3,
+) -> Result<Proof, Box<dyn Error>> {
     let commitment = commitment(call);
     let preimage =
         match <ProofPreimage as ContractCallExt<DefaultDB>>::construct_proof(call, commitment) {
             ProofPreimageVersioned::V2(value) => value,
             _ => return Err("unexpected unit-initializers proof version".into()),
         };
-    let ir: IrSource = tagged_deserialize(&mut BufReader::new(File::open(
-        root.join(format!("zkir/{name}.bzkir")),
-    )?))?;
-    let pk: ProverKey<IrSource> = tagged_deserialize(&mut BufReader::new(File::open(
+    let pk: ProverKey<IrSourceV3> = tagged_deserialize(&mut BufReader::new(File::open(
         root.join(format!("keys/{name}.prover")),
     )?))?;
-    let checked = preimage.check(&ir)?;
+    let checked = preimage.check(ir)?;
     let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
     let (proof, inputs, skips) = futures_executor::block_on(ir.prove(
-        ChaCha20Rng::from_seed([0x74 + index as u8; 32]),
+        ChaCha20Rng::from_rng(rand::rngs::OsRng)?,
         &params,
         pk,
         &preimage,
@@ -399,7 +421,7 @@ fn prove(
         ProofPreimageVersioned::V2(value) => value,
         _ => return Err("unexpected changed unit-initializers proof version".into()),
     };
-    if changed_preimage.check(&ir).is_ok() {
+    if changed_preimage.check(ir).is_ok() {
         return Err("unit-initializers IR accepted changed result".into());
     }
     write_new(
@@ -416,95 +438,13 @@ fn prove(
         "unit-initializers {index}: {}-byte proof verified; changed binding/result refused",
         proof.0.len()
     );
-    Ok(proof.0.len())
-}
-
-fn apply(
-    root: &Path,
-    name: &'static str,
-    index: usize,
-    prepared: ContractCallPrototype<DefaultDB>,
-    deploy: ContractDeploy<DefaultDB>,
-    expected: &StateValue<DefaultDB>,
-    mut rng: StdRng,
-) -> Result<usize, Box<dyn Error>> {
-    let address = deploy.address();
-    let mut funded = qualified_coin_funding::fee_funded_state(&mut rng)?;
-    funded.ledger.contract = funded.ledger.contract.insert(address, deploy.initial_state);
-    let intent: Intent<Signature, ProofPreimageMarker, PedersenRandomness, DefaultDB> =
-        Intent::empty(&mut rng, Timestamp::from_secs(funded.time.to_secs() + 3600))
-            .add_call::<ProofPreimage>(prepared);
-    let tx = Transaction::from_intents("local-test", HashMap::new().insert(1_u16, intent));
-    let resolver = qualified_coin_funding::fee_resolver(root, name)?;
-    let params = MidnightDataProvider::new(FetchMode::Synchronous, OutputMode::Log, vec![])?;
-    let provider = LocalProvingProvider {
-        rng: StdRng::seed_from_u64(0x0610_5052 + index as u64),
-        resolver: &resolver,
-        params: &params,
-    };
-    let proven = futures_executor::block_on(
-        tx.prove(provider, &INITIAL_PARAMETERS.cost_model.runtime_cost_model),
-    )?;
-    let sealed = proven.seal(StdRng::seed_from_u64(0x0610_5345 + index as u64));
-    let sealed = tokio::runtime::Builder::new_current_thread()
-        .enable_all()
-        .build()?
-        .block_on(funded.balance_tx(rng, sealed, &resolver))?;
-    let mut transaction_bytes = Vec::new();
-    tagged_serialize(&sealed, &mut transaction_bytes)?;
-    let verified =
-        sealed.well_formed(&funded.ledger, WellFormedStrictness::default(), funded.time)?;
-    let context = |state: LedgerState<DefaultDB>| TransactionContext {
-        ref_state: state,
-        block_context: BlockContext {
-            tblock: funded.time,
-            last_block_time: funded.time,
-            ..BlockContext::default()
-        },
-        whitelist: None,
-    };
-    let (updated, result) = funded
-        .ledger
-        .apply(&verified, &context(funded.ledger.clone()));
-    if !matches!(result, TransactionResult::Success(_)) {
-        return Err(format!("unit-initializers strict apply failed: {result:?}").into());
-    }
-    let actual = updated
-        .contract
-        .get(&address)
-        .ok_or("unit-initializers contract missing after apply")?;
-    if actual.data.get_ref() != expected {
-        return Err("unit-initializers applied state differs".into());
-    }
-    let (replayed, result) = updated.apply(&verified, &context(updated.clone()));
-    if !matches!(
-        result,
-        TransactionResult::Failure(
-            midnight_ledger::error::TransactionInvalid::ReplayProtectionViolation(
-                midnight_ledger::error::TransactionApplicationError::IntentAlreadyExists
-            )
-        )
-    ) || replayed != updated
-    {
-        return Err(format!(
-            "unit-initializers replay refused incorrectly or mutated ledger: {result:?}"
-        )
-        .into());
-    }
-    write_new(
-        root.join(format!("unit-initializers-{index}-transaction.bin")),
-        &transaction_bytes,
-    )?;
     let mut bytes = Vec::new();
-    tagged_serialize(actual, &mut bytes)?;
+    tagged_serialize(&inputs, &mut bytes)?;
     write_new(
-        root.join(format!("unit-initializers-{index}-state.bin")),
+        root.join(format!("unit-initializers-{index}.inputs")),
         &bytes,
     )?;
-    println!(
-        "unit-initializers {index}: funded default-strict apply; replay refused without mutation"
-    );
-    Ok(transaction_bytes.len())
+    Ok(proof)
 }
 
 #[cfg(test)]

@@ -80,6 +80,10 @@ import did_digest_reducer_gate, did_primitive_reducer_gate, acc_jubjub_gate
         self.assertIn("needs.source-preflight.result", build_job)
         self.assertIn('test "$PREFLIGHT_RESULT" = success', build_job)
 
+    def test_local_test_drivers_have_no_experiment_route(self):
+        for driver in ROOT.glob("run-*-test*.sh"):
+            self.assertNotIn("forge_circuits", driver.read_text(), driver.name)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -45,7 +45,8 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::PersistentCommit { .. }
                 | Operation::FieldToBytes32(_)
                 | Operation::PersistentHash(_)
-                | Operation::Keccak256(_)
+                | Operation::Keccak256(..)
+                | Operation::Sha512(_)
                 | Operation::HashToCurve(_)
                 | Operation::DegradeToTransient(_)
                 | Operation::UpgradeFromTransient(_)
@@ -68,6 +69,7 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::ConstructJubjubPoint { .. }
                 | Operation::EcMul { .. }
                 | Operation::EcAdd { .. }
+                | Operation::Secp256k1Unary { .. }
                 | Operation::Convert { .. } => {}
                 Operation::Call { .. }
                 | Operation::Witness { .. }
@@ -75,8 +77,23 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
                 | Operation::KernelSelf
+                | Operation::KernelBalance { .. }
+                | Operation::KernelBalanceLessThan { .. }
+                | Operation::KernelBalanceGreaterThan { .. }
+                | Operation::EmitShieldedSpend(_)
+                | Operation::EmitShieldedBurn(_)
+                | Operation::EmitShieldedMint(_)
+                | Operation::EmitShieldedReceive(_)
+                | Operation::EmitUnshieldedSpend(_)
+                | Operation::EmitUnshieldedReceive(_)
+                | Operation::EmitUnshieldedMint(_)
+                | Operation::EmitUnshieldedBurn(_)
+                | Operation::EmitMisc(_)
+                | Operation::EmitPaused(_)
+                | Operation::EmitUnpaused(_)
                 | Operation::KernelClaim { .. }
                 | Operation::KernelMintShielded { .. }
+                | Operation::KernelUnshieldedEffect { .. }
                 | Operation::List { .. }
                 | Operation::Merkle { .. }
                 | Operation::CellRead(_)
@@ -84,6 +101,9 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::CellWriteCoin { .. }
                 | Operation::MapMember { .. }
                 | Operation::MapLookup { .. }
+                | Operation::NestedMapLookup { .. }
+                | Operation::NestedMapInsert { .. }
+                | Operation::MapInitChild { .. }
                 | Operation::MapInsert { .. }
                 | Operation::MapRemove { .. }
                 | Operation::MapInsertDefault { .. }

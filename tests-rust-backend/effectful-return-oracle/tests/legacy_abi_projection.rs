@@ -19,14 +19,14 @@ mod legacy_abi;
 fn whole_frozen_reference_projects_only_two_guards_and_reverses_exactly() {
     let original = include_str!("../legacy_reference.rs");
     let projected = legacy_abi::project(original).unwrap();
-    assert_eq!(midnight_compact_runtime::RUST_RUNTIME_ABI, 53);
+    assert_eq!(midnight_compact_runtime::RUST_RUNTIME_ABI, 54);
     assert_eq!(
-        projected.replace("RUST_RUNTIME_ABI == 53", "RUST_RUNTIME_ABI == 51"),
+        projected.replace("RUST_RUNTIME_ABI == 54", "RUST_RUNTIME_ABI == 51"),
         original
     );
     for changed in [
         original.to_owned() + "\n// changed body",
-        original.replacen("RUST_RUNTIME_ABI == 51", "RUST_RUNTIME_ABI == 53", 1),
+        original.replacen("RUST_RUNTIME_ABI == 51", "RUST_RUNTIME_ABI == 54", 1),
         original.replace("RUST_RUNTIME_ABI == 51", "RUST_RUNTIME_ABI == 50"),
     ] {
         assert!(legacy_abi::project(&changed).is_err());
