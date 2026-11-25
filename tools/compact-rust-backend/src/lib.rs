@@ -3477,6 +3477,12 @@ fn render_selected_with_refusals(
             let recording_unavailable = recorded.gap().cloned();
             let observed_call = recorded.is_supported()
                 && !exported_method_names.contains(&semantic_identifier(&call_name)?);
+            let uses_witness = recorded.is_supported()
+                && stateful::circuit_uses_witness(
+                    circuit,
+                    &callable_stateful_circuits,
+                    &mut HashSet::new(),
+                )?;
             let standalone_proof_data_facade = if standalone_report.is_some()
                 && recorded.is_supported()
                 && recorded::proof_data::supported(
@@ -3489,6 +3495,7 @@ fn render_selected_with_refusals(
                 Some(recorded::proof_data::render_method(
                     circuit,
                     &proof_data_facade_names,
+                    uses_witness,
                 )?)
             } else {
                 None
@@ -3530,11 +3537,6 @@ fn render_selected_with_refusals(
             }
             if let recorded::RecordingOutcome::Supported(item) = recorded {
                 recorded_items.push(item);
-                let uses_witness = stateful::circuit_uses_witness(
-                    circuit,
-                    &callable_stateful_circuits,
-                    &mut HashSet::new(),
-                )?;
                 if uses_witness {
                     witnessed_recorded = true;
                 } else {
@@ -3545,7 +3547,9 @@ fn render_selected_with_refusals(
                     uses_witness,
                 )?);
                 if let Some(method) = standalone_proof_data_method {
-                    recorded_methods.push(method.clone());
+                    if !uses_witness {
+                        recorded_methods.push(method.clone());
+                    }
                     borrowed_recorded_methods.push(method.clone());
                 }
                 if observed_call {

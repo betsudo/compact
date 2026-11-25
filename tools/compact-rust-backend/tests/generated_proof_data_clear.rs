@@ -24,26 +24,34 @@ fn original() -> Value {
     .unwrap()
 }
 
-fn method<'a>(items: &'a [syn::Item], name: &str) -> Option<&'a syn::ImplItemFn> {
+fn method<'a>(items: &'a [syn::Item], handle: &str, name: &str) -> Option<&'a syn::ImplItemFn> {
+    let child = |items: &'a [syn::Item], name: &str| {
+        items.iter().find_map(|item| match item {
+            syn::Item::Mod(module) if module.ident == name => {
+                module.content.as_ref().map(|(_, items)| items.as_slice())
+            }
+            _ => None,
+        })
+    };
+    // Native Contract<W> is a different owner from recorded::Contract. Never
+    // satisfy a recording-facade assertion with a native or unrelated method.
+    let items = child(child(items, "ledger_contract")?, "recorded")?;
     for item in items {
-        match item {
-            syn::Item::Mod(module) => {
-                if let Some((_, items)) = &module.content
-                    && let Some(found) = method(items, name)
-                {
-                    return Some(found);
-                }
+        let syn::Item::Impl(implementation) = item else {
+            continue;
+        };
+        let syn::Type::Path(owner) = implementation.self_ty.as_ref() else {
+            continue;
+        };
+        if owner.path.segments.last().unwrap().ident != handle {
+            continue;
+        }
+        for item in &implementation.items {
+            if let syn::ImplItem::Fn(method) = item
+                && method.sig.ident == name
+            {
+                return Some(method);
             }
-            syn::Item::Impl(implementation) => {
-                for item in &implementation.items {
-                    if let syn::ImplItem::Fn(method) = item
-                        && method.sig.ident == name
-                    {
-                        return Some(method);
-                    }
-                }
-            }
-            _ => (),
         }
     }
     None
@@ -73,7 +81,19 @@ fn actual_clear_is_called_once_with_unit_capture_and_api1_without_witness_substi
     assert_eq!(api.api_version, 1);
     assert_eq!(api.method, "clear_proof_data");
     let syntax = syn::parse_file(&out.source).unwrap();
-    let actual = method(&syntax.items, "clear_proof_data").unwrap();
+    let actual = method(&syntax.items, "BorrowedContract", "clear_proof_data").unwrap();
+    // The unit handle cannot call a witnessed circuit. The borrowed handle
+    // needs the same witness bound as its actual underlying clear method.
+    assert!(method(&syntax.items, "Contract", "clear_proof_data").is_none());
+    let bound = actual.sig.generics.where_clause.as_ref().unwrap();
+    let expected_bound: syn::WhereClause = syn::parse_quote!(where W: super::TryWitnesses<Private>);
+    assert_eq!(bound.predicates.len(), 1);
+    let predicate = bound.predicates.first().unwrap();
+    let expected_predicate = expected_bound.predicates.first().unwrap();
+    assert_eq!(
+        quote::quote!(#predicate).to_string(),
+        quote::quote!(#expected_predicate).to_string()
+    );
     assert_eq!(actual.sig.inputs.len(), 2); // self + context, no witness/private substitute
     let output = &actual.sig.output;
     assert!(
@@ -138,13 +158,19 @@ fn actual_clear_is_called_once_with_unit_capture_and_api1_without_witness_substi
     for (arg, name) in conversion.args.iter().skip(1).zip(["input", "recorded"]) {
         assert!(matches!(arg,syn::Expr::Path(p) if p.path.is_ident(name)));
     }
-    assert!(method(&syntax.items, "get_proof_data").is_some());
-    assert!(method(&syntax.items, "set_proof_data").is_none());
-    assert!(method(&syntax.items, "clear").is_some());
-    assert!(method(&syntax.items, "clear_call").is_some());
+    for handle in ["Contract", "BorrowedContract"] {
+        let get = method(&syntax.items, handle, "get_proof_data").unwrap();
+        assert!(get.sig.generics.where_clause.is_none());
+        assert!(method(&syntax.items, handle, "set_proof_data").is_none());
+    }
+    assert!(method(&syntax.items, "BorrowedContract", "clear").is_some());
+    assert!(method(&syntax.items, "BorrowedContract", "clear_call").is_some());
+    assert!(method(&syntax.items, "Contract", "clear").is_none());
     // Default API is untouched: only the opt-in output acquires the facade.
     let default = syn::parse_file(&render(&contract).unwrap()).unwrap();
-    assert!(method(&default.items, "clear_proof_data").is_none());
+    for handle in ["Contract", "BorrowedContract"] {
+        assert!(method(&default.items, handle, "clear_proof_data").is_none());
+    }
 }
 
 #[test]

@@ -617,6 +617,7 @@ pub(crate) struct Facade {
 pub(crate) fn render_method(
     circuit: &StatefulCircuit,
     occupied_names: &HashSet<String>,
+    uses_witness: bool,
 ) -> Result<Facade, RenderError> {
     let helper = format!("{}_proof_data", circuit.name);
     if occupied_names.contains(&semantic_identifier(&helper)?) {
@@ -646,6 +647,7 @@ pub(crate) fn render_method(
             quote!(self.#name(context, #argument)?),
         )
     };
+    let witness_bound = uses_witness.then(|| quote!(where W: super::TryWitnesses<Private>));
     let method = syn::parse_quote! {
         /// Capture standalone proof data from one actual recorded execution.
         /// Conversion requires explicit binding and communication randomness.
@@ -653,7 +655,8 @@ pub(crate) fn render_method(
             &self,
             context: runtime::context::CircuitContext<Private>,
             #parameter
-        ) -> Result<runtime::proof_data::RecordedProofData<Private, #output>, runtime::proof_data::ProofDataError> {
+        ) -> Result<runtime::proof_data::RecordedProofData<Private, #output>, runtime::proof_data::ProofDataError>
+        #witness_bound {
             const _: [(); 1] = [(); runtime::proof_data::API_VERSION as usize];
             let input = runtime::fab::AlignedValue::from(#input);
             let recorded = #invocation;
