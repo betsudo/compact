@@ -21,6 +21,7 @@ mod coin_shapes;
 pub mod compatibility;
 pub mod ir;
 mod resource_limits;
+pub mod transient_provenance;
 pub use capabilities::{
     RUST_CAPABILITY_SCHEMA_VERSION, RecordingStatus, RustCapabilityReport, RustCircuitCapability,
 };
