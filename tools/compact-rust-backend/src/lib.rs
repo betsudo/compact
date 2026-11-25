@@ -3484,6 +3484,7 @@ fn render_selected_with_refusals(
                     &contract.stateful_circuits,
                     &contract.circuits,
                     &ledger_fields,
+                    &contract.witnesses,
                 ) {
                 Some(recorded::proof_data::render_method(
                     circuit,
