@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Toolchain 0.31.219, language 0.23.105, runtime 0.18.0]
+## [Toolchain 0.31.220, language 0.23.105, runtime 0.18.0]
 
 Unreleased typed-time and standalone proof-data foundation. Current qualification pending.
 
@@ -26,6 +26,17 @@ Unreleased typed-time and standalone proof-data foundation. Current qualificatio
   address while preserving wallet state and the circuit output plan.
 
 No donor proof, generated-consumer, Linux or chain qualification transfers to this source.
+
+## [Toolchain 0.31.219, language 0.23.105, runtime 0.18.0]
+
+Unreleased Ledger 9 migration.
+
+### Added
+
+- Add opt-in Rust transient-provenance advisory diagnostics and exact-route
+  acknowledgements. Default compilation and generated contract output remain
+  unchanged; unsupported analysis paths are explicitly unavailable and absence
+  of warnings does not certify stability.
 
 ## [Toolchain 0.31.218, language 0.23.105, runtime 0.18.0]
 

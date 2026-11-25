@@ -64,6 +64,13 @@ The following flags, if present, affect the compiler's behavior as follows:
   --rust-functional-ledger9 also emits checked functional programs for the source runtime.
   --rust-require-recording rejects proof-required exported circuits without both
     replayable recording and typed observed-call APIs.
+  --rust-standalone-proof-data opts in to closed recorded proof-data helpers; requires
+    --target rust --rust-require-recording. It does not prepare transactions or prove.
   --rust-runtime-root <path> uses one shared runtime source root for generated
     Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.
   The Ledger 9 Rust target uses ZKIR v3 and a source runtime.
+  --rust-transient-provenance=warn emits bounded advisory warnings for
+    known transient hash/commit flows into persistent hash/commit sinks.
+    An absence of warnings does not certify stability.
+  --rust-transient-provenance-acknowledgements <json> marks exact routes
+    acknowledged; requires --rust-transient-provenance=warn.

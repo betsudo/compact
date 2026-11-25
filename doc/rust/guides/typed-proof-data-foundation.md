@@ -39,23 +39,31 @@ time/proof-data linked version assertions reject old or mismatched runtime APIs.
 See the [proposed compatibility decision](../adr/typed-proof-data-foundation-proposal.md).
 Compiler/language/TypeScript labels are distinct from backend Cargo versions.
 
-Local checks passed: 50 runtime tests; 2,030 backend tests (seven existing tests
-ignored); 4,039 compiler/go tests; ten compiler-profile tests; and strict
-all-target Clippy. The affected 12 classifier/runtime checks and 35 host/context
-checks also passed as overlapping repeat checks, not additional coverage totals.
+The initial `9db7ab2c` baseline passed 2,030 backend tests with seven existing
+ignored tests. Those results remain historical. For the current `fc3dca7c`
+integration (Source10, compiler 0.31.220), local macOS ARM64 checks passed 2,416
+backend tests across 51 targets, with seven existing ignored tests. The focused
+42 CLI/analyzer checks are a subset, not an additional coverage total. The 50
+runtime tests carry forward for the unchanged runtime component; they were not
+rerun for this integration.
 
-The fresh generated-linkage run completed 66 steps with 27 actual offline
+Current-source checks also passed ten compiler-profile tests, 4,039 compiler/go
+tests across 47 groups, and strict all-target Clippy. The actual CLI help matched
+its fixture using only the existing usage placeholder. Combined advisory and
+standalone-helper compilation preserved all 15 generated files byte-for-byte.
+
+The fresh current-source linkage run completed 66 steps with 27 actual offline
 dependency graphs: 13 generated-runtime positive compilation controls, eight
 missing/mismatched-domain compile refusals, and three backend migration controls
 (two positive and one exhaustive-match refusal). Genuine old54 baseline
-compilation ran first. Normal and direct outputs were generated from current
-source; independent stopped-evidence review remains a separate gate.
+compilation ran first; fresh normal and direct outputs used the merged source.
+The stopped record remains `qualified=false` pending independent actual audit;
+owner acceptance remains a separate gate.
 
 These results describe local ARM64 validation of the tested source snapshot.
 This documentation update changes no code or fixture bytes. Emitted released
 TypeScript runtime0.21 output was not executed; compiler/go used its default
-JavaScript runtime0.18. Validation against released Compact 0.36.0 and the Ledger 9.1.0.1 SDK matrix
-remains pending, as do original SDK/TS behavior, fresh proofs and Linux
-qualification. No funded-chain,
-special EntryPoint or two-contract acceptance follows. Original asynchronous
+JavaScript runtime0.18. Validation against released Compact 0.36.0 and the
+Ledger 9.1.0.1 SDK matrix remains pending, as do original SDK/TS behavior, fresh
+proofs and Linux qualification. No funded-chain, special EntryPoint or two-contract acceptance follows. Original asynchronous
 tests and refusal messages remain intact; supplemental mutations stay labeled.

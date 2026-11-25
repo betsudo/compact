@@ -54,24 +54,36 @@ Compact/TypeScript sources remain byte-exact. Original SDK/TypeScript behavior,
 proving and Linux portability still require fresh evidence.
 Historical receipts and fixture hashes are preserved rather than relabeled.
 
-Local macOS ARM64 checks have passed: runtime 50, backend 2,030 with seven existing
-ignored tests, compiler/go 4,039, ten compiler-profile tests and strict all-target
-Clippy. The affected 12 classifier/runtime and 35 host/context checks passed as
-overlapping repeats. A fresh linkage run completed 66 steps and 27 offline
-dependency graphs, including genuine old54 baseline compilation, 13 positive
-generated-runtime compilation controls, eight missing/mismatched-domain
-refusals, and three backend migration controls (two positive, one refusal).
+The initial `9db7ab2c` baseline passed 2,030 backend tests with seven existing
+ignored tests. Those results remain historical. For the current `fc3dca7c`
+integration (Source10, compiler 0.31.220), local macOS ARM64 checks passed 2,416
+backend tests across 51 targets, with seven existing ignored tests. The focused
+42 CLI/analyzer checks are a subset, not an additional coverage total. The 50
+runtime tests carry forward for the unchanged runtime component; they were not
+rerun for this integration.
+
+Current-source checks also passed ten compiler-profile tests, 4,039 compiler/go
+tests across 47 groups, and strict all-target Clippy. The actual CLI help matched
+its fixture using only the existing usage placeholder. Combined advisory and
+standalone-helper compilation preserved all 15 generated files byte-for-byte.
+
+The fresh current-source linkage run completed 66 steps with 27 actual offline
+dependency graphs: 13 generated-runtime positive compilation controls, eight
+missing/mismatched-domain compile refusals, and three backend migration controls
+(two positive and one exhaustive-match refusal). Genuine old54 baseline
+compilation ran first; fresh normal and direct outputs used the merged source.
+The stopped record remains `qualified=false` pending independent actual audit;
+owner acceptance remains a separate gate.
 Native/recorded and direct-render linkage controls cover the emitted domains;
-functional typed time remains explicitly unavailable. Independent stopped-run
-evidence review and owner acceptance remain separate gates.
+functional typed time remains explicitly unavailable.
 
 Typed-time normal CLI generation uses `--target rust --target ts --feature-zkir-v3
 --ts-runtime-profile released-0.21.0`; Rust-only selection remains valid for
 non-time families, and direct library rendering does not require a TypeScript
 output. Emitted runtime0.21 TypeScript was not executed; compiler/go
-used its default JavaScript runtime0.18. Validation against released Compact 0.36.0 and the Ledger 9.1.0.1 SDK matrix
-remains pending, as do original SDK/TS behavior, fresh proof and Linux
-qualification.
+used its default JavaScript runtime0.18. Validation against released Compact
+0.36.0 and the Ledger 9.1.0.1 SDK matrix remains pending, as do original SDK/TS
+behavior, fresh proof and Linux qualification.
 No proof, funded-chain, special EntryPoint or two-contract acceptance is implied.
 The checks apply to the tested source snapshot; the following documentation-only
 update preserves its code and fixtures and does not relabel historical proofs.

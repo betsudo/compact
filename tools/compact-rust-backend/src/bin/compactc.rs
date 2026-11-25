@@ -27,6 +27,8 @@ mod output_manifest;
 mod source_diagnostic;
 #[path = "../bin_support/source_maps.rs"]
 mod source_maps;
+#[path = "../bin_support/transient_diagnostic.rs"]
+mod transient_diagnostic;
 use output_manifest::refresh_manifest;
 
 use std::collections::BTreeMap;
@@ -57,6 +59,8 @@ struct Targets {
     require_recording: bool,
     functional_ledger9: bool,
     standalone_proof_data: bool,
+    provenance_warn: bool,
+    provenance_acknowledgements: Option<PathBuf>,
 }
 
 fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), String> {
@@ -78,6 +82,54 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
             .is_some_and(|s| s.starts_with("--rust-standalone-proof-data="))
         {
             return Err("--rust-standalone-proof-data takes no value".into());
+        }
+        if argument == "--rust-transient-provenance=warn" {
+            if targets.provenance_warn {
+                return Err("--rust-transient-provenance may be given only once".into());
+            }
+            targets.provenance_warn = true;
+            continue;
+        }
+        if argument == "--rust-transient-provenance" {
+            return Err("--rust-transient-provenance requires =warn".into());
+        }
+        if argument
+            .to_str()
+            .is_some_and(|arg| arg.starts_with("--rust-transient-provenance="))
+        {
+            return Err("--rust-transient-provenance supports only =warn".into());
+        }
+        if argument == "--rust-transient-provenance-acknowledgements" {
+            let path = arguments
+                .next()
+                .ok_or("--rust-transient-provenance-acknowledgements needs a JSON file")?;
+            if path.is_empty()
+                || targets
+                    .provenance_acknowledgements
+                    .replace(PathBuf::from(path))
+                    .is_some()
+            {
+                return Err(
+                    "--rust-transient-provenance-acknowledgements needs one JSON file".into(),
+                );
+            }
+            continue;
+        }
+        if let Some(path) = argument
+            .to_str()
+            .and_then(|arg| arg.strip_prefix("--rust-transient-provenance-acknowledgements="))
+        {
+            if path.is_empty()
+                || targets
+                    .provenance_acknowledgements
+                    .replace(PathBuf::from(path))
+                    .is_some()
+            {
+                return Err(
+                    "--rust-transient-provenance-acknowledgements needs one JSON file".into(),
+                );
+            }
+            continue;
         }
         if argument == "--rust-functional-ledger8" {
             return Err(
@@ -209,6 +261,12 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     }
     if targets.functional_ledger9 && !targets.rust {
         return Err("--rust-functional-ledger9 requires --target rust".into());
+    }
+    if targets.provenance_warn && !targets.rust {
+        return Err("--rust-transient-provenance requires --target rust".into());
+    }
+    if targets.provenance_acknowledgements.is_some() && !targets.provenance_warn {
+        return Err("--rust-transient-provenance-acknowledgements requires --rust-transient-provenance=warn".into());
     }
     if targets.functional_ledger9 && targets.runtime_registry {
         return Err(
@@ -509,6 +567,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
         if output.status.success() {
             print!("{TARGET_HELP}");
             println!("  The Ledger 9 Rust target uses ZKIR v3 and a source runtime.");
+            println!(
+                "  --rust-transient-provenance=warn emits bounded advisory warnings for\n    known transient hash/commit flows into persistent hash/commit sinks.\n    An absence of warnings does not certify stability.\n  --rust-transient-provenance-acknowledgements <json> marks exact routes\n    acknowledged; requires --rust-transient-provenance=warn."
+            );
         }
         return Ok(output.status.code().unwrap_or(1));
     }
@@ -525,6 +586,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
             "usage: compactc [--target ts|rust] [flags] <source.compact> <output-directory>".into(),
         );
     }
+    let acknowledgements = transient_diagnostic::read_acknowledgements(
+        targets.provenance_acknowledgements.as_deref(),
+    )?;
     let selected_root = match &targets.runtime_root {
         Some(root) => root.clone(),
         None => runtime_source_root()?,
@@ -571,6 +635,9 @@ fn run() -> Result<i32, Box<dyn Error>> {
         artifacts.output_dir().join("compiler/contract-info.json"),
     )?)?)?;
     drop(contract_info);
+    let advisory = targets
+        .provenance_warn
+        .then(|| transient_diagnostic::analyze_advisory(&ir, &acknowledgements));
     let options = RenderOptions {
         apply_frontend_proof_metadata: true,
         // Keep the existing public recording predicate and error formatting below.
@@ -595,6 +662,7 @@ fn run() -> Result<i32, Box<dyn Error>> {
     // semantic/error priority, but refuse stale source before publication.
     require_issued_runtime_ir(&ir_bytes, &issued.fingerprint().exact_ir_sha256)?;
     selected.require_block_time(&ir)?;
+    drop(ir);
     let rendered = issued.rendered();
     if targets.require_recording {
         let unavailable = rendered
@@ -715,6 +783,12 @@ fn run() -> Result<i32, Box<dyn Error>> {
     fs::write(contract_dir.join("Cargo.toml"), manifest)?;
     refresh_manifest(staging.path())?;
     staging.publish(&output)?;
+    if let Some(advisory) = &advisory {
+        // Advisory delivery must not change a successfully published compile
+        // into a failure when stderr is closed by the caller.
+        let _ =
+            transient_diagnostic::write_advisory("compactc", advisory, &mut io::stderr().lock());
+    }
     Ok(0)
 }
 
@@ -739,6 +813,99 @@ mod tests {
     use sha2::{Digest, Sha256};
     use std::ffi::OsString;
     use std::fs;
+
+    #[test]
+    fn standalone_helpers_and_transient_advisory_remain_independent_opt_ins() {
+        let (targets, forwarded) = select_targets(
+            [
+                "--target=rust",
+                "--rust-require-recording",
+                "--rust-standalone-proof-data",
+                "--rust-transient-provenance=warn",
+                "--rust-transient-provenance-acknowledgements=policy.json",
+                "input.compact",
+                "output",
+            ]
+            .into_iter()
+            .map(OsString::from)
+            .collect(),
+        )
+        .unwrap();
+        assert!(targets.rust && targets.require_recording && targets.standalone_proof_data);
+        assert!(targets.provenance_warn);
+        assert_eq!(
+            targets.provenance_acknowledgements,
+            Some(PathBuf::from("policy.json"))
+        );
+        assert_eq!(
+            forwarded,
+            vec![OsString::from("input.compact"), OsString::from("output")]
+        );
+        assert!(!targets.functional_ledger9);
+    }
+
+    #[test]
+    fn transient_provenance_flags_are_explicit_and_not_forwarded() {
+        let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
+        let (targets, forwarded) = parse(&[
+            "--target=rust",
+            "--rust-transient-provenance=warn",
+            "--rust-transient-provenance-acknowledgements=policy.json",
+            "--some-frontend-flag",
+        ])
+        .unwrap();
+        assert!(targets.provenance_warn);
+        assert_eq!(
+            targets.provenance_acknowledgements.unwrap(),
+            std::path::PathBuf::from("policy.json")
+        );
+        assert_eq!(forwarded, vec![OsString::from("--some-frontend-flag")]);
+        for invalid in [
+            vec!["--target=rust", "--rust-transient-provenance=off"],
+            vec!["--target=rust", "--rust-transient-provenance"],
+            vec![
+                "--target=rust",
+                "--rust-transient-provenance=warn",
+                "--rust-transient-provenance=warn",
+            ],
+            vec!["--rust-transient-provenance=warn"],
+            vec![
+                "--target=rust",
+                "--rust-transient-provenance-acknowledgements=policy.json",
+            ],
+        ] {
+            assert!(parse(&invalid).is_err(), "accepted {invalid:?}");
+        }
+    }
+    #[test]
+    fn transient_advisory_combines_with_ledger9_without_changing_default_selection() {
+        let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
+        let (targets, forwarded) = parse(&[
+            "--target=rust",
+            "--rust-functional-ledger9",
+            "--rust-transient-provenance=warn",
+            "input.compact",
+            "output",
+        ])
+        .unwrap();
+        assert!(targets.functional_ledger9 && targets.provenance_warn);
+        assert_eq!(
+            forwarded,
+            vec![OsString::from("input.compact"), OsString::from("output")]
+        );
+        let (default, _) = parse(&["--target=rust", "--rust-functional-ledger9"]).unwrap();
+        assert!(default.functional_ledger9);
+        assert!(!default.provenance_warn && default.provenance_acknowledgements.is_none());
+        assert!(
+            parse(&[
+                "--target=rust",
+                "--rust-functional-ledger8",
+                "--rust-transient-provenance=warn"
+            ])
+            .is_err()
+        );
+    }
+
     use std::path::Path;
     use std::path::PathBuf;
     use std::sync::atomic::{AtomicU64, Ordering};
