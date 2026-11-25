@@ -398,3 +398,33 @@ fn calls_skip_exact_unit_aliases_but_retain_empty_tuple_formals() {
         assert_eq!(rendered.contains(&alias), ty != Type::Unit);
     }
 }
+
+#[test]
+fn block_time_queries_remain_outside_the_functional_subset() {
+    for expression in [
+        Expr::KernelBlockTimeLessThan {
+            bound: Box::new(input("bound")),
+        },
+        Expr::KernelBlockTimeGreaterThan {
+            bound: Box::new(input("bound")),
+        },
+    ] {
+        let root = circuit(
+            "root",
+            vec![parameter(
+                "bound",
+                Type::Unsigned {
+                    max: u64::MAX.to_string(),
+                },
+            )],
+            Type::Boolean,
+            expression,
+        );
+        let checked = checked(&[root], &[]);
+        let authority = Authority::new();
+        assert!(matches!(
+            FunctionalProgram::project(&checked, &authority, Ledger9Target::PINNED),
+            Err(ProjectionRefusal::OutsideFunctionalSubset { .. })
+        ));
+    }
+}

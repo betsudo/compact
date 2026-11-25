@@ -1,0 +1,59 @@
+{
+  "schema": "block-time-retired-owner-predecessor/v1",
+  "predecessor_git_commit": "9db7ab2c31be417653b36ae0d9838174c38c4fab",
+  "predecessor_manifest": {
+    "path": "tools/compact-rust-backend/src/recorded/profile_selection/broad_unit_inclusion_tests/ledger9-token-expression-20261118.json",
+    "sha256": "68d59039e70aa4d66567c6cccd2a4b812150b48ae6c5cd3ebe33dc215ae53297"
+  },
+  "owners": {
+    "tools/compact-rust-backend/src/circuit_analysis/graph_diagnostics/old_reference.rs": {
+      "current_sha256": "c47a26a1aee1e10575529acae398b06695ab8e4a11fe4463501e4d6501216649",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::KernelUnshieldedEffect {\n            key,\n            recipient,\n            amount,\n            ..\n        } => visit(key) || recipient.as_deref().is_some_and(visit) || visit(amount),\n",
+          "previous": "        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } =>\n            visit(key) || recipient.as_deref().is_some_and(visit) || visit(amount),\n"
+        },
+        {
+          "current": "        Expr::KernelBlockTimeLessThan { bound } | Expr::KernelBlockTimeGreaterThan { bound } => {\n            visit(bound)\n        }\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "daf4bff1e1d014700ea78c3b9fb623f92b9b908b007788e0c54096904421d978"
+    },
+    "tools/compact-rust-backend/src/named_collection_tests/old_reference/expressions.rs": {
+      "current_sha256": "f3a1c0000284bbe81de9ab56d6c721f4aef02f59070e5acc69144aac033ed6ce",
+      "predecessor_reconstruction": [
+        {
+          "current": "        Expr::KernelUnshieldedEffect {\n            key,\n            recipient,\n            amount,\n            ..\n        } => {\n",
+          "previous": "        Expr::KernelUnshieldedEffect { key, recipient, amount, .. } => {\n"
+        },
+        {
+          "current": "        }\n        Expr::KernelBlockTimeLessThan { bound } | Expr::KernelBlockTimeGreaterThan { bound } => {\n            collect_expression_types(bound, structs, enums, origins)?;\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "3061e9b8a7e31da3c241219ada356339b554cc36dbef484e76c1a526df27fc69"
+    },
+    "tools/compact-rust-backend/src/pure_native/tests/old_oracle/dispatch.rs": {
+      "current_sha256": "3e0358e9afd13fca4349b51161a7c53c4aa5877c0a911e953b4facc4a5dc264e",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::KernelBlockTimeLessThan { .. }\n        | Expr::KernelBlockTimeGreaterThan { .. }\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "8985301d520af3b671ff882a8480dfc06d74dc74ae0b44fdff626883e63c90e5"
+    },
+    "tools/compact-rust-backend/src/recorded/audited_local.rs": {
+      "current_sha256": "a2aab537a8a33322038d211752950d277de1478d56d9b653b3638cc8c456df92",
+      "predecessor_reconstruction": [
+        {
+          "current": "        | Expr::KernelBlockTimeLessThan { .. }\n        | Expr::KernelBlockTimeGreaterThan { .. }\n",
+          "previous": ""
+        }
+      ],
+      "previous_sha256": "f4cb9e18e5649c600731568c2903024ba333612b6249ad670a31b38d750fb8fc"
+    }
+  },
+  "scope": "Exactly four typed-time retired-owner inverse stages and two literal formatting inverses restore complete published9db7 bytes before unchanged PR772; no normalization, authority refresh or product behavior."
+}

@@ -1,0 +1,837 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "authority",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "bytes",
+          "length": 32
+        }
+      },
+      "source": {
+        "file": "tiny.compact",
+        "line": 52,
+        "column": 1
+      }
+    },
+    {
+      "id": "value",
+      "index": 1,
+      "path": [
+        1
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "tiny.compact",
+        "line": 53,
+        "column": 1
+      }
+    },
+    {
+      "id": "state",
+      "index": 2,
+      "path": [
+        2
+      ],
+      "declaration": {
+        "kind": "cell",
+        "ty": {
+          "kind": "enum",
+          "name": "STATE",
+          "variants": [
+            "unset",
+            "set"
+          ]
+        }
+      },
+      "source": {
+        "file": "tiny.compact",
+        "line": 54,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "private$secret_key",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "source": {
+        "file": "tiny.compact",
+        "line": 70,
+        "column": 1
+      }
+    }
+  ],
+  "circuits": [
+    {
+      "name": "some",
+      "internal": true,
+      "parameters": [
+        {
+          "name": "value",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "struct",
+        "name": "Maybe",
+        "fields": [
+          {
+            "name": "is_some",
+            "ty": {
+              "kind": "boolean"
+            }
+          },
+          {
+            "name": "value",
+            "ty": {
+              "kind": "field"
+            }
+          }
+        ]
+      },
+      "body": {
+        "kind": "struct_literal",
+        "ty": {
+          "kind": "struct",
+          "name": "Maybe",
+          "fields": [
+            {
+              "name": "is_some",
+              "ty": {
+                "kind": "boolean"
+              }
+            },
+            {
+              "name": "value",
+              "ty": {
+                "kind": "field"
+              }
+            }
+          ]
+        },
+        "fields": [
+          {
+            "kind": "boolean",
+            "value": true
+          },
+          {
+            "kind": "parameter",
+            "name": "value"
+          }
+        ]
+      },
+      "source": {
+        "file": "standard-library.compact",
+        "line": 24,
+        "column": 1
+      }
+    },
+    {
+      "name": "none",
+      "internal": true,
+      "parameters": [
+      ],
+      "result": {
+        "kind": "struct",
+        "name": "Maybe",
+        "fields": [
+          {
+            "name": "is_some",
+            "ty": {
+              "kind": "boolean"
+            }
+          },
+          {
+            "name": "value",
+            "ty": {
+              "kind": "field"
+            }
+          }
+        ]
+      },
+      "body": {
+        "kind": "struct_literal",
+        "ty": {
+          "kind": "struct",
+          "name": "Maybe",
+          "fields": [
+            {
+              "name": "is_some",
+              "ty": {
+                "kind": "boolean"
+              }
+            },
+            {
+              "name": "value",
+              "ty": {
+                "kind": "field"
+              }
+            }
+          ]
+        },
+        "fields": [
+          {
+            "kind": "boolean",
+            "value": false
+          },
+          {
+            "kind": "field_literal",
+            "value": "0"
+          }
+        ]
+      },
+      "source": {
+        "file": "standard-library.compact",
+        "line": 28,
+        "column": 1
+      }
+    },
+    {
+      "name": "public_key",
+      "parameters": [
+        {
+          "name": "sk",
+          "ty": {
+            "kind": "bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result": {
+        "kind": "bytes",
+        "length": 32
+      },
+      "body": {
+        "kind": "persistent_hash",
+        "value": {
+          "kind": "tuple",
+          "elements": [
+            {
+              "kind": "bytes_literal",
+              "bytes": [
+                108,
+                97,
+                114,
+                101,
+                115,
+                58,
+                116,
+                105,
+                110,
+                121,
+                58,
+                112,
+                107,
+                58,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            {
+              "kind": "parameter",
+              "name": "sk"
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "tiny.compact",
+        "line": 125,
+        "column": 1
+      }
+    }
+  ],
+  "stateful_circuits": [
+    {
+      "name": "in_state",
+      "parameters": [
+        {
+          "name": "s",
+          "ty": {
+            "kind": "enum",
+            "name": "STATE",
+            "variants": [
+              "unset",
+              "set"
+            ]
+          }
+        }
+      ],
+      "result": {
+        "kind": "boolean"
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "equal",
+          "left": {
+            "kind": "cell_read",
+            "field": "state",
+            "index": 2
+          },
+          "right": {
+            "kind": "parameter",
+            "name": "s"
+          }
+        }
+      },
+      "actions": [
+      ],
+      "internal": true,
+      "source": {
+        "file": "tiny.compact",
+        "line": 78,
+        "column": 1
+      }
+    },
+    {
+      "name": "set",
+      "parameters": [
+        {
+          "name": "v",
+          "ty": {
+            "kind": "field"
+          }
+        }
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "assert",
+              "condition": {
+                "kind": "call",
+                "name": "in_state",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "enum_variant",
+                      "ty": {
+                        "kind": "enum",
+                        "name": "STATE",
+                        "variants": [
+                          "unset",
+                          "set"
+                        ]
+                      },
+                      "variant": "unset"
+                    },
+                    "ty": {
+                      "kind": "enum",
+                      "name": "STATE",
+                      "variants": [
+                        "unset",
+                        "set"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "message": "set: attempted to overwrite recorded value"
+            },
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "sk",
+                  "ty": {
+                    "kind": "bytes",
+                    "length": 32
+                  },
+                  "value": {
+                    "kind": "witness_call",
+                    "name": "private$secret_key",
+                    "arguments": [
+                    ]
+                  }
+                }
+              ],
+              "action": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "apk",
+                    "ty": {
+                      "kind": "bytes",
+                      "length": 32
+                    },
+                    "value": {
+                      "kind": "call",
+                      "name": "public_key",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "sk"
+                          },
+                          "ty": {
+                            "kind": "bytes",
+                            "length": 32
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "cell_write",
+                      "field": "authority",
+                      "index": 0,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "apk"
+                      }
+                    },
+                    {
+                      "kind": "cell_write",
+                      "field": "value",
+                      "index": 1,
+                      "value": {
+                        "kind": "parameter",
+                        "name": "v"
+                      }
+                    },
+                    {
+                      "kind": "cell_write",
+                      "field": "state",
+                      "index": 2,
+                      "value": {
+                        "kind": "enum_variant",
+                        "ty": {
+                          "kind": "enum",
+                          "name": "STATE",
+                          "variants": [
+                            "unset",
+                            "set"
+                          ]
+                        },
+                        "variant": "set"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source": {
+        "file": "tiny.compact",
+        "line": 82,
+        "column": 1
+      }
+    },
+    {
+      "name": "get",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "struct",
+        "name": "Maybe",
+        "fields": [
+          {
+            "name": "is_some",
+            "ty": {
+              "kind": "boolean"
+            }
+          },
+          {
+            "name": "value",
+            "ty": {
+              "kind": "field"
+            }
+          }
+        ]
+      },
+      "return_value": {
+        "kind": "expression",
+        "value": {
+          "kind": "if",
+          "condition": {
+            "kind": "call",
+            "name": "in_state",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "enum_variant",
+                  "ty": {
+                    "kind": "enum",
+                    "name": "STATE",
+                    "variants": [
+                      "unset",
+                      "set"
+                    ]
+                  },
+                  "variant": "set"
+                },
+                "ty": {
+                  "kind": "enum",
+                  "name": "STATE",
+                  "variants": [
+                    "unset",
+                    "set"
+                  ]
+                }
+              }
+            ]
+          },
+          "then": {
+            "kind": "call",
+            "name": "some",
+            "arguments": [
+              {
+                "kind": "coerce",
+                "value": {
+                  "kind": "cell_read",
+                  "field": "value",
+                  "index": 1
+                },
+                "ty": {
+                  "kind": "field"
+                }
+              }
+            ]
+          },
+          "otherwise": {
+            "kind": "call",
+            "name": "none",
+            "arguments": [
+            ]
+          }
+        }
+      },
+      "actions": [
+      ],
+      "source": {
+        "file": "tiny.compact",
+        "line": 100,
+        "column": 1
+      }
+    },
+    {
+      "name": "clear",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "sequence",
+          "actions": [
+            {
+              "kind": "assert",
+              "condition": {
+                "kind": "call",
+                "name": "in_state",
+                "arguments": [
+                  {
+                    "kind": "coerce",
+                    "value": {
+                      "kind": "enum_variant",
+                      "ty": {
+                        "kind": "enum",
+                        "name": "STATE",
+                        "variants": [
+                          "unset",
+                          "set"
+                        ]
+                      },
+                      "variant": "set"
+                    },
+                    "ty": {
+                      "kind": "enum",
+                      "name": "STATE",
+                      "variants": [
+                        "unset",
+                        "set"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "message": "clear: no value is currently recorded"
+            },
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "sk",
+                  "ty": {
+                    "kind": "bytes",
+                    "length": 32
+                  },
+                  "value": {
+                    "kind": "witness_call",
+                    "name": "private$secret_key",
+                    "arguments": [
+                    ]
+                  }
+                }
+              ],
+              "action": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "apk",
+                    "ty": {
+                      "kind": "bytes",
+                      "length": 32
+                    },
+                    "value": {
+                      "kind": "call",
+                      "name": "public_key",
+                      "arguments": [
+                        {
+                          "kind": "coerce",
+                          "value": {
+                            "kind": "parameter",
+                            "name": "sk"
+                          },
+                          "ty": {
+                            "kind": "bytes",
+                            "length": 32
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "action": {
+                  "kind": "sequence",
+                  "actions": [
+                    {
+                      "kind": "assert",
+                      "condition": {
+                        "kind": "equal",
+                        "left": {
+                          "kind": "parameter",
+                          "name": "apk"
+                        },
+                        "right": {
+                          "kind": "cell_read",
+                          "field": "authority",
+                          "index": 0
+                        }
+                      },
+                      "message": "clear: attempted clear without proper authorization"
+                    },
+                    {
+                      "kind": "let",
+                      "bindings": [
+                        {
+                          "name": "tmp_15",
+                          "ty": {
+                            "kind": "bytes",
+                            "length": 32
+                          },
+                          "value": {
+                            "kind": "default",
+                            "ty": {
+                              "kind": "bytes",
+                              "length": 32
+                            }
+                          }
+                        }
+                      ],
+                      "action": {
+                        "kind": "cell_write",
+                        "field": "authority",
+                        "index": 0,
+                        "value": {
+                          "kind": "parameter",
+                          "name": "tmp_15"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "cell_write",
+                      "field": "value",
+                      "index": 1,
+                      "value": {
+                        "kind": "field_literal",
+                        "value": "0"
+                      }
+                    },
+                    {
+                      "kind": "cell_write",
+                      "field": "state",
+                      "index": 2,
+                      "value": {
+                        "kind": "enum_variant",
+                        "ty": {
+                          "kind": "enum",
+                          "name": "STATE",
+                          "variants": [
+                            "unset",
+                            "set"
+                          ]
+                        },
+                        "variant": "unset"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "source": {
+        "file": "tiny.compact",
+        "line": 111,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+      {
+        "name": "v",
+        "ty": {
+          "kind": "field"
+        }
+      }
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "sk",
+            "ty": {
+              "kind": "bytes",
+              "length": 32
+            },
+            "value": {
+              "kind": "witness_call",
+              "name": "private$secret_key",
+              "arguments": [
+              ]
+            }
+          }
+        ],
+        "step": {
+          "kind": "sequence",
+          "steps": [
+            {
+              "kind": "let",
+              "bindings": [
+                {
+                  "name": "tmp_14",
+                  "ty": {
+                    "kind": "bytes",
+                    "length": 32
+                  },
+                  "value": {
+                    "kind": "call",
+                    "name": "public_key",
+                    "arguments": [
+                      {
+                        "kind": "parameter",
+                        "name": "sk"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "step": {
+                "kind": "cell_write",
+                "field": "authority",
+                "index": 0,
+                "value": {
+                  "kind": "parameter",
+                  "name": "tmp_14"
+                }
+              }
+            },
+            {
+              "kind": "cell_write",
+              "field": "value",
+              "index": 1,
+              "value": {
+                "kind": "parameter",
+                "name": "v"
+              }
+            },
+            {
+              "kind": "cell_write",
+              "field": "state",
+              "index": 2,
+              "value": {
+                "kind": "enum_variant",
+                "ty": {
+                  "kind": "enum",
+                  "name": "STATE",
+                  "variants": [
+                    "unset",
+                    "set"
+                  ]
+                },
+                "variant": "set"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "source": {
+      "file": "tiny.compact",
+      "line": 55,
+      "column": 1
+    }
+  }
+}

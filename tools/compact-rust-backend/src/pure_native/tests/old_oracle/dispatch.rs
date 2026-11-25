@@ -76,6 +76,8 @@ fn expression_with_calls(
         | Expr::KernelBalance { .. }
         | Expr::KernelBalanceLessThan { .. }
         | Expr::KernelBalanceGreaterThan { .. }
+        | Expr::KernelBlockTimeLessThan { .. }
+        | Expr::KernelBlockTimeGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

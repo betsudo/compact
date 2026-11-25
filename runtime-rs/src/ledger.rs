@@ -427,6 +427,8 @@ fn field_at_path<'a, D: DB>(
 }
 
 mod balance;
+mod block_time;
+pub(crate) use block_time::{BlockTimeComparison, block_time_program, query_block_time};
 mod cell;
 pub(crate) use balance::{BalanceMode, BalanceValue, balance_program, query_balance};
 mod collections;

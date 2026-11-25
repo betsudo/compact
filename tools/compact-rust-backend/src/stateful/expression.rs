@@ -649,6 +649,8 @@ fn render_operation_expression(
         | Expr::KernelBalance { .. }
         | Expr::KernelBalanceLessThan { .. }
         | Expr::KernelBalanceGreaterThan { .. }
+        | Expr::KernelBlockTimeLessThan { .. }
+        | Expr::KernelBlockTimeGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. } => render_effect_operation(
@@ -1537,6 +1539,44 @@ fn render_effect_operation(
                     witness_effect,
                 ))
             }
+        }
+        Expr::KernelBlockTimeLessThan { bound } | Expr::KernelBlockTimeGreaterThan { bound } => {
+            statements.push(syn::parse_quote!(
+                const _: [(); 1] = [(); runtime::BLOCK_TIME_API_VERSION as usize];
+            ));
+            let (bound_expr, actual, witness_effect) = render_state_expression_observed(
+                bound,
+                parameters,
+                statements,
+                next_temp,
+                query_effect,
+                environment,
+            )?;
+            let expected = Type::Unsigned {
+                max: u64::MAX.to_string(),
+            };
+            if actual != expected {
+                return Err(RenderError::TypeMismatch { expected, actual });
+            }
+            let step = syn::Ident::new(
+                &format!("__compact_block_time_step_{}", *next_temp),
+                Span::call_site(),
+            );
+            *next_temp += 1;
+            let call: syn::Expr = if matches!(value, Expr::KernelBlockTimeLessThan { .. }) {
+                syn::parse_quote!(context.kernel_block_time_less_than((#bound_expr).value() as u64)?)
+            } else {
+                syn::parse_quote!(context.kernel_block_time_greater_than((#bound_expr).value() as u64)?)
+            };
+            statements.push(syn::parse_quote!(let #step = #call;));
+            statements.push(syn::parse_quote!(context = #step.context;));
+            statements.push(syn::parse_quote!(total_cost += #step.gas_cost;));
+            *query_effect = true;
+            Ok((
+                syn::parse_quote!(#step.result),
+                Type::Boolean,
+                witness_effect,
+            ))
         }
         Expr::KernelSelf { ty } => {
             let expected = crate::ir::contract_address_type();

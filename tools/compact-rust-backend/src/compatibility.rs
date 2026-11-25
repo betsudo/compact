@@ -28,6 +28,8 @@ use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use toml_edit::{DocumentMut, Item};
 
+mod block_time;
+
 /// Current minimum Rust version of generated consumers and their runtime pair.
 pub const RUST_VERSION: &str = "1.99";
 

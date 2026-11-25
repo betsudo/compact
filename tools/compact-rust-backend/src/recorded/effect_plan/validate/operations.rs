@@ -64,6 +64,11 @@ pub(super) fn validate(
         Operation::OwnPublicKey => {
             *ty == crate::ir::NativeWitnessBuiltin::OwnPublicKey.result_type()
         }
+        Operation::KernelBlockTimeLessThan { bound }
+        | Operation::KernelBlockTimeGreaterThan { bound } => {
+            use_value(bound)?;
+            bound.ty == uint(&u64::MAX.to_string()) && *ty == Type::Boolean
+        }
         Operation::KernelSelf => *ty == crate::ir::contract_address_type(),
         Operation::KernelBalance { token } => {
             use_value(token)?;

@@ -78,6 +78,8 @@ pub(super) fn classify(expr: &Expr) -> Source<'_> {
         | Expr::KernelBalance { .. }
         | Expr::KernelBalanceLessThan { .. }
         | Expr::KernelBalanceGreaterThan { .. }
+        | Expr::KernelBlockTimeLessThan { .. }
+        | Expr::KernelBlockTimeGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

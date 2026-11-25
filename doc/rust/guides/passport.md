@@ -210,7 +210,7 @@ This outline is navigation for the accepted scenario suite; the fully runnable s
 - **Integer conversion fails:** validate incoming numbers before constructing BoundedUint. Avoid JS Number roundtrips for large values; preserve integer/byte representations at transport boundaries.
 - **An assertion fails for typed input:** inspect the typed CompactError and the corresponding source rule. Display text includes presentation prefixes; match the error variant when application logic needs classification.
 - **Looking for a recorded call:** inspect the capability report. This passport closure contains pure exports; DID has separate stateful recording/proof paths.
-- **Trying to publish the example:** the generated package is publish=false and uses bundled sources. The current backend/runtime/macros line is0.2.0; the default generated application and unpublished testkit remain0.1.0. These labels do not assert registry publication or interchangeability of arbitrary source snapshots.
+- **Trying to publish the example:** the generated package is publish=false and uses bundled sources. The backend package is0.3.0; runtime/macros remain0.2.0; the default generated application and unpublished testkit remain0.1.0. These labels do not assert registry publication or interchangeability of arbitrary source snapshots.
 
 ## Evidence and decisions
 

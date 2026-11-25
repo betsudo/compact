@@ -707,3 +707,70 @@ fn unshielded_claim_cardinality_and_operand_types_refuse_before_render() {
         .is_err()
     );
 }
+
+#[test]
+fn block_time_queries_record_uint64_bound_and_refuse_wrong_domain() {
+    let bound = value(0, amount_type());
+    let source = StatefulCircuit {
+        source: None,
+        name: "blockTime".into(),
+        internal: false,
+        parameters: vec![Parameter {
+            name: "time".into(),
+            ty: bound.ty.clone(),
+        }],
+        actions: vec![],
+        result: Type::Boolean,
+        return_value: StateReturn::Expression {
+            value: Expr::KernelBlockTimeLessThan {
+                bound: Box::new(Expr::Parameter {
+                    name: "time".into(),
+                }),
+            },
+        },
+    };
+    let validate_time = |plan| {
+        let types = type_environment::TypeEnvironment::from_sources(
+            &source,
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+            &HashMap::new(),
+        )
+        .unwrap();
+        validate::check(
+            plan,
+            declarations::Declarations::default().with_type_environment(types),
+        )
+    };
+    for (operation, method) in [
+        (
+            Operation::KernelBlockTimeLessThan {
+                bound: bound.clone(),
+            },
+            "kernel_block_time_less_than",
+        ),
+        (
+            Operation::KernelBlockTimeGreaterThan {
+                bound: bound.clone(),
+            },
+            "kernel_block_time_greater_than",
+        ),
+    ] {
+        let original = Plan {
+            parameters: vec![bound.clone()],
+            result_type: Type::Boolean,
+            body: Block {
+                bindings: vec![binding(1, Type::Boolean, operation)],
+                result: value(1, Type::Boolean),
+            },
+        };
+        let checked = validate_time(original.clone()).unwrap();
+        let rendered = render(&checked).unwrap();
+        let steps = rendered.steps;
+        assert!(quote::quote!(#(#steps)*).to_string().contains(method));
+        let mut bad = original;
+        bad.parameters[0].ty = Type::Unsigned { max: "255".into() };
+        assert!(validate_time(bad).is_err());
+    }
+}

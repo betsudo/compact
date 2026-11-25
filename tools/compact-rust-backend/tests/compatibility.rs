@@ -734,7 +734,7 @@ fn malformed_dependency_paths_do_not_disappear_as_absent() {
 fn release_versions_keep_independent_contract_boundaries() {
     let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let metadata = required();
-    assert_eq!(env!("CARGO_PKG_VERSION"), "0.2.0");
+    assert_eq!(env!("CARGO_PKG_VERSION"), "0.3.0");
     assert_eq!(metadata.runtime_version, "0.2.0");
     assert_eq!(metadata.macros_version, "0.2.0");
     assert_eq!(
@@ -752,4 +752,175 @@ fn release_versions_keep_independent_contract_boundaries() {
         .unwrap();
     assert_eq!(testkit["package"]["version"].as_str(), Some("0.1.0"));
     assert_eq!(testkit["package"]["publish"].as_bool(), Some(false));
+}
+
+fn block_time_contract(kind: Option<&str>) -> compact_rust_backend::ir::Contract {
+    let circuits = kind
+        .map(|kind| {
+            serde_json::json!({
+                "name":"time","actions":[],"result":{"kind":"boolean"},
+                "return_value":{"kind":"expression","value":{"kind":kind,
+                    "bound":{"kind":"unsigned_literal","value":"1","max":"18446744073709551615"}}}
+            })
+        })
+        .into_iter()
+        .collect::<Vec<_>>();
+    serde_json::from_value(serde_json::json!({"schema_version":20,"ledger_fields":[],
+        "circuits":[],"stateful_circuits":circuits}))
+    .unwrap()
+}
+
+fn block_time_root() -> Root {
+    let root = Root::new();
+    let repo = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let path = root.0.join("runtime-rs/src/lib.rs");
+    let source = fs::read_to_string(&path).unwrap();
+    fs::write(&path, source + "\npub mod context;\npub mod recording;\n").unwrap();
+    for module in ["context", "recording"] {
+        fs::create_dir_all(root.0.join(format!("runtime-rs/src/{module}"))).unwrap();
+        for relative in [
+            format!("runtime-rs/src/{module}.rs"),
+            format!("runtime-rs/src/{module}/block_time.rs"),
+        ] {
+            fs::copy(repo.join(&relative), root.0.join(relative)).unwrap();
+        }
+    }
+    root
+}
+
+#[test]
+fn block_time_source_admission_is_conditional_and_requires_real_api_surface() {
+    let old = Root::new();
+    let selected = validate_root(&old.0).unwrap();
+    selected
+        .require_block_time(&block_time_contract(None))
+        .unwrap();
+    let current = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for kind in [
+        "kernel_block_time_less_than",
+        "kernel_block_time_greater_than",
+    ] {
+        assert!(
+            selected
+                .require_block_time(&block_time_contract(Some(kind)))
+                .is_err()
+        );
+        validate_root(&current)
+            .unwrap()
+            .require_block_time(&block_time_contract(Some(kind)))
+            .unwrap();
+        let root = block_time_root();
+        validate_root(&root.0)
+            .unwrap()
+            .require_block_time(&block_time_contract(Some(kind)))
+            .unwrap();
+    }
+}
+
+#[test]
+fn block_time_source_admission_refuses_unavailable_or_changed_signatures() {
+    let contract = block_time_contract(Some("kernel_block_time_less_than"));
+    for (path, before, after) in [
+        (
+            "runtime-rs/src/context.rs",
+            "mod block_time;",
+            "#[cfg(any())] mod block_time;",
+        ),
+        (
+            "runtime-rs/src/lib.rs",
+            "pub mod context;",
+            "#[cfg(any())] pub mod context;",
+        ),
+        (
+            "runtime-rs/src/context/block_time.rs",
+            "kernel_block_time_less_than",
+            "kernel_block_time_less_than_missing",
+        ),
+        (
+            "runtime-rs/src/context/block_time.rs",
+            "pub fn kernel_block_time_less_than",
+            "fn kernel_block_time_less_than",
+        ),
+        (
+            "runtime-rs/src/context/block_time.rs",
+            "bound: ::core::primitive::u64",
+            "bound: u32",
+        ),
+        (
+            "runtime-rs/src/context/block_time.rs",
+            "super::CircuitContext<Private, D>",
+            "CircuitContext<Private, D>",
+        ),
+        (
+            "runtime-rs/src/recording/block_time.rs",
+            "super::RecordingFrame<Private, D>",
+            "RecordingFrame<Private, D>",
+        ),
+        (
+            "runtime-rs/src/context/block_time.rs",
+            "D: crate::ledger::DB>",
+            "D: crate::ledger::DB + Clone>",
+        ),
+        (
+            "runtime-rs/src/recording/block_time.rs",
+            "pub fn kernel_block_time_less_than",
+            "#[cfg(any())] pub fn kernel_block_time_less_than",
+        ),
+    ] {
+        let root = block_time_root();
+        root.replace(path, before, after);
+        assert!(
+            validate_root(&root.0)
+                .unwrap()
+                .require_block_time(&contract)
+                .is_err(),
+            "{path}: {after}"
+        );
+    }
+    let root = block_time_root();
+    let selected = validate_root(&root.0).unwrap();
+    root.replace(
+        "runtime-rs/src/context/block_time.rs",
+        "//! Native,",
+        "//! Changed native,",
+    );
+    assert!(
+        selected
+            .require_block_time(&contract)
+            .unwrap_err()
+            .to_string()
+            .contains("fingerprint changed")
+    );
+}
+
+#[test]
+fn block_time_source_admission_refuses_child_standin_owners() {
+    let contract = block_time_contract(Some("kernel_block_time_less_than"));
+    for (module, owner) in [
+        ("context", "CircuitContext"),
+        ("recording", "RecordingFrame"),
+    ] {
+        let root = block_time_root();
+        let path = format!("runtime-rs/src/{module}/block_time.rs");
+        root.replace(
+            &path,
+            &format!("super::{owner}<Private, D>"),
+            &format!("{owner}<Private, D>"),
+        );
+        let absolute = root.0.join(path);
+        let mut text = fs::read_to_string(&absolute).unwrap();
+        text.push_str(&format!(
+            "\nstruct {owner}<Private, D>(::core::marker::PhantomData<(Private, D)>);\n"
+        ));
+        fs::write(absolute, text).unwrap();
+        let error = validate_root(&root.0)
+            .unwrap()
+            .require_block_time(&contract)
+            .unwrap_err()
+            .to_string();
+        assert!(
+            error.contains("must expose the selected consuming"),
+            "{error}"
+        );
+    }
 }

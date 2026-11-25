@@ -210,6 +210,14 @@ impl FrontendArtifacts {
         render::render(self, options)
     }
 
+    /// Explicitly opt in to the closed standalone ordinary proof-data helpers.
+    pub fn render_standalone_proof_data(
+        &self,
+        options: render::RenderOptions,
+    ) -> Result<render::StandaloneFrontendRender, Box<render::NativeCompileFailure>> {
+        render::render_standalone(self, options)
+    }
+
     /// Opt-in Ledger 9 functional prototype. Source evidence comes exclusively
     /// from this retained frontend invocation; originless IR cannot enable it.
     /// Publish the returned functional_assets() alongside the generated lib.rs;

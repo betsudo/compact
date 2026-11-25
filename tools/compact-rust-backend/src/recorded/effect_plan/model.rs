@@ -180,6 +180,12 @@ pub(super) enum Operation {
         token: Value,
         amount: Value,
     },
+    KernelBlockTimeLessThan {
+        bound: Value,
+    },
+    KernelBlockTimeGreaterThan {
+        bound: Value,
+    },
     EmitShieldedSpend(Value),
     EmitShieldedBurn(Value),
     EmitShieldedMint(Value),

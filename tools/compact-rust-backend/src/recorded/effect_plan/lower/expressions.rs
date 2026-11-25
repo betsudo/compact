@@ -93,6 +93,9 @@ impl Lowerer<'_> {
             Expr::NativeWitnessCall {
                 builtin: NativeWitnessBuiltin::OwnPublicKey,
             } => Self::query_operation,
+            Expr::KernelBlockTimeLessThan { .. } | Expr::KernelBlockTimeGreaterThan { .. } => {
+                Self::query_operation
+            }
             Expr::KernelSelf { .. } => Self::query_operation,
             Expr::KernelBalance { .. }
             | Expr::KernelBalanceLessThan { .. }

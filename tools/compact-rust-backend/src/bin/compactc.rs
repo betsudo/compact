@@ -42,9 +42,10 @@ use compact_rust_backend::{
     ConfiguredFrontend, FrontendError, FrontendRequest, RenderOptions, compatibility, ir::Contract,
 };
 use serde_json::Value;
+use sha2::{Digest, Sha256};
 use toml_edit::{Array, DocumentMut, InlineTable, Item, Table, Value as TomlValue, value};
 
-const TARGET_HELP: &str = "\n  --target <ts|rust> selects contract code. Repeat to emit both.\n    With no --target, TypeScript remains the default. Rust emits a standalone\n    contract/Cargo.toml, source, capability report, and matching runtime crates.\n    ZKIR and keys are independent.\n  --rust-functional-ledger9 also emits checked functional programs for the source runtime.\n  --rust-require-recording rejects proof-required exported circuits without both\n    replayable recording and typed observed-call APIs.\n  --rust-runtime-root <path> uses one shared runtime source root for generated\n    Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.\n";
+const TARGET_HELP: &str = "\n  --target <ts|rust> selects contract code. Repeat to emit both.\n    With no --target, TypeScript remains the default. Rust emits a standalone\n    contract/Cargo.toml, source, capability report, and matching runtime crates.\n    ZKIR and keys are independent.\n  --rust-functional-ledger9 also emits checked functional programs for the source runtime.\n  --rust-require-recording rejects proof-required exported circuits without both\n    replayable recording and typed observed-call APIs.\n  --rust-standalone-proof-data opts in to closed recorded proof-data helpers; requires\n    --target rust --rust-require-recording. It does not prepare transactions or prove.\n  --rust-runtime-root <path> uses one shared runtime source root for generated\n    Rust crates. The root must contain runtime-rs/ and runtime-rs-macros/.\n";
 
 #[derive(Default)]
 struct Targets {
@@ -55,6 +56,7 @@ struct Targets {
     runtime_registry: bool,
     require_recording: bool,
     functional_ledger9: bool,
+    standalone_proof_data: bool,
 }
 
 fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), String> {
@@ -64,6 +66,19 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
     let mut forwarded = Vec::with_capacity(args.len());
     let mut arguments = args.into_iter();
     while let Some(argument) = arguments.next() {
+        if argument == "--rust-standalone-proof-data" {
+            if targets.standalone_proof_data {
+                return Err("--rust-standalone-proof-data may be given only once".into());
+            }
+            targets.standalone_proof_data = true;
+            continue;
+        }
+        if argument
+            .to_str()
+            .is_some_and(|s| s.starts_with("--rust-standalone-proof-data="))
+        {
+            return Err("--rust-standalone-proof-data takes no value".into());
+        }
         if argument == "--rust-functional-ledger8" {
             return Err(
                 "--rust-functional-ledger8 requires the Ledger 8 compiler and runtime".into(),
@@ -177,6 +192,11 @@ fn select_targets(args: Vec<OsString>) -> Result<(Targets, Vec<OsString>), Strin
         targets.ts = !legacy_skip_ts;
     } else if !targets.explicit {
         targets.ts = true;
+    }
+    if targets.standalone_proof_data
+        && (!targets.rust || !targets.require_recording || targets.functional_ledger9)
+    {
+        return Err("--rust-standalone-proof-data requires --target rust and --rust-require-recording, and cannot be combined with --rust-functional-ledger9".into());
     }
     if targets.runtime_root.is_some() && !targets.rust {
         return Err("--rust-runtime-root requires --target rust".into());
@@ -454,6 +474,17 @@ fn write_functional_assets(
     Ok(())
 }
 
+fn require_issued_runtime_ir(bytes: &[u8], issued_sha256: &[u8; 32]) -> Result<(), Box<dyn Error>> {
+    let actual: [u8; 32] = Sha256::digest(bytes).into();
+    if actual != *issued_sha256 {
+        return Err(
+            "runtime API admission requires the same exact IR bytes as the issued semantic render"
+                .into(),
+        );
+    }
+    Ok(())
+}
+
 fn run() -> Result<i32, Box<dyn Error>> {
     let (targets, mut args) = select_targets(env::args_os().skip(1).collect())?;
     if targets.rust && !args.iter().any(|arg| arg == "--feature-zkir-v3") {
@@ -532,10 +563,10 @@ fn run() -> Result<i32, Box<dyn Error>> {
     let invocation_contract = artifacts.output_dir().join("contract");
     // Preserve the old IR-decode -> proof-info-decode -> native-check priority.
     // These extra bounded parses perform no semantic admission or rendering.
-    let ir: Contract = serde_json::from_slice(&input::read(fs::File::open(
+    let ir_bytes = input::read(fs::File::open(
         invocation_contract.join("compact-rust-ir.json"),
-    )?)?)?;
-    drop(ir);
+    )?)?;
+    let ir: Contract = serde_json::from_slice(&ir_bytes)?;
     let contract_info: Value = serde_json::from_slice(&input::read(fs::File::open(
         artifacts.output_dir().join("compiler/contract-info.json"),
     )?)?)?;
@@ -545,15 +576,25 @@ fn run() -> Result<i32, Box<dyn Error>> {
         // Keep the existing public recording predicate and error formatting below.
         require_recording: false,
     };
-    let issued = if targets.functional_ledger9 {
-        artifacts
-            .render_functional_ledger9(options)
-            .map_err(|error| Box::new(error) as Box<dyn Error>)
+    let (issued, standalone_capabilities) = if targets.standalone_proof_data {
+        let extra = artifacts.render_standalone_proof_data(options)?;
+        (extra.frontend, Some(extra.capabilities))
     } else {
-        artifacts
-            .render(options)
-            .map_err(|error| error as Box<dyn Error>)
-    }?;
+        let issued = if targets.functional_ledger9 {
+            artifacts
+                .render_functional_ledger9(options)
+                .map_err(|error| Box::new(error) as Box<dyn Error>)
+        } else {
+            artifacts
+                .render(options)
+                .map_err(|error| error as Box<dyn Error>)
+        }?;
+        (issued, None)
+    };
+    // Same ABI literals do not establish the selected query APIs. Keep native
+    // semantic/error priority, but refuse stale source before publication.
+    require_issued_runtime_ir(&ir_bytes, &issued.fingerprint().exact_ir_sha256)?;
+    selected.require_block_time(&ir)?;
     let rendered = issued.rendered();
     if targets.require_recording {
         let unavailable = rendered
@@ -609,7 +650,10 @@ fn run() -> Result<i32, Box<dyn Error>> {
     write_functional_assets(&contract_dir, issued.functional_assets())?;
     fs::write(
         contract_dir.join("rust-capabilities.json"),
-        serde_json::to_vec_pretty(&rendered.capabilities)?,
+        match &standalone_capabilities {
+            Some(capabilities) => serde_json::to_vec_pretty(capabilities)?,
+            None => serde_json::to_vec_pretty(&rendered.capabilities)?,
+        },
     )?;
     let mode = if targets.runtime_registry {
         "registry"
@@ -688,10 +732,11 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::{
-        RuntimeDependency, StagedOutput, crate_manifest, package_name, runtime_package_version,
-        select_targets,
+        RuntimeDependency, StagedOutput, crate_manifest, package_name, require_issued_runtime_ir,
+        runtime_package_version, select_targets,
     };
     use fs2::FileExt;
+    use sha2::{Digest, Sha256};
     use std::ffi::OsString;
     use std::fs;
     use std::path::Path;
@@ -933,6 +978,66 @@ mod tests {
 
         let lock = fs::File::open(root.0.join(".contract.compactc.lock")).unwrap();
         FileExt::try_lock_exclusive(&lock).unwrap();
+    }
+
+    #[test]
+    fn standalone_proof_data_is_explicit_and_rejects_unsupported_targets_before_frontend() {
+        let parse = |args: &[&str]| select_targets(args.iter().map(OsString::from).collect());
+        assert!(
+            !parse(&["--target", "rust"])
+                .unwrap()
+                .0
+                .standalone_proof_data
+        );
+        for args in [
+            vec!["--rust-standalone-proof-data"],
+            vec!["--target", "rust", "--rust-standalone-proof-data"],
+            vec![
+                "--target",
+                "ts",
+                "--rust-standalone-proof-data",
+                "--rust-require-recording",
+            ],
+            vec![
+                "--target",
+                "rust",
+                "--rust-standalone-proof-data",
+                "--rust-require-recording",
+                "--rust-functional-ledger9",
+            ],
+            vec!["--target", "rust", "--rust-standalone-proof-data=true"],
+            vec![
+                "--target",
+                "rust",
+                "--rust-standalone-proof-data",
+                "--rust-standalone-proof-data",
+            ],
+        ] {
+            assert!(parse(&args).is_err(), "{args:?}");
+        }
+        let (targets, forwarded) = parse(&[
+            "--target",
+            "rust",
+            "--rust-require-recording",
+            "--rust-standalone-proof-data",
+            "input",
+            "output",
+        ])
+        .unwrap();
+        assert!(targets.standalone_proof_data && targets.require_recording);
+        assert_eq!(
+            forwarded,
+            vec![OsString::from("input"), OsString::from("output")]
+        );
+    }
+
+    #[test]
+    fn block_time_runtime_guard_refuses_a_different_live_ir_parse() {
+        let captured = br#"{"kind":"kernel_block_time_less_than"}"#;
+        let issued: [u8; 32] = Sha256::digest(captured).into();
+        require_issued_runtime_ir(captured, &issued).unwrap();
+        let changed = br#"{"kind":"unit"}"#;
+        assert!(require_issued_runtime_ir(changed, &issued).is_err());
     }
 
     #[test]

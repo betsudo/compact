@@ -418,7 +418,8 @@ fn misc_event_manifest() -> Result<Value, String> {
 }
 
 fn before_nested_map(path: &str, current: &str) -> Result<String, String> {
-    let current = legacy_source(path, current, &ledger9_token_expression_manifest()?)?;
+    let current = before_block_time(path, current)?;
+    let current = legacy_source(path, &current, &ledger9_token_expression_manifest()?)?;
     let current = legacy_source(path, &current, &misc_event_manifest()?)?;
     let current = legacy_source(path, &current, &pause_event_manifest()?)?;
     let current = legacy_source(path, &current, &unshielded_burn_event_manifest()?)?;
@@ -500,6 +501,24 @@ fn keccak_encoding_manifest(bytes: &[u8]) -> Result<Value, String> {
 }
 fn before_keccak_encoding(path: &str, current: &str) -> Result<String, String> {
     legacy_source(path, current, &keccak_encoding_manifest(KECCAK_ENCODING)?)
+}
+
+// Typed time extends four retired exhaustive owners. Authenticate this separate
+// stage and restore complete published9db7 bytes before the unchanged PR772 stage.
+const BLOCK_TIME_RETIRED_OWNER: &[u8] =
+    include_bytes!("block-time-retired-owner-predecessor-v1.json");
+fn block_time_retired_owner_manifest(bytes: &[u8]) -> Result<Value, String> {
+    if digest(bytes) != "cc3304bc49ab42cadba0b3add50645ee2b964d67677699b593986220a317aa85" {
+        return Err("unreviewed block-time retired-owner checkpoint".into());
+    }
+    serde_json::from_slice(bytes).map_err(|error| error.to_string())
+}
+fn before_block_time(path: &str, current: &str) -> Result<String, String> {
+    legacy_source(
+        path,
+        current,
+        &block_time_retired_owner_manifest(BLOCK_TIME_RETIRED_OWNER)?,
+    )
 }
 
 // The original Ledger 9 token operations extend four retired test-only matchers.
@@ -654,6 +673,7 @@ fn ledger9_token_projection_keeps_retired_owners_exact() {
     let repository = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     for (path, owner) in manifest["owners"].as_object().unwrap() {
         let current = std::fs::read_to_string(repository.join(path)).unwrap();
+        let current = before_block_time(path, &current).unwrap();
         let previous = legacy_source(path, &current, &manifest).unwrap();
         assert_eq!(digest(previous.as_bytes()), owner["previous_sha256"]);
         assert!(legacy_source(path, &(current + "\n// drift\n"), &manifest).is_err());
@@ -1094,4 +1114,101 @@ fn nested_map_projection_reconstructs_exact_historical_owners() {
         assert!(before_nested_map(path, &previous).is_err());
         assert!(before_nested_map(path, &(current + "\n// unrelated drift\n")).is_err());
     }
+}
+
+#[test]
+fn block_time_projection_restores_exact_published_four_owner_predecessors() {
+    let projection = block_time_retired_owner_manifest(BLOCK_TIME_RETIRED_OWNER).unwrap();
+    assert_eq!(projection["owners"].as_object().unwrap().len(), 4);
+    assert_eq!(
+        projection["predecessor_git_commit"],
+        "9db7ab2c31be417653b36ae0d9838174c38c4fab"
+    );
+    assert_eq!(
+        projection["predecessor_manifest"]["sha256"],
+        digest(LEDGER9_TOKEN_EXPRESSION)
+    );
+    let token = ledger9_token_expression_manifest().unwrap();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_block_time(path, &current).unwrap();
+        assert_eq!(digest(previous.as_bytes()), owner["previous_sha256"]);
+        assert_eq!(
+            digest(previous.as_bytes()),
+            token["owners"][path]["current_sha256"]
+        );
+        let old = legacy_source(path, &previous, &token).unwrap();
+        assert_eq!(
+            digest(old.as_bytes()),
+            token["owners"][path]["previous_sha256"]
+        );
+    }
+    // The unchanged terminal authority still authenticates all published rows.
+    assert_eq!(legacy_authority()["files"].as_array().unwrap().len(), 49);
+}
+
+#[test]
+fn block_time_projection_refuses_drift_partial_and_already_old_sources() {
+    let projection = block_time_retired_owner_manifest(BLOCK_TIME_RETIRED_OWNER).unwrap();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let previous = before_block_time(path, &current).unwrap();
+        assert!(before_block_time(path, &(current.clone() + "\n// drift\n")).is_err());
+        assert!(before_block_time(path, &previous).is_err());
+        for edit in owner["predecessor_reconstruction"].as_array().unwrap() {
+            let partial = current.replacen(
+                edit["current"].as_str().unwrap(),
+                edit["previous"].as_str().unwrap(),
+                1,
+            );
+            assert_ne!(partial, current);
+            assert!(before_block_time(path, &partial).is_err());
+        }
+    }
+}
+
+#[test]
+fn block_time_projection_requires_unique_edits_and_complete_previous_hash() {
+    let projection = block_time_retired_owner_manifest(BLOCK_TIME_RETIRED_OWNER).unwrap();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    for (path, owner) in projection["owners"].as_object().unwrap() {
+        let current = std::fs::read_to_string(root.join(path)).unwrap();
+        let edit = owner["predecessor_reconstruction"][0]["current"]
+            .as_str()
+            .unwrap();
+        let duplicate = current.clone() + edit;
+        assert!(before_block_time(path, &duplicate).is_err());
+        // Exercise the primitive uniqueness guard even if an attacker changes
+        // a current digest in UNAUTHENTICATED data. Such data is never authority.
+        let mut forged = projection.clone();
+        forged["owners"][path]["current_sha256"] = Value::String(digest(duplicate.as_bytes()));
+        assert!(
+            legacy_source(path, &duplicate, &forged)
+                .unwrap_err()
+                .contains("nonunique")
+        );
+        assert!(block_time_retired_owner_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
+        let mut forged = projection.clone();
+        forged["owners"][path]["previous_sha256"] = Value::String("0".repeat(64));
+        assert!(
+            legacy_source(path, &current, &forged)
+                .unwrap_err()
+                .contains("reconstruction differs")
+        );
+        assert!(block_time_retired_owner_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
+    }
+}
+
+#[test]
+fn block_time_projection_refuses_forged_manifest_authority() {
+    assert!(block_time_retired_owner_manifest(br#"{"owners":{}}"#).is_err());
+    let mut forged = block_time_retired_owner_manifest(BLOCK_TIME_RETIRED_OWNER).unwrap();
+    forged["scope"] = Value::String("unreviewed".into());
+    assert!(block_time_retired_owner_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
+    let path = "tools/compact-rust-backend/src/recorded/audited_local.rs";
+    forged["owners"][path]["predecessor_reconstruction"][0]["previous"] =
+        Value::String("unreviewed acceptance".into());
+    assert!(block_time_retired_owner_manifest(&serde_json::to_vec(&forged).unwrap()).is_err());
 }

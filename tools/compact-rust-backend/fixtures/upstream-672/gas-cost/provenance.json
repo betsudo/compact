@@ -1,0 +1,24 @@
+{
+  "upstream_repository": "LFDT-Minokawa/compact",
+  "revision": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
+  "original_paths": [
+    "test-center/compact/gas-cost.compact",
+    "test-center/ts/gas-cost.ts"
+  ],
+  "files": {
+    "gas-cost.compact": {
+      "bytes": 890,
+      "sha256": "f563fbc704d21ed4f02aeef417a9399d193b6dcd07ee1b311b948f02d0e7dc25"
+    },
+    "gas-cost.ts": {
+      "bytes": 1321,
+      "sha256": "3b16e052070fb0be29714ac2568352c355cfdf66bd028ab20274adff6a0df969"
+    },
+    "compact-rust-ir.json": {
+      "bytes": 2841,
+      "sha256": "bbe8e7c6d97e97c92c60363e2819497f7ed0586d0a09bf21c19c412a5172086a"
+    }
+  },
+  "ir_provenance": "Genuine normal compactc frontend output from the byte-exact original-gas-cost.compact; compiler source unchanged from retained668 lineage, Rust backend11be62a22bbe6a183ff687cac7eaa95581e4fd86. --feature-zkir-v3 --ts-runtime-profile released-0.21.0 --skip-zk. Source file basename is original-gas-cost.compact.",
+  "scope": "Frontend shape fixture and two retained original async TS bodies. Host rendering tests alone do not execute the TS bodies or qualify SDK/proofs/transactions/Linux."
+}

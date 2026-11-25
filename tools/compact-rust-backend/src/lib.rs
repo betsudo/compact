@@ -16,6 +16,11 @@
 //! Rust syntax construction from Compact's typed backend IR.
 
 mod capabilities;
+mod standalone_proof_data;
+pub use standalone_proof_data::{
+    StandaloneProofDataCapability, StandaloneProofDataCircuit, StandaloneProofDataRender,
+    StandaloneProofDataReport, StandaloneProofDataUnavailable,
+};
 mod circuit_analysis;
 mod coin_shapes;
 pub mod compatibility;
@@ -37,7 +42,7 @@ mod source_diagnostics;
 pub use origins::diagnostic::{SourceDiagnostic, SourcePosition};
 pub use origins::frontend::render::{
     FrontendRender, FunctionalCompileFailure, NativeCompileFailure, NativeFailureCause,
-    RecordingRequirement, RenderOptions,
+    RecordingRequirement, RenderOptions, StandaloneFrontendRender,
 };
 pub use origins::frontend::{
     ConfiguredFrontend, FrontendArtifacts, FrontendError, FrontendRequest, InvocationFingerprint,
@@ -975,6 +980,9 @@ fn collect_expression_types<'ir>(
         | Expr::KernelBalanceGreaterThan { token, amount } => {
             collect_expression_types(token, structs, enums, origins, observer)?;
             collect_expression_types(amount, structs, enums, origins, observer)?;
+        }
+        Expr::KernelBlockTimeLessThan { bound } | Expr::KernelBlockTimeGreaterThan { bound } => {
+            collect_expression_types(bound, structs, enums, origins, observer)?;
         }
         Expr::CreateZswapInput { coin } => {
             collect_expression_types(coin, structs, enums, origins, observer)?
@@ -2978,6 +2986,20 @@ pub fn render_with_capabilities(contract: &Contract) -> Result<RenderedContract,
     render_with_native_refusal(contract, None, None)
 }
 
+/// Opt-in ordinary proof-data helpers for a closed set of supported families.
+/// This does not establish proving, transaction preparation, or SDK compatibility.
+pub fn render_with_standalone_proof_data(
+    contract: &Contract,
+) -> Result<StandaloneProofDataRender, RenderError> {
+    let mut report = Vec::new();
+    let rendered = render_selected_with_refusals(contract, None, None, None, Some(&mut report))?;
+    let capabilities = StandaloneProofDataReport::new(&rendered.capabilities, report);
+    Ok(StandaloneProofDataRender {
+        rendered,
+        capabilities,
+    })
+}
+
 /// Private common renderer. Originless public APIs never discover metadata.
 fn render_with_native_refusal(
     contract: &Contract,
@@ -2988,9 +3010,25 @@ fn render_with_native_refusal(
 }
 fn render_with_refusals(
     contract: &Contract,
+    refusal_callback: Option<&mut pure_native::sink::RefusalCallback<'_>>,
+    observer: Option<&dyn RefusalObserver>,
+    recording_observer: Option<&dyn source_diagnostics::RefusalObserver>,
+) -> Result<RenderedContract, RenderError> {
+    render_selected_with_refusals(
+        contract,
+        refusal_callback,
+        observer,
+        recording_observer,
+        None,
+    )
+}
+
+fn render_selected_with_refusals(
+    contract: &Contract,
     mut refusal_callback: Option<&mut pure_native::sink::RefusalCallback<'_>>,
     observer: Option<&dyn RefusalObserver>,
     recording_observer: Option<&dyn source_diagnostics::RefusalObserver>,
+    mut standalone_report: Option<&mut Vec<standalone_proof_data::ProofDataInfo>>,
 ) -> Result<RenderedContract, RenderError> {
     if contract.schema_version != SCHEMA_VERSION {
         return Err(RenderError::SchemaVersion(contract.schema_version));
@@ -3373,6 +3411,18 @@ fn render_with_refusals(
         .filter(|circuit| !circuit.internal)
         .map(|circuit| semantic_identifier(&circuit.name))
         .collect::<Result<HashSet<_>, _>>()?;
+    // Internal circuits can also have recorded facade methods. New helper
+    // names conservatively reserve every declared stateful name, independently
+    // of the unchanged exported-only observed-call capability policy.
+    let proof_data_facade_names = if standalone_report.is_some() {
+        contract
+            .stateful_circuits
+            .iter()
+            .map(|c| semantic_identifier(&c.name))
+            .collect::<Result<HashSet<_>, _>>()?
+    } else {
+        HashSet::new()
+    };
     for circuit in &contract.stateful_circuits {
         located(circuit.source.as_ref(), || {
             stateful_items.push(stateful::render_stateful_circuit_observed(
@@ -3426,7 +3476,39 @@ fn render_with_refusals(
             let recording_unavailable = recorded.gap().cloned();
             let observed_call = recorded.is_supported()
                 && !exported_method_names.contains(&semantic_identifier(&call_name)?);
+            let standalone_proof_data_facade = if standalone_report.is_some()
+                && recorded.is_supported()
+                && recorded::proof_data::supported(
+                    circuit,
+                    &contract.stateful_circuits,
+                    &contract.circuits,
+                    &ledger_fields,
+                ) {
+                Some(recorded::proof_data::render_method(
+                    circuit,
+                    &proof_data_facade_names,
+                )?)
+            } else {
+                None
+            };
+            let standalone_proof_data_method = standalone_proof_data_facade
+                .as_ref()
+                .and_then(|facade| facade.method.as_ref());
             if !circuit.internal {
+                if let Some(report) = standalone_report.as_deref_mut() {
+                    report.push(standalone_proof_data::ProofDataInfo {
+                        name: circuit.name.clone(),
+                        standalone_proof_data: standalone_proof_data_method.map(|method| {
+                            StandaloneProofDataCapability {
+                                api_version: 1,
+                                method: method.sig.ident.to_string(),
+                            }
+                        }),
+                        standalone_proof_data_unavailable: standalone_proof_data_facade
+                            .as_ref()
+                            .and_then(|facade| facade.unavailable.clone()),
+                    });
+                }
                 proof_capabilities.push(RustCircuitCapability {
                     name: circuit.name.clone(),
                     source: circuit.source.clone(),
@@ -3460,6 +3542,10 @@ fn render_with_refusals(
                     circuit,
                     uses_witness,
                 )?);
+                if let Some(method) = standalone_proof_data_method {
+                    recorded_methods.push(method.clone());
+                    borrowed_recorded_methods.push(method.clone());
+                }
                 if observed_call {
                     let observed = recorded::render_observed_call_method(circuit, uses_witness)?;
                     if !uses_witness {

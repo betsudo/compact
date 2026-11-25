@@ -200,6 +200,25 @@ pub(super) fn render(
             steps.push(syn::parse_quote!(let (frame, #observed) = frame.own_coin_public_key()?;));
             effect_values::identity(&ty, syn::parse_quote!(#observed))
         }
+        Operation::KernelBlockTimeLessThan { bound }
+        | Operation::KernelBlockTimeGreaterThan { bound } => {
+            steps.push(syn::parse_quote!(
+                const _: [(); 1] = [(); runtime::BLOCK_TIME_API_VERSION as usize];
+            ));
+            let bound = value(bound);
+            let observed = syn::Ident::new(
+                &format!("__compact_effect_block_time_{}", binding.value.id),
+                Span::call_site(),
+            );
+            if matches!(binding.operation, Operation::KernelBlockTimeLessThan { .. }) {
+                steps.push(syn::parse_quote!(let (frame, #observed) =
+                    frame.kernel_block_time_less_than((#bound).value() as u64)?;));
+            } else {
+                steps.push(syn::parse_quote!(let (frame, #observed) =
+                    frame.kernel_block_time_greater_than((#bound).value() as u64)?;));
+            }
+            syn::parse_quote!(#observed)
+        }
         Operation::KernelSelf => {
             let observed = syn::Ident::new(
                 &format!("__compact_effect_address_{}", binding.value.id),

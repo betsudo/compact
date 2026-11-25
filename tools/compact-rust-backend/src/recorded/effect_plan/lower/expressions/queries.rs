@@ -87,6 +87,25 @@ impl Lowerer<'_> {
                     _ => unreachable!(),
                 }
             }
+            Expr::KernelBlockTimeLessThan { bound }
+            | Expr::KernelBlockTimeGreaterThan { bound } => {
+                let bound_path = format!("{path}.bound");
+                let bound = self.expression(bound, scope, bindings, &bound_path)?;
+                if bound.ty != uint(&u64::MAX.to_string()) {
+                    return Err(invalid(
+                        &bound_path,
+                        "Kernel block-time bound must be Uint<64>",
+                    ));
+                }
+                if matches!(expression, Expr::KernelBlockTimeLessThan { .. }) {
+                    (Operation::KernelBlockTimeLessThan { bound }, Type::Boolean)
+                } else {
+                    (
+                        Operation::KernelBlockTimeGreaterThan { bound },
+                        Type::Boolean,
+                    )
+                }
+            }
             Expr::MerkleCheckRoot { field, index, root }
             | Expr::HistoricMerkleCheckRoot { field, index, root } => self.merkle_query(
                 field,
