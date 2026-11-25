@@ -47,32 +47,51 @@ export type Module<C, W> = {
   contractDir: string;
 };
 
-/** Pending proof validations scheduled by circuit calls (module-singleton). */
-const pending = new Set<Promise<void>>();
+const PROOF_CHECK_TIMEOUT_MS = 10_000;
 
-/**
- * Register a proof-check promise so we can fail a test at a controlled boundary.
- * Attaches handlers immediately to avoid unhandled-rejection noise and
- * auto-removes the promise from the queue upon settlement.
- */
+/** Races `p` against a timeout, so a check that never settles rejects instead of hanging. */
+const withTimeout = (p: Promise<void>, ms: number): Promise<void> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<void>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`proof check timed out after ${ms}ms`)),
+      ms,
+    );
+  });
+  return Promise.race([p, timeout]).finally(() => clearTimeout(timer));
+};
+
+
+/** A settled proof check is retained until an awaited flush consumes it. */
+type ProofCheckOutcome =
+  | { readonly ok: true }
+  | { readonly ok: false; readonly error: unknown };
+
+const pending = new Set<Promise<ProofCheckOutcome>>();
+
+/** Attach both handlers immediately; rejection is a retained value, not an unhandled promise. */
 export const registerProofCheck = (p: Promise<void>): void => {
-  let wrapped: Promise<void>;
-  wrapped = p.then(
-    () => { pending.delete(wrapped); },
-    (e) => { pending.delete(wrapped); throw e; }
+  const guarded = withTimeout(p, PROOF_CHECK_TIMEOUT_MS);
+  const outcome = guarded.then<ProofCheckOutcome, ProofCheckOutcome>(
+    () => ({ ok: true }),
+    (error: unknown) => ({ ok: false, error }),
   );
-  pending.add(wrapped);
+  pending.add(outcome);
 }
 
-/**
- * Wait for all scheduled proof checks. If any failed, throw the first error.
- * Call this once per-test from a Vitest `afterEach` in your setup file.
- */
+/** Drain checks, including registrations made while awaiting a batch, then report the first failure. */
 export const flushProofChecks = async (): Promise<void> => {
-  const results = await Promise.allSettled(Array.from(pending));
-  pending.clear();
-  const rejected = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
-  if (rejected) throw rejected.reason;
+  let firstFailure: { readonly ok: false; readonly error: unknown } | undefined;
+  while (pending.size !== 0) {
+    const batch = Array.from(pending);
+    const outcomes = await Promise.all(batch);
+    for (const outcome of batch) pending.delete(outcome);
+    for (const outcome of outcomes) {
+      if (outcome.ok === false && firstFailure === undefined) firstFailure = outcome;
+    }
+  }
+  // The wrapper distinguishes rejection with undefined from the absence of a failure.
+  if (firstFailure !== undefined) throw firstFailure.error;
 }
 
 export const startContract = <
