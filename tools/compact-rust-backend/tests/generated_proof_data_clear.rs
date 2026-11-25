@@ -161,8 +161,8 @@ fn actual_clear_is_called_once_with_unit_capture_and_api1_without_witness_substi
     for handle in ["Contract", "BorrowedContract"] {
         let get = method(&syntax.items, handle, "get_proof_data").unwrap();
         assert!(get.sig.generics.where_clause.is_none());
-        assert!(method(&syntax.items, handle, "set_proof_data").is_none());
     }
+    assert!(method(&syntax.items, "Contract", "set_proof_data").is_none());
     assert!(method(&syntax.items, "BorrowedContract", "clear").is_some());
     assert!(method(&syntax.items, "BorrowedContract", "clear_call").is_some());
     assert!(method(&syntax.items, "Contract", "clear").is_none());

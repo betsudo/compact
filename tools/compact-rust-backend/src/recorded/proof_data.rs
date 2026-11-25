@@ -26,7 +26,9 @@ use crate::{
 use quote::quote;
 use std::collections::{HashMap, HashSet};
 
+mod authenticated_cell;
 mod authenticated_cell_clear;
+mod authenticated_cell_set;
 
 /// A closed Field literal may be bound by the frontend before a Set mutation.
 /// Admit only that single typed binding and its exact use, not general lets,
@@ -606,6 +608,7 @@ pub(crate) fn supported(
                 ledger_fields,
                 witnesses,
             )
+            || authenticated_cell_set::supported(circuit, circuits, pure, ledger_fields, witnesses)
             || (signature(circuit) && visit(circuit, circuits, &mut HashSet::new()) == Some(true)))
 }
 

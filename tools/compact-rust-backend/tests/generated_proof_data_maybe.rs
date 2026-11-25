@@ -139,7 +139,7 @@ fn genuine_get_returns_actual_concrete_maybe_and_captures_before_one_call() {
             .iter()
             .filter(|c| c.standalone_proof_data.is_some())
             .count(),
-        2 // getter plus the separately admitted authenticated clear; set stays absent
+        3 // getter and the separately admitted authenticated clear/set mutations
     );
     let method = owned_method(&out.source, "get_proof_data").unwrap();
     assert_eq!(method.sig.inputs.len(), 2); // self + context; no public/private/witness argument
