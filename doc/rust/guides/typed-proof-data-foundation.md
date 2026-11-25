@@ -57,8 +57,8 @@ dependency graphs: 13 generated-runtime positive compilation controls, eight
 missing/mismatched-domain compile refusals, and three backend migration controls
 (two positive and one exhaustive-match refusal). Genuine old54 baseline
 compilation ran first; fresh normal and direct outputs used the merged source.
-The stopped record remains `qualified=false` pending independent actual audit;
-owner acceptance remains a separate gate.
+The operational record keeps `qualified=false`; its independent actual audit
+passed. Owner acceptance remains a separate gate.
 
 These results describe local ARM64 validation of the tested source snapshot.
 This documentation update changes no code or fixture bytes. Emitted released
