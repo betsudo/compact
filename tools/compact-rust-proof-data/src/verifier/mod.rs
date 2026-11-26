@@ -23,7 +23,7 @@ use crate::{
 use anyhow::{Context, Result, ensure};
 use midnight_transient_crypto::{
     curve::Fr,
-    proofs::{PARAMS_VERIFIER, Proof, VERIFIER_MAX_DEGREE},
+    proofs::{PARAMS_VERIFIER, Proof, VERIFIER_MAX_DEGREE, Zkir},
 };
 use midnight_zkir::IrSource;
 use serde_json::{Value, json};
