@@ -87674,3 +87674,55 @@ groups than for single tests.
 
 (run-javascript)
 )
+
+
+;; The normal compiler/go suite checks actual saved Rust IR for the intact
+;; original Map exports. No JavaScript is staged for this selected profile.
+(with-parameter-values ([emit-rust-ir #t] [feature-zkir-v3 #t]
+                        [skip-zk #t] [ts-runtime-profile 'released-0.21.0])
+(run-tests save-manifest
+  (test
+    "examples/adt/exports/map_field_field.compact"
+    (custom-check
+      (lambda (pass-name x)
+        (define (get object key)
+          (cdr (or (assoc key object)
+                   (error 'rust-map-unit-returns "missing IR field" key))))
+        (let* ([ir (read-json-file (format "~a/contract/compact-rust-ir.json" testdir))]
+               [circuits (vector->list (get ir "stateful_circuits"))]
+               [member (find (lambda (c) (string=? (get c "name") "member")) circuits)])
+          (and
+            (equal? (map (lambda (c) (get c "name")) circuits)
+                    '("reset_to_default" "insert" "insert_default" "is_empty"
+                      "member" "remove" "size" "lookup"))
+            (for-all
+              (lambda (name kind)
+                (let* ([c (find (lambda (c) (string=? (get c "name") name)) circuits)]
+                       [returned (get c "return_value")]
+                       [body (get returned "body")]
+                       [actions (get body "actions")])
+                  (and (equal? (get c "actions") '#())
+                       (equal? (get c "result") '(("kind" . "unit")))
+                       (string=? (get returned "kind") "effectful")
+                       (string=? (get body "kind") "sequence")
+                       (= (vector-length actions) 1)
+                       (string=? (get (vector-ref actions 0) "kind") kind)
+                       (string=? (get (vector-ref actions 0) "field") "c")
+                       (= (get (vector-ref actions 0) "index") 0)
+                       (equal? (get body "result")
+                         '(("kind" . "value") ("value" . (("kind" . "unit"))))))))
+              '("reset_to_default" "insert" "insert_default" "remove")
+              '("map_reset" "map_insert" "map_insert_default" "map_remove"))
+            (equal? (get member "parameters")
+              '#((("name" . "key") ("ty" . (("kind" . "field"))))))
+            (equal? (get member "actions") '#())
+            (equal? (get member "result") '(("kind" . "boolean")))
+            (let ([read (get member "return_value")])
+              (and (string=? (get read "kind") "map_member")
+                   (string=? (get read "field") "c")
+                   (= (get read "index") 0)
+                   (equal? (get read "key")
+                     '(("kind" . "parameter") ("name" . "key")))))))))
+    )
+)
+)

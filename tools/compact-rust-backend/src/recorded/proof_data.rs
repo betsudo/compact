@@ -26,6 +26,11 @@ use crate::{
 use quote::quote;
 use std::collections::{HashMap, HashSet};
 
+mod authenticated_cell;
+mod authenticated_cell_clear;
+mod authenticated_cell_set;
+mod map_member;
+
 /// A closed Field literal may be bound by the frontend before a Set mutation.
 /// Admit only that single typed binding and its exact use, not general lets,
 /// calls, coercions or expressions whose evaluation can have effects.
@@ -527,13 +532,14 @@ fn signature(circuit: &StatefulCircuit) -> bool {
 /// Select by typed semantics, never a fixture or exported circuit spelling.
 /// Boolean calls may reach the standard-library comparison/negation wrappers.
 /// Unit calls admit the closed-literal Set mutations or bounded Counter graph
-/// above. Maybe<Field> getters remain read-only. Unknown expressions, witness
-/// callbacks and other actions remain outside these optional slices.
+/// above, or the separately checked authenticated Cell-clear graph.
+/// Maybe<Field> getters remain read-only. Other witness/action shapes refuse.
 pub(crate) fn supported(
     circuit: &StatefulCircuit,
     circuits: &[StatefulCircuit],
     pure: &[PureCircuit],
     ledger_fields: &HashMap<&str, &LedgerField>,
+    witnesses: &[crate::ir::WitnessDeclaration],
 ) -> bool {
     fn visit(
         circuit: &StatefulCircuit,
@@ -596,6 +602,15 @@ pub(crate) fn supported(
         && (unit_set_mutations(circuit, ledger_fields)
             || unit_counter_program(circuit, ledger_fields)
             || maybe_field_getter(circuit, circuits, pure, ledger_fields)
+            || map_member::supported(circuit, ledger_fields)
+            || authenticated_cell_clear::supported(
+                circuit,
+                circuits,
+                pure,
+                ledger_fields,
+                witnesses,
+            )
+            || authenticated_cell_set::supported(circuit, circuits, pure, ledger_fields, witnesses)
             || (signature(circuit) && visit(circuit, circuits, &mut HashSet::new()) == Some(true)))
 }
 
@@ -607,6 +622,7 @@ pub(crate) struct Facade {
 pub(crate) fn render_method(
     circuit: &StatefulCircuit,
     occupied_names: &HashSet<String>,
+    uses_witness: bool,
 ) -> Result<Facade, RenderError> {
     let helper = format!("{}_proof_data", circuit.name);
     if occupied_names.contains(&semantic_identifier(&helper)?) {
@@ -636,6 +652,7 @@ pub(crate) fn render_method(
             quote!(self.#name(context, #argument)?),
         )
     };
+    let witness_bound = uses_witness.then(|| quote!(where W: super::TryWitnesses<Private>));
     let method = syn::parse_quote! {
         /// Capture standalone proof data from one actual recorded execution.
         /// Conversion requires explicit binding and communication randomness.
@@ -643,7 +660,8 @@ pub(crate) fn render_method(
             &self,
             context: runtime::context::CircuitContext<Private>,
             #parameter
-        ) -> Result<runtime::proof_data::RecordedProofData<Private, #output>, runtime::proof_data::ProofDataError> {
+        ) -> Result<runtime::proof_data::RecordedProofData<Private, #output>, runtime::proof_data::ProofDataError>
+        #witness_bound {
             const _: [(); 1] = [(); runtime::proof_data::API_VERSION as usize];
             let input = runtime::fab::AlignedValue::from(#input);
             let recorded = #invocation;
