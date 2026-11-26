@@ -7,9 +7,9 @@ Ledger 9.1.0.2 / transient-crypto 3.1.0 SDK source in this workspace. It does no
 implement a second cryptographic verifier.
 
 The backend also admits a zero-argument Boolean `is_empty_proof_data` facade.
-Its [host and emission gate](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-host-and-emission-gate-26-november-2026)
-passes separately. Native SDK/proof qualification and a portable-runner profile
-for that helper remain pending.
+Its [separate native/proof and staged TypeScript qualification](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-checked-proofs-and-staged-typescript-parity-26-november-2026)
+now passes with four fresh proofs and twenty independent SDK verification returns.
+A portable-runner profile for that helper remains pending.
 
 Use Rust 1.99.0, Python 3.11+, the pinned SDK sources already available to offline
 Cargo, and a self-contained installed normal Compact compiler with the helper flags. A raw

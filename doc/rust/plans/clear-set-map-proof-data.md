@@ -15,8 +15,9 @@ with a manufactured result. This returned-Unit repair is tracked in
 accepts only its declared
 Field key and Boolean result. Unsupported shapes continue to have no helper.
 The exported `lookup(Field) -> Field` helper and its public runner are qualified
-on their separately recorded source line below. The newer emptiness facade has
-passed the host/emission gate; its native SDK and proof qualification is pending.
+on their separately recorded source line below. The newer emptiness facade now has
+separate native, checked-proof, independent-verification and staged TypeScript
+qualifications below. Its portable-runner profile remains a separate gap.
 
 ## Map emptiness host and emission gate, 26 November 2026
 
@@ -44,12 +45,51 @@ This one-off generation explicitly selects that component. It does not establish
 a new self-contained portable compiler package or TypeScript runtime execution.
 
 The intact 1,364/1,500/876-byte original fixtures and ten original assertions are
-unchanged. This adds no globally new original-case execution. Actual native
-emptiness execution, zero-valued-entry behavior, replay/codec checks, SDK model
-metrics and fresh independent proof verification remain the next gates. The
-independent Unit/Boolean profile is source-only; its eighteen fields/six skips are
-structural predictions, with k and rows still unknown. No new portable-runner
-profile, SDK1 matrix, funded transaction or Linux qualification is claimed.
+unchanged. This adds no globally new original-case execution. The later
+native/model/proof/TypeScript gate below records the measured completion; the
+initial host snapshot alone does not transfer that evidence. Portable-runner,
+SDK1 matrix, funded transaction and Linux qualification remain separate.
+
+## Map emptiness checked proofs and staged TypeScript parity, 26 November 2026
+
+The newer source-bound qualification separates generation at `819f41294`, native
+capture at `f793412eb`, and producer/independent verifier at
+`586dddb8815d34b5545f524ce00a2ef1164594e5`. All original Compact fixtures and
+assertions remain intact. These are supplemental API cases, adding zero unique
+original-test execution credit.
+
+| Gate | Actual local arm64 result |
+| --- | --- |
+| Native capture | Empty, default-zero singleton, nonzero singleton and actual reset return true/false/false/true through native, recorded and helper routes. Whole state/context/gas/private91 and all six public operations agree; four official VM Verify replays pass. |
+| SDK model | Four genuine checks measure k6 and 41 rows excluding custom gates/lookups. The statement has 18 projected fields and six actual None skips. This check API has no returned-PI accessor. |
+| Checked producer | Four fresh, distinct 3,845-byte proofs compare complete SDK-returned public inputs/skips with the projection. Own k6 parameters derive from the authenticated official parent14; fresh subject/control keys use the same SRS. |
+| Independent verification | Twenty actual SDK returns: eight accepts (own/default14) and twelve refusals (changed binding, canonical-OUTER corrupt proof, valid initialized distinct same-k control VK). No producer PI/preimage/PK body or private-hash evaluation is used. |
+| Staged generated TypeScript | Strict TSC and four Vitest tests pass, with eight delegated genuine SDK checks and eight awaited queue flushes. Unit/Boolean/LE32 results, all six ordered operations/values and four query-only gas dimensions match native observations; seven data-mutation controls refuse. |
+
+SDK/refusal checks pass 38 tests across seven harnesses without ignores; strict
+all-target/all-feature Clippy passes. The first SDK compile attempt's new-test
+`Fr +=` error is retained; a one-line test-only supported-addition correction
+preserves the mutation and assertions. Cargo reports the local `proof-checks`
+tools as unoptimized; their SDK dependency artifacts retain their actual profiles.
+
+Signed joint qualification SHA256:
+`e39c3b0d158c7260d8ee191184fd100771df481a0f377d1b00785bb4f32d280d`.
+Separate reviews cover native/SDK model, actual TypeScript public parity and fresh
+proof/verification results. C authored verifier math from public IR before the
+producer and never reads private producer bodies. B later reviewed C's source;
+no blind-producer claim is made. C's producer-source guard checks Git identity,
+mode and size; Root separately attests all 9,892 physical source files before and
+after verification. The public sandbox contains no private PI, preimage or PK
+bodies. Retained signed tools, proofs/keys/parameters and all receipts survive
+cleanup of the completed Cargo caches and archived Node stage.
+
+This Rust SDK3.1/Ledger9.1.0.2 gate and staged TS runtime0.21/onchain4.0.1/ZKIR3.2.0
+gate do not establish the full released Rust SDK1 matrix or native Linux.
+Worker/network/independent heap facts remain unknown. No whole-ledger, complete
+cross-language PI/preimage/proof-byte equality, typed observed-call wrapper,
+new funded application/replay, EntryPoint or real two-contract transaction is
+qualified here. The portable `run.py --profile map-is-empty` path remains to be
+integrated and freshly exercised; this qualification uses bounded local operators.
 
 ## Executed Map member qualification, 26 November 2026
 
