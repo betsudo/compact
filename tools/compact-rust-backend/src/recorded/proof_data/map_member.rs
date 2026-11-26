@@ -16,7 +16,7 @@
 //! One root Map<Field, Field> membership read with its typed public Field key.
 //! Classification inspects a fixed shape; it never walks helper bodies or
 //! evaluates/reconstructs a key, ledger operation, witness or transcript.
-use crate::ir::{Expr, LedgerField, LedgerFieldKind, StateReturn, StatefulCircuit, Type};
+use crate::ir::{Expr, LedgerField, StateReturn, StatefulCircuit, Type};
 use std::collections::HashMap;
 
 pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &LedgerField>) -> bool {
@@ -36,21 +36,7 @@ pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &Ledge
         } => (field, index, key.as_ref()),
         _ => return false,
     };
-    let Some(declaration) = fields.get(field.as_str()) else {
-        return false;
-    };
-    // The renderer validates all paths globally. This optional family admits
-    // only the root Map slot, including its two equivalent path encodings.
-    declaration.id == *field
-        && declaration.index == *index
-        && *index < 16
-        && declaration.path.len() <= 1
-        && declaration.physical_path() == vec![*index]
-        && declaration.declaration
-            == (LedgerFieldKind::Map {
-                key: Type::Field,
-                value: Type::Field,
-            })
+    super::root_field_map_slot(field, *index, fields)
         && matches!(key, Expr::Parameter { name } if *name == circuit.parameters[0].name)
 }
 

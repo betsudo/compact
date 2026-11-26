@@ -155,7 +155,7 @@ fn assert_empty_capture(method: &syn::ImplItemFn, circuit: &str) {
 }
 
 #[test]
-fn intact_original_has_eight_recordings_and_exactly_three_opt_in_read_families() {
+fn intact_original_has_eight_recordings_and_exactly_four_opt_in_read_families() {
     let value = original();
     assert_eq!(value["stateful_circuits"].as_array().unwrap().len(), 8);
     let contract: Contract = serde_json::from_value(value).unwrap();
@@ -167,7 +167,7 @@ fn intact_original_has_eight_recordings_and_exactly_three_opt_in_read_families()
         assert!(row.recorded && row.observed_call, "{}", row.name);
         assert_eq!(
             row.standalone_proof_data.is_some(),
-            matches!(row.name.as_str(), "is_empty" | "member" | "lookup")
+            matches!(row.name.as_str(), "is_empty" | "member" | "lookup" | "size")
         );
         assert!(generated.iter().any(|m| m.sig.ident == row.name));
         assert!(

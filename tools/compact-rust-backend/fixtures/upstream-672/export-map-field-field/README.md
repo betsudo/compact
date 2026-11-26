@@ -53,3 +53,13 @@ facade calls the existing recorded method once. Nested or composed expressions,
 arguments, witnesses and preceding writes remain outside this family. Generator
 coverage is separate from future generated-API execution and SDK qualification;
 no prior member/Lookup proof receipt qualifies the new helper.
+
+The proposed opt-in source also admits direct `size() -> Uint<64>` on the same
+root `Map<Field, Field>`, including its exact expression-return encoding. The
+Unit-input facade retains `BoundedUint<18446744073709551615>` and captures the
+existing recorded call once. Arbitrary casts, composed expressions, arguments,
+witnesses and preceding writes are excluded. Source and generator tests do not
+yet qualify the new helper's generated API, SDK model, proofs or TS execution;
+no earlier member/lookup/emptiness qualification transfers. Original fixtures
+and their ten assertions remain byte-for-byte unchanged, with zero new original
+case credit claimed by this supplemental helper family.

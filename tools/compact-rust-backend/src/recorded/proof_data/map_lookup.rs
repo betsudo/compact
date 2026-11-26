@@ -16,7 +16,7 @@
 //! One root Map<Field, Field> lookup with its declared public Field key.
 //! The actual recorded call owns the value and any missing-cell refusal;
 //! admission neither reads the map nor reconstructs the read transcript.
-use crate::ir::{Expr, LedgerField, LedgerFieldKind, StateReturn, StatefulCircuit, Type};
+use crate::ir::{Expr, LedgerField, StateReturn, StatefulCircuit, Type};
 use std::collections::HashMap;
 
 pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &LedgerField>) -> bool {
@@ -36,19 +36,7 @@ pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &Ledge
         } => (field, index, key.as_ref()),
         _ => return false,
     };
-    let Some(declaration) = fields.get(field.as_str()) else {
-        return false;
-    };
-    declaration.id == *field
-        && declaration.index == *index
-        && *index < 16
-        && declaration.path.len() <= 1
-        && declaration.physical_path() == vec![*index]
-        && declaration.declaration
-            == (LedgerFieldKind::Map {
-                key: Type::Field,
-                value: Type::Field,
-            })
+    super::root_field_map_slot(field, *index, fields)
         && matches!(key, Expr::Parameter { name } if *name == circuit.parameters[0].name)
 }
 

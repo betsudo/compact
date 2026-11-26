@@ -16,7 +16,7 @@
 //! One root Map<Field, Field> emptiness read with no input or side effects.
 //! The facade reuses the actual recorded call; classification never evaluates
 //! a map query, helper, witness or expression graph.
-use crate::ir::{Expr, LedgerField, LedgerFieldKind, StateReturn, StatefulCircuit, Type};
+use crate::ir::{Expr, LedgerField, StateReturn, StatefulCircuit, Type};
 use std::collections::HashMap;
 
 pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &LedgerField>) -> bool {
@@ -34,19 +34,7 @@ pub(super) fn supported(circuit: &StatefulCircuit, fields: &HashMap<&str, &Ledge
         } => (field, index),
         _ => return false,
     };
-    let Some(declaration) = fields.get(field.as_str()) else {
-        return false;
-    };
-    declaration.id == *field
-        && declaration.index == *index
-        && *index < 16
-        && declaration.path.len() <= 1
-        && declaration.physical_path() == vec![*index]
-        && declaration.declaration
-            == (LedgerFieldKind::Map {
-                key: Type::Field,
-                value: Type::Field,
-            })
+    super::root_field_map_slot(field, *index, fields)
 }
 
 #[cfg(test)]
