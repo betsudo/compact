@@ -119,6 +119,8 @@ guards 9,923. The earlier emptiness proof compiler uses Rust `f7a92c06`.
 Original ten-assert native/TypeScript execution remains its earlier epoch;
 these supplemental four-case lanes add no original-case inventory credit.
 The released 0.36.0 interoperability target does not relabel local executables.
+Publication metadata advances to 0.31.223; no proof run is relabelled as a
+0.31.223 execution.
 
 Detached signatures, source manifests, raw results, original failures, proofs,
 keys and parameters are retained locally. Binaries reused after tests within
