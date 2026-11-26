@@ -61,10 +61,20 @@ fn project(
     public_out: &[Fr],
     header: StatementHeader,
 ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
-    let readonly_map = matches!(profile, Profile::MapMember | Profile::MapLookup);
+    let readonly_map = matches!(
+        profile,
+        Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty
+    );
     if profile == Profile::MapLookup {
         let original: Value = serde_json::from_str(include_str!("map_lookup.json"))?;
         ensure!(shape == &original, "exact admitted readonly Lookup profile");
+    }
+    if profile == Profile::MapIsEmpty {
+        let original: Value = serde_json::from_str(include_str!("map_is_empty.json"))?;
+        ensure!(
+            shape == &original,
+            "exact admitted readonly Map is_empty profile"
+        );
     }
     ensure!(
         shape["version"]["major"] == 3 && shape["do_communications_commitment"] == true,
@@ -82,6 +92,14 @@ fn project(
                 == output.len(),
         "complete typed IO arity"
     );
+    if profile == Profile::MapIsEmpty {
+        ensure!(
+            input.is_empty()
+                && output.len() == 1
+                && (output[0] == Fr::from(0u64) || output[0] == Fr::from(1u64)),
+            "readonly Map is_empty zero-input Boolean signature"
+        );
+    }
     let mut vars = BTreeMap::new();
     for (d, v) in declarations.iter().zip(input) {
         ensure!(d["type"] == "Scalar<BLS12-381>", "scalar input only");
@@ -193,6 +211,12 @@ fn project(
             "readonly Lookup full Field result from actual public read"
         );
     }
+    if profile == Profile::MapIsEmpty {
+        ensure!(
+            public_out == output,
+            "actual is_empty Boolean result is the complete public read"
+        );
+    }
     Ok((fields, skips))
 }
 pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
@@ -235,6 +259,7 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
         let name = match bundle.input.profile {
             Profile::MapMember => "member",
             Profile::MapLookup => "lookup",
+            Profile::MapIsEmpty => "is_empty",
             Profile::TinyClear => "clear",
             Profile::TinySet => "set",
         };
@@ -243,7 +268,7 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
             pre.private_transcript.is_empty()
                 == matches!(
                     bundle.input.profile,
-                    Profile::MapMember | Profile::MapLookup
+                    Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty
                 ),
             "actual no-witness/witness profile"
         );
@@ -427,6 +452,124 @@ mod lookup_tests {
         shapes.push(s);
         for s in shapes {
             assert!(projection(&s, &[key], &[result], &words, &[result]).is_err());
+        }
+    }
+}
+
+#[cfg(test)]
+mod is_empty_tests {
+    use super::*;
+    fn shape() -> Value {
+        serde_json::from_str(include_str!("map_is_empty.json")).unwrap()
+    }
+    // Literal operands from stopped fresh819f/nativef793 public streams.
+    // This is a projection unit input, not an invented VM execution or proof.
+    fn words(bit: Fr) -> Vec<Fr> {
+        let mut words = [
+            48u64, 80u64, 1u64, 1u64, 0u64, 4u64, 16u64, 1u64, 1u64, 8u64, 0u64, 2u64, 13u64, 1u64,
+            1u64,
+        ]
+        .into_iter()
+        .map(Fr::from)
+        .collect::<Vec<_>>();
+        words.push(bit);
+        words
+    }
+    fn projection(
+        shape: &Value,
+        input: &[Fr],
+        output: &[Fr],
+        words: &[Fr],
+        reads: &[Fr],
+    ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
+        project(
+            Profile::MapIsEmpty,
+            shape,
+            input,
+            output,
+            words,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        )
+    }
+    #[test]
+    fn native_true_false_streams_project_every_operand_with_zero_declared_inputs() {
+        for bit in [Fr::from(0u64), Fr::from(1u64)] {
+            let words = words(bit);
+            let (fields, skips) = projection(&shape(), &[], &[bit], &words, &[bit]).unwrap();
+            let mut expected = vec![Fr::from(17u64), Fr::from(31u64)];
+            expected.extend(&words);
+            assert_eq!(fields, expected);
+            let impacts = shape()["instructions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|x| x["op"] == "impact")
+                .count();
+            assert_eq!(skips, vec![None; impacts]);
+        }
+    }
+    #[test]
+    fn ghost_unit_input_nonboolean_output_and_read_return_mismatch_refuse() {
+        let bit = Fr::from(1u64);
+        let w = words(bit);
+        assert!(projection(&shape(), &[Fr::from(0u64)], &[bit], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[], &[], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[], &[bit, bit], &w, &[bit]).is_err());
+        let two = Fr::from(2u64);
+        assert!(projection(&shape(), &[], &[two], &words(two), &[two]).is_err());
+        assert!(projection(&shape(), &[], &[Fr::from(0u64)], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[], &[bit], &w, &[Fr::from(0u64)]).is_err());
+    }
+    #[test]
+    fn every_ordered_operand_and_public_read_is_consumed_without_padding() {
+        let bit = Fr::from(1u64);
+        let w = words(bit);
+        for i in 0..w.len() {
+            let mut changed = w.clone();
+            changed[i] += Fr::from(1u64);
+            assert!(projection(&shape(), &[], &[bit], &changed, &[bit]).is_err());
+            let mut missing = w.clone();
+            missing.remove(i);
+            assert!(projection(&shape(), &[], &[bit], &missing, &[bit]).is_err());
+        }
+        let mut reordered = w.clone();
+        reordered.swap(0, 1);
+        assert!(projection(&shape(), &[], &[bit], &reordered, &[bit]).is_err());
+        let mut extra = w.clone();
+        extra.push(Fr::from(0u64));
+        assert!(projection(&shape(), &[], &[bit], &extra, &[bit]).is_err());
+        assert!(projection(&shape(), &[], &[bit], &w, &[]).is_err());
+        assert!(projection(&shape(), &[], &[bit], &w, &[bit, bit]).is_err());
+    }
+    #[test]
+    fn complete_raw_profile_refuses_new_private_effects_ssa_guards_and_io() {
+        let bit = Fr::from(1u64);
+        let w = words(bit);
+        for (path, replacement) in [
+            ("/do_communications_commitment", json!(false)),
+            ("/version/minor", json!(1)),
+            (
+                "/inputs",
+                json!([{"name":"%ghost","type":"Scalar<BLS12-381>"}]),
+            ),
+            ("/outputs/0", json!("unadmitted")),
+            ("/instructions/0/op", json!("private_input")),
+            ("/instructions/0/inputs/0", json!("0x31")),
+            ("/instructions/2/guard", json!("0x00")),
+            ("/instructions/5/output", json!("%foreign")),
+            ("/instructions/6/inputs/3", json!("%foreign")),
+            ("/instructions/7/vals/0", json!("%foreign")),
+        ] {
+            let mut modified = shape();
+            *modified.pointer_mut(path).unwrap() = replacement;
+            assert!(
+                projection(&modified, &[], &[bit], &w, &[bit]).is_err(),
+                "{path}"
+            );
         }
     }
 }

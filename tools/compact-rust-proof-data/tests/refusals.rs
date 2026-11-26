@@ -156,3 +156,36 @@ fn relative_reader_refuses_symlink_and_content_drift() {
         .is_err()
     );
 }
+
+#[test]
+fn is_empty_loader_admits_only_unit_and_one_canonical_boolean_without_body_readers() {
+    let temp = Temp::new();
+    let path = temp.0.join("input.json");
+    let base = json!({"schema":"compact-rust-proof-data-input/v1","profile":"map-is-empty",
+        "sdk":{"ledger":input::LEDGER,"zk":input::ZK,"zkir":input::ZKIR,"gate":row("missing-gate")},
+        "raw_ir":row("missing-ir"),"parent":null,"binding_le":scalar(17),"randomness_le":scalar(29),
+        "generation":{"compiler_version":"test","source_revision":"test","files":[row("missing-generation")]},
+        "cases":[{"id":"empty","supplemental":true,"input":[],"output":[scalar(1)],
+        "preimage":row("missing-private"),"public_stream":row("missing-public")}]});
+    for bit in [0, 1] {
+        let mut accepted = base.clone();
+        accepted["cases"][0]["output"] = json!([scalar(bit)]);
+        fs::write(&path, serde_json::to_vec(&accepted).unwrap()).unwrap();
+        let bundle = Bundle::load(&path).unwrap();
+        assert_eq!(bundle.input.profile, input::Profile::MapIsEmpty);
+        assert!(bundle.authenticate_gate().is_err()); // No body existed before this explicit reader.
+    }
+    for (pointer, bad) in [
+        ("/cases/0/input", json!([scalar(0)])),
+        ("/cases/0/output", json!([])),
+        ("/cases/0/output", json!([scalar(0), scalar(1)])),
+        ("/cases/0/output", json!([scalar(2)])),
+        ("/cases/0/output", json!(["01"])),
+        ("/cases/0/output", json!(["f".repeat(64)])),
+    ] {
+        let mut refused = base.clone();
+        *refused.pointer_mut(pointer).unwrap() = bad;
+        fs::write(&path, serde_json::to_vec(&refused).unwrap()).unwrap();
+        assert!(Bundle::load(&path).is_err(), "{pointer}");
+    }
+}

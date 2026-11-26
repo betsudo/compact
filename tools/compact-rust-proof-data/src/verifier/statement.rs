@@ -28,6 +28,7 @@ pub fn profile_ir(profile: Profile) -> Result<Value> {
     Ok(serde_json::from_str(match profile {
         Profile::MapMember => include_str!("map_member.json"),
         Profile::MapLookup => include_str!("map_lookup.json"),
+        Profile::MapIsEmpty => include_str!("map_is_empty.json"),
         Profile::TinyClear => include_str!("tiny_clear.json"),
         Profile::TinySet => include_str!("tiny_set.json"),
     })?)
@@ -96,6 +97,12 @@ pub fn derive(
         Profile::MapLookup => ensure!(
             typed_in.len() == 1 && typed_out.len() == 1,
             "Field to Field typed lookup IO"
+        ),
+        Profile::MapIsEmpty => ensure!(
+            typed_in.is_empty()
+                && typed_out.len() == 1
+                && (typed_out[0] == Fr::from(0u64) || typed_out[0] == Fr::from(1u64)),
+            "Unit to Boolean typed is_empty IO"
         ),
         Profile::TinyClear => ensure!(typed_in.is_empty() && typed_out.is_empty(), "Unit clear IO"),
         Profile::TinySet => ensure!(
@@ -233,6 +240,13 @@ pub fn derive(
                 "actual Field lookup result"
             );
             (15, 4)
+        }
+        Profile::MapIsEmpty => {
+            ensure!(
+                public_out == typed_out && authority == 0,
+                "actual Boolean is_empty result"
+            );
+            (18, 6)
         }
         Profile::TinyClear => {
             ensure!(

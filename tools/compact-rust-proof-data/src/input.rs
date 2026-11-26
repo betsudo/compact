@@ -30,6 +30,7 @@ pub const PARENT_SHA: &str = "fc253016885ec830e97808c9ec920bb5cab5c21af590380a6c
 pub enum Profile {
     MapMember,
     MapLookup,
+    MapIsEmpty,
     TinyClear,
     TinySet,
 }
@@ -199,6 +200,17 @@ impl Bundle {
                     case.input.len() == 1 && case.output.len() == 1,
                     "Field Field lookup signature"
                 ),
+                Profile::MapIsEmpty => {
+                    ensure!(
+                        case.input.is_empty() && case.output.len() == 1,
+                        "Unit Boolean is_empty signature"
+                    );
+                    let bit = scalar(&case.output[0])?;
+                    ensure!(
+                        bit == Fr::from(0u64) || bit == Fr::from(1u64),
+                        "Boolean output"
+                    );
+                }
                 Profile::TinyClear => ensure!(
                     case.input.is_empty() && case.output.is_empty(),
                     "Unit clear IO"
