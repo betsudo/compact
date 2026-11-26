@@ -170,7 +170,7 @@ pub fn verify(
             key.verify(&own_verifier, &proof, pi.iter().copied())
         })?;
         verify_call(trace, &case.id, "default14-positive", true, || {
-            key.verify(&*PARAMS_VERIFIER, &proof, pi.iter().copied())
+            key.verify(&PARAMS_VERIFIER, &proof, pi.iter().copied())
         })?;
         let mut changed = pi.clone();
         changed[0] = changed[0] + Fr::from(1u64);
