@@ -61,7 +61,7 @@ fn fresh(
     let a = Rc::new(Audit::default());
     a.secret.set(secret);
     let w = Witness(a.clone());
-    let c = contract::Contract::new(w.clone());
+    let c = contract::Contract::from(w.clone());
     let mut cx =
         contract::initial_state(ConstructorContext::new(Private(0)), &w, Field::from(64u64))?
             .into_circuit_context(ContractAddress::default());
