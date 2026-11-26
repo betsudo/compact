@@ -48,6 +48,10 @@ fn constant(s: &str) -> Result<Fr> {
     let f = Fr::from(n);
     Ok(if negative { -f } else { f })
 }
+struct StatementHeader {
+    binding: Fr,
+    communication_commitment: Fr,
+}
 fn project(
     profile: Profile,
     shape: &Value,
@@ -55,8 +59,7 @@ fn project(
     output: &[Fr],
     public_in: &[Fr],
     public_out: &[Fr],
-    binding: Fr,
-    commit: Fr,
+    header: StatementHeader,
 ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
     ensure!(
         shape["version"]["major"] == 3 && shape["do_communications_commitment"] == true,
@@ -84,7 +87,7 @@ fn project(
         );
     }
     let (mut used_in, mut used_out, mut emitted) = (0, 0, 0);
-    let mut fields = vec![binding, commit];
+    let mut fields = vec![header.binding, header.communication_commitment];
     let mut skips = Vec::new();
     let mut hashes = BTreeSet::new();
     let mut projected = BTreeSet::new();
@@ -251,8 +254,10 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
             &output,
             &pre.public_transcript_inputs,
             &pre.public_transcript_outputs,
-            binding,
-            comm.0,
+            StatementHeader {
+                binding,
+                communication_commitment: comm.0,
+            },
         )?;
         let actual = pre.check(&ir)?;
         ensure!(
