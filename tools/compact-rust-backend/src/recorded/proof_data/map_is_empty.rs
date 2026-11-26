@@ -83,6 +83,8 @@ mod tests {
     fn direct_and_expression_reads_accept_only_equivalent_root_paths() {
         let mut value = shape();
         assert!(classified(value.clone()));
+        value["ledger_fields"][0]["path"] = json!([]);
+        assert!(classified(value.clone()));
         value["ledger_fields"][0]["path"] = json!([0]);
         let read = value["stateful_circuits"][0]["return_value"].take();
         value["stateful_circuits"][0]["return_value"] = json!({"kind":"expression","value":read});
@@ -90,6 +92,7 @@ mod tests {
         let mut value = shape();
         value["ledger_fields"][0]["id"] = json!("renamed");
         value["ledger_fields"][0]["index"] = json!(15);
+        value["ledger_fields"][0]["path"] = json!([15]);
         value["stateful_circuits"][0]["name"] = json!("vacant");
         value["stateful_circuits"][0]["return_value"]["field"] = json!("renamed");
         value["stateful_circuits"][0]["return_value"]["index"] = json!(15);
