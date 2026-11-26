@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.222, language 0.23.105, runtime 0.18.0]
+
+Unreleased exported Map read proof-data additions.
+
+### Added
+
+- Add opt-in root `Map<Field, Field>` Lookup, Boolean emptiness and `Uint<64>`
+  size capture helpers. Preserve all eight original exports, ordinary APIs,
+  witness-free handles without Clone bounds, API1 and ABI54.
+- Extend the portable checked producer and separately authored verifier with
+  exact readonly profiles, typed IO/range checks and full transcript binding.
+  Share the physical root-slot predicate across the four Map read families.
+- Retain the exact original negative Map fixture and its released/current
+  syntax refusal as a focused regression, tracked in #798.
+
+### Qualification scope
+
+- Local macOS arm64 backend checks pass 2,480 tests with seven existing ignores;
+  SDK/refusal checks pass 49 tests. Strict Clippy and 24 Python controls pass.
+- Public Lookup, emptiness and size retain separate executed source epochs.
+  Size at `e18ba099` completes all 18 phases: k6/35 rows, four fresh 3,845-byte
+  checked proofs and 20 independent SDK returns (eight accepts/twelve refusals).
+- Separate staged size TypeScript execution passes strict TSC/four Vitest cases,
+  ten real JS/WASM SDK checks and ten awaited flushes. Results, all four ordered
+  operations/values and query gas match native captures. Six metadata mutation
+  refusals are distinct from cryptographic refusal tests.
+- These runs used compiler 0.31.221 components, including Rust `3f45a947` and
+  retained Scheme `c247a972`; this release-label update does not relabel them.
+  The later public Set qualification at `fba76460` supersedes the pending status
+  in the earlier 0.31.221 snapshot below. Full SDK1/native Linux/original-suite
+  and held funded/EntryPoint/real two-contract gates remain open. No new unique
+  original-case credit is claimed; Ledger 8, Forge and all evidence remain.
+
 ## [Toolchain 0.31.221, language 0.23.105, runtime 0.18.0]
 
 Unreleased authenticated Cell and Map standalone proof-data additions.
