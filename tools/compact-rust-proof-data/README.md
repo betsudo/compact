@@ -10,8 +10,8 @@ The backend also admits a zero-argument Boolean `is_empty_proof_data` facade.
 Its [separate native/proof and staged TypeScript qualification](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-checked-proofs-and-staged-typescript-parity-26-november-2026)
 now passes with four fresh proofs and twenty independent SDK verification returns.
 The public runner now accepts `--case map-is-empty` and reuses that capture adapter.
-This newly integrated public CLI path is source-only and has not yet been executed;
-the separate qualification above does not qualify it.
+A fresh default-lane public CLI run now passes all 18 phases; its source-bound
+qualification is recorded below, separately from the staged TypeScript run.
 
 Use Rust 1.99.0, Python 3.11+, the pinned SDK sources already available to offline
 Cargo, and a self-contained installed normal Compact compiler with the helper flags. A raw
@@ -268,3 +268,26 @@ Lookup's independent stopped audit passed the scoped checks above. Released Comp
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.
+
+## Executed public Map emptiness runner, 26 November 2026
+
+Signed harness `234d16bfb3cc00db243dd0582829d10c334a5808` completes all 18
+public phases in 361.455 seconds on macOS arm64. The default k<=8 lane measures
+k6/41 rows and produces four new, distinct 3,845-byte checked proofs, disjoint
+from the earlier bounded run. Complete returned PI/skips compare at 18 fields
+and six None skips per case. The separate verifier makes 20 actual SDK calls:
+eight accepts and twelve expected refusals.
+
+The installed normal compiler uses retained Rust819f and Schemec247 components,
+with the existing Nix Chez dependency; neither is relabelled as harness234d.
+All 773 package files match before/after. A supplemental capture-SDK source
+postguard also matches its initial gate; this is outside the 18 runner phases.
+Inherited non-root patch warnings remain in three capture Cargo phases.
+
+Signed qualification SHA256:
+`a597cc1eeac72bdb7bba218821386a156276a99a9dfc3ded61082fb4c0c100a6`.
+Independent stopped-run review passes. Exact executed SDK/capture images and all
+source, capture, model, proof/key/parameter and raw evidence are retained; the
+completed Cargo target is removed. This fresh public run emits TypeScript but
+does not rerun Node. Original-case counts, SDK1 matrix, off-Nix, native Linux,
+EntryPoint/funded/transaction/two-contract gates remain separate.

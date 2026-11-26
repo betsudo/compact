@@ -17,8 +17,8 @@ Field key and Boolean result. Unsupported shapes continue to have no helper.
 The exported `lookup(Field) -> Field` helper and its public runner are qualified
 on their separately recorded source line below. The newer emptiness facade now has
 separate native, checked-proof, independent-verification and staged TypeScript
-qualifications below. Its public `--case map-is-empty` routing is now integrated
-in source; the full public CLI path remains unrun and requires fresh qualification.
+qualifications below. Its public `--case map-is-empty` path now has a separate
+fresh 18-phase regular-lane qualification.
 
 ## Map emptiness host and emission gate, 26 November 2026
 
@@ -89,10 +89,19 @@ gate do not establish the full released Rust SDK1 matrix or native Linux.
 Worker/network/independent heap facts remain unknown. No whole-ledger, complete
 cross-language PI/preimage/proof-byte equality, typed observed-call wrapper,
 new funded application/replay, EntryPoint or real two-contract transaction is
-qualified here. The portable `run.py --case map-is-empty` path is now integrated
-using the same capture adapter and unchanged default8 policy, but remains unrun.
-The qualification above uses bounded local operators; it does not transfer to a
-future fresh public-runner emission, build, capture, proof or verification.
+qualified here. The bounded operators above retain their original source scope.
+The portable `run.py --case map-is-empty` path subsequently passes a fresh run at
+`234d16bfb3cc00db243dd0582829d10c334a5808`: all 18 phases, four new 3,845-byte
+checked proofs, k6/41 rows, 18 fields/six skips and twenty independent SDK calls
+(eight accepts/twelve refusals). The installed compiler retains Rust819f/Schemec247
+component identities and Nix dependency. All 773 compiler files match before/after;
+a separate capture-source postguard passes outside the 18 phases. Actual review
+passes and the completed Cargo cache is removed with all evidence retained.
+Public qualification SHA256:
+`a597cc1eeac72bdb7bba218821386a156276a99a9dfc3ded61082fb4c0c100a6`.
+No TypeScript runtime, released SDK1 matrix, Linux or chain qualification is
+transferred from this public run. The next bounded API is Map.size Unit→Uint64,
+whose circuit dimensions remain unmeasured.
 
 ## Executed Map member qualification, 26 November 2026
 

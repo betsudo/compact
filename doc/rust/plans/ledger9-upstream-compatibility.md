@@ -5,8 +5,9 @@
 The [Clear/Set/Map qualification](clear-set-map-proof-data.md#map-emptiness-host-and-emission-gate-26-november-2026)
 now records the optional zero-argument Boolean Map emptiness facade, full backend
 regression, fresh dual-target emission, four fresh independently verified proofs
-and staged TypeScript parity. Its portable-runner integration and the broader
-SDK1/Linux/transaction gates remain open. The dated
+and staged TypeScript parity. A fresh public emptiness runner now passes all
+18 phases in the default lane. The broader SDK1/Linux/transaction gates remain
+open; Map.size is the next bounded generated-API gap. The dated
 snapshots below retain their original source and coverage scope.
 
 ## Current standalone proof-data update, 2026-11-26
