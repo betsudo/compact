@@ -32,8 +32,10 @@ Unreleased authenticated Cell and Map standalone proof-data additions.
   15 separate-process SDK verification outcomes, including six acceptances and
   nine refusals. This retained execution is not transferred to later compiler
   labels; the verifier shares SDK cryptography and admits captured before-state.
-- Public Tiny Clear/Set proofs and an actual default-budget refusal remain
-  pending. Released Compact0.36.0/Ledger9.1.0.1 interoperability, native Linux
+- At source `c247a972`, public Clear passes two fresh checked proofs and ten
+  SDK outcomes in the explicit13 lane; default8 genuinely refuses measured k13
+  before parameter copying. These retain their executed-source identities.
+  Public Tiny Set proofs remain pending. Released Compact0.36.0/Ledger9.1.0.1 interoperability, native Linux
   and applicable funded chain/application gates remain open. Generated
   EntryPoint invocation and real two-contract qualification remain held.
 

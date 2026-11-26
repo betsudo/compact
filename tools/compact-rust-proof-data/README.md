@@ -113,10 +113,29 @@ retained: native runtime dependencies require five exact legacy SDK tuples
 alongside the current SDK. Only capture mode admits those tuples; SDK-only
 pin, artifact, feature, lock and physical-source guards remain strict.
 
-This run qualifies the public Map path only. Public Tiny Clear/Set slow-lane
-proofs and a real default-budget refusal remain pending; the first Tiny
-attempt was interrupted before model execution. Earlier private Clear/Set
-receipts do not qualify these public paths. Native Linux remains unrun.
+## Executed public Tiny Clear lanes, 26 November 2026
+
+At signed source `c247a972610c0be0b0b5c139889cc5ae9f76f599`, using the
+fresh normal installed compiler 0.31.221, the default max8 lane completed real
+native capture and both SDK checks, measured k13/3,904 rows, then refused with
+`measured k exceeds explicit budget`. No parent copy, prove input, key/proof or
+verification output was created. This is an expected size refusal.
+
+The explicit max13 lane completed all 18 phases and created two fresh
+5,413-byte checked proofs: original zero witness and a labelled nonzero
+supplemental witness. Each statement has 55 fields and 15 None skips. All ten
+separate-process SDK calls returned as expected: four acceptances and six
+refusals. Independent stopped-result review SHA256 is
+`020d483440bbc40bfee3f7c60a397e3294ad3c86b8d44effdb6657beac8e9744`;
+large-run verifier report is
+`f155195ac7f19474848e1fc148f10fce1d39df3984b1b417b7ffcca1ed461d66`.
+The initial interrupted attempt and unavailable-constructor compile failure
+remain recorded; the corrected adapter uses the generated `From<W>` API.
+
+Map and Clear retain their separate executed source/artifact identities.
+Public Tiny Set proofs remain pending; private receipts do not qualify that
+public path. Shared SDK cryptography, admitted before-state and the other
+limitations above still apply. Native Linux remains unrun.
 
 Focused tests (run only after source review and dependency admission):
 
@@ -126,7 +145,7 @@ python3 -B tools/compact-rust-proof-data/tests/sdk_gate_test.py
 python3 -B tools/compact-rust-proof-data/tests/runner_test.py
 ```
 
-Execution scope is limited to the public Map run above. Released Compact 0.36.0
+Execution scope is limited to the public Map and Clear runs above. Released Compact 0.36.0
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.

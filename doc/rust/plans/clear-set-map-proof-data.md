@@ -68,10 +68,30 @@ Stopped run SHA256 is
 verifier report SHA256 is
 `44c9d9738e8e2971346a6d251944c86e744690f7b9f7c0f4ce7e6cb2048bbee8`.
 The runner preserves its first capture-gate failure and the subsequent finite
-capture-only legacy SDK tuple repair. Public Clear/Set k13 proof execution and
-a real default-k8 refusal remain pending; an interrupted Tiny attempt supplies
-no refusal credit. The shared-SDK, captured-before-state, SDK1, Linux and chain
-limitations above still apply.
+capture-only legacy SDK tuple repair. The first interrupted Tiny attempt supplies no refusal credit. A later
+source-bound public Clear qualification is recorded below. The shared-SDK,
+captured-before-state, SDK1, Linux and chain limitations still apply.
+
+## Fresh public Clear lanes, 26 November 2026
+
+At signed source `c247a972610c0be0b0b5c139889cc5ae9f76f599`, fresh installed
+compiler0.31.221 generated the intact Tiny fixture. The default8 lane completed
+native capture and both real SDK checks, measured k13/3,904 rows, and refused
+before copying the parent or creating prove input, keys, proofs or verification
+output. Its exact failure is `measured k exceeds explicit budget`.
+
+The explicit13 lane completed all 18 phases and produced two fresh 5,413-byte
+checked proofs. Original zero and labelled supplemental nonzero witness cases
+each reconstruct 55 fields and 15 None skips. All ten actual SDK calls return
+as expected: four acceptances and six refusals. Independent actual review is
+`020d483440bbc40bfee3f7c60a397e3294ad3c86b8d44effdb6657beac8e9744`;
+verifier report is
+`f155195ac7f19474848e1fc148f10fce1d39df3984b1b417b7ffcca1ed461d66`.
+The unavailable-constructor compile failure and earlier interrupted attempt
+remain preserved; the native adapter now uses the generated `From<W>` API.
+Public Set execution remains pending. Map and Clear keep their own executed
+source/artifact identities; these supplemental checks add no globally new
+original-case credit.
 
 ## Reproducible public harness and cost policy
 

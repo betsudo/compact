@@ -10,8 +10,10 @@ outcomes: six acceptances and nine refusals. This does not close the released
 SDK matrix, native Linux or applicable funded transaction/replay gates. The
 portable public Map runner now separately passes three fresh checked proofs
 and 15 SDK outcomes at signed `03efbac5`, with the retained scope boundaries.
-Public Clear/Set proof execution and a real default-size refusal remain pending;
-k<=8 remains automatic and measured k13 Clear/Set runs are explicit slow-lane work. The broad migration remains incomplete.
+Public Clear now separately passes two fresh checked proofs and ten SDK returns
+at signed `c247a972`; its default8 lane genuinely refuses measured k13 before
+parameter copying. Public Set remains pending. k<=8 stays automatic and k13
+runs require the explicit slow lane. The broad migration remains incomplete.
 
 ## Earlier current publication and qualification snapshot, 2026-11-20
 
