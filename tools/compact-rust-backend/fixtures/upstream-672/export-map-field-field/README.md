@@ -46,3 +46,10 @@ parenthesized assertion. Its positive compile does not execute those ten
 assertions. Supplemental generated-JS missing-key checks independently exercise
 runtime refusal; they do not execute this parser-rejected original or establish
 its annotated runtime result. No globally new original case is claimed.
+
+The opt-in source also admits the direct root `is_empty() -> Boolean` read,
+including its equivalent direct expression-return encoding. Its zero-input
+facade calls the existing recorded method once. Nested or composed expressions,
+arguments, witnesses and preceding writes remain outside this family. Generator
+coverage is separate from future generated-API execution and SDK qualification;
+no prior member/Lookup proof receipt qualifies the new helper.

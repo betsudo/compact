@@ -137,7 +137,7 @@ fn intact_eight_exports_keep_old_apis_and_only_map_reads_get_opt_in_helpers() {
         assert!(row.recorded && row.observed_call, "{}", row.name);
         assert_eq!(
             row.standalone_proof_data.is_some(),
-            matches!(row.name.as_str(), "member" | "lookup")
+            matches!(row.name.as_str(), "is_empty" | "member" | "lookup")
         );
         {
             let owner = "Contract";

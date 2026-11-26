@@ -110,7 +110,7 @@ fn assert_capture_signature_and_order(method: &syn::ImplItemFn, name: &str, key:
 }
 
 #[test]
-fn full_original_keeps_eight_apis_and_only_two_opt_in_map_read_families() {
+fn full_original_keeps_eight_apis_and_three_opt_in_map_read_families() {
     let value = original();
     assert_eq!(value["stateful_circuits"].as_array().unwrap().len(), 8);
     let contract: Contract = serde_json::from_value(value).unwrap();
@@ -122,7 +122,7 @@ fn full_original_keeps_eight_apis_and_only_two_opt_in_map_read_families() {
         assert!(row.recorded && row.observed_call, "{}", row.name);
         assert_eq!(
             row.standalone_proof_data.is_some(),
-            matches!(row.name.as_str(), "member" | "lookup")
+            matches!(row.name.as_str(), "is_empty" | "member" | "lookup")
         );
         assert!(methods.iter().any(|m| m.sig.ident == row.name));
         assert!(
