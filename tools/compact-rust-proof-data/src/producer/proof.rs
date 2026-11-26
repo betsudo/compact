@@ -41,7 +41,7 @@ fn vk(raw: &[u8], k: u8) -> Result<VerifierKey> {
     native.write(&mut again, SerdeFormat::Processed)?;
     ensure!(
         c.position() == b.len() as u64
-            && native.k() == u32::from(k)
+            && native.k() == k
             && again == b
             && codec::encode(&key)? == raw,
         "canonical initialized native/outer own-k VK"
@@ -50,11 +50,11 @@ fn vk(raw: &[u8], k: u8) -> Result<VerifierKey> {
 }
 pub async fn produce(bundle: &Bundle, out: &Path, p: Prepared, own: Own) -> Result<Produced> {
     let (pk, key) = p.ir.keygen(&own).await?;
-    ensure!(pk.init()?.k() == u32::from(p.k), "fresh PK own-k init");
+    ensure!(pk.init()?.k() == p.k, "fresh PK own-k init");
     let pk_bytes = codec::encode(&pk)?;
     let key_bytes = codec::encode(&key)?;
     let pk: ProverKey<IrSource> = codec::decode(&pk_bytes)?;
-    ensure!(pk.init()?.k() == u32::from(p.k), "canonical PK init");
+    ensure!(pk.init()?.k() == p.k, "canonical PK init");
     let original = vk(&key_bytes, p.k)?;
     let tagged_ir = codec::write_fresh(out, "original.tagged-ir", &p.tagged, 4 * 1024 * 1024)?;
     let own_params =
@@ -104,13 +104,10 @@ pub async fn produce(bundle: &Bundle, out: &Path, p: Prepared, own: Own) -> Resu
         "candidate NOT_ELIGIBLE: measured different k"
     );
     let (cpk, cvk) = ir.keygen(&own).await?;
-    ensure!(cpk.init()?.k() == u32::from(p.k), "fresh control PK init");
+    ensure!(cpk.init()?.k() == p.k, "fresh control PK init");
     let a = codec::encode(&cpk)?;
     let reload: ProverKey<IrSource> = codec::decode(&a)?;
-    ensure!(
-        reload.init()?.k() == u32::from(p.k),
-        "canonical control PK init"
-    );
+    ensure!(reload.init()?.k() == p.k, "canonical control PK init");
     let b = codec::encode(&cvk)?;
     let control = vk(&b, p.k)?;
     ensure!(

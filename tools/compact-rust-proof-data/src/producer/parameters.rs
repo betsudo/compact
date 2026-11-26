@@ -14,10 +14,7 @@
 // limitations under the License.
 
 use anyhow::{Context, Result, ensure};
-use compact_rust_proof_data::{
-    codec,
-    input::{Bundle, PARENT_SHA},
-};
+use compact_rust_proof_data::input::{Bundle, PARENT_SHA};
 use midnight_proofs::{
     poly::commitment::Params,
     utils::{SerdeFormat, helpers::ProcessedSerdeObject},
