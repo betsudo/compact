@@ -215,8 +215,9 @@ Six actual delegated SDK checks and seven awaited queue flushes complete. For
 all three positive cases, canonical Field keys/results, all four ordered public
 operations including every operand/value, and all four lookup-only gas deltas
 match the native capture. Cumulative setup cost is recorded separately; it is
-not compared with Rust's per-invocation cost. Checker results contain five None
-skips for setup and four for lookup, not whole Rust proof public-input vectors.
+not compared with Rust's per-invocation cost. Checker results contain five JavaScript
+`undefined` entries for setup and four for lookup; these are separate from the
+complete Rust proof public-input vectors.
 
 The failed lookup returns `CompactError: Error: expected a cell, received null`.
 An explicit observed-message classification relates it to native
