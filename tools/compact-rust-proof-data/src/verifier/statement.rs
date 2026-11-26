@@ -27,6 +27,7 @@ pub struct Statement {
 pub fn profile_ir(profile: Profile) -> Result<Value> {
     Ok(serde_json::from_str(match profile {
         Profile::MapMember => include_str!("map_member.json"),
+        Profile::MapLookup => include_str!("map_lookup.json"),
         Profile::TinyClear => include_str!("tiny_clear.json"),
         Profile::TinySet => include_str!("tiny_set.json"),
     })?)
@@ -91,6 +92,10 @@ pub fn derive(
                 && typed_out.len() == 1
                 && (typed_out[0] == Fr::from(0u64) || typed_out[0] == Fr::from(1u64)),
             "Field to Boolean typed IO"
+        ),
+        Profile::MapLookup => ensure!(
+            typed_in.len() == 1 && typed_out.len() == 1,
+            "Field to Field typed lookup IO"
         ),
         Profile::TinyClear => ensure!(typed_in.is_empty() && typed_out.is_empty(), "Unit clear IO"),
         Profile::TinySet => ensure!(
@@ -221,6 +226,13 @@ pub fn derive(
                 "actual Boolean result"
             );
             (17, 5)
+        }
+        Profile::MapLookup => {
+            ensure!(
+                public_out == typed_out && authority == 0,
+                "actual Field lookup result"
+            );
+            (15, 4)
         }
         Profile::TinyClear => {
             ensure!(

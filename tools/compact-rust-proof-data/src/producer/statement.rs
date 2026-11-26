@@ -61,6 +61,11 @@ fn project(
     public_out: &[Fr],
     header: StatementHeader,
 ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
+    let readonly_map = matches!(profile, Profile::MapMember | Profile::MapLookup);
+    if profile == Profile::MapLookup {
+        let original: Value = serde_json::from_str(include_str!("map_lookup.json"))?;
+        ensure!(shape == &original, "exact admitted readonly Lookup profile");
+    }
     ensure!(
         shape["version"]["major"] == 3 && shape["do_communications_commitment"] == true,
         "ZKIR3 communication profile"
@@ -140,10 +145,10 @@ fn project(
                 }
                 skips.push(None);
             }
-            "persistent_hash" if profile != Profile::MapMember => {
+            "persistent_hash" if !readonly_map => {
                 hashes.insert(op["output"].as_str().context("hash byte SSA")?.to_owned());
             }
-            "bytes32_into_low_high" if profile != Profile::MapMember => {
+            "bytes32_into_low_high" if !readonly_map => {
                 if hashes.contains(op["bytes"].as_str().context("byte SSA")?) {
                     let out = op["outputs"].as_array().context("two public hash fields")?;
                     ensure!(out.len() == 2, "Bytes32 scalar arity");
@@ -153,7 +158,7 @@ fn project(
                 }
             }
             "private_input" | "constrain_bits" | "test_eq" | "cond_select" | "assert"
-                if profile != Profile::MapMember => {}
+                if !readonly_map => {}
             "output" => {
                 for name in op["vals"].as_array().context("output values")? {
                     let v = vars
@@ -180,6 +185,12 @@ fn project(
                 && (output[0] == Fr::from(0u64) || output[0] == Fr::from(1u64))
                 && public_out == output,
             "readonly member Boolean read"
+        );
+    }
+    if profile == Profile::MapLookup {
+        ensure!(
+            input.len() == 1 && output.len() == 1 && public_out == output,
+            "readonly Lookup full Field result from actual public read"
         );
     }
     Ok((fields, skips))
@@ -223,12 +234,17 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
         );
         let name = match bundle.input.profile {
             Profile::MapMember => "member",
+            Profile::MapLookup => "lookup",
             Profile::TinyClear => "clear",
             Profile::TinySet => "set",
         };
         ensure!(pre.key_location.0 == name, "circuit identity");
         ensure!(
-            pre.private_transcript.is_empty() == (bundle.input.profile == Profile::MapMember),
+            pre.private_transcript.is_empty()
+                == matches!(
+                    bundle.input.profile,
+                    Profile::MapMember | Profile::MapLookup
+                ),
             "actual no-witness/witness profile"
         );
         let stream = bundle.stream(c)?;
@@ -283,4 +299,134 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
 }
 pub fn report(p: &Prepared) -> Value {
     json!({"k":p.k,"rowsExcludingCustomGatesAndLookups":p.rows,"cases":p.cases.iter().map(|c|json!({"id":c.id,"fields":c.fields.len(),"skips":c.skips,"SDKCheckPassed":true})).collect::<Vec<_>>(),"beforeStateIndependentlyRegenerated":false,"SDKPIAccessorUsed":false,"proofProduced":false})
+}
+
+#[cfg(test)]
+mod lookup_tests {
+    use super::*;
+    fn wide(bits: usize, tail: u64) -> Fr {
+        let mut n = Fr::from(1u64);
+        for _ in 0..bits {
+            n = n + n;
+        }
+        n + Fr::from(tail)
+    }
+    fn shape() -> Value {
+        serde_json::from_str(include_str!("map_lookup.json")).unwrap()
+    }
+    // Public unit operands from the admitted actual IR, not a forged VM trace.
+    fn operands(key: Fr, result: Fr) -> Vec<Fr> {
+        vec![
+            Fr::from(0x30u64),
+            Fr::from(0x50u64),
+            Fr::from(1u64),
+            Fr::from(1u64),
+            Fr::from(0u64),
+            Fr::from(0x50u64),
+            Fr::from(1u64),
+            -Fr::from(2u64),
+            key,
+            Fr::from(0x0cu64),
+            Fr::from(1u64),
+            -Fr::from(2u64),
+            result,
+        ]
+    }
+    fn projection(
+        shape: &Value,
+        key: &[Fr],
+        result: &[Fr],
+        operands: &[Fr],
+        reads: &[Fr],
+    ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
+        project(
+            Profile::MapLookup,
+            shape,
+            key,
+            result,
+            operands,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        )
+    }
+    #[test]
+    fn lookup_projects_zero_nonboolean_and_wide_field_outputs() {
+        for (key, result) in [
+            (Fr::from(1u64), Fr::from(0u64)),
+            (Fr::from(1u64), Fr::from(7u64)),
+            (wide(128, 1), wide(129, 7)),
+        ] {
+            let words = operands(key, result);
+            let (fields, skips) =
+                projection(&shape(), &[key], &[result], &words, &[result]).unwrap();
+            let mut expected = vec![Fr::from(17u64), Fr::from(31u64)];
+            expected.extend_from_slice(&words);
+            assert_eq!(fields, expected);
+            let expected = shape()["instructions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|op| op["op"] == "impact")
+                .map(|_| None)
+                .collect::<Vec<Option<usize>>>();
+            assert_eq!(skips, expected);
+        }
+    }
+    #[test]
+    fn lookup_refuses_operand_read_output_arity_and_unconsumed_data() {
+        let key = Fr::from(1u64);
+        let result = Fr::from(7u64);
+        let words = operands(key, result);
+        let mut wrong = words.clone();
+        wrong[8] = Fr::from(2u64);
+        assert!(projection(&shape(), &[key], &[result], &wrong, &[result]).is_err());
+        assert!(projection(&shape(), &[key], &[Fr::from(8u64)], &words, &[result]).is_err());
+        assert!(projection(&shape(), &[key], &[result], &words, &[]).is_err());
+        assert!(projection(&shape(), &[key], &[result], &words, &[result, result]).is_err());
+        assert!(
+            projection(
+                &shape(),
+                &[key],
+                &[result],
+                &words[..words.len() - 1],
+                &[result]
+            )
+            .is_err()
+        );
+        let mut extra = words.clone();
+        extra.push(Fr::from(0u64));
+        assert!(projection(&shape(), &[key], &[result], &extra, &[result]).is_err());
+        assert!(projection(&shape(), &[], &[result], &words, &[result]).is_err());
+        assert!(projection(&shape(), &[key], &[], &words, &[result]).is_err());
+    }
+    #[test]
+    fn lookup_refuses_private_hash_writes_guards_and_foreign_ssa_shapes() {
+        let key = Fr::from(1u64);
+        let result = Fr::from(7u64);
+        let words = operands(key, result);
+        let mut shapes = Vec::new();
+        for opcode in ["private_input", "persistent_hash", "bytes32_into_low_high"] {
+            let mut s = shape();
+            s["instructions"][3]["op"] = json!(opcode);
+            shapes.push(s);
+        }
+        let mut s = shape();
+        s["instructions"][2]["inputs"][0] = json!("0x70");
+        shapes.push(s);
+        let mut s = shape();
+        s["instructions"][0]["guard"] = json!("0x00");
+        shapes.push(s);
+        let mut s = shape();
+        s["instructions"][2]["inputs"][3] = json!("%foreign");
+        shapes.push(s);
+        let mut s = shape();
+        s["outputs"][0] = json!("Boolean");
+        shapes.push(s);
+        for s in shapes {
+            assert!(projection(&s, &[key], &[result], &words, &[result]).is_err());
+        }
+    }
 }

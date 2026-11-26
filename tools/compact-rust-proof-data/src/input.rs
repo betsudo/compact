@@ -29,6 +29,7 @@ pub const PARENT_SHA: &str = "fc253016885ec830e97808c9ec920bb5cab5c21af590380a6c
 #[serde(rename_all = "kebab-case")]
 pub enum Profile {
     MapMember,
+    MapLookup,
     TinyClear,
     TinySet,
 }
@@ -194,6 +195,10 @@ impl Bundle {
                     let b = scalar(&case.output[0])?;
                     ensure!(b == Fr::from(0u64) || b == Fr::from(1u64), "Boolean output");
                 }
+                Profile::MapLookup => ensure!(
+                    case.input.len() == 1 && case.output.len() == 1,
+                    "Field Field lookup signature"
+                ),
                 Profile::TinyClear => ensure!(
                     case.input.is_empty() && case.output.is_empty(),
                     "Unit clear IO"
