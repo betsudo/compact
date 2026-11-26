@@ -1,7 +1,7 @@
 # Portable recorded proof-data checks
 
 This package exercises the public recorded helper API through actual generated
-Map member, Tiny clear and Tiny set contracts, then runs a checked SDK producer
+Map member/Lookup, Tiny clear and Tiny set contracts, then runs a checked SDK producer
 and a separately implemented verifier in separate processes. It uses the pinned
 Ledger 9.1.0.2 / transient-crypto 3.1.0 SDK source in this workspace. It does not
 implement a second cryptographic verifier.
@@ -19,6 +19,8 @@ need their normal native linker; Linux execution has not been qualified here.
 ```sh
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case map-member --out /absolute/fresh-map-run
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
+  --case map-lookup --out /absolute/fresh-lookup-run
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case tiny-clear --max-k 13 --allow-large-k --out /absolute/fresh-clear-run
 ```
@@ -40,7 +42,7 @@ The normal CLI invocation preserves the intact pinned originals and includes
 editing. Separate native capture crates preserve each generated crate's
 `crate::ledger_slots` layout. No TypeScript execution is implied by emission.
 
-Map's three supplemental cases are present key 1, absent key 1, and present
+Map membership's three supplemental cases are present key 1, absent key 1, and present
 2^128+1. They compare native, ordinary recorded, and helper results, complete
 state, gas, effects and VM replay. Tiny preserves constructor value 64, the
 original zero Bytes32 witness, original refusal messages and a separately
@@ -132,10 +134,49 @@ large-run verifier report is
 The initial interrupted attempt and unavailable-constructor compile failure
 remain recorded; the corrected adapter uses the generated `From<W>` API.
 
-Map and Clear retain their separate executed source/artifact identities.
-Public Tiny Set proofs remain pending; private receipts do not qualify that
-public path. Shared SDK cryptography, admitted before-state and the other
-limitations above still apply. Native Linux remains unrun.
+Map, Clear and Set retain their separate executed source/artifact identities.
+Shared SDK cryptography, admitted before-state and the other limitations above
+still apply. Native Linux remains unrun.
+
+## Executed public Tiny Set explicit lane, 26 November 2026
+
+At signed source `fba76460ae0d62115fa8038cf4d79415348079f5`, the installed
+compiler0.31.221 explicit max13 lane completed all 18 phases. Both actual Set
+cases measured k13 / 3,887 rows and produced two fresh 5,413-byte checked proofs.
+The separate verifier reconstructed 45 fields and 12 None skips per case; all
+ten SDK calls returned as expected (four acceptances, six refusals).
+Independent stopped-result review is
+`8a2a0b8b6a6c13ed8114e30c5988d6447d8e4dd338d9fa08620e3ad4a6e8555c`;
+verifier report is
+`92cadbcc2db52d020bac3475d8efe066a0617c9e6e7117b4b70c44fa62b8e441`.
+This explicit Set run supplies no Set default-lane refusal credit. It retains
+its own source/artifact identity and the same shared-SDK/admitted-before-state,
+Linux/released-matrix/funded/chain limitations.
+
+## Map Lookup public-runner path: implemented, not executed
+
+`--case map-lookup` selects the unchanged eight-export Map fixture and the
+actual generated `lookup_proof_data(Field) -> RecordedProofData<Private,Field>`
+method. Use an installed compiler containing that helper; a compiler version
+string alone does not attest its Rust component. The public adapter compares
+native/ordinary-recorded/helper routes on key 1 -> 7, insertDefault key 1 -> 0 and
+key 2^128+1 -> Field 2^129+7. It preserves non-Clone private state 91, exact state/context/gas
+and complete recorded operations, official VM replay, canonical tagged codec
+and real public streams. Missing lookup keeps exact
+`Execution(ExpectedCell(null))`, with no successful helper carrier. It includes
+no original-test generated crate, observed-call/ledger-transaction feature, or
+rewritten original assertions. All three export cases are supplemental.
+
+Separate staged local work at capture source2bf2432 and SDK source8399fd69 has
+measured Lookup k7 / 60 rows, 15 projected fields / four None skips, and returned
+three fresh checked proofs with complete SDK PI/skips equality. These private
+staged results do not qualify this new installed-compiler public runner path;
+its generation/capture/gates/producer/separate verifier are UNRUN as a combined
+public execution. Independent private verification and its stopped audit retain
+their own status/receipts; no later result is implied here. This path must pass
+its own fresh full run before public-path qualification. The default measured
+k <= 8 policy remains; no automatic larger retry or carried Member metrics.
+
 
 Focused tests (run only after source review and dependency admission):
 
@@ -145,7 +186,7 @@ python3 -B tools/compact-rust-proof-data/tests/sdk_gate_test.py
 python3 -B tools/compact-rust-proof-data/tests/runner_test.py
 ```
 
-Execution scope is limited to the public Map and Clear runs above. Released Compact 0.36.0
+Execution scope is limited to the public Map member, Clear and Set runs above. Released Compact 0.36.0
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.

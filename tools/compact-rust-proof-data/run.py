@@ -100,7 +100,7 @@ def reap(p):
  return disposition['exit']
 
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--compiler',required=True);ap.add_argument('--case',choices=['map-member','tiny-clear','tiny-set'],default='map-member');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--max-k',type=int,default=8);ap.add_argument('--allow-large-k',action='store_true');ap.add_argument('--binding-le',default=(17).to_bytes(32,'little').hex());ap.add_argument('--randomness-le',default=(29).to_bytes(32,'little').hex());a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--compiler',required=True);ap.add_argument('--case',choices=['map-member','map-lookup','tiny-clear','tiny-set'],default='map-member');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--max-k',type=int,default=8);ap.add_argument('--allow-large-k',action='store_true');ap.add_argument('--binding-le',default=(17).to_bytes(32,'little').hex());ap.add_argument('--randomness-le',default=(29).to_bytes(32,'little').hex());a=ap.parse_args()
  assert 1<=a.max_k<=13 and(a.max_k<=8 or a.allow_large_k)
  assert REPO not in a.out.resolve().parents and a.out.resolve()!=REPO,'output must be outside repository sources'
  assert not a.out.exists();a.out.mkdir(mode=0o700);out=a.out.resolve();target=out/'target';target.mkdir(mode=0o700);bundle=out/'inputs';bundle.mkdir(mode=0o700)
@@ -172,7 +172,7 @@ def main():
   return stdout
  try:
   harness_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=REPO,text=True,timeout=15).strip()
-  source=REPO/'tools/compact-rust-backend/fixtures/upstream-672'/('export-map-field-field/original-map-field-field.compact'if a.case=='map-member'else'tiny-get/original-tiny.compact')
+  source=REPO/'tools/compact-rust-backend/fixtures/upstream-672'/('export-map-field-field/original-map-field-field.compact'if a.case in ['map-member','map-lookup']else'tiny-get/original-tiny.compact')
   for tree in [HERE,REPO/'runtime-rs/src',REPO/'runtime-rs-macros/src']:source_trees[tree]=source_tree(tree)
   for path in [REPO/'Cargo.toml',REPO/'Cargo.lock',REPO/'runtime-rs/Cargo.toml',REPO/'runtime-rs-macros/Cargo.toml',source]:source_files[path]=fingerprint(path)
   a.compiler=str(Path(a.compiler).resolve(strict=True));compiler_image=fingerprint(Path(a.compiler));source_files[Path(a.compiler)]=compiler_image
@@ -197,7 +197,8 @@ def main():
   source_trees[generated]=source_tree(generated)
   generated_manifest=generated/'contract/Cargo.toml';g=tomllib.loads(generated_manifest.read_text());assert g['lib']['path']=='lib.rs'
   capture=out/'capture-crate';capture.mkdir(mode=0o700)
-  shutil.copyfile(HERE/'capture/common.rs',capture/'common.rs');shutil.copyfile(HERE/'capture'/('map.rs'if a.case=='map-member'else'tiny.rs'),capture/'main.rs')
+  capture_source={'map-member':'map.rs','map-lookup':'map_lookup.rs','tiny-clear':'tiny.rs','tiny-set':'tiny.rs'}[a.case]
+  shutil.copyfile(HERE/'capture/common.rs',capture/'common.rs');shutil.copyfile(HERE/'capture'/capture_source,capture/'main.rs')
   q=lambda x:json.dumps(str(x))
   # This is an EXPLICIT temporary native consumer, not a silently rewritten SDK
   # tool manifest. Bind materialized Cargo bytes in the run receipt below.
@@ -206,7 +207,7 @@ def main():
   # Preserve exact normal-generator patch selectors, not another SDK graph.
   normal=generated_manifest.read_text();text+=normal[normal.index('[patch'):]
   text+='\n[profile.proof-checks]\ninherits="dev"\ndebug=0\n[profile.proof-checks.package."*"]\nopt-level=3\n'
-  assert (capture/'common.rs').read_bytes()==(HERE/'capture/common.rs').read_bytes()and (capture/'main.rs').read_bytes()==(HERE/'capture'/('map.rs'if a.case=='map-member'else'tiny.rs')).read_bytes(),'exact capture overlay'
+  assert (capture/'common.rs').read_bytes()==(HERE/'capture/common.rs').read_bytes()and (capture/'main.rs').read_bytes()==(HERE/'capture'/capture_source).read_bytes(),'exact capture overlay'
   (capture/'Cargo.toml').write_text(text);(capture/'Cargo.toml').chmod(0o600);shutil.copyfile(REPO/'Cargo.lock',capture/'Cargo.lock')
   run('capture-resolve',[cargo,'metadata','--offline','--format-version','1','--filter-platform',host,'--manifest-path',str(capture/'Cargo.toml')])
   metadata=run('capture-metadata',[cargo,'metadata','--locked','--offline','--format-version','1','--filter-platform',host,'--manifest-path',str(capture/'Cargo.toml')])
@@ -221,7 +222,7 @@ def main():
   run('capture-gate',[sys.executable,str(HERE/'sdk_gate.py'),str(metadata),str(capture/'Cargo.lock'),str(capture/'Cargo.toml'),str(build),str(out/'capture-sdk-gate.json'),'--kind','capture'])
   messages=[json.loads(x)for x in build.read_text().splitlines()if x.startswith('{')];cexe=[m['executable']for m in messages if m.get('reason')=='compiler-artifact'and m['target']['name']=='capture'and m.get('executable')];assert len(cexe)==1
   source_files[Path(cexe[0]).resolve()]=fingerprint(Path(cexe[0]).resolve())
-  captures=bundle/'capture';operation={'map-member':'member','tiny-clear':'clear','tiny-set':'set'}[a.case]
+  captures=bundle/'capture';operation={'map-member':'member','map-lookup':'lookup','tiny-clear':'clear','tiny-set':'set'}[a.case]
   run('capture',[cexe[0],operation,str(captures),a.binding_le,a.randomness_le],timeout=300)
   cases=json.loads((captures/'cases.json').read_text())
   for c in cases:

@@ -17,6 +17,7 @@
 """Source-only finite runner controls. No compiler, SDK or process launch."""
 import ast,copy,importlib.util,io,json,tempfile,types,unittest
 from pathlib import Path
+from unittest import mock
 spec=importlib.util.spec_from_file_location('runner',Path(__file__).parents[1]/'run.py');runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
 SOURCE=(Path(__file__).parents[1]/'run.py').read_text();MAIN=next(n for n in ast.parse(SOURCE).body if isinstance(n,ast.FunctionDef)and n.name=='main')
 class RunnerTests(unittest.TestCase):
@@ -73,4 +74,24 @@ class RunnerTests(unittest.TestCase):
   self.assertIn("harness_git_revision=harness_revision",SOURCE)
   self.assertIn('source_trees[generated]=source_tree(generated)',SOURCE)
   self.assertIn('source_trees[capture]=source_tree(capture)',SOURCE)
+ def test_map_lookup_uses_the_intact_map_fixture_and_default_capture_lane(self):
+  outer=next(n for n in MAIN.body if isinstance(n,ast.Try)and n.finalbody)
+  names=['source','capture_source','operation']
+  nodes=[n for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets)]
+  for case,module,operation in [('map-member','map.rs','member'),('map-lookup','map_lookup.rs','lookup'),('tiny-clear','tiny.rs','clear'),('tiny-set','tiny.rs','set')]:
+   ns=dict(a=types.SimpleNamespace(case=case),REPO=Path('/fixture/workspace'),bundle=Path('/fixture/bundle'))
+   exec(compile(ast.Module(body=nodes,type_ignores=[]),'actual-case-selection','exec'),ns)
+   self.assertEqual(ns['capture_source'],module);self.assertEqual(ns['operation'],operation)
+   self.assertEqual(ns['source'].name,'original-map-field-field.compact'if case.startswith('map-')else'original-tiny.compact')
+ def test_actual_parser_accepts_lookup_and_preserves_default_budget(self):
+  prefix=[]
+  for node in MAIN.body:
+   prefix.append(node)
+   if isinstance(node,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='a'for t in node.targets):break
+  for extra,expected in [(['--case','map-lookup'],'map-lookup'),([],'map-member')]:
+   with mock.patch.object(runner.sys,'argv',['run.py','--compiler','/virtual/compactc','--out','/virtual/fresh',*extra]):
+    ns=dict(argparse=runner.argparse,Path=Path)
+    exec(compile(ast.Module(body=prefix,type_ignores=[]),'actual-cli-prefix','exec'),ns)
+   self.assertEqual(ns['a'].case,expected);self.assertEqual(ns['a'].max_k,8)
+   self.assertFalse(ns['a'].allow_large_k);self.assertEqual(ns['a'].out,Path('/virtual/fresh'))
 if __name__=='__main__':unittest.main()

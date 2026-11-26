@@ -1,7 +1,7 @@
 # Clear, Set and Map standalone proof-data qualification
 
 The optional standalone proof-data API now covers the admitted Tiny Clear/Set
-families and a root `Map<Field, Field>` membership read. Default generated APIs
+families and root `Map<Field, Field>` membership/Field-valued Lookup reads. Default generated APIs
 and ABI54 remain unchanged. A helper captures the actual recorded call once;
 explicit caller binding and communication randomness turn that capture into a
 preimage. Capturing data does not itself generate or verify a proof.
@@ -13,7 +13,9 @@ with a manufactured result. This returned-Unit repair is tracked in
 [#795](https://github.com/betsudo/compact/issues/795). The membership helper
 accepts only its declared
 Field key and Boolean result. Unsupported shapes continue to have no helper.
-Original exported `lookup(Field) -> Field` is a separate remaining helper gap.
+The exported `lookup(Field) -> Field` helper is now implemented on the local
+Lookup source line. Its public-runner integration remains a separate unrun path
+until fresh qualification, as recorded below.
 
 ## Executed Map member qualification, 26 November 2026
 
@@ -89,9 +91,48 @@ verifier report is
 `f155195ac7f19474848e1fc148f10fce1d39df3984b1b417b7ffcca1ed461d66`.
 The unavailable-constructor compile failure and earlier interrupted attempt
 remain preserved; the native adapter now uses the generated `From<W>` API.
-Public Set execution remains pending. Map and Clear keep their own executed
-source/artifact identities; these supplemental checks add no globally new
-original-case credit.
+Public Set explicit-lane qualification is recorded below. Map, Clear and Set
+keep their own executed source/artifact identities; these supplemental checks
+add no globally new original-case credit.
+
+## Executed public Tiny Set explicit lane, 26 November 2026
+
+At signed source `fba76460ae0d62115fa8038cf4d79415348079f5`, the installed
+compiler0.31.221 explicit max13 lane completed all 18 phases. Both actual Set
+cases measured k13 / 3,887 rows and produced two fresh 5,413-byte checked proofs.
+The separate verifier reconstructed 45 fields and 12 None skips per case; all
+ten SDK calls returned as expected (four acceptances, six refusals).
+Independent stopped-result review is
+`8a2a0b8b6a6c13ed8114e30c5988d6447d8e4dd338d9fa08620e3ad4a6e8555c`;
+verifier report is
+`92cadbcc2db52d020bac3475d8efe066a0617c9e6e7117b4b70c44fa62b8e441`.
+This explicit Set run supplies no Set default-lane refusal credit. It retains
+its own source/artifact identity and the same shared-SDK/admitted-before-state,
+Linux/released-matrix/funded/chain limitations.
+
+## Map Lookup public-runner path: implemented, not executed
+
+`--case map-lookup` selects the unchanged eight-export Map fixture and the
+actual generated `lookup_proof_data(Field) -> RecordedProofData<Private,Field>`
+method. Use an installed compiler containing that helper; a compiler version
+string alone does not attest its Rust component. The public adapter compares
+native/ordinary-recorded/helper routes on key 1 -> 7, insertDefault key 1 -> 0 and
+key 2^128+1 -> Field 2^129+7. It preserves non-Clone private state 91, exact state/context/gas
+and complete recorded operations, official VM replay, canonical tagged codec
+and real public streams. Missing lookup keeps exact
+`Execution(ExpectedCell(null))`, with no successful helper carrier. It includes
+no original-test generated crate, observed-call/ledger-transaction feature, or
+rewritten original assertions. All three export cases are supplemental.
+
+Separate staged local work at capture source2bf2432 and SDK source8399fd69 has
+measured Lookup k7 / 60 rows, 15 projected fields / four None skips, and returned
+three fresh checked proofs with complete SDK PI/skips equality. These private
+staged results do not qualify this new installed-compiler public runner path;
+its generation/capture/gates/producer/separate verifier are UNRUN as a combined
+public execution. Independent private verification and its stopped audit retain
+their own status/receipts; no later result is implied here. This path must pass
+its own fresh full run before public-path qualification. The default measured
+k <= 8 policy remains; no automatic larger retry or carried Member metrics.
 
 ## Reproducible public harness and cost policy
 
