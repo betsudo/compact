@@ -113,8 +113,19 @@ def evaluate(metadata,lock,manifest,buildlog,kind,check_sources=True):
  for n in nodes.values():assert not(FORBIDDEN&set(n['features'])),'forbidden selected feature'
  for p in packages.values():assert p['name']not in {'midnight-ledger-v9','midnight-ledger-v8','midnight-transaction'}
  expected={'midnight-transient-crypto':('3.1.0',LEDGER),'midnight-zkir':('3.2.1',ZKIR),'midnight-proofs':('0.8.2',ZK),'midnight-curves':('0.3.1',ZK),'midnight-zk-stdlib':('2.4.0',ZK),'midnight-serialize':('1.2.1',LEDGER)}
+ # The native runtime retains a finite legacy graph alongside the proof SDK.
+ # SDK-only tools still admit only the current version of each core package.
+ registry='registry+https://github.com/rust-lang/crates.io-index'
+ legacy={'midnight-transient-crypto':('2.2.0','#'+LEDGER),'midnight-zkir':('2.2.0','#'+LEDGER),'midnight-proofs':('0.7.3',registry),'midnight-curves':('0.2.1',registry),'midnight-zk-stdlib':('1.3.0',registry)}
  for name,(version,pin)in expected.items():
-  matches=[p for p in packages.values()if p['name']==name];assert len(matches)==1 and matches[0]['version']==version and matches[0]['source'].endswith('#'+pin),'current SDK package/source pin'
+  matches=[p for p in packages.values()if p['name']==name]
+  current=[p for p in matches if p['version']==version and isinstance(p['source'],str)and p['source'].endswith('#'+pin)]
+  assert len(current)==1,'current SDK package/source pin'
+  for p in matches:
+   if p is current[0]:continue
+   assert kind=='capture'and name in legacy,'unexpected SDK sibling'
+   old_version,old_source=legacy[name]
+   assert p['version']==old_version and isinstance(p['source'],str)and(p['source'].endswith(old_source)if old_source.startswith('#')else p['source']==old_source),'unexpected legacy SDK tuple'
  tuples={(p['name'],p['version'],p.get('source')):p.get('checksum')for p in lock['package']}
  for p in packages.values():assert(p['name'],p['version'],p['source'])in tuples,'selected package absent from locked graph'
  messages=[json.loads(line)for line in buildlog.splitlines()if line.startswith('{')];assert any(m.get('reason')=='build-finished'and m['success']for m in messages)

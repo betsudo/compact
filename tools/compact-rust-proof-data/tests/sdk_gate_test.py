@@ -29,6 +29,16 @@ def example():
  lock=dict(package=[dict(name=p['name'],version=p['version'],source=p['source'])for p in packages])
  artifacts=[dict(reason='compiler-artifact',package_id=p['id'],features=[],target=dict(kind=['bin']if p['id']=='root'else['lib'],name=n,src_path='/repo/'+n+'.rs'),executable='/bin/'+n if p['id']=='root'else None)for p in packages[:-1]for n in (['produce','verify']if p['id']=='root'else[p['name']])]
  return metadata,lock,manifest,artifacts
+def capture_example():
+ m,l,p,a=example();m['packages'][0]['name']='portable-proof-data-capture';l['package'][0]['name']='portable-proof-data-capture'
+ target=dict(kind=['bin'],name='capture',src_path='/repo/capture.rs');m['packages'][0]['targets']=[target]
+ a=[dict(reason='compiler-artifact',package_id='root',features=[],target=target,executable='/bin/capture')]+[x for x in a if x['package_id']!='root']
+ legacy=[('midnight-transient-crypto','2.2.0','git+https://source#'+gate.LEDGER),('midnight-zkir','2.2.0','git+https://source#'+gate.LEDGER),('midnight-proofs','0.7.3','registry+https://github.com/rust-lang/crates.io-index'),('midnight-curves','0.2.1','registry+https://github.com/rust-lang/crates.io-index'),('midnight-zk-stdlib','1.3.0','registry+https://github.com/rust-lang/crates.io-index')]
+ for name,version,source in legacy:
+  ident='legacy-'+name;package=dict(id=ident,name=name,version=version,source=source,manifest_path='/legacy/'+name+'/Cargo.toml',targets=[])
+  m['packages'].append(package);m['resolve']['nodes'].append(dict(id=ident,features=[],deps=[]));m['resolve']['nodes'][0]['deps'].append(dict(pkg=ident));l['package'].append(dict(name=name,version=version,source=source))
+  a.append(dict(reason='compiler-artifact',package_id=ident,features=[],target=dict(kind=['lib'],name=name,src_path='/legacy/lib.rs'),executable=None))
+ return m,l,p,a
 class GateTests(unittest.TestCase):
  def check(self,data):
   m,l,p,a=data;return gate.evaluate(m,l,p,'\n'.join(map(json.dumps,[*a,dict(reason='build-finished',success=True)])),'sdk',False)
@@ -50,6 +60,18 @@ class GateTests(unittest.TestCase):
  def test_mixed_sdk_version_refuses(self):
   data=example();p=dict(data[0]['packages'][1],id='old-sdk',version='3.0.1');data[0]['packages'].append(p);data[0]['resolve']['nodes'].extend([dict(id='old-sdk',features=[],deps=[])]);data[0]['resolve']['nodes'][0]['deps'].append(dict(pkg='old-sdk'))
   with self.assertRaises(AssertionError):self.check(data)
+ def capture(self,data):
+  m,l,p,a=data;return gate.evaluate(m,l,p,'\n'.join(map(json.dumps,[*a,dict(reason='build-finished',success=True)])),'capture',False)
+ def test_capture_admits_only_the_pinned_legacy_siblings(self):
+  self.assertTrue(self.capture(capture_example())['passed'])
+ def test_capture_unexpected_legacy_version_or_source_refuses(self):
+  for field,value in [('version','0.0.1'),('source','registry+https://untrusted.example/index')]:
+   data=capture_example();data[0]['packages'][-1][field]=value
+   with self.assertRaisesRegex(AssertionError,'unexpected legacy SDK tuple'):self.capture(data)
+ def test_capture_still_requires_the_current_sdk_pin(self):
+  for field,value in [('version','0.0.1'),('source','git+https://source#wrong')]:
+   data=capture_example();data[0]['packages'][1][field]=value
+   with self.assertRaisesRegex(AssertionError,'current SDK package/source pin'):self.capture(data)
  def test_capture_accepts_the_intact_original_map_crate_only(self):
   m,l,p,a=example();m['packages'][0]['name']='portable-proof-data-capture';l['package'][0]['name']='portable-proof-data-capture'
   target=dict(kind=['bin'],name='capture',src_path='/repo/capture.rs');m['packages'][0]['targets']=[target]
