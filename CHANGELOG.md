@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.221, language 0.23.105, runtime 0.18.0]
+
+Unreleased authenticated Cell and Map standalone proof-data additions.
+
+### Added
+
+- Add opt-in recorded proof-data helpers for authenticated Tiny `clear()` and
+  `set(Field)`, with the actual witness bound on borrowed handles, and root
+  `Map<Field, Field>.member(Field)`. Preserve ordinary APIs, carrier layouts,
+  proof-data API1 and runtime ABI54; capture invokes the recorded call once.
+- Add a portable SDK-only checked producer, native generated-contract capture
+  adapters and a separately authored verifier. Bind relative inputs, exact
+  selected/artifact dependency graphs and authenticated physical SDK sources;
+  retain the regular measured-k8 lane and explicit k13 slow opt-in.
+
+### Fixed
+
+- Preserve terminal Unit returns for the intact original Map `resetToDefault`,
+  `insert`, `insertDefault` and `remove` exports without replacing their actions.
+
+### Qualification scope
+
+- At source `03efbac5`, the public Map runner completed all 18 phases on local
+  macOS arm64/current Ledger9.1.0.2 SDK sources: three fresh checked proofs and
+  15 separate-process SDK verification outcomes, including six acceptances and
+  nine refusals. This retained execution is not transferred to later compiler
+  labels; the verifier shares SDK cryptography and admits captured before-state.
+- Public Tiny Clear/Set proofs and an actual default-budget refusal remain
+  pending. Released Compact0.36.0/Ledger9.1.0.1 interoperability, native Linux
+  and applicable funded chain/application gates remain open. Generated
+  EntryPoint invocation and real two-contract qualification remain held.
+
 ## [Toolchain 0.31.220, language 0.23.105, runtime 0.18.0]
 
 Unreleased typed-time and standalone proof-data foundation. Current qualification pending.
