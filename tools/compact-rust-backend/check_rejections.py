@@ -751,6 +751,54 @@ def check_proof_capabilities(compactc: str, directory: Path) -> list[str]:
     return failures
 
 
+def check_original_map_negative(compactc: str, directory: Path) -> list[str]:
+    """Keep #798's exact original syntax refusal separate from runtime lookup."""
+    fixtures = ROOT / "tools/compact-rust-backend/fixtures/upstream-672/export-map-field-field"
+    negative = fixtures / "original-negative-map-field-field.compact"
+    positive = fixtures / "original-map-field-field-test.compact"
+    originals = {
+        negative: (876, "33a44f1eae73850cbcb9d5687f5dac59fa7937683828eb04379da6fb312d83c2"),
+        positive: (1500, "2dfdc33fd2e3c9e7460850ea64a2ef0fc7a1962cd6b149faac8d572b4917f541"),
+    }
+    def unchanged():
+        return all(path.is_file() and not path.is_symlink()
+                   and len(path.read_bytes()) == size
+                   and hashlib.sha256(path.read_bytes()).hexdigest() == digest
+                   for path, (size, digest) in originals.items())
+    if not unchanged():
+        return ["original Map negative/positive fixture bytes changed"]
+    failures = []
+    directory = directory / "upstream-map-negative"
+    directory.mkdir()
+    expected = (f'Exception: {negative.name} line 24 char 10:\n'
+                '  parse error: found "c" looking for "("\n')
+    for target, artifacts in (("ts", ("contract/index.js",)),
+                              ("rust", ("contract/lib.rs", "contract/Cargo.toml"))):
+        output = directory / ("positive-" + target)
+        accepted = subprocess.run(
+            [compactc, "--target", target, "--skip-zk", str(positive), str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        if accepted.returncode or not all((output / name).is_file() for name in artifacts):
+            failures.append(f"original Map positive/{target}: intact ten-assert fixture did not compile:\n"
+                            f"{accepted.stderr}")
+        output = directory / ("negative-" + target)
+        rejected = subprocess.run(
+            [compactc, "--target", target, "--skip-zk", str(negative), str(output)],
+            capture_output=True, text=True, check=False,
+        )
+        if rejected.returncode != 255 or rejected.stdout or rejected.stderr != expected:
+            failures.append(f"original Map negative/{target}: expected exact #798 syntax disposition:\n"
+                            f"{rejected.stdout}{rejected.stderr}")
+        if output.exists() or output.is_symlink() or any(directory.glob(f".{output.name}.compactc-stage-*")):
+            failures.append(f"original Map negative/{target}: syntax refusal published output/debris")
+    if not unchanged():
+        failures.append("original Map negative/positive fixture changed during compiler checks")
+    print("Original Map negative: pinned syntax disposition on TS/Rust; "
+          "annotated runtime refusal and ten positive assertions not executed")
+    return failures
+
+
 def main() -> int:
     compiler = os.environ.get("COMPACTC")
     compactc = shutil.which(compiler) if compiler else None
@@ -816,6 +864,7 @@ def main() -> int:
         failures.extend(check_output_publication(compactc, directory))
         failures.extend(check_output_serialization(compactc, directory))
         failures.extend(check_proof_capabilities(compactc, directory))
+        failures.extend(check_original_map_negative(compactc, directory))
         failures.extend(check_context_locations(compactc, directory))
         failures.extend(check_supported_field_to_uint(compactc, directory))
         failures.extend(check_supported_spreads(compactc, directory))
@@ -826,7 +875,7 @@ def main() -> int:
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     print(f"Checked {len(CASES)} source rejections, {len(CONTEXT_CASES)} source contexts, "
-          f"output publication, proof capabilities, shared typing, witness disclosure and contract dependencies; "
+          f"output publication, proof capabilities, shared typing, pinned Map syntax disposition, witness disclosure and contract dependencies; "
           f"{len(failures)} failed")
     return 1 if failures else 0
 

@@ -1,6 +1,18 @@
 # Ledger 9 adoption on the Rust AST line
 
-## Current standalone proof-data update, 2026-11-26
+## Current Map read facade qualification, 2026-11-26
+
+The [Clear/Set/Map qualification](clear-set-map-proof-data.md#map-size-native-proof-and-typescript-qualification-26-november-2026)
+records Lookup, emptiness and Uint64 size helpers at separate exact epochs.
+Size passes 2,480 backend tests,49 SDK/refusal tests, all 18 public phases, four fresh
+independently verified proofs at k6 / 35 rows and staged TypeScript parity with 10
+genuine checker calls/awaited flushes. Four Map families share one physical-slot
+predicate; default APIs, ABI54/API1 and originals stay intact. Compiler 0.31.222
+is a publication label; recorded 0.31.221 executions are not relabelled. Full
+SDK1/Linux/original-suite and funded/EntryPoint/real two-contract gates remain
+open. Dated snapshots below retain their scope.
+
+## Earlier standalone proof-data snapshot, 2026-11-26
 
 The [Clear/Set/Map qualification](clear-set-map-proof-data.md) preserves the
 intact original Map fixture, repairs terminal Unit Map returns and adds a typed
@@ -12,8 +24,10 @@ portable public Map runner now separately passes three fresh checked proofs
 and 15 SDK outcomes at signed `03efbac5`, with the retained scope boundaries.
 Public Clear now separately passes two fresh checked proofs and ten SDK returns
 at signed `c247a972`; its default8 lane genuinely refuses measured k13 before
-parameter copying. Public Set remains pending. k<=8 stays automatic and k13
-runs require the explicit slow lane. The broad migration remains incomplete.
+parameter copying. That snapshot preceded public Set explicit-13 qualification
+at `fba76460`; it supplies no Set default-lane refusal credit. k<=8 stays
+automatic and k13 runs require the explicit slow lane. The broad migration
+remains incomplete.
 
 ## Earlier current publication and qualification snapshot, 2026-11-20
 

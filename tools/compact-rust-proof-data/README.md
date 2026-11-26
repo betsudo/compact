@@ -1,10 +1,17 @@
 # Portable recorded proof-data checks
 
 This package exercises the public recorded helper API through actual generated
-Map member, Tiny clear and Tiny set contracts, then runs a checked SDK producer
+Map member/Lookup/emptiness, Tiny clear and Tiny set contracts, then runs a checked SDK producer
 and a separately implemented verifier in separate processes. It uses the pinned
 Ledger 9.1.0.2 / transient-crypto 3.1.0 SDK source in this workspace. It does not
 implement a second cryptographic verifier.
+
+The backend also admits a zero-argument Boolean `is_empty_proof_data` facade.
+Its [separate native/proof and staged TypeScript qualification](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-checked-proofs-and-staged-typescript-parity-26-november-2026)
+now passes with four fresh proofs and twenty independent SDK verification returns.
+The public runner now accepts `--case map-is-empty` and reuses that capture adapter.
+A fresh default-lane public CLI run now passes all 18 phases; its source-bound
+qualification is recorded below, separately from the staged TypeScript run.
 
 Use Rust 1.99.0, Python 3.11+, the pinned SDK sources already available to offline
 Cargo, and a self-contained installed normal Compact compiler with the helper flags. A raw
@@ -19,6 +26,10 @@ need their normal native linker; Linux execution has not been qualified here.
 ```sh
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case map-member --out /absolute/fresh-map-run
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
+  --case map-lookup --out /absolute/fresh-lookup-run
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
+  --case map-is-empty --out /absolute/fresh-emptiness-run
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case tiny-clear --max-k 13 --allow-large-k --out /absolute/fresh-clear-run
 ```
@@ -40,13 +51,20 @@ The normal CLI invocation preserves the intact pinned originals and includes
 editing. Separate native capture crates preserve each generated crate's
 `crate::ledger_slots` layout. No TypeScript execution is implied by emission.
 
-Map's three supplemental cases are present key 1, absent key 1, and present
+Map membership's three supplemental cases are present key 1, absent key 1, and present
 2^128+1. They compare native, ordinary recorded, and helper results, complete
 state, gas, effects and VM replay. Tiny preserves constructor value 64, the
 original zero Bytes32 witness, original refusal messages and a separately
 labelled nonzero witness. Set uses Field 5 after a proper clear. Every actual
 helper/witness is called once per fresh route. The adapters serialize official
 canonical tagged preimages and expose the real public-read stream separately.
+
+Map emptiness uses the same intact eight-export Map fixture. Its four supplemental
+states are empty -> true, default-zero singleton -> false, nonzero singleton ->
+false, and actual reset -> true. The `map-is-empty` input profile has no declared
+input scalars and exactly one canonical Boolean output scalar (LE32 zero or one).
+It uses the regular default8 lane; all model dimensions and proof sizes must be
+measured by a fresh run. The existing capture body is reused without duplication.
 
 `produce check INPUT OUT` checks every case and emits measured model dimensions.
 `produce prove INPUT OUT` additionally derives the measured own-k SRS from the
@@ -132,10 +150,110 @@ large-run verifier report is
 The initial interrupted attempt and unavailable-constructor compile failure
 remain recorded; the corrected adapter uses the generated `From<W>` API.
 
-Map and Clear retain their separate executed source/artifact identities.
-Public Tiny Set proofs remain pending; private receipts do not qualify that
-public path. Shared SDK cryptography, admitted before-state and the other
-limitations above still apply. Native Linux remains unrun.
+Map, Clear and Set retain their separate executed source/artifact identities.
+Shared SDK cryptography, admitted before-state and the other limitations above
+still apply. Native Linux remains unrun.
+
+## Executed public Tiny Set explicit lane, 26 November 2026
+
+At signed source `fba76460ae0d62115fa8038cf4d79415348079f5`, the installed
+compiler0.31.221 explicit max13 lane completed all 18 phases. Both actual Set
+cases measured k13 / 3,887 rows and produced two fresh 5,413-byte checked proofs.
+The separate verifier reconstructed 45 fields and 12 None skips per case; all
+ten SDK calls returned as expected (four acceptances, six refusals).
+Independent stopped-result review is
+`8a2a0b8b6a6c13ed8114e30c5988d6447d8e4dd338d9fa08620e3ad4a6e8555c`;
+verifier report is
+`92cadbcc2db52d020bac3475d8efe066a0617c9e6e7117b4b70c44fa62b8e441`.
+This explicit Set run supplies no Set default-lane refusal credit. It retains
+its own source/artifact identity and the same shared-SDK/admitted-before-state,
+Linux/released-matrix/funded/chain limitations.
+
+## Executed public Map Lookup runner, 26 November 2026
+
+`--case map-lookup` selects the unchanged eight-export Map fixture and the
+actual generated `lookup_proof_data(Field) -> RecordedProofData<Private,Field>`
+method. Use an installed compiler containing that helper; a compiler version
+string alone does not attest its Rust component. The public adapter compares
+native/ordinary-recorded/helper routes on key 1 -> 7, insertDefault key 1 -> 0 and
+key 2^128+1 -> Field 2^129+7. It preserves non-Clone private state 91, exact state/context/gas
+and complete recorded operations, official VM replay, canonical tagged codec
+and real public streams. Missing lookup keeps exact
+`Execution(ExpectedCell(null))`, with no successful helper carrier. It includes
+no original-test generated crate, observed-call/ledger-transaction feature, or
+rewritten original assertions. All three export cases are supplemental.
+
+A fresh public runner execution at signed source
+`8d339b5029a13922d240fa47eca18041a7f17f89` completed all 18 phases in
+355.155 seconds on local macOS arm64 with the current transient-crypto3.1.0 / Ledger9.1.0.2
+source graph. All three supplemental cases freshly measured k7 / 60 rows
+excluding custom gates and lookups and produced three new 3,845-byte checked
+proofs. Complete returned SDK public inputs/skips matched the producer's
+projection. The separately implemented verifier reconstructed 15 fields and
+four None skips per case; all 15 actual SDK calls returned as expected: six
+acceptances and nine refusals.
+
+This public run is distinct from the earlier staged native capture at2bf2432
+and SDK producer/proof work at8399fd69. It uses its own fresh generation,
+captures, keys and proofs; earlier private receipts supply no public execution
+credit. The three export cases add zero globally new original-case credit.
+Default measured k <= 8 and no automatic larger retry remain unchanged.
+
+Stopped public runner SHA256:
+`ae2419750f090110f9a598b29685ce45b1dd3df528fc48e515857dd7c0e599d2`.
+Separate-process verification report SHA256:
+`424d19064e1ac7bd568fccdb60d4a9003092429e88d0f0978200d7ad22ac61e9`.
+The independent stopped actual audit passed 399 checks with no producer
+PI/preimage/check/model/PK body access or SDK rerun (report SHA256
+`c37cee9782e45a2f43092730e2b6941b3f26f01fad072ed9159f5cd3334ee8eb`).
+A separate capture-graph postguard matched its initial gate; it is outside
+the 18 public runner phases.
+Shared SDK cryptography, admitted rather than regenerated before-state,
+unknown internal corruption rejection layer and unrun default-parameter
+negative controls retain their existing limits. This run does not execute
+TypeScript, observed/EntryPoint calls, funded/chain actions, native Linux or
+the released Compact0.36.0 / Ledger9.1.0.1 matrix. Public Map member, Clear and
+Set keep their separate executed source/artifact identities.
+
+
+
+## Staged generated TypeScript Lookup parity, 26 November 2026
+
+A separate local macOS arm64 qualification at documentation head
+`33c5f481809a79d409cdfade857af2705be4a0c1` executes the exact TypeScript
+artifacts generated by the public `8d339b50` run. This is a staged Node
+qualification, separate from the portable CLI's 18 phases. It uses Node 24.14.0,
+strict TypeScript6.0.2, Vitest4.1.11, released runtime0.21.0, onchain-runtime4.0.1
+and ZKIR3.2.0, with a freshly authenticated read-only dependency closure.
+
+All four tests pass: three supplemental Field cases plus a missing-key refusal.
+Six actual delegated SDK checks and seven awaited queue flushes complete. For
+all three positive cases, canonical Field keys/results, all four ordered public
+operations including every operand/value, and all four lookup-only gas deltas
+match the native capture. Cumulative setup cost is recorded separately; it is
+not compared with Rust's per-invocation cost. Checker results contain five JavaScript
+`undefined` entries for setup and four for lookup; these are separate from the
+complete Rust proof public-input vectors.
+
+The failed lookup returns `CompactError: Error: expected a cell, received null`.
+An explicit observed-message classification relates it to native
+`Execution(ExpectedCell(null))`; no error-byte or cryptographic-internals
+equality is inferred. It adds no checker or successful trace/result and preserves
+the public empty Map and original context gas.
+
+The first failed test run remains preserved. Its authored setup-result `[]`
+expectation was corrected only after a direct reference executed the unchanged
+fixture's APIs under official Compact0.36.0 and the current compiler: both return
+`undefined` for insert/default setup, then the expected Field7/0. Original
+Compact fixtures, assertions and refusal annotations were not rewritten.
+
+Signed qualification SHA256:
+`d762ba2f94f349fc78cd86b6e27e318cd6d399b903a6c47c64e0fdcabcc71150`.
+Independent public-data review78 checks and seven mutation controls supplement
+the disclosed Source-author stopped-data audit424 checks. The three cases add
+zero globally new original cases. No whole-ledger encoding, preimage, complete
+PI or proof-byte equality, new TypeScript proof, funded/replay/EntryPoint,
+native Linux or full released Rust SDK1 matrix qualification follows.
 
 Focused tests (run only after source review and dependency admission):
 
@@ -145,7 +263,81 @@ python3 -B tools/compact-rust-proof-data/tests/sdk_gate_test.py
 python3 -B tools/compact-rust-proof-data/tests/runner_test.py
 ```
 
-Execution scope is limited to the public Map and Clear runs above. Released Compact 0.36.0
+Execution observations cover public Map member, Map Lookup, Clear and Set above;
+Lookup's independent stopped audit passed the scoped checks above. Released Compact 0.36.0
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.
+
+## Executed public Map emptiness runner, 26 November 2026
+
+Signed harness `234d16bfb3cc00db243dd0582829d10c334a5808` completes all 18
+public phases in 361.455 seconds on macOS arm64. The default k<=8 lane measures
+k6/41 rows and produces four new, distinct 3,845-byte checked proofs, disjoint
+from the earlier bounded run. Complete returned PI/skips compare at 18 fields
+and six None skips per case. The separate verifier makes 20 actual SDK calls:
+eight accepts and twelve expected refusals.
+
+The installed normal compiler uses retained Rust819f and Schemec247 components,
+with the existing Nix Chez dependency; neither is relabelled as harness234d.
+All 773 package files match before/after. A supplemental capture-SDK source
+postguard also matches its initial gate; this is outside the 18 runner phases.
+Inherited non-root patch warnings remain in three capture Cargo phases.
+
+Signed qualification SHA256:
+`a597cc1eeac72bdb7bba218821386a156276a99a9dfc3ded61082fb4c0c100a6`.
+Independent stopped-run review passes. Exact executed SDK/capture images and all
+source, capture, model, proof/key/parameter and raw evidence are retained; the
+completed Cargo target is removed. This fresh public run emits TypeScript but
+does not rerun Node. Original-case counts, SDK1 matrix, off-Nix, native Linux,
+EntryPoint/funded/transaction/two-contract gates remain separate.
+
+## Executed public Map size runner and TypeScript parity, 26 November 2026
+
+```sh
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/compactc \
+  --case map-size --out /absolute/fresh-size-run
+```
+
+`map-size` selects the unchanged eight-export Map fixture, `capture/map_size.rs`,
+and the actual `size` operation/raw IR. Its input manifest uses the coordinated
+`unit-uint64` profile: Unit input and one canonical LE32 unsigned result bounded
+by u64::MAX. Cardinality two is valid; this profile is not Boolean. The four
+supplemental capture states are empty0, present default-zero singleton1, two
+entries including a wide key2, and reset0. They add zero original fixture credit.
+
+Signed harness `e18ba099550ba4bbca76d5e7e476d45e086f4507` passes all 18
+phases in 356.833 seconds on macOS arm64 at default max-k8. Genuine SDK checks
+measure k6/35 rows, 12 projected fields and four None skips. Four fresh distinct
+3,845-byte checked proofs compare complete SDK-returned public inputs/skips.
+The separately authored verifier returns 20 SDK outcomes: eight accepts
+(own/default14) and twelve refusals (binding, canonical-OUTER corruption and
+current initialized distinct same-k key). It reads no producer PI, preimage or
+prover-key bodies and shares SDK cryptography.
+
+Compiler 0.31.221 uses Rust `3f45a947` and separately retained Scheme `c247a972`;
+the 773-file package is authenticated before/after, with its Nix Chez dependency
+retained. Native capture `82d57fc3` separately passes all four states through
+three routes, full context/gas/state checks, four VM Verify replays, Uint64
+carrier boundaries and codec refusals. The actual maximum-cardinality Map is
+not constructed. All 49 SDK/refusal tests, strict Clippy and 24 Python controls
+pass; original Compact fixtures/assertions are unchanged.
+
+Separate staged released 0.21 TypeScript passes strict TSC/four Vitest cases,
+ten genuine JS/WASM SDK checks and ten awaited flushes. Unit/Uint64/LE32,
+all four ordered operations including values/alignment, and all four query-only
+gas dimensions match native observations. Six local metadata mutations refuse;
+these are not SDK cryptographic refusal controls. Actual Node is 24.14.0;
+worker/network/independent heap observations remain unknown.
+
+Signed joint qualification SHA256:
+`1204ad5b71557dac5bc2f5fa04f73e1713e1b6b566ce460c83c6187f994b53fa`.
+Independent stopped-run audits pass. All raw/source/generated/proof/key/parameter
+receipts and signed executed tools survive cleanup of the owned Cargo targets
+and archived Node stage. Supplemental capture-SDK/full-source/package postchecks
+are outside the 18 public phases. Detailed per-phase group receipts are not in
+public run.json; phase argv/PID/exit are retained. The runner still measures
+before parent readers and never automatically retries above k8. Full SDK1,
+native Linux, funded/EntryPoint/real two-contract and broad original-suite
+qualification remain open. The release label 0.31.222 does not relabel these
+executed compiler 0.31.221/component epochs.

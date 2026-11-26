@@ -29,6 +29,9 @@ pub const PARENT_SHA: &str = "fc253016885ec830e97808c9ec920bb5cab5c21af590380a6c
 #[serde(rename_all = "kebab-case")]
 pub enum Profile {
     MapMember,
+    MapLookup,
+    MapIsEmpty,
+    UnitUint64,
     TinyClear,
     TinySet,
 }
@@ -193,6 +196,33 @@ impl Bundle {
                     );
                     let b = scalar(&case.output[0])?;
                     ensure!(b == Fr::from(0u64) || b == Fr::from(1u64), "Boolean output");
+                }
+                Profile::MapLookup => ensure!(
+                    case.input.len() == 1 && case.output.len() == 1,
+                    "Field Field lookup signature"
+                ),
+                Profile::MapIsEmpty => {
+                    ensure!(
+                        case.input.is_empty() && case.output.len() == 1,
+                        "Unit Boolean is_empty signature"
+                    );
+                    let bit = scalar(&case.output[0])?;
+                    ensure!(
+                        bit == Fr::from(0u64) || bit == Fr::from(1u64),
+                        "Boolean output"
+                    );
+                }
+                Profile::UnitUint64 => {
+                    ensure!(
+                        case.input.is_empty() && case.output.len() == 1,
+                        "Unit Uint64 size signature"
+                    );
+                    let value = scalar(&case.output[0])?;
+                    let bytes = value.as_le_bytes();
+                    ensure!(
+                        bytes.len() == 32 && bytes[8..].iter().all(|b| *b == 0),
+                        "Uint64 output range"
+                    );
                 }
                 Profile::TinyClear => ensure!(
                     case.input.is_empty() && case.output.is_empty(),

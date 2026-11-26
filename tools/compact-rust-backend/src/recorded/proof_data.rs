@@ -29,7 +29,28 @@ use std::collections::{HashMap, HashSet};
 mod authenticated_cell;
 mod authenticated_cell_clear;
 mod authenticated_cell_set;
+mod map_is_empty;
+mod map_lookup;
 mod map_member;
+mod map_size;
+
+/// The optional Map families share only this physical root-slot boundary.
+/// Ordinary Map lowering and each family's operation/type checks stay separate.
+fn root_field_map_slot(field: &str, index: u8, fields: &HashMap<&str, &LedgerField>) -> bool {
+    let Some(declaration) = fields.get(field) else {
+        return false;
+    };
+    declaration.id == field
+        && declaration.index == index
+        && index < 16
+        && declaration.path.len() <= 1
+        && declaration.physical_path() == vec![index]
+        && declaration.declaration
+            == (LedgerFieldKind::Map {
+                key: Type::Field,
+                value: Type::Field,
+            })
+}
 
 /// A closed Field literal may be bound by the frontend before a Set mutation.
 /// Admit only that single typed binding and its exact use, not general lets,
@@ -602,7 +623,10 @@ pub(crate) fn supported(
         && (unit_set_mutations(circuit, ledger_fields)
             || unit_counter_program(circuit, ledger_fields)
             || maybe_field_getter(circuit, circuits, pure, ledger_fields)
+            || map_is_empty::supported(circuit, ledger_fields)
+            || map_size::supported(circuit, ledger_fields)
             || map_member::supported(circuit, ledger_fields)
+            || map_lookup::supported(circuit, ledger_fields)
             || authenticated_cell_clear::supported(
                 circuit,
                 circuits,
