@@ -24,3 +24,25 @@ The host tests and supplemental generated-API checks do not execute the original
 TypeScript host suite, establish proofs, or qualify Linux or the released SDK matrix.
 The original missing-lookup negative remains an expected-cell refusal; its separate
 bare-assert parser limitation is not normalized here.
+
+## Original negative fixture and syntax disposition (#798)
+
+`original-negative-map-field-field.compact` is the exact 876-byte file from
+`672bd0f226f47a7d036c5c074ce71fbe1af1925e:examples/adt/negative/map_field_field.compact`,
+SHA256 `33a44f1eae73850cbcb9d5687f5dac59fa7937683828eb04379da6fb312d83c2`.
+Its `//EXECUTION_FAIL` / `//CompactError: Error: expected a cell` annotations and
+bare `assert c.lookup(0) == 0 "What should happen here";` remain unmodified.
+
+Official Compact 0.36.0 and the local Rust-target frontend both actually exited255
+at line24,char10: `parse error: found "c" looking for "("`. The exact positive
+1,500-byte ten-assert fixture compiled with the release. This is the syntax versus
+annotation mismatch tracked by [#798](https://github.com/betsudo/compact/issues/798),
+under [#727](https://github.com/betsudo/compact/issues/727) and
+[#726](https://github.com/betsudo/compact/issues/726).
+
+The existing `check_rejections.py` maintains the current TS/Rust exact-byte syntax
+refusal and positive compilation controls, without rewriting the source into a
+parenthesized assertion. Its positive compile does not execute those ten
+assertions. Supplemental generated-JS missing-key checks independently exercise
+runtime refusal; they do not execute this parser-rejected original or establish
+its annotated runtime result. No globally new original case is claimed.
