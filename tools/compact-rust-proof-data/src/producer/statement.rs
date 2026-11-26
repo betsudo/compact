@@ -63,7 +63,7 @@ fn project(
 ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
     let readonly_map = matches!(
         profile,
-        Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty
+        Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty | Profile::UnitUint64
     );
     if profile == Profile::MapLookup {
         let original: Value = serde_json::from_str(include_str!("map_lookup.json"))?;
@@ -74,6 +74,13 @@ fn project(
         ensure!(
             shape == &original,
             "exact admitted readonly Map is_empty profile"
+        );
+    }
+    if profile == Profile::UnitUint64 {
+        let original: Value = serde_json::from_str(include_str!("map_size.json"))?;
+        ensure!(
+            shape == &original,
+            "exact admitted readonly Map size profile"
         );
     }
     ensure!(
@@ -98,6 +105,17 @@ fn project(
                 && output.len() == 1
                 && (output[0] == Fr::from(0u64) || output[0] == Fr::from(1u64)),
             "readonly Map is_empty zero-input Boolean signature"
+        );
+    }
+    if profile == Profile::UnitUint64 {
+        ensure!(
+            input.is_empty() && output.len() == 1,
+            "readonly Map size zero-input Uint64 signature"
+        );
+        let bytes = output[0].as_le_bytes();
+        ensure!(
+            bytes.len() == 32 && bytes[8..].iter().all(|b| *b == 0),
+            "readonly Map size Uint64 output range"
         );
     }
     let mut vars = BTreeMap::new();
@@ -217,6 +235,12 @@ fn project(
             "actual is_empty Boolean result is the complete public read"
         );
     }
+    if profile == Profile::UnitUint64 {
+        ensure!(
+            public_out == output,
+            "actual size Uint64 result is the complete public read"
+        );
+    }
     Ok((fields, skips))
 }
 pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
@@ -260,6 +284,7 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
             Profile::MapMember => "member",
             Profile::MapLookup => "lookup",
             Profile::MapIsEmpty => "is_empty",
+            Profile::UnitUint64 => "size",
             Profile::TinyClear => "clear",
             Profile::TinySet => "set",
         };
@@ -268,7 +293,10 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
             pre.private_transcript.is_empty()
                 == matches!(
                     bundle.input.profile,
-                    Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty
+                    Profile::MapMember
+                        | Profile::MapLookup
+                        | Profile::MapIsEmpty
+                        | Profile::UnitUint64
                 ),
             "actual no-witness/witness profile"
         );
@@ -571,5 +599,124 @@ mod is_empty_tests {
                 "{path}"
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod unit_uint64_tests {
+    use super::*;
+    fn shape() -> Value {
+        serde_json::from_str(include_str!("map_size.json")).unwrap()
+    }
+    // Synthetic projection inputs derived only from the exact public raw IR.
+    // No VM execution, captured cardinality, model or proof is claimed here.
+    fn words(value: Fr) -> Vec<Fr> {
+        let mut words = [48u64, 80, 1, 1, 0, 4, 13, 1, 8]
+            .into_iter()
+            .map(Fr::from)
+            .collect::<Vec<_>>();
+        words.push(value);
+        words
+    }
+    fn projection(
+        shape: &Value,
+        input: &[Fr],
+        output: &[Fr],
+        words: &[Fr],
+        reads: &[Fr],
+    ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
+        project(
+            Profile::UnitUint64,
+            shape,
+            input,
+            output,
+            words,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        )
+    }
+    #[test]
+    fn zero_one_two_and_uint64_max_project_every_public_operand() {
+        for n in [0, 1, 2, u64::MAX] {
+            let value = Fr::from(n);
+            let w = words(value);
+            let (fields, skips) = projection(&shape(), &[], &[value], &w, &[value]).unwrap();
+            let mut expected = vec![Fr::from(17u64), Fr::from(31u64)];
+            expected.extend(&w);
+            assert_eq!(fields, expected);
+            let impacts = shape()["instructions"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .filter(|op| op["op"] == "impact")
+                .count();
+            assert_eq!(skips, vec![None; impacts]);
+        }
+    }
+    #[test]
+    fn uint64_domain_zero_arity_and_actual_read_result_must_agree() {
+        let value = Fr::from(2u64); // Valid Uint64; deliberately not a Boolean.
+        let w = words(value);
+        assert!(projection(&shape(), &[Fr::from(0u64)], &[value], &w, &[value]).is_err());
+        assert!(projection(&shape(), &[], &[], &w, &[value]).is_err());
+        assert!(projection(&shape(), &[], &[value, value], &w, &[value]).is_err());
+        let overflow = Fr::from(u64::MAX) + Fr::from(1u64);
+        assert!(projection(&shape(), &[], &[overflow], &words(overflow), &[overflow]).is_err());
+        assert!(projection(&shape(), &[], &[value], &w, &[Fr::from(1u64)]).is_err());
+        assert!(projection(&shape(), &[], &[Fr::from(1u64)], &w, &[value]).is_err());
+    }
+    #[test]
+    fn every_ordered_operand_and_read_is_required_without_padding() {
+        let value = Fr::from(2u64);
+        let w = words(value);
+        for i in 0..w.len() {
+            let mut changed = w.clone();
+            changed[i] = changed[i] + Fr::from(1u64);
+            assert!(projection(&shape(), &[], &[value], &changed, &[value]).is_err());
+            let mut missing = w.clone();
+            missing.remove(i);
+            assert!(projection(&shape(), &[], &[value], &missing, &[value]).is_err());
+        }
+        let mut reordered = w.clone();
+        reordered.swap(0, 1);
+        assert!(projection(&shape(), &[], &[value], &reordered, &[value]).is_err());
+        let mut extra = w.clone();
+        extra.push(Fr::from(0u64));
+        assert!(projection(&shape(), &[], &[value], &extra, &[value]).is_err());
+        assert!(projection(&shape(), &[], &[value], &w, &[]).is_err());
+        assert!(projection(&shape(), &[], &[value], &w, &[value, value]).is_err());
+    }
+    #[test]
+    fn complete_raw_template_refuses_effects_ssa_guards_io_and_release_version() {
+        let value = Fr::from(2u64);
+        let w = words(value);
+        for (pointer, replacement) in [
+            ("/do_communications_commitment", json!(false)),
+            ("/version/minor", json!(1)),
+            (
+                "/inputs",
+                json!([{"name":"%ghost","type":"Scalar<BLS12-381>"}]),
+            ),
+            ("/outputs/0", json!("Boolean")),
+            ("/instructions/0/op", json!("private_input")),
+            ("/instructions/0/inputs/0", json!("0x31")),
+            ("/instructions/1/guard", json!("0x00")),
+            ("/instructions/3/output", json!("%foreign")),
+            ("/instructions/4/inputs/3", json!("%foreign")),
+            ("/instructions/5/vals/0", json!("%foreign")),
+        ] {
+            let mut changed = shape();
+            *changed.pointer_mut(pointer).unwrap() = replacement;
+            assert!(
+                projection(&changed, &[], &[value], &w, &[value]).is_err(),
+                "{pointer}"
+            );
+        }
+        let mut reordered = shape();
+        reordered["instructions"].as_array_mut().unwrap().swap(2, 3);
+        assert!(projection(&reordered, &[], &[value], &w, &[value]).is_err());
     }
 }

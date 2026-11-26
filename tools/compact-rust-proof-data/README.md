@@ -291,3 +291,26 @@ source, capture, model, proof/key/parameter and raw evidence are retained; the
 completed Cargo target is removed. This fresh public run emits TypeScript but
 does not rerun Node. Original-case counts, SDK1 matrix, off-Nix, native Linux,
 EntryPoint/funded/transaction/two-contract gates remain separate.
+
+## Map.size public routing — source only
+
+```sh
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/compactc \
+  --case map-size --out /absolute/fresh-size-run
+```
+
+`map-size` selects the unchanged eight-export Map fixture, `capture/map_size.rs`,
+and the actual `size` operation/raw IR. Its input manifest uses the coordinated
+`unit-uint64` profile: Unit input and one canonical LE32 unsigned result bounded
+by u64::MAX. Cardinality two is valid; this profile is not Boolean. The four
+supplemental capture states are empty0, present default-zero singleton1, two
+entries including a wide key2, and reset0. They add zero original fixture credit.
+
+This routing is SOURCE_ONLY and the public Map.size CLI path is UNRUN. Its new
+native adapter, jointly integrated producer/shared profile/independent verifier,
+actual SDK graph/build, model/check and fresh proof/verify need their own actual
+qualification. No prior member, lookup, emptiness or Tiny receipt qualifies it.
+The runner keeps default max-k8 and performs the measured check/policy before
+reading/copying the parent; no size k/rows/PI/skips/proof size is predicted here.
+Large-lane flags remain explicit. SDK1, native Linux and funded/held-transaction
+scope remain open.

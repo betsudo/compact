@@ -78,10 +78,13 @@ class RunnerTests(unittest.TestCase):
   outer=next(n for n in MAIN.body if isinstance(n,ast.Try)and n.finalbody)
   names=['source','capture_source','operation','original_ir']
   nodes=[n for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets)]
-  for case,module,operation in [('map-member','map.rs','member'),('map-lookup','map_lookup.rs','lookup'),('map-is-empty','map_is_empty.rs','is_empty'),('tiny-clear','tiny.rs','clear'),('tiny-set','tiny.rs','set')]:
+  manifest=next(n.value for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='manifest'for t in n.targets))
+  profile=next(k.value for k in manifest.keywords if k.arg=='profile')
+  for case,module,operation,expected_profile in [('map-member','map.rs','member','map-member'),('map-lookup','map_lookup.rs','lookup','map-lookup'),('map-is-empty','map_is_empty.rs','is_empty','map-is-empty'),('map-size','map_size.rs','size','unit-uint64'),('tiny-clear','tiny.rs','clear','tiny-clear'),('tiny-set','tiny.rs','set','tiny-set')]:
    ns=dict(a=types.SimpleNamespace(case=case),REPO=Path('/fixture/workspace'),bundle=Path('/fixture/bundle'),generated=Path('/fixture/generated'))
    exec(compile(ast.Module(body=nodes,type_ignores=[]),'actual-case-selection','exec'),ns)
    self.assertEqual(ns['capture_source'],module);self.assertEqual(ns['operation'],operation)
+   self.assertEqual(eval(compile(ast.Expression(body=copy.deepcopy(profile)),'actual-profile-routing','eval'),ns),expected_profile)
    self.assertEqual(ns['original_ir'],Path('/fixture/generated/zkir')/(operation+'.zkir'))
    self.assertEqual(ns['source'].name,'original-map-field-field.compact'if case.startswith('map-')else'original-tiny.compact')
  def test_actual_parser_accepts_all_cases_and_preserves_default_budget(self):
@@ -89,7 +92,7 @@ class RunnerTests(unittest.TestCase):
   for node in MAIN.body:
    prefix.append(node)
    if isinstance(node,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='a'for t in node.targets):break
-  for case in ['map-member','map-lookup','map-is-empty','tiny-clear','tiny-set',None]:
+  for case in ['map-member','map-lookup','map-is-empty','map-size','tiny-clear','tiny-set',None]:
    extra=['--case',case]if case else[];expected=case or'map-member'
    with mock.patch.object(runner.sys,'argv',['run.py','--compiler','/virtual/compactc','--out','/virtual/fresh',*extra]):
     ns=dict(argparse=runner.argparse,Path=Path)

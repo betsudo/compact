@@ -189,3 +189,39 @@ fn is_empty_loader_admits_only_unit_and_one_canonical_boolean_without_body_reade
         assert!(Bundle::load(&path).is_err(), "{pointer}");
     }
 }
+
+#[test]
+fn unit_uint64_loader_accepts_full_range_and_refuses_invalid_arity_encoding_and_overflow() {
+    use midnight_transient_crypto::curve::Fr;
+    let temp = Temp::new();
+    let path = temp.0.join("input.json");
+    let le = |n: u64| input::hex(&Fr::from(n));
+    let base = json!({"schema":"compact-rust-proof-data-input/v1","profile":"unit-uint64",
+        "sdk":{"ledger":input::LEDGER,"zk":input::ZK,"zkir":input::ZKIR,"gate":row("missing-gate")},
+        "raw_ir":row("missing-ir"),"parent":null,"binding_le":scalar(17),"randomness_le":scalar(29),
+        "generation":{"compiler_version":"test","source_revision":"test","files":[row("missing-generation")]},
+        "cases":[{"id":"size","supplemental":true,"input":[],"output":[le(2)],
+        "preimage":row("missing-private"),"public_stream":row("missing-public")}]});
+    for value in [0, 1, 2, u64::MAX] {
+        let mut accepted = base.clone();
+        accepted["cases"][0]["output"] = json!([le(value)]);
+        fs::write(&path, serde_json::to_vec(&accepted).unwrap()).unwrap();
+        let bundle = Bundle::load(&path).unwrap();
+        assert_eq!(bundle.input.profile, input::Profile::UnitUint64);
+        assert!(bundle.authenticate_gate().is_err()); // No body existed before the explicit reader.
+    }
+    let overflow = input::hex(&(Fr::from(u64::MAX) + Fr::from(1u64)));
+    for (pointer, bad) in [
+        ("/cases/0/input", json!([scalar(0)])),
+        ("/cases/0/output", json!([])),
+        ("/cases/0/output", json!([scalar(0), scalar(1)])),
+        ("/cases/0/output", json!([overflow])),
+        ("/cases/0/output", json!(["01"])),
+        ("/cases/0/output", json!(["f".repeat(64)])),
+    ] {
+        let mut refused = base.clone();
+        *refused.pointer_mut(pointer).unwrap() = bad;
+        fs::write(&path, serde_json::to_vec(&refused).unwrap()).unwrap();
+        assert!(Bundle::load(&path).is_err(), "{pointer}");
+    }
+}

@@ -31,6 +31,7 @@ pub enum Profile {
     MapMember,
     MapLookup,
     MapIsEmpty,
+    UnitUint64,
     TinyClear,
     TinySet,
 }
@@ -209,6 +210,18 @@ impl Bundle {
                     ensure!(
                         bit == Fr::from(0u64) || bit == Fr::from(1u64),
                         "Boolean output"
+                    );
+                }
+                Profile::UnitUint64 => {
+                    ensure!(
+                        case.input.is_empty() && case.output.len() == 1,
+                        "Unit Uint64 size signature"
+                    );
+                    let value = scalar(&case.output[0])?;
+                    let bytes = value.as_le_bytes();
+                    ensure!(
+                        bytes.len() == 32 && bytes[8..].iter().all(|b| *b == 0),
+                        "Uint64 output range"
                     );
                 }
                 Profile::TinyClear => ensure!(

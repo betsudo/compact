@@ -309,3 +309,17 @@ remaining original suites, native Linux and applicable funded default-strict
 application/replay gates remain open. Generated EntryPoint invocation and its
 real two-contract qualification remain held. Ledger8, archived Forge evidence
 and earlier failed attempts retain their original identities and scope.
+
+## Next bounded public Map.size source routing
+
+The separately reviewed root Map.size helper and proposed native Unit-to-Uint64
+adapter are prerequisites for a new `run.py --case map-size` lane. This routing
+proposal uses the exact original eight-export fixture, `capture/map_size.rs`,
+operation/raw IR `size`, and input profile `unit-uint64`. Existing defaults,
+max8 measured-before-parent policy, source/gate/lifecycle bounds and other cases
+are preserved. The new public lane remains SOURCE_ONLY/UNRUN; fresh generation,
+native capture, model metrics, checked proofs and independent verification must
+be recorded at their actual epochs before any public qualification claim. The
+0/1/2/reset supplements add no globally new original cases and do not relabel
+previous is_empty/member/lookup or Tiny actual results. Broad SDK1/nativeLinux/
+funded-transaction goals remain open.
