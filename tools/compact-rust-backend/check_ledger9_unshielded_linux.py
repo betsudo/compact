@@ -38,7 +38,7 @@ from verify_ledger9_unshielded_tokens_original import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_HEAD = "37ad02e9c2a6f285dce3a301225fb56edd9611e4"
+SOURCE_HEAD = "187b0aaa9aa813e4d01d0397d70712ad8c6a8ed3"
 UPSTREAM = "672bd0f226f47a7d036c5c074ce71fbe1af1925e"
 SOURCE = ROOT / "test-center/compact/unshielded-tokens.compact"
 TEST = ROOT / "tools/compact-rust-backend/fixtures/unshielded-tokens-original-672bd0f/original-unshielded-tokens.ts"
