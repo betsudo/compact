@@ -74,21 +74,23 @@ class RunnerTests(unittest.TestCase):
   self.assertIn("harness_git_revision=harness_revision",SOURCE)
   self.assertIn('source_trees[generated]=source_tree(generated)',SOURCE)
   self.assertIn('source_trees[capture]=source_tree(capture)',SOURCE)
- def test_map_lookup_uses_the_intact_map_fixture_and_default_capture_lane(self):
+ def test_all_case_selectors_use_the_correct_fixture_capture_and_operation(self):
   outer=next(n for n in MAIN.body if isinstance(n,ast.Try)and n.finalbody)
-  names=['source','capture_source','operation']
+  names=['source','capture_source','operation','original_ir']
   nodes=[n for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets)]
-  for case,module,operation in [('map-member','map.rs','member'),('map-lookup','map_lookup.rs','lookup'),('tiny-clear','tiny.rs','clear'),('tiny-set','tiny.rs','set')]:
-   ns=dict(a=types.SimpleNamespace(case=case),REPO=Path('/fixture/workspace'),bundle=Path('/fixture/bundle'))
+  for case,module,operation in [('map-member','map.rs','member'),('map-lookup','map_lookup.rs','lookup'),('map-is-empty','map_is_empty.rs','is_empty'),('tiny-clear','tiny.rs','clear'),('tiny-set','tiny.rs','set')]:
+   ns=dict(a=types.SimpleNamespace(case=case),REPO=Path('/fixture/workspace'),bundle=Path('/fixture/bundle'),generated=Path('/fixture/generated'))
    exec(compile(ast.Module(body=nodes,type_ignores=[]),'actual-case-selection','exec'),ns)
    self.assertEqual(ns['capture_source'],module);self.assertEqual(ns['operation'],operation)
+   self.assertEqual(ns['original_ir'],Path('/fixture/generated/zkir')/(operation+'.zkir'))
    self.assertEqual(ns['source'].name,'original-map-field-field.compact'if case.startswith('map-')else'original-tiny.compact')
- def test_actual_parser_accepts_lookup_and_preserves_default_budget(self):
+ def test_actual_parser_accepts_all_cases_and_preserves_default_budget(self):
   prefix=[]
   for node in MAIN.body:
    prefix.append(node)
    if isinstance(node,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='a'for t in node.targets):break
-  for extra,expected in [(['--case','map-lookup'],'map-lookup'),([],'map-member')]:
+  for case in ['map-member','map-lookup','map-is-empty','tiny-clear','tiny-set',None]:
+   extra=['--case',case]if case else[];expected=case or'map-member'
    with mock.patch.object(runner.sys,'argv',['run.py','--compiler','/virtual/compactc','--out','/virtual/fresh',*extra]):
     ns=dict(argparse=runner.argparse,Path=Path)
     exec(compile(ast.Module(body=prefix,type_ignores=[]),'actual-cli-prefix','exec'),ns)

@@ -1,7 +1,7 @@
 # Portable recorded proof-data checks
 
 This package exercises the public recorded helper API through actual generated
-Map member/Lookup, Tiny clear and Tiny set contracts, then runs a checked SDK producer
+Map member/Lookup/emptiness, Tiny clear and Tiny set contracts, then runs a checked SDK producer
 and a separately implemented verifier in separate processes. It uses the pinned
 Ledger 9.1.0.2 / transient-crypto 3.1.0 SDK source in this workspace. It does not
 implement a second cryptographic verifier.
@@ -9,7 +9,9 @@ implement a second cryptographic verifier.
 The backend also admits a zero-argument Boolean `is_empty_proof_data` facade.
 Its [separate native/proof and staged TypeScript qualification](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-checked-proofs-and-staged-typescript-parity-26-november-2026)
 now passes with four fresh proofs and twenty independent SDK verification returns.
-A portable-runner profile for that helper remains pending.
+The public runner now accepts `--case map-is-empty` and reuses that capture adapter.
+This newly integrated public CLI path is source-only and has not yet been executed;
+the separate qualification above does not qualify it.
 
 Use Rust 1.99.0, Python 3.11+, the pinned SDK sources already available to offline
 Cargo, and a self-contained installed normal Compact compiler with the helper flags. A raw
@@ -26,6 +28,8 @@ python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compac
   --case map-member --out /absolute/fresh-map-run
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case map-lookup --out /absolute/fresh-lookup-run
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
+  --case map-is-empty --out /absolute/fresh-emptiness-run
 python3 tools/compact-rust-proof-data/run.py --compiler /absolute/current/compactc \
   --case tiny-clear --max-k 13 --allow-large-k --out /absolute/fresh-clear-run
 ```
@@ -54,6 +58,13 @@ original zero Bytes32 witness, original refusal messages and a separately
 labelled nonzero witness. Set uses Field 5 after a proper clear. Every actual
 helper/witness is called once per fresh route. The adapters serialize official
 canonical tagged preimages and expose the real public-read stream separately.
+
+Map emptiness uses the same intact eight-export Map fixture. Its four supplemental
+states are empty -> true, default-zero singleton -> false, nonzero singleton ->
+false, and actual reset -> true. The `map-is-empty` input profile has no declared
+input scalars and exactly one canonical Boolean output scalar (LE32 zero or one).
+It uses the regular default8 lane; all model dimensions and proof sizes must be
+measured by a fresh run. The existing capture body is reused without duplication.
 
 `produce check INPUT OUT` checks every case and emits measured model dimensions.
 `produce prove INPUT OUT` additionally derives the measured own-k SRS from the
