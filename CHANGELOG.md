@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.220, language 0.23.105, runtime 0.18.0]
+
+Unreleased typed-time and standalone proof-data foundation. Current qualification pending.
+
+### Added
+
+- Lower released-profile block-time comparisons to typed native/recorded VM
+  operations, with linked domain API version checks and legacy-profile refusals.
+- Expose public recorded proof-data conversion and explicitly opt-in helpers for
+  bounded time, Unit Set, Maybe<Field> getter and closed Counter families. Keep
+  original fixture bytes and default Rust/capability APIs unchanged.
+
+### Changed
+
+- Advance the backend Cargo package to 0.3.0 for the new non-exhaustive `Expr`
+  variants. Runtime/macros stay 0.2.0, generated ABI54, IR20 and capability3.
+  SDK dependencies remain on the existing Ledger9.1.0.2 source graph.
+- Initialize both query addresses from a nonzero constructor/stored-contract
+  address while preserving wallet state and the circuit output plan.
+
+No donor proof, generated-consumer, Linux or chain qualification transfers to this source.
+
 ## [Toolchain 0.31.219, language 0.23.105, runtime 0.18.0]
 
 Unreleased Ledger 9 migration.

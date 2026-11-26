@@ -655,3 +655,70 @@ fn all_public_render_entries_preserve_resource_error_fields_and_display() {
         );
     }
 }
+
+#[test]
+fn block_time_bound_traversal_and_frames_accept_exact_caps_and_refuse_one_less() {
+    use crate::ir::{Expr, StateReturn, StatefulCircuit, Type};
+    let mut bound = Expr::UnsignedLiteral {
+        value: "1".into(),
+        max: u64::MAX.to_string(),
+    };
+    for _ in 0..12 {
+        bound = Expr::UnsignedCast {
+            max: u64::MAX.to_string(),
+            value: Box::new(bound),
+        };
+    }
+    for body in [
+        Expr::KernelBlockTimeLessThan {
+            bound: Box::new(bound.clone()),
+        },
+        Expr::KernelBlockTimeGreaterThan {
+            bound: Box::new(bound.clone()),
+        },
+    ] {
+        let mut contract: Contract = serde_json::from_value(
+            json!({"schema_version":20,"ledger_fields":[],"circuits":[],"stateful_circuits":[]}),
+        )
+        .unwrap();
+        contract.stateful_circuits.push(StatefulCircuit {
+            source: None,
+            name: "time".into(),
+            internal: false,
+            parameters: vec![],
+            actions: vec![],
+            result: Type::Boolean,
+            return_value: StateReturn::Expression { value: body },
+        });
+        let metrics = measure(&contract, Limits::CENSUS).unwrap();
+        assert!(metrics.syntax_depth > 12 && metrics.nodes > 12);
+        let frames = *metrics.render_path_units.iter().max().unwrap();
+        let owner = metrics
+            .render_path_units
+            .iter()
+            .position(|score| *score == frames)
+            .unwrap();
+        let mut limits = Limits::CENSUS;
+        limits.syntax_depth = metrics.syntax_depth;
+        limits.path_units = frames;
+        assert!(measure(&contract, limits).is_ok());
+        limits.syntax_depth -= 1;
+        assert_eq!(
+            measure(&contract, limits).unwrap_err().resource,
+            Kind::SyntaxDepth
+        );
+        limits.syntax_depth = metrics.syntax_depth;
+        limits.path_units -= 1;
+        let failure = measure(&contract, limits).unwrap_err();
+        assert_eq!(
+            failure.resource,
+            [
+                Kind::PurePath,
+                Kind::NativePath,
+                Kind::LegacyRecordedPath,
+                Kind::TypedRecordedPath
+            ][owner]
+        );
+        assert_eq!((failure.observed, failure.limit), (frames, frames - 1));
+    }
+}

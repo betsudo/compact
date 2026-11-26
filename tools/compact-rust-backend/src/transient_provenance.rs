@@ -1480,6 +1480,17 @@ impl<'c, 'r> CircuitAnalysis<'c, 'r> {
             | Expr::UnsignedLiteral { .. }
             | Expr::EnumVariant { .. } => Origin::default(),
             Expr::Parameter { name } => env.get(name).cloned().unwrap_or_else(Origin::unknown),
+            Expr::KernelBlockTimeLessThan { bound } => {
+                self.ledger_query(bound, env, path, depth + 1, "bound", "block_time_less_than")
+            }
+            Expr::KernelBlockTimeGreaterThan { bound } => self.ledger_query(
+                bound,
+                env,
+                path,
+                depth + 1,
+                "bound",
+                "block_time_greater_than",
+            ),
             Expr::SetMember { value, .. } => {
                 self.ledger_query(value, env, path, depth + 1, "value", "set_membership")
             }

@@ -22,7 +22,7 @@
 (library (rust-ir-passes)
   (export rust-ir-passes)
   (import (except (chezscheme) errorf)
-          (only (config-params) feature-zkir-v3)
+          (only (config-params) feature-zkir-v3 ts-runtime-profile)
           (utils)
           (nanopass)
           (json)
@@ -750,6 +750,15 @@
                                     "kernel_balance_greater_than"))
                    (cons "token" (lower (car expr*) (car type*)))
                    (cons "amount" (lower (cadr expr*) (cadr type*))))]
+          [(blockTimeLessThan blockTimeGreaterThan)
+           (unless (and (feature-zkir-v3)
+                        (eq? (ts-runtime-profile) 'released-0.21.0))
+             (source-errorf src "Rust backend does not yet support Kernel operation ~a" ledger-op))
+           (arity! 1)
+           (object (cons "kind" (if (eq? ledger-op 'blockTimeLessThan)
+                                    "kernel_block_time_less_than"
+                                    "kernel_block_time_greater_than"))
+                   (cons "bound" (lower (car expr*) (car type*))))]
           [else (source-errorf src "Rust backend does not yet support Kernel operation ~a" ledger-op)]))
 
       (define (expression-ir expr owner-src)

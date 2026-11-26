@@ -67,6 +67,7 @@ mod opaque_set_migration_tests;
 #[cfg(test)]
 mod profile_attempt;
 mod profile_selection;
+pub(crate) mod proof_data;
 #[cfg(test)]
 mod proved_set_sequence_migration_tests;
 #[cfg(test)]

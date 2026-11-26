@@ -1287,6 +1287,10 @@ pub(super) fn children<'a>(visit: Visit<'a>, scan: &mut Scan<'a>) -> Result<(), 
                 scan.push(Node::Expr(token), visit_depth + 1, owner)?;
                 scan.push(Node::Expr(amount), visit_depth + 1, owner)?;
             }
+            Expr::KernelBlockTimeLessThan { bound }
+            | Expr::KernelBlockTimeGreaterThan { bound } => {
+                scan.push(Node::Expr(bound), visit_depth + 1, owner)?;
+            }
             Expr::CreateZswapInput { coin } => {
                 scan.push(Node::Expr(coin), visit_depth + 1, owner)?;
             }

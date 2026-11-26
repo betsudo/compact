@@ -414,6 +414,12 @@ pub(super) fn expression(value: &Expr) -> Schema<'_> {
                 amount
             )
         }
+        Expr::KernelBlockTimeLessThan { bound } => {
+            unary!("kernel_block_time_less_than", "bound", bound)
+        }
+        Expr::KernelBlockTimeGreaterThan { bound } => {
+            unary!("kernel_block_time_greater_than", "bound", bound)
+        }
         Expr::CreateZswapInput { coin } => unary!("create_zswap_input", "coin", coin),
         Expr::CreateZswapOutput { coin, recipient } => {
             binary!("create_zswap_output", "coin", coin, "recipient", recipient)

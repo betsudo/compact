@@ -696,6 +696,9 @@ impl KeccakEncoding {
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+/// Typed backend expressions. Backend 0.3 adds typed time and requires a
+/// fallback arm in downstream matches; this is separate from generated ABI54.
+#[non_exhaustive]
 pub enum Expr {
     Unit,
     Default {
@@ -1070,6 +1073,12 @@ pub enum Expr {
     KernelBalanceGreaterThan {
         token: Box<Expr>,
         amount: Box<Expr>,
+    },
+    KernelBlockTimeLessThan {
+        bound: Box<Expr>,
+    },
+    KernelBlockTimeGreaterThan {
+        bound: Box<Expr>,
     },
     CreateZswapInput {
         coin: Box<Expr>,

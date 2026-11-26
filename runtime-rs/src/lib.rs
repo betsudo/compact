@@ -32,6 +32,9 @@ pub mod ledger;
 mod natives;
 mod opaque;
 mod primitives;
+pub mod proof_data;
+/// Linked API generation for the additive, opt-in typed block-time domain.
+pub const BLOCK_TIME_API_VERSION: u32 = 1;
 pub mod public_state;
 pub mod recording;
 mod secp256k1_point;
@@ -78,7 +81,10 @@ pub mod fab {
     };
 }
 
-/// Increment when generated Rust and the runtime's public contract change.
+/// Increment for a breaking change to the existing generated/runtime contract.
+/// Proposed additive domains use linked API versions; see
+/// doc/rust/adr/typed-proof-data-foundation-proposal.md. That proposal does not
+/// change backend Cargo source-compatibility policy (ADR0293).
 pub const RUST_RUNTIME_ABI: u32 = 54;
 /// Ledger version used by the native Rust runtime dependencies.
 pub const LEDGER_VERSION: &str = "ledger-9.1.0.2";

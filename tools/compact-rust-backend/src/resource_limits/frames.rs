@@ -209,6 +209,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelBalance { .. }
                 | E::KernelBalanceLessThan { .. }
                 | E::KernelBalanceGreaterThan { .. }
+                | E::KernelBlockTimeLessThan { .. }
+                | E::KernelBlockTimeGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. } => 14,
@@ -248,6 +250,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelBalance { .. }
                 | E::KernelBalanceLessThan { .. }
                 | E::KernelBalanceGreaterThan { .. }
+                | E::KernelBlockTimeLessThan { .. }
+                | E::KernelBlockTimeGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. } => 21,
@@ -418,6 +422,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelBalance { .. }
                 | E::KernelBalanceLessThan { .. }
                 | E::KernelBalanceGreaterThan { .. }
+                | E::KernelBlockTimeLessThan { .. }
+                | E::KernelBlockTimeGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. }
@@ -526,6 +532,8 @@ pub(super) fn frame_cost(node: Node<'_>) -> [usize; 4] {
                 | E::KernelBalance { .. }
                 | E::KernelBalanceLessThan { .. }
                 | E::KernelBalanceGreaterThan { .. }
+                | E::KernelBlockTimeLessThan { .. }
+                | E::KernelBlockTimeGreaterThan { .. }
                 | E::CreateZswapInput { .. }
                 | E::CreateZswapOutput { .. }
                 | E::NativeWitnessCall { .. }

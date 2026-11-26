@@ -131,6 +131,8 @@ fn local_expr(value: &Expr, witnesses: &HashMap<&str, &WitnessDeclaration>) -> b
         | Expr::KernelBalance { .. }
         | Expr::KernelBalanceLessThan { .. }
         | Expr::KernelBalanceGreaterThan { .. }
+        | Expr::KernelBlockTimeLessThan { .. }
+        | Expr::KernelBlockTimeGreaterThan { .. }
         | Expr::CreateZswapInput { .. }
         | Expr::CreateZswapOutput { .. }
         | Expr::NativeWitnessCall { .. }

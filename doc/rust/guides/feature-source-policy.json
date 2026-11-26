@@ -5,7 +5,7 @@
     "runtime-rs/Cargo.toml": "0.2.0",
     "runtime-rs-macros/Cargo.toml": "0.2.0",
     "testkit-rs/Cargo.toml": "0.1.0",
-    "tools/compact-rust-backend/Cargo.toml": "0.2.0"
+    "tools/compact-rust-backend/Cargo.toml": "0.3.0"
   },
   "feature_profiles": [
     {
@@ -61,7 +61,7 @@
     "isolated_receiver": "retained coherent Rust8.1 receiver evidence; not a current 8.1.3 qualification claim"
   },
   "migration_policy": {
-    "backend": "0.2.0 RenderError non_exhaustive and resource error; add wildcard",
+    "backend": "0.3.0 adds typed-time Expr variants and marks Expr non_exhaustive; retain an explicit wildcard. RenderError remains non_exhaustive",
     "ABI49": "retain exact historical bundle or regenerate; do not edit numeric ABI assertion",
     "ABI50": "retained old generated consumer compatible with matched0.2 runtime/macros pair",
     "IR20": "exact frontend/backend pair, no historical loader",

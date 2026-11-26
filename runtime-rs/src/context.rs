@@ -20,6 +20,7 @@
 //! to private state, and carries ownership across constructor and circuit calls.
 
 mod balance;
+mod block_time;
 mod cell;
 mod counter;
 mod event;
@@ -88,6 +89,7 @@ impl<Private, D: DB> ConstructorResult<Private, D> {
 
     pub fn into_circuit_context(self, address: ContractAddress) -> CircuitContext<Private, D> {
         let mut query = QueryContext::new(self.ledger_state, address);
+        query.call_context.own_address = address;
         for output in self.circuit_zswap.outputs() {
             query.call_context.com_indices = query.call_context.com_indices.insert(
                 output.coin.commitment(&output.recipient),
@@ -415,9 +417,11 @@ impl<Private, D: DB> CircuitContext<Private, D> {
         address: ContractAddress,
         contract: &ContractState<D>,
     ) -> Self {
+        let mut query = QueryContext::new(contract.data.clone(), address);
+        query.call_context.own_address = address;
         Self {
             private_state,
-            query: QueryContext::new(contract.data.clone(), address),
+            query,
             zswap_state: ZswapLocalState::default(),
             circuit_zswap: crate::CircuitZswapPlan::default(),
             coin_public_key: None,

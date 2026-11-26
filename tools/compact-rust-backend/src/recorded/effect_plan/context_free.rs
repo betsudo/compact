@@ -76,6 +76,8 @@ pub(super) fn bindings(bindings: &[Binding]) -> bool {
                 | Operation::OwnPublicKey
                 | Operation::CreateZswapInput { .. }
                 | Operation::CreateZswapOutput { .. }
+                | Operation::KernelBlockTimeLessThan { .. }
+                | Operation::KernelBlockTimeGreaterThan { .. }
                 | Operation::KernelSelf
                 | Operation::KernelBalance { .. }
                 | Operation::KernelBalanceLessThan { .. }

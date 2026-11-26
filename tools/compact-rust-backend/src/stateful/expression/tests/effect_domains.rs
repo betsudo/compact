@@ -311,3 +311,30 @@ fn coin_effects_distinguish_qualified_input_output_and_recipient_domains() {
         Type::Bytes { length: 32 },
     );
 }
+
+#[test]
+fn block_time_comparisons_require_canonical_uint64_bound() {
+    let declarations = Declarations::default();
+    let bound = uint(&u64::MAX.to_string());
+    admitted(
+        declarations.lower(Expr::KernelBlockTimeLessThan {
+            bound: default_value(bound.clone()),
+        }),
+        Type::Boolean,
+        "kernel_block_time_less_than",
+    );
+    admitted(
+        declarations.lower(Expr::KernelBlockTimeGreaterThan {
+            bound: default_value(bound.clone()),
+        }),
+        Type::Boolean,
+        "kernel_block_time_greater_than",
+    );
+    refused(
+        declarations.lower(Expr::KernelBlockTimeLessThan {
+            bound: parameter("uint"),
+        }),
+        bound,
+        uint("255"),
+    );
+}

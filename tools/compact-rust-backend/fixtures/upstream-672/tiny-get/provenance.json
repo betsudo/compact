@@ -1,0 +1,26 @@
+{
+  "genuineCurrentFrontend": {
+    "actualReceiptPath": "/Users/ysh/.codex/local-evidence/ledger9-tiny-get-proof-data-api-20261123/frontend-baseline-v1/actual.json",
+    "actualReceiptSha256": "02da91c17f48ae9fd277bd5fb90af0bf320736cf8442c5552503efd37b1963ae",
+    "jsonBytes": 20019,
+    "jsonSha256": "bac5629765e1f89329ad548903723a909de0f9a9dd9500fe0ba884cbcd26e09e",
+    "schemaVersion": 20,
+    "sourceCommit": "b526e598b167b66c852f8133934fbe7d78c7a90e"
+  },
+  "originalCompact": {
+    "bytes": 3914,
+    "gitBlob": "968bfea19180a490af948f79847039613d71248f",
+    "path": "examples/tiny.compact",
+    "sha256": "f32800fcfe2575bad90817dd4671f9086023e431e053b0b9ef05606e57cdd227"
+  },
+  "originalTypeScript": {
+    "allSevenAsyncBodiesPreserved": true,
+    "bytes": 4097,
+    "gitBlob": "753c73c19246abb61e8136f91fd35480d6ed07c8",
+    "path": "test-center/ts/tiny.ts",
+    "sha256": "b83f0ceb64a0f4125f8a02103458e5e31a2c6f0f8f91a9afc6bfcc863392c6e6"
+  },
+  "primaryRevision": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
+  "schema": "original-tiny-get-host-fixture-provenance/v1",
+  "scope": "Host semantic/AST fixture only; no Rust generated SDK/runtime/TS execution/proof qualification. Supplemental mutations in the focused host test are explicitly not original fixtures. Original trace absence must remain RED, with no synthesized alias; whole seven-body TS typecheck is required before runtime."
+}

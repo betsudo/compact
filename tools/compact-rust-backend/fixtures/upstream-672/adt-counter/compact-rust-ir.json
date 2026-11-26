@@ -1,0 +1,389 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "c",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "counter"
+      },
+      "source": {
+        "file": "counter.compact",
+        "line": 18,
+        "column": 1
+      }
+    },
+    {
+      "id": "c2",
+      "index": 1,
+      "path": [
+        1
+      ],
+      "declaration": {
+        "kind": "counter"
+      },
+      "source": {
+        "file": "counter.compact",
+        "line": 20,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "test_all",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c",
+              "index": 0
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Initial value is 0"
+        },
+        {
+          "kind": "counter_reset",
+          "field": "c",
+          "index": 0
+        },
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c",
+              "index": 0
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Value is 0"
+        },
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_18",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "5",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "c",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_18"
+            }
+          }
+        },
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c",
+              "index": 0
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "5",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Value is 5"
+        },
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_17",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "4",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_decrement",
+            "field": "c",
+            "index": 0,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_17"
+            }
+          }
+        },
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c",
+              "index": 0
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "1",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Value is 1"
+        },
+        {
+          "kind": "counter_reset",
+          "field": "c",
+          "index": 0
+        },
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c",
+              "index": 0
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Value is 0"
+        }
+      ],
+      "source": {
+        "file": "counter.compact",
+        "line": 22,
+        "column": 1
+      }
+    },
+    {
+      "name": "test_big_increment",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c2",
+              "index": 1
+            },
+            "right": {
+              "kind": "unsigned_literal",
+              "value": "0",
+              "max": "18446744073709551615"
+            }
+          },
+          "message": "Initial value is 0"
+        },
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_16",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_cast",
+                "max": "65535",
+                "value": {
+                  "kind": "unsigned_multiply",
+                  "max": "4096",
+                  "left": {
+                    "kind": "unsigned_cast",
+                    "max": "4096",
+                    "value": {
+                      "kind": "unsigned_multiply",
+                      "max": "511",
+                      "left": {
+                        "kind": "unsigned_literal",
+                        "value": "16",
+                        "max": "256"
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "16",
+                        "max": "256"
+                      }
+                    }
+                  },
+                  "right": {
+                    "kind": "unsigned_literal",
+                    "value": "16",
+                    "max": "4096"
+                  }
+                }
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_increment",
+            "field": "c2",
+            "index": 1,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_16"
+            }
+          }
+        },
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_14",
+              "ty": {
+                "kind": "unsigned",
+                "max": "65535"
+              },
+              "value": {
+                "kind": "unsigned_literal",
+                "value": "4",
+                "max": "65535"
+              }
+            }
+          ],
+          "action": {
+            "kind": "counter_decrement",
+            "field": "c2",
+            "index": 1,
+            "amount": {
+              "kind": "parameter",
+              "name": "tmp_14"
+            }
+          }
+        },
+        {
+          "kind": "assert",
+          "condition": {
+            "kind": "equal",
+            "left": {
+              "kind": "counter_read",
+              "field": "c2",
+              "index": 1
+            },
+            "right": {
+              "kind": "unsigned_cast",
+              "max": "18446744073709551615",
+              "value": {
+                "kind": "let",
+                "bindings": [
+                  {
+                    "name": "t_15",
+                    "ty": {
+                      "kind": "unsigned",
+                      "max": "4096"
+                    },
+                    "value": {
+                      "kind": "unsigned_multiply",
+                      "max": "4096",
+                      "left": {
+                        "kind": "unsigned_cast",
+                        "max": "4096",
+                        "value": {
+                          "kind": "unsigned_multiply",
+                          "max": "511",
+                          "left": {
+                            "kind": "unsigned_literal",
+                            "value": "16",
+                            "max": "256"
+                          },
+                          "right": {
+                            "kind": "unsigned_literal",
+                            "value": "16",
+                            "max": "256"
+                          }
+                        }
+                      },
+                      "right": {
+                        "kind": "unsigned_literal",
+                        "value": "16",
+                        "max": "4096"
+                      }
+                    }
+                  }
+                ],
+                "body": {
+                  "kind": "unsigned_subtract",
+                  "max": "4096",
+                  "left": {
+                    "kind": "parameter",
+                    "name": "t_15"
+                  },
+                  "right": {
+                    "kind": "unsigned_literal",
+                    "value": "4",
+                    "max": "4096"
+                  }
+                }
+              }
+            }
+          },
+          "message": "Value is as defined"
+        }
+      ],
+      "source": {
+        "file": "counter.compact",
+        "line": 38,
+        "column": 1
+      }
+    }
+  ]
+}

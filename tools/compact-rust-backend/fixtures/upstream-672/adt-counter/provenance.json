@@ -1,0 +1,25 @@
+{
+  "assertionSourceCounts": {
+    "test_all": 5,
+    "test_big_increment": 2
+  },
+  "compact-rust-ir.json": {
+    "bytes": 9628,
+    "schemaVersion": 20,
+    "sha256": "8f854d185bbf0a917835d95ffbf772f9ea5927d66177681aa5233db872e85914"
+  },
+  "counter.compact": {
+    "bytes": 1283,
+    "sha256": "4d97fd0149e15570b32d4e6aa779646bbea6b27314cad8043cde57a4d265e862"
+  },
+  "generationParent": "23795d8c0eb24104f6ac12c0fa3f407d3be6b457",
+  "generationQualification": {
+    "bytes": 10058,
+    "path": "/Users/ysh/.codex/local-evidence/ledger9-adt-counter-proof-data-api-20261123/qualification-baseline-generation-v1.json",
+    "sha256": "b23af0ea9169d7dd96f37a76dd8e749e8de969dc1418d5a676660bdbcd6d4c5a"
+  },
+  "schema": "pinned-counter-host-fixture-provenance/v1",
+  "scope": "Genuine normal-CLI generation only. Fixture host tests do not execute generated code, Compact assertions, SDK/model/parameters/proofs. Mutations are supplemental admission tests.",
+  "upstreamCommit": "672bd0f226f47a7d036c5c074ce71fbe1af1925e",
+  "upstreamPath": "examples/adt/tests/counter.compact"
+}

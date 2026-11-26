@@ -20,6 +20,7 @@
 //! its corresponding verifying VM instruction.
 
 mod balance;
+mod block_time;
 mod kernel;
 mod merkle;
 mod zswap;

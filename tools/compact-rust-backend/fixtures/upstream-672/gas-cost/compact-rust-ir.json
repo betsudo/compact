@@ -1,0 +1,150 @@
+{
+  "schema_version": 20,
+  "type_aliases": [
+  ],
+  "ledger_fields": [
+    {
+      "id": "setA",
+      "index": 0,
+      "path": [
+        0
+      ],
+      "declaration": {
+        "kind": "set",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "original-gas-cost.compact",
+        "line": 18,
+        "column": 1
+      }
+    },
+    {
+      "id": "setB",
+      "index": 1,
+      "path": [
+        1
+      ],
+      "declaration": {
+        "kind": "set",
+        "ty": {
+          "kind": "field"
+        }
+      },
+      "source": {
+        "file": "original-gas-cost.compact",
+        "line": 19,
+        "column": 1
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "circuits": [
+  ],
+  "stateful_circuits": [
+    {
+      "name": "testGasCost",
+      "parameters": [
+      ],
+      "result": {
+        "kind": "unit"
+      },
+      "return_value": {
+        "kind": "unit"
+      },
+      "actions": [
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_1",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "field_literal",
+                "value": "10"
+              }
+            }
+          ],
+          "action": {
+            "kind": "set_remove",
+            "field": "setA",
+            "index": 0,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_1"
+            }
+          }
+        },
+        {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "tmp_2",
+              "ty": {
+                "kind": "field"
+              },
+              "value": {
+                "kind": "field_literal",
+                "value": "10"
+              }
+            }
+          ],
+          "action": {
+            "kind": "set_insert",
+            "field": "setB",
+            "index": 1,
+            "value": {
+              "kind": "parameter",
+              "name": "tmp_2"
+            }
+          }
+        }
+      ],
+      "source": {
+        "file": "original-gas-cost.compact",
+        "line": 25,
+        "column": 1
+      }
+    }
+  ],
+  "constructor": {
+    "parameters": [
+    ],
+    "steps": [
+      {
+        "kind": "let",
+        "bindings": [
+          {
+            "name": "tmp_0",
+            "ty": {
+              "kind": "field"
+            },
+            "value": {
+              "kind": "field_literal",
+              "value": "10"
+            }
+          }
+        ],
+        "step": {
+          "kind": "set_insert",
+          "field": "setA",
+          "index": 0,
+          "value": {
+            "kind": "parameter",
+            "name": "tmp_0"
+          }
+        }
+      }
+    ],
+    "source": {
+      "file": "original-gas-cost.compact",
+      "line": 21,
+      "column": 1
+    }
+  }
+}

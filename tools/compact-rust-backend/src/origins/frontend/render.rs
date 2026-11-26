@@ -153,7 +153,7 @@ pub(super) fn render(
     artifacts: &FrontendArtifacts,
     options: RenderOptions,
 ) -> Result<FrontendRender, Box<NativeCompileFailure>> {
-    render_selected(artifacts, options, None)
+    render_selected(artifacts, options, None, None)
 }
 
 pub(super) fn render_functional(
@@ -164,13 +164,35 @@ pub(super) fn render_functional(
         artifacts,
         options,
         Some(FunctionalCompileFailure::Projection),
+        None,
     )
+}
+
+/// Separate result for the explicit standalone data surface.
+pub struct StandaloneFrontendRender {
+    pub frontend: FrontendRender,
+    pub capabilities: crate::StandaloneProofDataReport,
+}
+pub(super) fn render_standalone(
+    artifacts: &FrontendArtifacts,
+    options: RenderOptions,
+) -> Result<StandaloneFrontendRender, Box<NativeCompileFailure>> {
+    let mut report = Vec::new();
+    let frontend =
+        render_selected::<Box<NativeCompileFailure>>(artifacts, options, None, Some(&mut report))?;
+    let capabilities =
+        crate::StandaloneProofDataReport::new(&frontend.rendered.capabilities, report);
+    Ok(StandaloneFrontendRender {
+        frontend,
+        capabilities,
+    })
 }
 
 fn render_selected<E: From<Box<NativeCompileFailure>>>(
     artifacts: &FrontendArtifacts,
     options: RenderOptions,
     functional: Option<fn(String) -> E>,
+    standalone: Option<&mut Vec<crate::standalone_proof_data::ProofDataInfo>>,
 ) -> Result<FrontendRender, E> {
     let contract: Contract = serde_json::from_slice(&artifacts.exact_ir).map_err(|error| {
         NativeCompileFailure {
@@ -192,8 +214,13 @@ fn render_selected<E: From<Box<NativeCompileFailure>>>(
     );
     // Retain the actual borrowed index throughout one semantic render. Callback
     // source/error references end at each invocation; only a small ID survives.
-    let native_result =
-        crate::render_with_refusals(&contract, None, Some(&observer), Some(&recorder));
+    let native_result = crate::render_selected_with_refusals(
+        &contract,
+        None,
+        Some(&observer),
+        Some(&recorder),
+        standalone,
+    );
     let mut rendered = native_result.map_err(|error| {
         NativeCompileFailure {
             cause: NativeFailureCause::Render(error),

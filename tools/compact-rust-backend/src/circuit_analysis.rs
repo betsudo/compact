@@ -562,6 +562,9 @@ fn expression_contains_with_actions<'source>(
         Expr::KernelBalance { token } => visit(token),
         Expr::KernelBalanceLessThan { token, amount }
         | Expr::KernelBalanceGreaterThan { token, amount } => visit(token) || visit(amount),
+        Expr::KernelBlockTimeLessThan { bound } | Expr::KernelBlockTimeGreaterThan { bound } => {
+            visit(bound)
+        }
         Expr::CreateZswapInput { coin } => visit(coin),
         Expr::CreateZswapOutput { coin, recipient } => visit(coin) || visit(recipient),
         Expr::Unit
