@@ -79,6 +79,13 @@ class GateTests(unittest.TestCase):
   self.assertTrue(self.capture((m,l,p,a))['passed'])
   package['name']='compact-contract-unrelated-assertions';l['package'][-1]['name']=package['name']
   with self.assertRaises(AssertionError):self.capture((m,l,p,a))
+ def test_capture_accepts_only_the_exact_generated_set_crate(self):
+  m,l,p,a=capture_example()
+  package=dict(id='generated-set',name='compact-contract-original-set-field',version='0.1.0',source=None,manifest_path='/generated-set/Cargo.toml',targets=[])
+  m['packages'].append(package);m['resolve']['nodes'][0]['deps'].append(dict(pkg=package['id']));m['resolve']['nodes'].append(dict(id=package['id'],features=[],deps=[]));l['package'].append(dict(name=package['name'],version=package['version'],source=None))
+  self.assertTrue(self.capture((m,l,p,a))['passed'])
+  package['name']='compact-contract-original-set-field-unrelated';l['package'][-1]['name']=package['name']
+  with self.assertRaises(AssertionError):self.capture((m,l,p,a))
  def test_capture_accepts_the_intact_original_map_crate_only(self):
   m,l,p,a=example();m['packages'][0]['name']='portable-proof-data-capture';l['package'][0]['name']='portable-proof-data-capture'
   target=dict(kind=['bin'],name='capture',src_path='/repo/capture.rs');m['packages'][0]['targets']=[target]

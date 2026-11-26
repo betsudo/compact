@@ -225,3 +225,90 @@ fn unit_uint64_loader_accepts_full_range_and_refuses_invalid_arity_encoding_and_
         assert!(Bundle::load(&path).is_err(), "{pointer}");
     }
 }
+
+#[test]
+fn set_is_empty_metadata_is_a_distinct_zero_arity_boolean_profile() {
+    let temp = Temp::new();
+    let path = temp.0.join("input.json");
+    let mut value = json!({"schema":"compact-rust-proof-data-input/v1","profile":"set-is-empty","sdk":{"ledger":input::LEDGER,"zk":input::ZK,"zkir":input::ZKIR,"gate":row("missing-gate")},"raw_ir":row("missing-ir"),"parent":null,"binding_le":scalar(17),"randomness_le":scalar(29),"generation":{"compiler_version":"test","source_revision":"test","files":[]},"cases":[{"id":"empty","supplemental":true,"input":[],"output":[scalar(1)],"preimage":row("missing-private"),"public_stream":row("missing-public")}]});
+    for bit in [0, 1] {
+        value["cases"][0]["output"] = json!([scalar(bit)]);
+        fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let bundle = Bundle::load(&path).unwrap();
+        assert_eq!(bundle.input.profile, input::Profile::SetIsEmpty);
+        assert!(bundle.authenticate_gate().is_err()); // Metadata did not open the absent body.
+    }
+    for (field, replacement) in [
+        ("input", json!([scalar(0)])),
+        ("output", json!([])),
+        ("output", json!([scalar(2)])),
+        ("output", json!([scalar(0), scalar(1)])),
+    ] {
+        let mut changed = value.clone();
+        changed["cases"][0][field] = replacement;
+        fs::write(&path, serde_json::to_vec(&changed).unwrap()).unwrap();
+        assert!(Bundle::load(&path).is_err());
+    }
+}
+
+#[test]
+fn set_member_metadata_is_field_to_boolean_with_canonical_scalars_and_no_body_reads() {
+    use midnight_transient_crypto::curve::Fr;
+    let temp = Temp::new();
+    let path = temp.0.join("input.json");
+    let mut wide = Fr::from(1u64);
+    for _ in 0..128 {
+        wide = wide + wide;
+    }
+    wide = wide + Fr::from(1u64);
+    let base = json!({"schema":"compact-rust-proof-data-input/v1","profile":"set-member","sdk":{"ledger":input::LEDGER,"zk":input::ZK,"zkir":input::ZKIR,"gate":row("missing-gate")},"raw_ir":row("missing-ir"),"parent":null,"binding_le":scalar(17),"randomness_le":scalar(29),"generation":{"compiler_version":"test","source_revision":"test","files":[]},"cases":[{"id":"member","supplemental":true,"input":[input::hex(&wide)],"output":[scalar(1)],"preimage":row("missing-private"),"public_stream":row("missing-public")}]});
+    for bit in [0, 1] {
+        let mut value = base.clone();
+        value["cases"][0]["output"] = json!([scalar(bit)]);
+        fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let bundle = Bundle::load(&path).unwrap();
+        assert_eq!(bundle.input.profile, input::Profile::SetMember);
+        assert!(bundle.authenticate_gate().is_err());
+    }
+    for (pointer, value) in [
+        ("/cases/0/input", json!([])),
+        ("/cases/0/input", json!([scalar(0), scalar(1)])),
+        ("/cases/0/input", json!(["01"])),
+        ("/cases/0/output", json!([])),
+        ("/cases/0/output", json!([scalar(2)])),
+        ("/cases/0/output", json!([scalar(0), scalar(1)])),
+    ] {
+        let mut changed = base.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        fs::write(&path, serde_json::to_vec(&changed).unwrap()).unwrap();
+        assert!(Bundle::load(&path).is_err());
+    }
+}
+#[test]
+fn set_size_metadata_is_unit_to_uint64_including_two_without_body_readers() {
+    use midnight_transient_crypto::curve::Fr;
+    let temp = Temp::new();
+    let path = temp.0.join("input.json");
+    let base = json!({"schema":"compact-rust-proof-data-input/v1","profile":"set-size","sdk":{"ledger":input::LEDGER,"zk":input::ZK,"zkir":input::ZKIR,"gate":row("missing-gate")},"raw_ir":row("missing-ir"),"parent":null,"binding_le":scalar(17),"randomness_le":scalar(29),"generation":{"compiler_version":"test","source_revision":"test","files":[]},"cases":[{"id":"size","supplemental":true,"input":[],"output":[scalar(2)],"preimage":row("missing-private"),"public_stream":row("missing-public")}]});
+    for n in [0, 1, 2, u64::MAX] {
+        let mut value = base.clone();
+        value["cases"][0]["output"] = json!([input::hex(&Fr::from(n))]);
+        fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let bundle = Bundle::load(&path).unwrap();
+        assert_eq!(bundle.input.profile, input::Profile::SetSize);
+        assert!(bundle.authenticate_gate().is_err());
+    }
+    let overflow = input::hex(&(Fr::from(u64::MAX) + Fr::from(1u64)));
+    for (pointer, value) in [
+        ("/cases/0/input", json!([scalar(0)])),
+        ("/cases/0/output", json!([])),
+        ("/cases/0/output", json!([overflow])),
+        ("/cases/0/output", json!([scalar(0), scalar(1)])),
+        ("/cases/0/output", json!(["01"])),
+    ] {
+        let mut changed = base.clone();
+        *changed.pointer_mut(pointer).unwrap() = value;
+        fs::write(&path, serde_json::to_vec(&changed).unwrap()).unwrap();
+        assert!(Bundle::load(&path).is_err());
+    }
+}
