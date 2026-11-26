@@ -3209,6 +3209,41 @@
                 (unit-set-insert-return-branch? expr2))]
           [else #f]))
 
+      ;; The original Map<Field, Field> export fixture returns the Unit result
+      ;; of four root-slot mutations directly. Keep each existing StateAction
+      ;; exactly once in the ordered return owner, followed by Unit. Other Map
+      ;; types, paths and effect-bearing arguments retain their old boundaries.
+      (define (unit-map-mutation-return-leaf? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
+           (nanopass-case (Lnodisclose ADT-Op) adt-op
+             [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
+              (and (eq? adt-name 'Map)
+                   (case ledger-op
+                     [(insert) (and (eq? op-class 'update) (= (length expr*) 2))]
+                     [(insertDefault) (and (eq? op-class 'update) (= (length expr*) 1))]
+                     [(remove) (and (eq? op-class 'remove) (= (length expr*) 1))]
+                     [(resetToDefault) (and (eq? op-class 'remove) (null? expr*))]
+                     [else #f])
+                   (= (length adt-arg*) 2)
+                   (for-all (lambda (ty) (equal? (type-ir ty src) (kind "field"))) adt-arg*)
+                   (for-all pure-unit-set-insert-argument? expr*)
+                   (= (length path-elt*) 1)
+                   (integer? (car path-elt*)) (<= 0 (car path-elt*) 14)
+                   (unit-return-type? type))])]
+          [else #f]))
+
+      (define (terminal-unit-map-mutation-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (terminal-unit-map-mutation-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-map-mutation-return? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-map-mutation-return? expr))]
+          [else (unit-map-mutation-return-leaf? expr)]))
+
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
       ;; nonliteral conversions select this owner through the value predicate.
@@ -3387,7 +3422,8 @@
                          (stateful-return-plan-ir expr2 expected-type src environment witness-ids finish)))]
           [else
            (if (and (unit-return-type? expected-type)
-                    (unit-set-insert-return-leaf? expr))
+                    (or (unit-set-insert-return-leaf? expr)
+                        (unit-map-mutation-return-leaf? expr)))
                (object (cons "kind" "sequence")
                        (cons "actions" (vector (state-action-ir expr owner-src environment witness-ids)))
                        (cons "result" (object (cons "kind" "value")
@@ -4263,7 +4299,8 @@
                       [effectful-return? (or vector-literal-return? vector-value-return? local-vector-widening?
                                              (has-unit-mutation-initializer? expr)
                                              (or (and (unit-return-type? type)
-                                                      (terminal-unit-set-insert-return? expr))
+                                                      (or (terminal-unit-set-insert-return? expr)
+                                                          (terminal-unit-map-mutation-return? expr)))
                                                  (and (not (unit-return-type? type))
                                                       (or (terminal-storage-mutation-conditional? expr)
                                                           (lexical-storage-mutation-return? expr)))))]
