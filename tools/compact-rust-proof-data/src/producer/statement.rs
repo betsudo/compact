@@ -530,7 +530,7 @@ mod is_empty_tests {
         let w = words(bit);
         for i in 0..w.len() {
             let mut changed = w.clone();
-            changed[i] += Fr::from(1u64);
+            changed[i] = changed[i] + Fr::from(1u64);
             assert!(projection(&shape(), &[], &[bit], &changed, &[bit]).is_err());
             let mut missing = w.clone();
             missing.remove(i);
