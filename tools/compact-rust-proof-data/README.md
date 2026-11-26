@@ -153,7 +153,7 @@ This explicit Set run supplies no Set default-lane refusal credit. It retains
 its own source/artifact identity and the same shared-SDK/admitted-before-state,
 Linux/released-matrix/funded/chain limitations.
 
-## Map Lookup public-runner path: implemented, not executed
+## Executed public Map Lookup runner, 26 November 2026
 
 `--case map-lookup` selects the unchanged eight-export Map fixture and the
 actual generated `lookup_proof_data(Field) -> RecordedProofData<Private,Field>`
@@ -167,15 +167,38 @@ and real public streams. Missing lookup keeps exact
 no original-test generated crate, observed-call/ledger-transaction feature, or
 rewritten original assertions. All three export cases are supplemental.
 
-Separate staged local work at capture source2bf2432 and SDK source8399fd69 has
-measured Lookup k7 / 60 rows, 15 projected fields / four None skips, and returned
-three fresh checked proofs with complete SDK PI/skips equality. These private
-staged results do not qualify this new installed-compiler public runner path;
-its generation/capture/gates/producer/separate verifier are UNRUN as a combined
-public execution. Independent private verification and its stopped audit retain
-their own status/receipts; no later result is implied here. This path must pass
-its own fresh full run before public-path qualification. The default measured
-k <= 8 policy remains; no automatic larger retry or carried Member metrics.
+A fresh public runner execution at signed source
+`8d339b5029a13922d240fa47eca18041a7f17f89` completed all 18 phases in
+355.155 seconds on local macOS arm64 with the current transient-crypto3.1.0 / Ledger9.1.0.2
+source graph. All three supplemental cases freshly measured k7 / 60 rows
+excluding custom gates and lookups and produced three new 3,845-byte checked
+proofs. Complete returned SDK public inputs/skips matched the producer's
+projection. The separately implemented verifier reconstructed 15 fields and
+four None skips per case; all 15 actual SDK calls returned as expected: six
+acceptances and nine refusals.
+
+This public run is distinct from the earlier staged native capture at2bf2432
+and SDK producer/proof work at8399fd69. It uses its own fresh generation,
+captures, keys and proofs; earlier private receipts supply no public execution
+credit. The three export cases add zero globally new original-case credit.
+Default measured k <= 8 and no automatic larger retry remain unchanged.
+
+Stopped public runner SHA256:
+`ae2419750f090110f9a598b29685ce45b1dd3df528fc48e515857dd7c0e599d2`.
+Separate-process verification report SHA256:
+`424d19064e1ac7bd568fccdb60d4a9003092429e88d0f0978200d7ad22ac61e9`.
+The independent stopped actual audit passed 399 checks with no producer
+PI/preimage/check/model/PK body access or SDK rerun (report SHA256
+`c37cee9782e45a2f43092730e2b6941b3f26f01fad072ed9159f5cd3334ee8eb`).
+A separate capture-graph postguard matched its initial gate; it is outside
+the 18 public runner phases.
+Shared SDK cryptography, admitted rather than regenerated before-state,
+unknown internal corruption rejection layer and unrun default-parameter
+negative controls retain their existing limits. This run does not execute
+TypeScript, observed/EntryPoint calls, funded/chain actions, native Linux or
+the released Compact0.36.0 / Ledger9.1.0.1 matrix. Public Map member, Clear and
+Set keep their separate executed source/artifact identities.
+
 
 
 Focused tests (run only after source review and dependency admission):
@@ -186,7 +209,8 @@ python3 -B tools/compact-rust-proof-data/tests/sdk_gate_test.py
 python3 -B tools/compact-rust-proof-data/tests/runner_test.py
 ```
 
-Execution scope is limited to the public Map member, Clear and Set runs above. Released Compact 0.36.0
+Execution observations cover public Map member, Map Lookup, Clear and Set above;
+Lookup's independent stopped audit passed the scoped checks above. Released Compact 0.36.0
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.
