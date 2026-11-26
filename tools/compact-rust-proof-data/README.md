@@ -6,6 +6,11 @@ and a separately implemented verifier in separate processes. It uses the pinned
 Ledger 9.1.0.2 / transient-crypto 3.1.0 SDK source in this workspace. It does not
 implement a second cryptographic verifier.
 
+The backend also admits a zero-argument Boolean `is_empty_proof_data` facade.
+Its [host and emission gate](../../doc/rust/plans/clear-set-map-proof-data.md#map-emptiness-host-and-emission-gate-26-november-2026)
+passes separately. Native SDK/proof qualification and a portable-runner profile
+for that helper remain pending.
+
 Use Rust 1.99.0, Python 3.11+, the pinned SDK sources already available to offline
 Cargo, and a self-contained installed normal Compact compiler with the helper flags. A raw
 Cargo source facade requiring an external Scheme shim is not supported by this

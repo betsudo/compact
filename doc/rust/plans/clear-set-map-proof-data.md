@@ -1,7 +1,8 @@
 # Clear, Set and Map standalone proof-data qualification
 
 The optional standalone proof-data API now covers the admitted Tiny Clear/Set
-families and root `Map<Field, Field>` membership/Field-valued Lookup reads. Default generated APIs
+families and root `Map<Field, Field>` membership, Field-valued Lookup and
+zero-argument Boolean emptiness reads. Default generated APIs
 and ABI54 remain unchanged. A helper captures the actual recorded call once;
 explicit caller binding and communication randomness turn that capture into a
 preimage. Capturing data does not itself generate or verify a proof.
@@ -13,9 +14,42 @@ with a manufactured result. This returned-Unit repair is tracked in
 [#795](https://github.com/betsudo/compact/issues/795). The membership helper
 accepts only its declared
 Field key and Boolean result. Unsupported shapes continue to have no helper.
-The exported `lookup(Field) -> Field` helper is now implemented on the local
-Lookup source line. Its public-runner integration remains a separate unrun path
-until fresh qualification, as recorded below.
+The exported `lookup(Field) -> Field` helper and its public runner are qualified
+on their separately recorded source line below. The newer emptiness facade has
+passed the host/emission gate; its native SDK and proof qualification is pending.
+
+## Map emptiness host and emission gate, 26 November 2026
+
+Signed source `819f4129422183ea12bea14434b90d35d7709b80` adds
+`is_empty_proof_data(context) -> RecordedProofData<Private, bool>`. Admission is
+limited to public zero-argument, action-free direct or exact expression-return
+reads of one root `Map<Field, Field>`. The shared facade, runtime, ABI54 and API1
+are unchanged. When a borrowed witness handle is generated, a witness-free read
+retains the helper on both handles without Clone or witness bounds.
+
+The complete locked/offline backend run passes 2,471 tests across 56 harnesses,
+with seven existing ignored tests and no failures. Strict all-target/all-feature
+Clippy passes with warnings denied. The first failed run at `9149caf79` is retained:
+a new renamed-slot positive fixture moved its index to 15 but retained path 0,
+which the classifier correctly refused. The correction changes only that test's
+physical path and adds the equivalent empty-root control; no production guard or
+original fixture was weakened. Independent source and stopped-run reviews pass.
+
+Fresh normal Rust/TypeScript generation produces 19 artifacts, all eight original
+native/recorded/observed exports and exactly three optional Map read helpers:
+`is_empty`, `member` and `lookup`. All 9,888 committed source files and the retained
+773-file compiler package match before/after. The new signed Rust facade is built
+from `819f41294`; the separately authenticated Scheme component remains `c247a972`.
+This one-off generation explicitly selects that component. It does not establish
+a new self-contained portable compiler package or TypeScript runtime execution.
+
+The intact 1,364/1,500/876-byte original fixtures and ten original assertions are
+unchanged. This adds no globally new original-case execution. Actual native
+emptiness execution, zero-valued-entry behavior, replay/codec checks, SDK model
+metrics and fresh independent proof verification remain the next gates. The
+independent Unit/Boolean profile is source-only; its eighteen fields/six skips are
+structural predictions, with k and rows still unknown. No new portable-runner
+profile, SDK1 matrix, funded transaction or Linux qualification is claimed.
 
 ## Executed Map member qualification, 26 November 2026
 

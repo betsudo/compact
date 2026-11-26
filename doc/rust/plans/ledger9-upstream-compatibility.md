@@ -1,5 +1,13 @@
 # Ledger 9 upstream compatibility
 
+## Current Map facade continuation, 2026-11-26
+
+The [Clear/Set/Map qualification](clear-set-map-proof-data.md#map-emptiness-host-and-emission-gate-26-november-2026)
+now records the optional zero-argument Boolean Map emptiness facade, full backend
+regression and fresh dual-target emission. Its native SDK execution and fresh
+proofs remain separate from the qualified member/Lookup gates. The dated
+snapshots below retain their original source and coverage scope.
+
 ## Current standalone proof-data update, 2026-11-26
 
 The [Clear/Set/Map qualification](clear-set-map-proof-data.md) preserves the
