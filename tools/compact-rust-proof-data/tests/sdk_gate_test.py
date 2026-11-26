@@ -50,6 +50,16 @@ class GateTests(unittest.TestCase):
  def test_mixed_sdk_version_refuses(self):
   data=example();p=dict(data[0]['packages'][1],id='old-sdk',version='3.0.1');data[0]['packages'].append(p);data[0]['resolve']['nodes'].extend([dict(id='old-sdk',features=[],deps=[])]);data[0]['resolve']['nodes'][0]['deps'].append(dict(pkg='old-sdk'))
   with self.assertRaises(AssertionError):self.check(data)
+ def test_capture_accepts_the_intact_original_map_crate_only(self):
+  m,l,p,a=example();m['packages'][0]['name']='portable-proof-data-capture';l['package'][0]['name']='portable-proof-data-capture'
+  target=dict(kind=['bin'],name='capture',src_path='/repo/capture.rs');m['packages'][0]['targets']=[target]
+  generated=dict(id='generated',name='compact-contract-original-map-field-field',version='0.1.0',source=None,manifest_path='/generated/Cargo.toml',targets=[])
+  m['packages'].append(generated);m['resolve']['nodes'][0]['deps'].append(dict(pkg='generated'));m['resolve']['nodes'].append(dict(id='generated',features=[],deps=[]));l['package'].append(dict(name=generated['name'],version='0.1.0',source=None))
+  a=[dict(reason='compiler-artifact',package_id='root',features=[],target=target,executable='/bin/capture')]+[x for x in a if x['package_id']!='root']
+  log='\n'.join(map(json.dumps,[*a,dict(reason='build-finished',success=True)]))
+  self.assertTrue(gate.evaluate(m,l,p,log,'capture',False)['passed'])
+  generated['name']='unrelated-generated-contract';l['package'][-1]['name']=generated['name']
+  with self.assertRaises(AssertionError):gate.evaluate(m,l,p,log,'capture',False)
 
 def crate_bytes(members):
  output=io.BytesIO()
