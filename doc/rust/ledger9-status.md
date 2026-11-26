@@ -1,11 +1,25 @@
 # Ledger 9 Rust AST compatibility status
 
-Verified 20 November 2026. This page summarizes the public branch and the
+Updated 26 November 2026. This page summarizes the public branch and the
 limits of separate local qualifications. The [adoption plan](plans/ledger9-adoption.md)
 and [upstream compatibility plan](plans/ledger9-upstream-compatibility.md)
 retain the detailed, source-bound history.
 
-## Latest compile and host observations
+## Current Clear/Set/Map proof-data qualification
+
+The [standalone proof-data cohort](plans/clear-set-map-proof-data.md) retains the
+original eight-export Map fixture and adds typed membership capture. At signed
+`827963ed`, current-SDK arm64 execution now passes three fresh checked proofs and
+15 independent-process SDK verification outcomes, including real current
+default-parameter acceptance and binding/corruption/valid-wrong-key refusals.
+The evaluator shares SDK cryptography and does not regenerate the before state.
+The selected seven original export host callbacks pass their scoped stopped
+qualification, with the operator's telemetry-title RED preserved. Neither
+result grants full original-suite, released SDK matrix, Linux, generated
+TypeScript-runtime or funded transaction/replay qualification. See the linked
+record for exact source, artifact and review identities and cost limits.
+
+## Earlier compile and host observations, 20 November 2026
 
 The [native All20 SDK1 library](plans/original-token-sdk1-consumer.md#native-all20-sdk1-compile-qualification-20-november-2026)
 now passes default and `ledger-transaction` Cargo checks at signed `d14b07869`,

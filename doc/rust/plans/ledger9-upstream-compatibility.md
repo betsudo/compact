@@ -1,6 +1,18 @@
 # Ledger 9 upstream compatibility
 
-## Current publication and coverage snapshot, 2026-11-20
+## Current standalone proof-data update, 2026-11-26
+
+The [Clear/Set/Map qualification](clear-set-map-proof-data.md) preserves the
+intact original Map fixture, repairs terminal Unit Map returns and adds a typed
+membership capture helper. Source-bound local arm64 current-SDK qualification
+now includes three fresh checked Map proofs and 15 separate SDK verification
+outcomes: six acceptances and nine refusals. This does not close the released
+SDK matrix, native Linux or applicable funded transaction/replay gates. The
+portable public harness is qualified separately from those retained receipts;
+k<=8 remains the automatic limit and measured k13 Clear/Set runs are explicit
+slow-lane work. The broad migration remains incomplete.
+
+## Earlier current publication and coverage snapshot, 2026-11-20
 
 The complete current-runtime comparison now runs all twelve byte-identical
 original modules: 1,091 collected cases per profile, with no skips, todos or
