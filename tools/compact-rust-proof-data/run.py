@@ -192,7 +192,7 @@ def main():
   data=json.loads((bundle/'sdk-gate.json').read_text());materialized.extend(ref(out,p)for p in [sdkmeta,sdkbuild,bundle/'sdk-gate.json']);messages=[json.loads(x)for x in sdkbuild.read_text().splitlines()if x.startswith('{')]
   exe={m['target']['name']:m['executable']for m in messages if m.get('reason')=='compiler-artifact'and m['target']['kind']==['bin']and m.get('executable')and m['target']['name']in ['produce','verify']};assert set(exe)=={'produce','verify'}
   for path in exe.values():source_files[Path(path).resolve()]=fingerprint(Path(path).resolve())
-  generated=out/'generated';argv=[a.compiler,'--target','rust','--target','ts','--feature-zkir-v3','--skip-zk','--ts-runtime-profile','released-0.21.0','--rust-runtime-root',str(REPO/'runtime-rs'),'--rust-require-recording','--rust-standalone-proof-data',str(source),str(generated)]
+  generated=out/'generated';argv=[a.compiler,'--target','rust','--target','ts','--feature-zkir-v3','--skip-zk','--ts-runtime-profile','released-0.21.0','--rust-runtime-root',str(REPO),'--rust-require-recording','--rust-standalone-proof-data',str(source),str(generated)]
   run('normal-generation',argv,compiler=True,timeout=300)
   source_trees[generated]=source_tree(generated)
   generated_manifest=generated/'contract/Cargo.toml';g=tomllib.loads(generated_manifest.read_text());assert g['lib']['path']=='lib.rs'

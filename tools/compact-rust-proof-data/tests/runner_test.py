@@ -20,6 +20,13 @@ from pathlib import Path
 spec=importlib.util.spec_from_file_location('runner',Path(__file__).parents[1]/'run.py');runner=importlib.util.module_from_spec(spec);spec.loader.exec_module(runner)
 SOURCE=(Path(__file__).parents[1]/'run.py').read_text();MAIN=next(n for n in ast.parse(SOURCE).body if isinstance(n,ast.FunctionDef)and n.name=='main')
 class RunnerTests(unittest.TestCase):
+ def test_normal_generation_passes_the_workspace_runtime_root(self):
+  outer=next(n for n in MAIN.body if isinstance(n,ast.Try)and n.finalbody)
+  assignment=next(n for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='argv'for t in n.targets))
+  workspace=Path('/fixture/workspace')
+  ns=dict(a=types.SimpleNamespace(compiler='/fixture/compactc'),REPO=workspace,source=workspace/'original.compact',generated=Path('/fixture/output'),str=str)
+  exec(compile(ast.Module(body=[assignment],type_ignores=[]),'actual-generation-arguments','exec'),ns)
+  args=ns['argv'];self.assertEqual(args[args.index('--rust-runtime-root')+1],str(workspace))
  def test_real_finalizer_never_writes_or_reads_under_replaced_owner(self):
   final=next(n.finalbody for n in MAIN.body if isinstance(n,ast.Try)and n.finalbody)
   primary=RuntimeError('first');events=[];out=Path('/virtual/owner')
