@@ -109,7 +109,7 @@ def evaluate(metadata,lock,manifest,buildlog,kind,check_sources=True):
  if kind=='sdk':assert len(local)==1 and local[0]['id']==root and local[0]['name']=='compact-rust-proof-data'
  else:
   assert packages[root]['name']=='portable-proof-data-capture'
-  assert all(p['name']in {'portable-proof-data-capture','compact-rust-proof-data','compact-contract-original-tiny','compact-contract-map-field-field','compact-contract-original-map-field-field','compact-contract-original-map-field-field-test','midnight-compact-runtime','midnight-compact-runtime-macros'}for p in local)
+  assert all(p['name']in {'portable-proof-data-capture','compact-rust-proof-data','compact-contract-original-tiny','compact-contract-original-set-field','compact-contract-map-field-field','compact-contract-original-map-field-field','compact-contract-original-map-field-field-test','midnight-compact-runtime','midnight-compact-runtime-macros'}for p in local)
  for n in nodes.values():assert not(FORBIDDEN&set(n['features'])),'forbidden selected feature'
  for p in packages.values():assert p['name']not in {'midnight-ledger-v9','midnight-ledger-v8','midnight-transaction'}
  expected={'midnight-transient-crypto':('3.1.0',LEDGER),'midnight-zkir':('3.2.1',ZKIR),'midnight-proofs':('0.8.2',ZK),'midnight-curves':('0.3.1',ZK),'midnight-zk-stdlib':('2.4.0',ZK),'midnight-serialize':('1.2.1',LEDGER)}

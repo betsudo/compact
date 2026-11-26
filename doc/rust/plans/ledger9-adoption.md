@@ -1,6 +1,21 @@
 # Ledger 9 adoption on the Rust AST line
 
-## Current Map read facade qualification, 2026-11-26
+## Current root Set read qualification, 2026-11-26
+
+The [root Set qualification](root-set-read-proof-data.md) retains the original
+six-export fixture and ten-assert test, repairs terminal Unit mutation returns
+and adds opt-in emptiness/membership/Uint64 size proof-data helpers. Local arm64
+checks pass 2,501 backend tests, 77 SDK tests, 28 Python tests, strict Clippy,
+fresh normal generation and actual non-Clone generated-client compilation.
+Each read has four fresh proofs and twenty returned independent SDK outcomes;
+membership measures k7/62 rows and size k6/35 rows. Released runtime parity
+passes strict TSC/four cases per lane with 30/33 genuine membership/size checks
+and awaited flushes. Emptiness retains its separate earlier current/SDK1 subset.
+Full SDK1, Linux, original-suite and held transaction gates remain open; exact
+compiler/source/proof epochs and admitted before-state/shared SDK crypto limits
+are explicit. Dated snapshots below retain their scope.
+
+## Earlier Map read facade qualification, 2026-11-26
 
 The [Clear/Set/Map qualification](clear-set-map-proof-data.md#map-size-native-proof-and-typescript-qualification-26-november-2026)
 records Lookup, emptiness and Uint64 size helpers at separate exact epochs.

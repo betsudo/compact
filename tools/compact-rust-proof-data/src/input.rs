@@ -31,6 +31,9 @@ pub enum Profile {
     MapMember,
     MapLookup,
     MapIsEmpty,
+    SetIsEmpty,
+    SetMember,
+    SetSize,
     UnitUint64,
     TinyClear,
     TinySet,
@@ -189,7 +192,7 @@ impl Bundle {
                 scalar(f)?;
             }
             match input.profile {
-                Profile::MapMember => {
+                Profile::MapMember | Profile::SetMember => {
                     ensure!(
                         case.input.len() == 1 && case.output.len() == 1,
                         "Field Boolean signature"
@@ -201,7 +204,7 @@ impl Bundle {
                     case.input.len() == 1 && case.output.len() == 1,
                     "Field Field lookup signature"
                 ),
-                Profile::MapIsEmpty => {
+                Profile::MapIsEmpty | Profile::SetIsEmpty => {
                     ensure!(
                         case.input.is_empty() && case.output.len() == 1,
                         "Unit Boolean is_empty signature"
@@ -212,7 +215,7 @@ impl Bundle {
                         "Boolean output"
                     );
                 }
-                Profile::UnitUint64 => {
+                Profile::UnitUint64 | Profile::SetSize => {
                     ensure!(
                         case.input.is_empty() && case.output.len() == 1,
                         "Unit Uint64 size signature"

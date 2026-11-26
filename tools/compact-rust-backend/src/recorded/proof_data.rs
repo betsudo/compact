@@ -33,6 +33,9 @@ mod map_is_empty;
 mod map_lookup;
 mod map_member;
 mod map_size;
+mod set_is_empty;
+mod set_member;
+mod set_size;
 
 /// The optional Map families share only this physical root-slot boundary.
 /// Ordinary Map lowering and each family's operation/type checks stay separate.
@@ -50,6 +53,19 @@ fn root_field_map_slot(field: &str, index: u8, fields: &HashMap<&str, &LedgerFie
                 key: Type::Field,
                 value: Type::Field,
             })
+}
+
+/// Only the physical root Set<Field> slot is shared by the optional Set reads.
+fn root_field_set_slot(field: &str, index: u8, fields: &HashMap<&str, &LedgerField>) -> bool {
+    let Some(declaration) = fields.get(field) else {
+        return false;
+    };
+    declaration.id == field
+        && declaration.index == index
+        && index < 16
+        && declaration.path.len() <= 1
+        && declaration.physical_path() == vec![index]
+        && declaration.declaration == (LedgerFieldKind::Set { ty: Type::Field })
 }
 
 /// A closed Field literal may be bound by the frontend before a Set mutation.
@@ -624,6 +640,9 @@ pub(crate) fn supported(
             || unit_counter_program(circuit, ledger_fields)
             || maybe_field_getter(circuit, circuits, pure, ledger_fields)
             || map_is_empty::supported(circuit, ledger_fields)
+            || set_is_empty::supported(circuit, ledger_fields)
+            || set_member::supported(circuit, ledger_fields)
+            || set_size::supported(circuit, ledger_fields)
             || map_size::supported(circuit, ledger_fields)
             || map_member::supported(circuit, ledger_fields)
             || map_lookup::supported(circuit, ledger_fields)

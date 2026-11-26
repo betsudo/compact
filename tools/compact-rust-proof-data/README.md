@@ -341,3 +341,49 @@ before parent readers and never automatically retries above k8. Full SDK1,
 native Linux, funded/EntryPoint/real two-contract and broad original-suite
 qualification remain open. The release label 0.31.222 does not relabel these
 executed compiler 0.31.221/component epochs.
+
+## Executed root Set read lanes, 26 November 2026
+
+```sh
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/compactc \
+  --case set-member --out /absolute/fresh-member-run
+# Use set-is-empty or set-size for the other independently qualified reads.
+```
+
+All three lanes select the unchanged 1,166-byte six-export upstream Set fixture.
+Emptiness uses Unit→Bool, membership Field→Bool and size Unit→Uint64. They
+require the typed root Set<Field>/c0, the full recorded API roster, exact API1
+helper inventory and exact raw programs. Set member pins its own 751-byte
+`%value.0` artifact without normalizing Map SSA; Set size pins its 597-byte raw
+artifact. Existing one-helper emptiness output and the exact three-helper
+successor are separately admitted. All default APIs and ABI54 remain intact.
+
+Local current-SDK qualification now passes all 18 public phases for each lane:
+
+| Read | k / rows | Complete fields / None skips | Fresh proofs | SDK accept / refusal |
+| --- | --- | --- | --- | --- |
+| Emptiness, earlier epoch | 6 / 41 | 18 / 6 | 4 × 3,845 bytes | 8 / 12 |
+| Membership | 7 / 62 | 17 / 5 | 4 × 3,845 bytes | 8 / 12 |
+| Size | 6 / 35 | 12 / 4 | 4 × 3,845 bytes | 8 / 12 |
+
+The native adapters exercise four fresh contexts each through ordinary,
+recorded and helper routes, exact supported state/context/gas, every ordered
+operation and official VM Verify replay. Membership absence is false; size
+checks duplicate insertion and reset. The separately authored verifier derives
+complete statements without reading producer PI, preimage or prover-key bodies;
+before-state authenticity is admitted and SDK cryptography is shared. Default
+max-k8, model/check before parameter reads and explicit k13 opt-in are unchanged.
+
+Current source checks pass 77 SDK tests, 28 Python tests and strict Clippy.
+Fresh normal generation and actual complete-crate non-Clone client compilation
+pass. Separate released runtime 0.21.0 TypeScript lanes pass strict TSC/four
+Vitest cases with 26/30/33 genuine checks and awaited flushes for emptiness,
+membership and size. Query operations/alignment and four query-only gas
+dimensions match native. These supplemental states add zero original-case
+credit. No full PI/whole-ledger encoding or funded transaction claim follows.
+
+The earlier emptiness proofs also pass the released SDK1 proof-wire subset;
+member/size SDK1 verification, full matrix, Linux, remaining originals and held
+transaction gates remain open. Source/fixture/assertions, executed compiler
+component epochs and cleanup limits are recorded in the
+[scoped qualification](../../doc/rust/plans/root-set-read-proof-data.md).

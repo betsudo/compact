@@ -87726,3 +87726,66 @@ groups than for single tests.
     )
 )
 )
+
+
+;; #800: preserve the intact Set exports and each selected effect exactly once.
+;; This is a saved Rust IR test; no JavaScript runtime is staged here.
+(with-parameter-values ([emit-rust-ir #t] [feature-zkir-v3 #t]
+                        [skip-zk #t] [ts-runtime-profile 'released-0.21.0])
+(run-tests save-manifest
+  (test
+    "examples/adt/exports/set_field.compact"
+    (custom-check
+      (lambda (pass-name x)
+        (define (get object key)
+          (cdr (or (assoc key object)
+                   (error 'rust-set-unit-returns "missing IR field" key))))
+        (define (mutation-object-keys? object keys)
+          (and (list? object) (for-all pair? object)
+               (equal? (list-sort string<? (map car object)) (list-sort string<? keys))))
+        (define (mutation-field-parameters? parameters parameter)
+          (and (vector? parameters)
+               (if parameter
+                   (and (= (vector-length parameters) 1)
+                        (let ([p (vector-ref parameters 0)])
+                          (and (mutation-object-keys? p '("name" "ty"))
+                               (equal? (get p "name") parameter)
+                               (mutation-object-keys? (get p "ty") '("kind"))
+                               (equal? (get (get p "ty") "kind") "field"))))
+                   (= (vector-length parameters) 0))))
+        (define (mutation-action? action kind field index parameter)
+          (and (mutation-object-keys? action
+                   (if parameter '("kind" "field" "index" "value") '("kind" "field" "index")))
+               (equal? (get action "kind") kind)
+               (equal? (get action "field") field)
+               (integer? (get action "index")) (= (get action "index") index)
+               (or (not parameter)
+                   (let ([value (get action "value")])
+                     (and (mutation-object-keys? value '("kind" "name"))
+                          (equal? (get value "kind") "parameter")
+                          (equal? (get value "name") parameter))))))
+        (let* ([ir (read-json-file (format "~a/contract/compact-rust-ir.json" testdir))]
+               [circuits (vector->list (get ir "stateful_circuits"))])
+          (and
+            (equal? (map (lambda (c) (get c "name")) circuits)
+                    '("reset_to_default" "insert" "is_empty" "member" "remove" "size"))
+            (for-all
+              (lambda (name kind)
+                (let* ([c (find (lambda (c) (string=? (get c "name") name)) circuits)]
+                       [returned (get c "return_value")]
+                       [body (get returned "body")]
+                       [actions (get body "actions")]
+                       [reset? (string=? name "reset_to_default")])
+                  (and (mutation-field-parameters? (get c "parameters") (if reset? #f "value"))
+                       (equal? (get c "result") '(("kind" . "unit")))
+                       (equal? (get c "actions") '#())
+                       (string=? (get returned "kind") "effectful")
+                       (string=? (get body "kind") "sequence")
+                       (= (vector-length actions) 1)
+                       (mutation-action? (vector-ref actions 0) kind "c" 0 (if reset? #f "value"))
+                       (equal? (get body "result")
+                         '(("kind" . "value") ("value" . (("kind" . "unit"))))))))
+              '("reset_to_default" "insert" "remove") '("set_reset" "set_insert" "set_remove"))))))
+    )
+)
+)

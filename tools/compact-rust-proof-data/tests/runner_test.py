@@ -80,23 +80,62 @@ class RunnerTests(unittest.TestCase):
   nodes=[n for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id in names for t in n.targets)]
   manifest=next(n.value for n in outer.body if isinstance(n,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='manifest'for t in n.targets))
   profile=next(k.value for k in manifest.keywords if k.arg=='profile')
-  for case,module,operation,expected_profile in [('map-member','map.rs','member','map-member'),('map-lookup','map_lookup.rs','lookup','map-lookup'),('map-is-empty','map_is_empty.rs','is_empty','map-is-empty'),('map-size','map_size.rs','size','unit-uint64'),('tiny-clear','tiny.rs','clear','tiny-clear'),('tiny-set','tiny.rs','set','tiny-set')]:
+  for case,module,operation,expected_profile in [('map-member','map.rs','member','map-member'),('map-lookup','map_lookup.rs','lookup','map-lookup'),('map-is-empty','map_is_empty.rs','is_empty','map-is-empty'),('map-size','map_size.rs','size','unit-uint64'),('set-is-empty','set_is_empty.rs','is_empty','set-is-empty'),('set-member','set_member.rs','member','set-member'),('set-size','set_size.rs','size','set-size'),('tiny-clear','tiny.rs','clear','tiny-clear'),('tiny-set','tiny.rs','set','tiny-set')]:
    ns=dict(a=types.SimpleNamespace(case=case),REPO=Path('/fixture/workspace'),bundle=Path('/fixture/bundle'),generated=Path('/fixture/generated'))
    exec(compile(ast.Module(body=nodes,type_ignores=[]),'actual-case-selection','exec'),ns)
    self.assertEqual(ns['capture_source'],module);self.assertEqual(ns['operation'],operation)
    self.assertEqual(eval(compile(ast.Expression(body=copy.deepcopy(profile)),'actual-profile-routing','eval'),ns),expected_profile)
    self.assertEqual(ns['original_ir'],Path('/fixture/generated/zkir')/(operation+'.zkir'))
-   self.assertEqual(ns['source'].name,'original-map-field-field.compact'if case.startswith('map-')else'original-tiny.compact')
+   self.assertEqual(ns['source'].name,'original-map-field-field.compact'if case.startswith('map-')else'original-set-field.compact'if case in ['set-is-empty','set-member','set-size']else'original-tiny.compact')
  def test_actual_parser_accepts_all_cases_and_preserves_default_budget(self):
   prefix=[]
   for node in MAIN.body:
    prefix.append(node)
    if isinstance(node,ast.Assign)and any(isinstance(t,ast.Name)and t.id=='a'for t in node.targets):break
-  for case in ['map-member','map-lookup','map-is-empty','map-size','tiny-clear','tiny-set',None]:
+  for case in ['map-member','map-lookup','map-is-empty','map-size','set-is-empty','set-member','set-size','tiny-clear','tiny-set',None]:
    extra=['--case',case]if case else[];expected=case or'map-member'
    with mock.patch.object(runner.sys,'argv',['run.py','--compiler','/virtual/compactc','--out','/virtual/fresh',*extra]):
     ns=dict(argparse=runner.argparse,Path=Path)
     exec(compile(ast.Module(body=prefix,type_ignores=[]),'actual-cli-prefix','exec'),ns)
    self.assertEqual(ns['a'].case,expected);self.assertEqual(ns['a'].max_k,8)
    self.assertFalse(ns['a'].allow_large_k);self.assertEqual(ns['a'].out,Path('/virtual/fresh'))
+ def test_set_domain_admission_refuses_map_carrier_and_changed_shape(self):
+  ir=json.loads((runner.REPO/'tools/compact-rust-backend/fixtures/upstream-672/export-set-field/compact-rust-ir.json').read_text())
+  raw=(runner.HERE/'src/producer/map_is_empty.json').read_bytes()
+  caps=dict(schema_version=3,circuits=[dict(name=c['name'],recorded=True,observed_call=True,**(dict(standalone_proof_data=dict(api_version=1,method='is_empty_proof_data'))if c['name']=='is_empty'else{}))for c in ir['stateful_circuits']])
+  self.assertEqual(runner.admit_set_is_empty(ir,caps,raw)['profile'],'set-is-empty')
+  for pointer,value in [('declaration',dict(kind='map',key=dict(kind='field'),value=dict(kind='field'))),('id','other'),('index',1),('path',[0,1])]:
+   changed=copy.deepcopy(ir);changed['ledger_fields'][0][pointer]=value
+   with self.assertRaises(AssertionError):runner.admit_set_is_empty(changed,caps,raw)
+  for field,value in [('parameters',[dict(name='key',ty=dict(kind='field'))]),('actions',[dict(kind='set_reset',field='c',index=0)]),('result',dict(kind='field')),('return_value',dict(kind='map_is_empty',field='c',index=0))]:
+   changed=copy.deepcopy(ir);next(c for c in changed['stateful_circuits']if c['name']=='is_empty')[field]=value
+   with self.assertRaises(AssertionError):runner.admit_set_is_empty(changed,caps,raw)
+  changed=copy.deepcopy(caps);next(c for c in changed['circuits']if c['name']=='is_empty')['standalone_proof_data']['api_version']=2
+  with self.assertRaises(AssertionError):runner.admit_set_is_empty(ir,changed,raw)
+  with self.assertRaises(AssertionError):runner.admit_set_is_empty(ir,caps,raw+b' ')
+ def test_set_read_typed_domains_and_helper_inventory_refuse_cross_subjects(self):
+  ir=json.loads((runner.REPO/'tools/compact-rust-backend/fixtures/upstream-672/export-set-field/compact-rust-ir.json').read_text())
+  caps=dict(schema_version=3,circuits=[dict(name=c['name'],recorded=True,observed_call=True,**(dict(standalone_proof_data=dict(api_version=1,method=c['name']+'_proof_data'))if c['name']in['is_empty','member','size']else{}))for c in ir['stateful_circuits']])
+  for profile,name in [('set-member','member'),('set-size','size')]:
+   raw=(runner.HERE/'src/producer'/('set_'+name+'.json')).read_bytes()
+   self.assertEqual(runner.admit_set_read(profile,ir,caps,raw)['profile'],profile)
+   for key,value in [('id','other'),('index',1),('path',[0,1]),('declaration',dict(kind='map',key=dict(kind='field'),value=dict(kind='field')))]:
+    changed=copy.deepcopy(ir);changed['ledger_fields'][0][key]=value
+    with self.assertRaises(AssertionError):runner.admit_set_read(profile,changed,caps,raw)
+   for key,value in [('actions',[dict(kind='set_reset',field='c',index=0)]),('result',dict(kind='field')),('parameters',[]if name=='member'else[dict(name='extra',ty=dict(kind='field'))])]:
+    changed=copy.deepcopy(ir);next(c for c in changed['stateful_circuits']if c['name']==name)[key]=value
+    with self.assertRaises(AssertionError):runner.admit_set_read(profile,changed,caps,raw)
+   changed=copy.deepcopy(caps);next(c for c in changed['circuits']if c['name']==name)['standalone_proof_data']['api_version']=2
+   with self.assertRaises(AssertionError):runner.admit_set_read(profile,ir,changed,raw)
+   with self.assertRaises(AssertionError):runner.admit_set_read(profile,ir,caps,raw+b' ')
+   swapped=raw.replace(b'%value.0',b'%key.0')if name=='member'else(runner.HERE/'src/producer/set_member.json').read_bytes()
+   with self.assertRaises(AssertionError):runner.admit_set_read(profile,ir,caps,swapped)
+ def test_set_is_empty_keeps_one_helper_history_and_accepts_exact_three_helper_successor(self):
+  ir=json.loads((runner.REPO/'tools/compact-rust-backend/fixtures/upstream-672/export-set-field/compact-rust-ir.json').read_text())
+  raw=(runner.HERE/'src/producer/map_is_empty.json').read_bytes()
+  for names in [['is_empty'],['is_empty','member','size']]:
+   caps=dict(schema_version=3,circuits=[dict(name=c['name'],recorded=True,observed_call=True,**(dict(standalone_proof_data=dict(api_version=1,method=c['name']+'_proof_data'))if c['name']in names else{}))for c in ir['stateful_circuits']])
+   self.assertEqual(runner.admit_set_is_empty(ir,caps,raw)['profile'],'set-is-empty')
+  caps['circuits'][-1]['standalone_proof_data']['method']='other'
+  with self.assertRaises(AssertionError):runner.admit_set_is_empty(ir,caps,raw)
 if __name__=='__main__':unittest.main()

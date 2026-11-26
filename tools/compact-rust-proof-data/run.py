@@ -99,12 +99,53 @@ def reap(p):
  if problem:raise problem
  return disposition['exit']
 
+def admit_root_set(ir,capabilities):
+ names=['reset_to_default','insert','is_empty','member','remove','size']
+ assert ir['schema_version']==20 and len(ir['ledger_fields'])==1
+ field=ir['ledger_fields'][0]
+ assert field['id']=='c'and field['index']==0 and field.get('path',[])in[[],[0]]
+ assert field['declaration']==dict(kind='set',ty=dict(kind='field'))
+ circuits=ir['stateful_circuits'];assert [c['name']for c in circuits]==names
+ assert capabilities['schema_version']==3 and [c['name']for c in capabilities['circuits']]==names
+ assert all(c['recorded']and c['observed_call']for c in capabilities['circuits'])
+ helpers=[c for c in capabilities['circuits']if c.get('standalone_proof_data')]
+ assert [c['name']for c in helpers]in[['is_empty'],['is_empty','member','size']]
+ for c in helpers:assert c['standalone_proof_data']==dict(api_version=1,method=c['name']+'_proof_data')
+ return circuits
+
+def admit_set_is_empty(ir,capabilities,raw):
+ # Old one-helper normal output remains admitted; the exact three-helper successor is separate.
+ circuits=admit_root_set(ir,capabilities)
+ query=next(c for c in circuits if c['name']=='is_empty')
+ assert not query.get('internal',False)and query['parameters']==[]and query['actions']==[]
+ assert query['result']==dict(kind='boolean')and query['return_value']==dict(kind='set_is_empty',field='c',index=0)
+ assert hashlib.sha256(raw).hexdigest()=='e334f93be4e239b7a330c929d6fb7872b92e223a4891b4f099792944b78cb4d1'
+ return dict(collection='Set<Field>',field='c',physical_path=[0],operation='is_empty',typed_input='Unit',typed_output='Boolean',profile='set-is-empty',capture_api_version=1)
+
+def admit_set_read(profile,ir,capabilities,raw):
+ assert profile in ['set-member','set-size']
+ circuits=admit_root_set(ir,capabilities)
+ assert [c['name']for c in capabilities['circuits']if c.get('standalone_proof_data')]==['is_empty','member','size']
+ operation='member'if profile=='set-member'else'size'
+ query=next(c for c in circuits if c['name']==operation)
+ assert not query.get('internal',False)and query['actions']==[]
+ if profile=='set-member':
+  assert query['parameters']==[dict(name='value',ty=dict(kind='field'))]and query['result']==dict(kind='boolean')
+  assert query['return_value']==dict(kind='set_member',field='c',index=0,value=dict(kind='parameter',name='value'))
+  expected='0c154639d3699ee5644a6dceb6a65c4d3f3d5b6364b9305885b947ce4471df7d'
+ else:
+  assert query['parameters']==[]and query['result']==dict(kind='unsigned',max='18446744073709551615')
+  assert query['return_value']==dict(kind='set_size',field='c',index=0)
+  expected='acf33f68408d7e7a18ae4863d187310ff0a795e10f375d21d458ac6064ecd36d'
+ assert hashlib.sha256(raw).hexdigest()==expected
+ return dict(collection='Set<Field>',field='c',physical_path=[0],operation=operation,typed_input='Field'if profile=='set-member'else'Unit',typed_output='Boolean'if profile=='set-member'else'Uint64',profile=profile,capture_api_version=1)
+
 def main():
- ap=argparse.ArgumentParser();ap.add_argument('--compiler',required=True);ap.add_argument('--case',choices=['map-member','map-lookup','map-is-empty','map-size','tiny-clear','tiny-set'],default='map-member');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--max-k',type=int,default=8);ap.add_argument('--allow-large-k',action='store_true');ap.add_argument('--binding-le',default=(17).to_bytes(32,'little').hex());ap.add_argument('--randomness-le',default=(29).to_bytes(32,'little').hex());a=ap.parse_args()
+ ap=argparse.ArgumentParser();ap.add_argument('--compiler',required=True);ap.add_argument('--case',choices=['map-member','map-lookup','map-is-empty','map-size','set-is-empty','set-member','set-size','tiny-clear','tiny-set'],default='map-member');ap.add_argument('--out',type=Path,required=True);ap.add_argument('--max-k',type=int,default=8);ap.add_argument('--allow-large-k',action='store_true');ap.add_argument('--binding-le',default=(17).to_bytes(32,'little').hex());ap.add_argument('--randomness-le',default=(29).to_bytes(32,'little').hex());a=ap.parse_args()
  assert 1<=a.max_k<=13 and(a.max_k<=8 or a.allow_large_k)
  assert REPO not in a.out.resolve().parents and a.out.resolve()!=REPO,'output must be outside repository sources'
  assert not a.out.exists();a.out.mkdir(mode=0o700);out=a.out.resolve();target=out/'target';target.mkdir(mode=0o700);bundle=out/'inputs';bundle.mkdir(mode=0o700)
- start=time.monotonic();rows=[];first=None;child=None;materialized=[];admitted_input=None;data=None;source_files={};source_trees={};harness_revision=None;compiler_image=None;check_input=None;check_model=None
+ start=time.monotonic();rows=[];first=None;child=None;materialized=[];admitted_input=None;data=None;source_files={};source_trees={};harness_revision=None;compiler_image=None;check_input=None;check_model=None;domain_admission=None
  roots={p:identity(p)for p in [out,target,bundle]};last_census=0
  env={k:v for k,v in os.environ.items()if k in ['HOME','CARGO_HOME','RUSTUP_HOME','PATH']};env.update(CARGO_TARGET_DIR=str(target),CARGO_NET_OFFLINE='true',CARGO_INCREMENTAL='0',CARGO_BUILD_JOBS='2',RAYON_NUM_THREADS='2',CARGO_PROFILE_DEV_DEBUG='0',RUSTUP_TOOLCHAIN='1.99.0',LANG='C',LC_ALL='C')
  def cancel(*_):raise KeyboardInterrupt('cancelled')
@@ -172,9 +213,10 @@ def main():
   return stdout
  try:
   harness_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=REPO,text=True,timeout=15).strip()
-  source=REPO/'tools/compact-rust-backend/fixtures/upstream-672'/('export-map-field-field/original-map-field-field.compact'if a.case in ['map-member','map-lookup','map-is-empty','map-size']else'tiny-get/original-tiny.compact')
+  source=REPO/'tools/compact-rust-backend/fixtures/upstream-672'/('export-map-field-field/original-map-field-field.compact'if a.case in ['map-member','map-lookup','map-is-empty','map-size']else'export-set-field/original-set-field.compact'if a.case in ['set-is-empty','set-member','set-size']else'tiny-get/original-tiny.compact')
   for tree in [HERE,REPO/'runtime-rs/src',REPO/'runtime-rs-macros/src']:source_trees[tree]=source_tree(tree)
   for path in [REPO/'Cargo.toml',REPO/'Cargo.lock',REPO/'runtime-rs/Cargo.toml',REPO/'runtime-rs-macros/Cargo.toml',source]:source_files[path]=fingerprint(path)
+  if a.case in ['set-is-empty','set-member','set-size']:assert source_files[source]['bytes']==1166 and source_files[source]['sha256']=='5f70d7788794b1a35f2539e14622b0002efeffb9f4411fd76b66fc25da2b5f2f'
   a.compiler=str(Path(a.compiler).resolve(strict=True));compiler_image=fingerprint(Path(a.compiler));source_files[Path(a.compiler)]=compiler_image
   source_files[Path(sys.executable).resolve()]=fingerprint(Path(sys.executable).resolve())
   if sys.platform=='darwin':
@@ -196,8 +238,13 @@ def main():
   run('normal-generation',argv,compiler=True,timeout=300)
   source_trees[generated]=source_tree(generated)
   generated_manifest=generated/'contract/Cargo.toml';g=tomllib.loads(generated_manifest.read_text());assert g['lib']['path']=='lib.rs'
+  if a.case in ['set-is-empty','set-member','set-size']:
+   assert g['package']['name']=='compact-contract-original-set-field'
+   ir_path=generated/'contract/compact-rust-ir.json';capabilities_path=generated/'contract/rust-capabilities.json';raw_path=generated/'zkir'/({'set-is-empty':'is_empty','set-member':'member','set-size':'size'}[a.case]+'.zkir')
+   domain_admission=(admit_set_is_empty(json.loads(ir_path.read_text()),json.loads(capabilities_path.read_text()),raw_path.read_bytes())if a.case=='set-is-empty'else admit_set_read(a.case,json.loads(ir_path.read_text()),json.loads(capabilities_path.read_text()),raw_path.read_bytes()))
+   materialized.extend(ref(out,p)for p in [ir_path,capabilities_path,raw_path])
   capture=out/'capture-crate';capture.mkdir(mode=0o700)
-  capture_source={'map-member':'map.rs','map-lookup':'map_lookup.rs','map-is-empty':'map_is_empty.rs','map-size':'map_size.rs','tiny-clear':'tiny.rs','tiny-set':'tiny.rs'}[a.case]
+  capture_source={'map-member':'map.rs','map-lookup':'map_lookup.rs','map-is-empty':'map_is_empty.rs','map-size':'map_size.rs','set-is-empty':'set_is_empty.rs','set-member':'set_member.rs','set-size':'set_size.rs','tiny-clear':'tiny.rs','tiny-set':'tiny.rs'}[a.case]
   shutil.copyfile(HERE/'capture/common.rs',capture/'common.rs');shutil.copyfile(HERE/'capture'/capture_source,capture/'main.rs')
   q=lambda x:json.dumps(str(x))
   # This is an EXPLICIT temporary native consumer, not a silently rewritten SDK
@@ -222,7 +269,7 @@ def main():
   run('capture-gate',[sys.executable,str(HERE/'sdk_gate.py'),str(metadata),str(capture/'Cargo.lock'),str(capture/'Cargo.toml'),str(build),str(out/'capture-sdk-gate.json'),'--kind','capture'])
   messages=[json.loads(x)for x in build.read_text().splitlines()if x.startswith('{')];cexe=[m['executable']for m in messages if m.get('reason')=='compiler-artifact'and m['target']['name']=='capture'and m.get('executable')];assert len(cexe)==1
   source_files[Path(cexe[0]).resolve()]=fingerprint(Path(cexe[0]).resolve())
-  captures=bundle/'capture';operation={'map-member':'member','map-lookup':'lookup','map-is-empty':'is_empty','map-size':'size','tiny-clear':'clear','tiny-set':'set'}[a.case]
+  captures=bundle/'capture';operation={'map-member':'member','map-lookup':'lookup','map-is-empty':'is_empty','map-size':'size','set-is-empty':'is_empty','set-member':'member','set-size':'size','tiny-clear':'clear','tiny-set':'set'}[a.case]
   run('capture',[cexe[0],operation,str(captures),a.binding_le,a.randomness_le],timeout=300)
   cases=json.loads((captures/'cases.json').read_text())
   for c in cases:
@@ -260,7 +307,7 @@ def main():
     except BaseException as exc:secondary.append('SDK source postguard: '+repr(exc));first=first or exc
    try:caps([],strict=True);sources()
    except BaseException as exc:secondary.append('final bounds/source: '+repr(exc));first=first or exc
-   record=dict(schema='compact-rust-proof-data-run/v1',case=a.case,check_input=check_input,check_model=check_model,input_manifest=admitted_input,harness_git_revision=harness_revision,compiler_source_revision='UNKNOWN',compiler_image=compiler_image,bound_sources={str(k):v for k,v in source_files.items()},bound_source_trees={str(k):v for k,v in source_trees.items()},materialized=materialized,secondary_errors=secondary,error=repr(first)if first else None,rows=rows,seconds=time.monotonic()-start,owned_rebuildable_target=str(target),normal_generation_attempted=any(r.get('phase')=='normal-generation'for r in rows),qualified=False,limits='No Linux/releasedSDK1/chain/transaction/fullmatrix qualification')
+   record=dict(schema='compact-rust-proof-data-run/v1',case=a.case,domain_admission=domain_admission,check_input=check_input,check_model=check_model,input_manifest=admitted_input,harness_git_revision=harness_revision,compiler_source_revision='UNKNOWN',compiler_image=compiler_image,bound_sources={str(k):v for k,v in source_files.items()},bound_source_trees={str(k):v for k,v in source_trees.items()},materialized=materialized,secondary_errors=secondary,error=repr(first)if first else None,rows=rows,seconds=time.monotonic()-start,owned_rebuildable_target=str(target),normal_generation_attempted=any(r.get('phase')=='normal-generation'for r in rows),qualified=False,limits='No Linux/releasedSDK1/chain/transaction/fullmatrix qualification')
    try:
     assert original_owner(out,roots[out]),'Owner replaced before receipt'
     save(out/'run.json',record)

@@ -3244,6 +3244,44 @@
                 (terminal-unit-map-mutation-return? expr))]
           [else (unit-map-mutation-return-leaf? expr)]))
 
+      ;; The intact original Set<Field> exports return reset/insert/remove's Unit
+      ;; values directly. Keep only these typed, pure-argument root operations
+      ;; in the existing ordered StateAction owner, once before Unit. The older
+      ;; conditional Set-insert owner retains its existing domain.
+      (define (unit-root-field-set-mutation-return-leaf? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(public-ledger ,src ,ledger-field-name ,sugar? (,path-elt* ...) ,src^ ,adt-op ,expr* ...)
+           (nanopass-case (Lnodisclose ADT-Op) adt-op
+             [(,ledger-op ,op-class (,adt-name (,adt-formal* ,adt-arg*) ...) ((,var-name* ,type*) ...) ,type ,vm-code)
+              (and (eq? adt-name 'Set)
+                   (case ledger-op
+                     [(insert remove)
+                      (and (eq? op-class (if (eq? ledger-op 'insert) 'update 'remove))
+                           (= (length type*) 1)
+                           (equal? (type-ir (car type*) src) (kind "field"))
+                           (= (length expr*) 1))]
+                     [(resetToDefault)
+                      (and (eq? op-class 'remove) (null? type*) (null? expr*))]
+                     [else #f])
+                   (= (length adt-arg*) 1)
+                   (equal? (type-ir (car adt-arg*) src) (kind "field"))
+                   (for-all pure-unit-set-insert-argument? expr*)
+                   (= (length path-elt*) 1)
+                   (integer? (car path-elt*)) (<= 0 (car path-elt*) 14)
+                   (unit-return-type? type))])]
+          [else #f]))
+
+      (define (terminal-unit-root-field-set-mutation-return? expr)
+        (nanopass-case (Lnodisclose Expression) expr
+          [(return ,src ,expr) (terminal-unit-root-field-set-mutation-return? expr)]
+          [(let* ,src ([,local* ,expr*] ...) ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-root-field-set-mutation-return? expr))]
+          [(seq ,src ,expr* ... ,expr)
+           (and (for-all pure-unit-set-insert-argument? expr*)
+                (terminal-unit-root-field-set-mutation-return? expr))]
+          [else (unit-root-field-set-mutation-return-leaf? expr)]))
+
       ;; This selects the existing ordered return owner, not recording
       ;; admission. Keep the declared Vector context on actual literal tails;
       ;; nonliteral conversions select this owner through the value predicate.
@@ -3423,7 +3461,8 @@
           [else
            (if (and (unit-return-type? expected-type)
                     (or (unit-set-insert-return-leaf? expr)
-                        (unit-map-mutation-return-leaf? expr)))
+                        (unit-map-mutation-return-leaf? expr)
+                        (unit-root-field-set-mutation-return-leaf? expr)))
                (object (cons "kind" "sequence")
                        (cons "actions" (vector (state-action-ir expr owner-src environment witness-ids)))
                        (cons "result" (object (cons "kind" "value")
@@ -4300,7 +4339,8 @@
                                              (has-unit-mutation-initializer? expr)
                                              (or (and (unit-return-type? type)
                                                       (or (terminal-unit-set-insert-return? expr)
-                                                          (terminal-unit-map-mutation-return? expr)))
+                                                          (terminal-unit-map-mutation-return? expr)
+                                                          (terminal-unit-root-field-set-mutation-return? expr)))
                                                  (and (not (unit-return-type? type))
                                                       (or (terminal-storage-mutation-conditional? expr)
                                                           (lexical-storage-mutation-return? expr)))))]

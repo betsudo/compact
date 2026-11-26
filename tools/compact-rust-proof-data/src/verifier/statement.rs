@@ -29,6 +29,9 @@ pub fn profile_ir(profile: Profile) -> Result<Value> {
         Profile::MapMember => include_str!("map_member.json"),
         Profile::MapLookup => include_str!("map_lookup.json"),
         Profile::MapIsEmpty => include_str!("map_is_empty.json"),
+        Profile::SetIsEmpty => include_str!("set_is_empty.json"),
+        Profile::SetMember => include_str!("set_member.json"),
+        Profile::SetSize => include_str!("set_size.json"),
         Profile::UnitUint64 => include_str!("map_size.json"),
         Profile::TinyClear => include_str!("tiny_clear.json"),
         Profile::TinySet => include_str!("tiny_set.json"),
@@ -105,6 +108,12 @@ pub fn derive(
                 && (typed_out[0] == Fr::from(0u64) || typed_out[0] == Fr::from(1u64)),
             "Unit to Boolean typed is_empty IO"
         ),
+        Profile::SetIsEmpty => ensure!(
+            typed_in.is_empty()
+                && typed_out.len() == 1
+                && (typed_out[0] == Fr::from(0u64) || typed_out[0] == Fr::from(1u64)),
+            "Set Unit to Boolean typed is_empty IO"
+        ),
         Profile::UnitUint64 => ensure!(
             typed_in.is_empty()
                 && typed_out.len() == 1
@@ -112,6 +121,20 @@ pub fn derive(
                     .iter()
                     .all(|byte| *byte == 0),
             "Unit to Uint64 typed size IO"
+        ),
+        Profile::SetMember => ensure!(
+            typed_in.len() == 1
+                && typed_out.len() == 1
+                && (typed_out[0] == Fr::from(0u64) || typed_out[0] == Fr::from(1u64)),
+            "Set Field to Boolean typed member IO"
+        ),
+        Profile::SetSize => ensure!(
+            typed_in.is_empty()
+                && typed_out.len() == 1
+                && typed_out[0].as_le_bytes()[8..]
+                    .iter()
+                    .all(|byte| *byte == 0),
+            "Set Unit to Uint64 typed size IO"
         ),
         Profile::TinyClear => ensure!(typed_in.is_empty() && typed_out.is_empty(), "Unit clear IO"),
         Profile::TinySet => ensure!(
@@ -257,10 +280,31 @@ pub fn derive(
             );
             (18, 6)
         }
+        Profile::SetIsEmpty => {
+            ensure!(
+                public_out == typed_out && authority == 0,
+                "actual Set Boolean is_empty result"
+            );
+            (18, 6)
+        }
         Profile::UnitUint64 => {
             ensure!(
                 public_out == typed_out && authority == 0,
                 "actual Uint64 size result"
+            );
+            (12, 4)
+        }
+        Profile::SetMember => {
+            ensure!(
+                public_out == typed_out && authority == 0,
+                "actual Set Boolean member result"
+            );
+            (17, 5)
+        }
+        Profile::SetSize => {
+            ensure!(
+                public_out == typed_out && authority == 0,
+                "actual Set Uint64 size result"
             );
             (12, 4)
         }

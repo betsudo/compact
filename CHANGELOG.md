@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Toolchain 0.31.223, language 0.23.105, runtime 0.18.0]
+
+Unreleased root Set read proof-data additions.
+
+### Added
+
+- Add opt-in root `Set<Field>` emptiness, membership and `Uint<64>` size
+  proof-data helpers. Preserve all six original exports, native/recorded APIs,
+  no-Clone/witness-free helper bounds, proof-data API1 and runtime ABI54.
+- Extend native captures, checked producer and separately authored verifier
+  with exact Set raw templates, complete statement reconstruction, typed
+  Bool/Uint64 results and binding/corruption/distinct-key refusals.
+
+### Fixed
+
+- Preserve terminal Unit Set insert/remove/reset returns and execute the
+  original operation once, including the actual reset remove primitive (#800).
+  Retain the byte-exact original six-export fixture and ten-assert test.
+
+### Qualification scope
+
+- Local macOS arm64 checks pass 2,501 backend tests (seven existing ignored),
+  77 SDK tests, 28 Python tests, strict Clippy, fresh normal Rust/TypeScript
+  generation and actual non-Clone full-crate helper client compilation.
+- Each read retains four fresh checked proofs and twenty returned independent
+  SDK outcomes: eight accepts and twelve refusals. Membership measures k7/62
+  rows/17 fields/five None skips; size k6/35 rows/12 fields/four skips.
+- Released runtime 0.21.0 parity passes strict TSC/four cases per read, with
+  30/33 genuine membership/size JS/WASM checks and awaited flushes. Complete
+  ordered query operations/operands/alignment and four gas dimensions match
+  native. Before-state authenticity is admitted; SDK crypto is shared.
+- These runs used compiler 0.31.222 components, including Rust `e9da06ea` and
+  Scheme `488484c2`; earlier emptiness and original-assertion epochs remain
+  separate. This 0.31.223 publication label does not relabel executed evidence.
+  The earlier emptiness released-SDK1 proof-wire subset is retained; new
+  member/size SDK1, full matrix, native Linux, remaining originals and held
+  funded/EntryPoint/real two-contract gates stay open. No new original-case
+  credit is claimed. See doc/rust/plans/root-set-read-proof-data.md.
+
 ## [Toolchain 0.31.222, language 0.23.105, runtime 0.18.0]
 
 Unreleased exported Map read proof-data additions.

@@ -61,19 +61,39 @@ fn project(
     public_out: &[Fr],
     header: StatementHeader,
 ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
-    let readonly_map = matches!(
+    let readonly_collection = matches!(
         profile,
-        Profile::MapMember | Profile::MapLookup | Profile::MapIsEmpty | Profile::UnitUint64
+        Profile::MapMember
+            | Profile::MapLookup
+            | Profile::MapIsEmpty
+            | Profile::SetIsEmpty
+            | Profile::SetMember
+            | Profile::SetSize
+            | Profile::UnitUint64
     );
+    if profile == Profile::SetMember {
+        let original: Value = serde_json::from_str(include_str!("set_member.json"))?;
+        ensure!(
+            shape == &original,
+            "exact admitted readonly Set member profile"
+        );
+    }
+    if profile == Profile::SetSize {
+        let original: Value = serde_json::from_str(include_str!("set_size.json"))?;
+        ensure!(
+            shape == &original,
+            "exact admitted readonly Set size profile"
+        );
+    }
     if profile == Profile::MapLookup {
         let original: Value = serde_json::from_str(include_str!("map_lookup.json"))?;
         ensure!(shape == &original, "exact admitted readonly Lookup profile");
     }
-    if profile == Profile::MapIsEmpty {
+    if matches!(profile, Profile::MapIsEmpty | Profile::SetIsEmpty) {
         let original: Value = serde_json::from_str(include_str!("map_is_empty.json"))?;
         ensure!(
             shape == &original,
-            "exact admitted readonly Map is_empty profile"
+            "exact admitted readonly Unit Boolean is_empty profile"
         );
     }
     if profile == Profile::UnitUint64 {
@@ -99,23 +119,23 @@ fn project(
                 == output.len(),
         "complete typed IO arity"
     );
-    if profile == Profile::MapIsEmpty {
+    if matches!(profile, Profile::MapIsEmpty | Profile::SetIsEmpty) {
         ensure!(
             input.is_empty()
                 && output.len() == 1
                 && (output[0] == Fr::from(0u64) || output[0] == Fr::from(1u64)),
-            "readonly Map is_empty zero-input Boolean signature"
+            "readonly is_empty zero-input Boolean signature"
         );
     }
-    if profile == Profile::UnitUint64 {
+    if matches!(profile, Profile::UnitUint64 | Profile::SetSize) {
         ensure!(
             input.is_empty() && output.len() == 1,
-            "readonly Map size zero-input Uint64 signature"
+            "readonly size zero-input Uint64 signature"
         );
         let bytes = output[0].as_le_bytes();
         ensure!(
             bytes.len() == 32 && bytes[8..].iter().all(|b| *b == 0),
-            "readonly Map size Uint64 output range"
+            "readonly size Uint64 output range"
         );
     }
     let mut vars = BTreeMap::new();
@@ -181,10 +201,10 @@ fn project(
                 }
                 skips.push(None);
             }
-            "persistent_hash" if !readonly_map => {
+            "persistent_hash" if !readonly_collection => {
                 hashes.insert(op["output"].as_str().context("hash byte SSA")?.to_owned());
             }
-            "bytes32_into_low_high" if !readonly_map => {
+            "bytes32_into_low_high" if !readonly_collection => {
                 if hashes.contains(op["bytes"].as_str().context("byte SSA")?) {
                     let out = op["outputs"].as_array().context("two public hash fields")?;
                     ensure!(out.len() == 2, "Bytes32 scalar arity");
@@ -194,7 +214,7 @@ fn project(
                 }
             }
             "private_input" | "constrain_bits" | "test_eq" | "cond_select" | "assert"
-                if !readonly_map => {}
+                if !readonly_collection => {}
             "output" => {
                 for name in op["vals"].as_array().context("output values")? {
                     let v = vars
@@ -214,7 +234,7 @@ fn project(
         used_in == public_in.len() && used_out == public_out.len() && emitted == output.len(),
         "all public streams and outputs consumed"
     );
-    if profile == Profile::MapMember {
+    if matches!(profile, Profile::MapMember | Profile::SetMember) {
         ensure!(
             ops.len() == 7
                 && output.len() == 1
@@ -229,13 +249,13 @@ fn project(
             "readonly Lookup full Field result from actual public read"
         );
     }
-    if profile == Profile::MapIsEmpty {
+    if matches!(profile, Profile::MapIsEmpty | Profile::SetIsEmpty) {
         ensure!(
             public_out == output,
             "actual is_empty Boolean result is the complete public read"
         );
     }
-    if profile == Profile::UnitUint64 {
+    if matches!(profile, Profile::UnitUint64 | Profile::SetSize) {
         ensure!(
             public_out == output,
             "actual size Uint64 result is the complete public read"
@@ -281,10 +301,10 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
             "same explicit caller and typed input-plus-output commitment"
         );
         let name = match bundle.input.profile {
-            Profile::MapMember => "member",
+            Profile::MapMember | Profile::SetMember => "member",
             Profile::MapLookup => "lookup",
-            Profile::MapIsEmpty => "is_empty",
-            Profile::UnitUint64 => "size",
+            Profile::MapIsEmpty | Profile::SetIsEmpty => "is_empty",
+            Profile::UnitUint64 | Profile::SetSize => "size",
             Profile::TinyClear => "clear",
             Profile::TinySet => "set",
         };
@@ -296,6 +316,9 @@ pub fn prepare(bundle: &Bundle) -> Result<Prepared> {
                     Profile::MapMember
                         | Profile::MapLookup
                         | Profile::MapIsEmpty
+                        | Profile::SetIsEmpty
+                        | Profile::SetMember
+                        | Profile::SetSize
                         | Profile::UnitUint64
                 ),
             "actual no-witness/witness profile"
@@ -510,7 +533,7 @@ mod is_empty_tests {
         words: &[Fr],
         reads: &[Fr],
     ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
-        project(
+        let result = project(
             Profile::MapIsEmpty,
             shape,
             input,
@@ -521,7 +544,24 @@ mod is_empty_tests {
                 binding: Fr::from(17u64),
                 communication_commitment: Fr::from(31u64),
             },
-        )
+        );
+        let set = project(
+            Profile::SetIsEmpty,
+            shape,
+            input,
+            output,
+            words,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        );
+        assert_eq!(result.is_ok(), set.is_ok());
+        if let (Ok(map), Ok(set)) = (&result, &set) {
+            assert_eq!(map, set);
+        }
+        set
     }
     #[test]
     fn native_true_false_streams_project_every_operand_with_zero_declared_inputs() {
@@ -625,7 +665,7 @@ mod unit_uint64_tests {
         words: &[Fr],
         reads: &[Fr],
     ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
-        project(
+        let map = project(
             Profile::UnitUint64,
             shape,
             input,
@@ -636,7 +676,24 @@ mod unit_uint64_tests {
                 binding: Fr::from(17u64),
                 communication_commitment: Fr::from(31u64),
             },
-        )
+        );
+        let set = project(
+            Profile::SetSize,
+            shape,
+            input,
+            output,
+            words,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        );
+        assert_eq!(map.is_ok(), set.is_ok());
+        if let (Ok(map), Ok(set)) = (&map, &set) {
+            assert_eq!(map, set);
+        }
+        set
     }
     #[test]
     fn zero_one_two_and_uint64_max_project_every_public_operand() {
@@ -718,5 +775,143 @@ mod unit_uint64_tests {
         let mut reordered = shape();
         reordered["instructions"].as_array_mut().unwrap().swap(2, 3);
         assert!(projection(&reordered, &[], &[value], &w, &[value]).is_err());
+    }
+}
+
+#[cfg(test)]
+mod set_member_tests {
+    use super::*;
+    fn shape() -> Value {
+        serde_json::from_str(include_str!("set_member.json")).unwrap()
+    }
+    fn wide() -> Fr {
+        let mut n = Fr::from(1u64);
+        for _ in 0..128 {
+            n = n + n;
+        }
+        n + Fr::from(1u64)
+    }
+    // Public raw operands as projection unit inputs, never a fabricated VM capture.
+    fn words(key: Fr, bit: Fr) -> Vec<Fr> {
+        let mut w = [48u64, 80, 1, 1, 0, 16, 1, 1]
+            .into_iter()
+            .map(Fr::from)
+            .collect::<Vec<_>>();
+        w.extend([
+            -Fr::from(2u64),
+            key,
+            Fr::from(24u64),
+            Fr::from(13u64),
+            Fr::from(1u64),
+            Fr::from(1u64),
+            bit,
+        ]);
+        w
+    }
+    fn projection(
+        s: &Value,
+        input: &[Fr],
+        output: &[Fr],
+        words: &[Fr],
+        reads: &[Fr],
+    ) -> Result<(Vec<Fr>, Vec<Option<usize>>)> {
+        project(
+            Profile::SetMember,
+            s,
+            input,
+            output,
+            words,
+            reads,
+            StatementHeader {
+                binding: Fr::from(17u64),
+                communication_commitment: Fr::from(31u64),
+            },
+        )
+    }
+    #[test]
+    fn set_member_zero_wide_and_both_boolean_results_project_the_complete_statement() {
+        for key in [Fr::from(0u64), wide()] {
+            for bit in [Fr::from(0u64), Fr::from(1u64)] {
+                let words = words(key, bit);
+                let (fields, skips) = projection(&shape(), &[key], &[bit], &words, &[bit]).unwrap();
+                let mut expected = vec![Fr::from(17u64), Fr::from(31u64)];
+                expected.extend(&words);
+                assert_eq!(fields, expected);
+                assert_eq!(
+                    skips,
+                    vec![
+                        None;
+                        shape()["instructions"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .filter(|x| x["op"] == "impact")
+                            .count()
+                    ]
+                );
+            }
+        }
+    }
+    #[test]
+    fn set_member_requires_field_input_boolean_output_and_actual_read_agreement() {
+        let key = wide();
+        let bit = Fr::from(1u64);
+        let w = words(key, bit);
+        assert!(projection(&shape(), &[], &[bit], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[key, key], &[bit], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[key], &[], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[key], &[bit, bit], &w, &[bit]).is_err());
+        let two = Fr::from(2u64);
+        assert!(projection(&shape(), &[key], &[two], &words(key, two), &[two]).is_err());
+        assert!(projection(&shape(), &[key], &[Fr::from(0u64)], &w, &[bit]).is_err());
+        assert!(projection(&shape(), &[key], &[bit], &w, &[Fr::from(0u64)]).is_err());
+    }
+    #[test]
+    fn set_member_consumes_all_ordered_operands_and_reads_without_padding() {
+        let key = wide();
+        let bit = Fr::from(1u64);
+        let w = words(key, bit);
+        for i in 0..w.len() {
+            let mut changed = w.clone();
+            changed[i] = changed[i] + Fr::from(1u64);
+            assert!(projection(&shape(), &[key], &[bit], &changed, &[bit]).is_err());
+            let mut missing = w.clone();
+            missing.remove(i);
+            assert!(projection(&shape(), &[key], &[bit], &missing, &[bit]).is_err());
+        }
+        let mut extra = w.clone();
+        extra.push(Fr::from(0u64));
+        assert!(projection(&shape(), &[key], &[bit], &extra, &[bit]).is_err());
+        let mut reordered = w.clone();
+        reordered.swap(0, 1);
+        assert!(projection(&shape(), &[key], &[bit], &reordered, &[bit]).is_err());
+        assert!(projection(&shape(), &[key], &[bit], &w, &[]).is_err());
+        assert!(projection(&shape(), &[key], &[bit], &w, &[bit, bit]).is_err());
+    }
+    #[test]
+    fn set_member_exact_raw_rejects_map_ssa_alias_and_unadmitted_effects() {
+        let key = wide();
+        let bit = Fr::from(1u64);
+        let w = words(key, bit);
+        let map_ssa: Value =
+            serde_json::from_str(&shape().to_string().replace("%value.0", "%key.0")).unwrap();
+        assert!(projection(&map_ssa, &[key], &[bit], &w, &[bit]).is_err());
+        for (pointer, value) in [
+            ("/do_communications_commitment", json!(false)),
+            ("/version/minor", json!(1)),
+            ("/instructions/0/op", json!("private_input")),
+            ("/instructions/0/inputs/0", json!("0x31")),
+            ("/instructions/2/inputs/4", json!("%foreign")),
+            ("/instructions/3/guard", json!("0x00")),
+            ("/instructions/4/output", json!("%foreign")),
+            ("/instructions/6/vals/0", json!("%foreign")),
+        ] {
+            let mut changed = shape();
+            *changed.pointer_mut(pointer).unwrap() = value;
+            assert!(
+                projection(&changed, &[key], &[bit], &w, &[bit]).is_err(),
+                "{pointer}"
+            );
+        }
     }
 }
