@@ -29,6 +29,7 @@ use std::collections::{HashMap, HashSet};
 mod authenticated_cell;
 mod authenticated_cell_clear;
 mod authenticated_cell_set;
+mod map_lookup;
 mod map_member;
 
 /// A closed Field literal may be bound by the frontend before a Set mutation.
@@ -603,6 +604,7 @@ pub(crate) fn supported(
             || unit_counter_program(circuit, ledger_fields)
             || maybe_field_getter(circuit, circuits, pure, ledger_fields)
             || map_member::supported(circuit, ledger_fields)
+            || map_lookup::supported(circuit, ledger_fields)
             || authenticated_cell_clear::supported(
                 circuit,
                 circuits,

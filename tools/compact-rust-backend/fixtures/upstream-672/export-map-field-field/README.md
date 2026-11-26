@@ -14,9 +14,10 @@ exports, typed Field key/value declarations and original source positions.
 The four returned mutations each use one existing action followed by Unit.
 This is a current emission, not a claimed upstream Rust artifact.
 
-Only read-only `member(Field) -> Boolean` receives an optional proof-data facade.
-Other Map output types, nested paths, effectful keys, arbitrary helpers and
-witnesses remain outside that facade family. The prerequisite terminal Unit
+Read-only `member(Field) -> Boolean` and `lookup(Field) -> Field` receive optional
+proof-data facades for the admitted direct-key root Map shape. Other Map output
+types, nested paths, effectful keys, arbitrary helpers and witnesses remain
+outside those facade families. The prerequisite terminal Unit
 return repair is likewise bounded to root `Map<Field, Field>` with pure arguments;
 it does not claim all Map types or returned control-flow mutations.
 The host tests and supplemental generated-API checks do not execute the original

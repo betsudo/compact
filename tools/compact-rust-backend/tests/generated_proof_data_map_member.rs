@@ -120,7 +120,7 @@ fn refused(v: Value, old_api: bool) {
 }
 
 #[test]
-fn intact_eight_exports_keep_old_apis_and_only_member_gets_opt_in_helper() {
+fn intact_eight_exports_keep_old_apis_and_only_map_reads_get_opt_in_helpers() {
     let v = original();
     assert_eq!(v["stateful_circuits"].as_array().unwrap().len(), 8);
     assert_eq!(
@@ -135,7 +135,10 @@ fn intact_eight_exports_keep_old_apis_and_only_member_gets_opt_in_helper() {
     assert_eq!(out.capabilities.circuits.len(), 8);
     for row in &out.capabilities.circuits {
         assert!(row.recorded && row.observed_call, "{}", row.name);
-        assert_eq!(row.standalone_proof_data.is_some(), row.name == "member");
+        assert_eq!(
+            row.standalone_proof_data.is_some(),
+            matches!(row.name.as_str(), "member" | "lookup")
+        );
         {
             let owner = "Contract";
             assert!(method(&out.source, owner, &row.name).is_some());
