@@ -342,44 +342,48 @@ native Linux, funded/EntryPoint/real two-contract and broad original-suite
 qualification remain open. The release label 0.31.222 does not relabel these
 executed compiler 0.31.221/component epochs.
 
-## Set emptiness source proposal (execution unqualified)
+## Executed root Set read lanes, 26 November 2026
 
-`--case set-is-empty` is a source-only proposed lane selecting the byte-exact
-1,166-byte upstream six-export Set fixture and `capture/set_is_empty.rs`.
-It uses a distinct `set-is-empty` profile: Unit input, one canonical Boolean
-output, actual circuit `is_empty`. The generated Set<Field> root c/slot0,
-zero-argument Boolean return, API1 helper capability and complete six-export
-roster are admitted separately from the exact 751-byte raw IR. That IR is
-byte-identical to the closed Map emptiness profile; only its statement evaluator
-is reused. This does not qualify a Map context as Set or transfer Map metrics.
+```sh
+python3 tools/compact-rust-proof-data/run.py --compiler /absolute/compactc \
+  --case set-member --out /absolute/fresh-member-run
+# Use set-is-empty or set-size for the other independently qualified reads.
+```
 
-Third's separate adapter supplies fresh empty, zero-element, zero-plus-wide and
-reset contexts; the ordinary six-export native/recorded qualification remains
-separate from this new helper. Default max8, immutable parent-null model/check
-before parameter access, source/LOCK/artifact gates and independent verifier
-boundaries remain unchanged. Set helper SDK metrics, checked proofs and public
-CLI/TypeScript execution are UNRUN. Original1166/1459-byte fixtures and all
-assertions remain unchanged; these supplemental states add zero original-case
-credit. Root must integrate C's separate exhaustive verifier dispatch before
-compiling this new enum variant; no verifier projection is imported here.
+All three lanes select the unchanged 1,166-byte six-export upstream Set fixture.
+Emptiness uses Unit→Bool, membership Field→Bool and size Unit→Uint64. They
+require the typed root Set<Field>/c0, the full recorded API roster, exact API1
+helper inventory and exact raw programs. Set member pins its own 751-byte
+`%value.0` artifact without normalizing Map SSA; Set size pins its 597-byte raw
+artifact. Existing one-helper emptiness output and the exact three-helper
+successor are separately admitted. All default APIs and ABI54 remain intact.
 
+Local current-SDK qualification now passes all 18 public phases for each lane:
 
-### Set member and size proposal
+| Read | k / rows | Complete fields / None skips | Fresh proofs | SDK accept / refusal |
+| --- | --- | --- | --- | --- |
+| Emptiness, earlier epoch | 6 / 41 | 18 / 6 | 4 × 3,845 bytes | 8 / 12 |
+| Membership | 7 / 62 | 17 / 5 | 4 × 3,845 bytes | 8 / 12 |
+| Size | 6 / 35 | 12 / 4 | 4 × 3,845 bytes | 8 / 12 |
 
-`--case set-member` and `--case set-size` are SOURCE_ONLY lanes until separately
-qualified. Both select the intact original six-export1166-byte Set fixture and
-require its typed root Set<Field>/c0, recorded six APIs and exact API1 helpers.
-The profiles are distinct `set-member` (Field→Bool) and `set-size` (Unit→Uint64).
-Set member pins its own751-byte raw IR with `%value.0`; it never normalizes the
-Map member's SSA names. Set size pins its own597-byte raw artifact even though
-its parsed statement template equals Map size. Existing Set is_empty accepts
-its qualified one-helper output and the exact three-helper successor inventory.
+The native adapters exercise four fresh contexts each through ordinary,
+recorded and helper routes, exact supported state/context/gas, every ordered
+operation and official VM Verify replay. Membership absence is false; size
+checks duplicate insertion and reset. The separately authored verifier derives
+complete statements without reading producer PI, preimage or prover-key bodies;
+before-state authenticity is admitted and SDK cryptography is shared. Default
+max-k8, model/check before parameter reads and explicit k13 opt-in are unchanged.
 
-The adapters are separately authored `capture/set_member.rs` and
-`capture/set_size.rs`; shared common capture/codec remains unchanged. The default
-max-k8, genuine model/check before parameter reads, explicit k13 opt-in, fresh
-checked proofs and independent verifier remain required. No member/size k,
-rows, statement count, skips, proof size, SDK1/Linux or new original-case credit
-is inferred from Map or Set is_empty qualifications. Integration also requires
-the separately authored verifier's exhaustive dispatch and exact Set profiles;
-this producer/runner source proposal does not supply verifier mathematics.
+Current source checks pass 77 SDK tests, 28 Python tests and strict Clippy.
+Fresh normal generation and actual complete-crate non-Clone client compilation
+pass. Separate released runtime 0.21.0 TypeScript lanes pass strict TSC/four
+Vitest cases with 26/30/33 genuine checks and awaited flushes for emptiness,
+membership and size. Query operations/alignment and four query-only gas
+dimensions match native. These supplemental states add zero original-case
+credit. No full PI/whole-ledger encoding or funded transaction claim follows.
+
+The earlier emptiness proofs also pass the released SDK1 proof-wire subset;
+member/size SDK1 verification, full matrix, Linux, remaining originals and held
+transaction gates remain open. Source/fixture/assertions, executed compiler
+component epochs and cleanup limits are recorded in the
+[scoped qualification](../../doc/rust/plans/root-set-read-proof-data.md).
