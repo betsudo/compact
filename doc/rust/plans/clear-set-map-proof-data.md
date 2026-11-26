@@ -54,6 +54,25 @@ independently joined without changing assertions or rerunning tests. This is
 not full45-module coverage, execution of the generated TypeScript runtime, or
 new globally unique original-case credit.
 
+## Fresh public Map runner, 26 November 2026
+
+The portable runner separately completed all 18 real phases at signed source
+`03efbac5e24f5e2975e0afafc81bd6aaac463c58` on local macOS arm64. It generated
+three fresh checked proofs of 3,845 bytes each, measured k7/62 rows, and passed
+all 15 separate-process SDK verification outcomes: six acceptances and nine
+refusals, with 17 reconstructed fields and five skips per case. This is new
+public-tool execution, separate from the historical private qualification.
+
+Stopped run SHA256 is
+`29beba9f59c2a348dfadb82e8d0841aa33bd04c9c7c3218f161b819420a1fbd5`;
+verifier report SHA256 is
+`44c9d9738e8e2971346a6d251944c86e744690f7b9f7c0f4ce7e6cb2048bbee8`.
+The runner preserves its first capture-gate failure and the subsequent finite
+capture-only legacy SDK tuple repair. Public Clear/Set k13 proof execution and
+a real default-k8 refusal remain pending; an interrupted Tiny attempt supplies
+no refusal credit. The shared-SDK, captured-before-state, SDK1, Linux and chain
+limitations above still apply.
+
 ## Reproducible public harness and cost policy
 
 The [portable proof-data tool](../../../tools/compact-rust-proof-data/README.md)

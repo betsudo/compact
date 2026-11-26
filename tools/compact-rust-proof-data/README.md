@@ -93,6 +93,31 @@ after use. An Owner replacement prevents all closeout writes under that path.
 The temporary native capture manifest and resolved lock are retained; its
 external lock tuples must be a subset of the unchanged workspace lock.
 
+## Executed public Map runner, 26 November 2026
+
+A fresh local macOS arm64 run at signed source
+`03efbac5e24f5e2975e0afafc81bd6aaac463c58` completed all 18 phases.
+The three supplemental Map cases produced three fresh 3,845-byte checked
+proofs at measured k7/62 rows excluding custom gates and lookups. The separate
+verifier reconstructed 17 fields and five skips per case; all 15 actual SDK
+calls returned as expected (six acceptances, nine refusals). Captured before
+state and shared SDK cryptography retain the limitations above.
+
+The stopped runner SHA256 is
+`29beba9f59c2a348dfadb82e8d0841aa33bd04c9c7c3218f161b819420a1fbd5`;
+the verification report is
+`44c9d9738e8e2971346a6d251944c86e744690f7b9f7c0f4ce7e6cb2048bbee8`.
+These bind the executed source and outputs; documentation successors do not
+transfer execution credit to changed code. The first capture-gate failure is
+retained: native runtime dependencies require five exact legacy SDK tuples
+alongside the current SDK. Only capture mode admits those tuples; SDK-only
+pin, artifact, feature, lock and physical-source guards remain strict.
+
+This run qualifies the public Map path only. Public Tiny Clear/Set slow-lane
+proofs and a real default-budget refusal remain pending; the first Tiny
+attempt was interrupted before model execution. Earlier private Clear/Set
+receipts do not qualify these public paths. Native Linux remains unrun.
+
 Focused tests (run only after source review and dependency admission):
 
 ```sh
@@ -101,7 +126,7 @@ python3 -B tools/compact-rust-proof-data/tests/sdk_gate_test.py
 python3 -B tools/compact-rust-proof-data/tests/runner_test.py
 ```
 
-This source proposal is not an execution qualification. Released Compact 0.36.0
+Execution scope is limited to the public Map run above. Released Compact 0.36.0
 with Ledger 9.1.0.1, Linux, funded transactions, chain inclusion and a broad
 contract matrix remain separate qualifications. Private local receipts and
 signed Root authorizations are not required public dependencies.

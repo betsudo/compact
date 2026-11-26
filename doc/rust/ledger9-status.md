@@ -12,6 +12,10 @@ original eight-export Map fixture and adds typed membership capture. At signed
 `827963ed`, current-SDK arm64 execution now passes three fresh checked proofs and
 15 independent-process SDK verification outcomes, including real current
 default-parameter acceptance and binding/corruption/valid-wrong-key refusals.
+The public Map runner separately repeats three fresh proofs and all 15 SDK
+outcomes at signed `03efbac5`; its executed-source and stopped-output identities
+are recorded in the linked cohort. Public Tiny Clear/Set proof runs and the real
+default-size refusal remain pending.
 The evaluator shares SDK cryptography and does not regenerate the before state.
 The selected seven original export host callbacks pass their scoped stopped
 qualification, with the operator's telemetry-title RED preserved. Neither

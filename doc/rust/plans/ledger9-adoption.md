@@ -8,9 +8,10 @@ membership capture helper. Source-bound local arm64 current-SDK qualification
 now includes three fresh checked Map proofs and 15 separate SDK verification
 outcomes: six acceptances and nine refusals. This does not close the released
 SDK matrix, native Linux or applicable funded transaction/replay gates. The
-portable public harness is qualified separately from those retained receipts;
-k<=8 remains the automatic limit and measured k13 Clear/Set runs are explicit
-slow-lane work. The broad migration remains incomplete.
+portable public Map runner now separately passes three fresh checked proofs
+and 15 SDK outcomes at signed `03efbac5`, with the retained scope boundaries.
+Public Clear/Set proof execution and a real default-size refusal remain pending;
+k<=8 remains automatic and measured k13 Clear/Set runs are explicit slow-lane work. The broad migration remains incomplete.
 
 ## Earlier current publication and qualification snapshot, 2026-11-20
 
